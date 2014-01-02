@@ -1,4 +1,5 @@
 /* { dg-require-effective-target size32plus } */
+/* { dg-additional-options "-mcmodel=large" { target nds32*-*-elf* } } */
 
 /* Formerly known as ltrans-5.c */
 

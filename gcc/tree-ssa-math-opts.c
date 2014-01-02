@@ -119,6 +119,8 @@ along with GCC; see the file COPYING3.  If not see
 #include "expr.h"		/* Because optabs.h wants sepops.  */
 #include "optabs.h"
 
+#include "bitmap.h"
+
 /* This structure represents one basic block that either computes a
    division, or is a common dominator for basic block that compute a
    division.  */
@@ -2603,6 +2605,87 @@ convert_plusminus_to_widen (gimple_stmt_iterator *gsi, gimple stmt,
   return true;
 }
 
+/* Combine statements may cause redundant copy operations.
+   Return true if hoisting up the use statements of MUL_STMT is better
+   than sinking MUL_STMT down.
+   The uid of statements that have to be crossed over are kept in CROSS_STMTS.
+   */
+
+static bool
+maybe_hoist_use_p (gimple mul_stmt, bitmap& cross_stmts)
+{
+  bool try_hoist = false;
+  tree op;
+  ssa_op_iter iter;
+
+  FOR_EACH_SSA_TREE_OPERAND (op, mul_stmt, iter, SSA_OP_USE)
+    {
+      gimple def_stmt = SSA_NAME_DEF_STMT (op);
+      /* If any operands of MUL_STMT is the result of phi statement,
+	 and any arguments of that phi statement is defined in the same
+	 block with phi statement, sinking MUL_STMT over than the
+	 definations of args will cause redundant copy operations.  */
+      if (def_stmt && gimple_code (def_stmt) == GIMPLE_PHI)
+	{
+	  size_t i;
+	  for (i = 0; i < gimple_phi_num_args (def_stmt); i++)
+	    {
+	      tree arg = gimple_phi_arg_def (def_stmt, i);
+	      gimple arg_def_stmt
+	       	= (TREE_CODE (arg) == SSA_NAME) ? SSA_NAME_DEF_STMT (arg) : NULL;
+
+	      if (arg_def_stmt && !gimple_nop_p (arg_def_stmt)
+		  && gimple_bb (arg_def_stmt) == gimple_bb (def_stmt))
+		{
+		  try_hoist = true;
+		  bitmap_set_bit (cross_stmts, gimple_uid (arg_def_stmt));
+		}
+	    }
+	}
+    }
+
+  return try_hoist;
+}
+
+/* Hoist the use statement (USE_GSI) up as crossing over the all statements
+   in CROSS_STMTS as possible.
+   Return the iterator of new location of the use statement if the use statement
+   can cross over some statements in CROSS_STMTS.
+   Otherwise, return itself (USE_GSI).  */
+
+static gimple_stmt_iterator
+get_fuse_loc (gimple_stmt_iterator use_gsi, bitmap cross_stmts)
+{
+  unsigned not_cross, num_cross_stmts;
+  gimple_stmt_iterator gsi = use_gsi;
+  gimple use_stmt = gsi_stmt (use_gsi);
+
+  not_cross = num_cross_stmts = bitmap_count_bits (cross_stmts);
+
+  if (!not_cross)
+    return use_gsi;
+
+  for (gsi_prev (&gsi); !gsi_end_p (gsi); gsi_prev (&gsi))
+    {
+      gimple stmt = gsi_stmt (gsi);
+      tree op;
+      ssa_op_iter iter;
+
+      /* Cross all statrments in CROSS_STMTS  */
+      if (!not_cross)
+	return gsi;
+
+      if (bitmap_bit_p (cross_stmts, gimple_uid (stmt)))
+	not_cross--;
+      else
+	FOR_EACH_SSA_TREE_OPERAND (op, use_stmt, iter, SSA_OP_USE)
+	  if (SSA_NAME_DEF_STMT (op) == stmt)
+	    return (not_cross < num_cross_stmts) ? gsi : use_gsi;
+    }
+
+  return use_gsi;
+}
+
 /* Combine the multiplication at MUL_STMT with operands MULOP1 and MULOP2
    with uses in additions and subtractions to form fused multiply-add
    operations.  Returns true if successful and MUL_STMT should be removed.  */
@@ -2615,6 +2698,8 @@ convert_mult_to_fma (gimple mul_stmt, tree op1, tree op2)
   gimple use_stmt, neguse_stmt, fma_stmt;
   use_operand_p use_p;
   imm_use_iterator imm_iter;
+  bitmap cross_stmts;
+  bool try_copy_less;
 
   if (FLOAT_TYPE_P (type)
       && flag_fp_contract_mode == FP_CONTRACT_OFF)
@@ -2748,6 +2833,11 @@ convert_mult_to_fma (gimple mul_stmt, tree op1, tree op2)
 	 independent and could be run in parallel.  */
     }
 
+  /* Hoist up is better than sink down for some cases.
+     This will affect the expand pass.  */
+  cross_stmts = BITMAP_ALLOC (NULL);
+  try_copy_less = maybe_hoist_use_p (mul_stmt, cross_stmts);
+
   FOR_EACH_IMM_USE_STMT (use_stmt, imm_iter, mul_result)
     {
       gimple_stmt_iterator gsi = gsi_for_stmt (use_stmt);
@@ -2757,6 +2847,18 @@ convert_mult_to_fma (gimple mul_stmt, tree op1, tree op2)
 
       if (is_gimple_debug (use_stmt))
 	continue;
+
+      if (try_copy_less)
+	{
+	  gimple_stmt_iterator fma_gsi;
+
+	  fma_gsi = get_fuse_loc (gsi, cross_stmts);
+	  if (gsi_stmt (fma_gsi) != use_stmt)
+	    {
+	      gsi_move_after (&gsi, &fma_gsi);
+	      gsi = fma_gsi;
+	    }
+	}
 
       use_code = gimple_assign_rhs_code (use_stmt);
       if (use_code == NEGATE_EXPR)
@@ -2806,6 +2908,7 @@ convert_mult_to_fma (gimple mul_stmt, tree op1, tree op2)
       widen_mul_stats.fmas_inserted++;
     }
 
+  BITMAP_FREE (cross_stmts);
   return true;
 }
 

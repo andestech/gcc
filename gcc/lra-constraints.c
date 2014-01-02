@@ -1698,7 +1698,7 @@ process_alt_operands (int only_alternative)
 		  c = '\0';
 		  break;
 
-		case '=':  case '+': case '?': case '*': case '!':
+		case '=':  case '+': case '?': case '*': case '!': case '$':
 		case ' ': case '\t':
 		  break;
 
@@ -4859,9 +4859,8 @@ split_reg (bool before_p, int original_regno, rtx insn, rtx next_usage_insns)
       reg_renumber[REGNO (new_reg)] = hard_regno;
     }
   save = emit_spill_move (true, new_reg, original_reg);
-  if (NEXT_INSN (save) != NULL_RTX)
+  if (NEXT_INSN (save) != NULL_RTX && !call_save_p)
     {
-      lra_assert (! call_save_p);
       if (lra_dump_file != NULL)
 	{
 	  fprintf
@@ -4875,9 +4874,8 @@ split_reg (bool before_p, int original_regno, rtx insn, rtx next_usage_insns)
       return false;
     }
   restore = emit_spill_move (false, new_reg, original_reg);
-  if (NEXT_INSN (restore) != NULL_RTX)
+  if (NEXT_INSN (restore) != NULL_RTX && !call_save_p)
     {
-      lra_assert (! call_save_p);
       if (lra_dump_file != NULL)
 	{
 	  fprintf (lra_dump_file,

@@ -5116,6 +5116,15 @@ specific target options and the caller does not use the same options.",
 
 HOOK_VECTOR_END (target_option)
 
+/* Do pass registers for the target.  */
+DEFHOOK
+(register_passes,
+ "This target hook register cusiomized passes for the particular\n\
+target machine. You can insert the cusiomized passes by the\n\
+@code{TARGET_REGISTER_PASSES} hook.",
+ void, (void),
+ hook_void_void)
+
 /* For targets that need to mark extra registers as live on entry to
    the function, they should define this target hook and set their
    bits in the bitmap passed in. */

@@ -683,7 +683,9 @@ extern int vsnprintf (char *, size_t, const char *, va_list);
 /* Redefine abort to report an internal error w/o coredump, and
    reporting the location of the error in the source file.  */
 extern void fancy_abort (const char *, int, const char *) ATTRIBUTE_NORETURN;
+#ifndef __MACH__
 #define abort() fancy_abort (__FILE__, __LINE__, __FUNCTION__)
+#endif
 
 /* Use gcc_assert(EXPR) to test invariants.  */
 #if ENABLE_ASSERT_CHECKING

@@ -2,6 +2,7 @@
 // have "compile" for some targets and "run" for others.
 // { dg-do run { target { ! mmix-*-* } } }
 // { dg-options "-mstructure-size-boundary=8" { target arm*-*-* } }
+// { dg-skip-if "" { nds32_gp_direct } }
 
 // Copyright (C) 2004 Free Software Foundation, Inc.
 // Contributed by Nathan Sidwell 8 Dec 2004 <nathan@codesourcery.com>

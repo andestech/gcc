@@ -1133,6 +1133,10 @@ print_filtered_help (unsigned int include_flags,
 	{
 	  unsigned int len = strlen (cl_enums[i].values[j].arg);
 
+	  /* Skip the undocument enum value */
+	  if (cl_enums[i].values[j].flags & CL_UNDOCUMENTED)
+	     continue;
+
 	  if (pos > 4 && pos + 1 + len <= columns)
 	    {
 	      printf (" %s", cl_enums[i].values[j].arg);

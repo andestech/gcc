@@ -707,6 +707,10 @@ Wvector-operation-performance
 Common Var(warn_vector_operation_performance) Warning
 Warn when a vector operation is compiled outside the SIMD
 
+Wrestrict_argument
+Common Var(warn_argument_restrict) Warning
+Warn when an argument is set to restrict by -mrestrict-argument option.
+
 Xassembler
 Driver Separate
 
@@ -858,6 +862,14 @@ fargument-noalias-anything
 Common Ignore
 Does nothing. Preserved for backward compatibility.
 
+mrestrict-argument
+Common Report Var(flag_restrict_argument) Optimization
+Force pointer arguments to be qualified with restrict keyword.
+
+mipa-escape-analysis
+Common Report Var(flag_ipa_escape_analysis) Optimization
+Try to reduce the number of passing &var argument for improving points-to analysis.
+
 fsanitize=
 Common Driver Report Joined
 Select what to sanitize
@@ -897,6 +909,10 @@ Perform branch target load optimization after prologue / epilogue threading
 fbtr-bb-exclusive
 Common Report Var(flag_btr_bb_exclusive) Optimization
 Restrict target load migration not to re-use registers in any basic block
+
+fbuiltin
+Common Var(flag_no_builtin, 0)
+Recognize built-in functions
 
 fcall-saved-
 Common Joined RejectNegative Var(common_deferred_options) Defer
@@ -1160,7 +1176,7 @@ ffast-math
 Common
 
 ffat-lto-objects
-Common Var(flag_fat_lto_objects)
+Common Var(flag_fat_lto_objects) Init(1)
 Output lto objects containing both the intermediate language and binary output.
 
 ffinite-math-only
@@ -2201,6 +2217,10 @@ Perform straight-line strength reduction
 ftree-sra
 Common Report Var(flag_tree_sra) Optimization
 Perform scalar replacement of aggregates
+
+ftree-switch-shortcut
+Common Report Var(flag_tree_switch_shortcut) Init(0) Optimization
+Do fancy switch statement shortcutting
 
 ftree-ter
 Common Report Var(flag_tree_ter) Optimization

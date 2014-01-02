@@ -9151,10 +9151,12 @@ handle_optimize_attribute (tree *node, tree name, tree args,
   else
     {
       struct cl_optimization cur_opts;
+      struct cl_target_option cur_target_opts;
       tree old_opts = DECL_FUNCTION_SPECIFIC_OPTIMIZATION (*node);
 
       /* Save current options.  */
       cl_optimization_save (&cur_opts, &global_options);
+      cl_target_option_save (&cur_target_opts, &global_options);
 
       /* If we previously had some optimization options, use them as the
 	 default.  */
@@ -9169,6 +9171,7 @@ handle_optimize_attribute (tree *node, tree name, tree args,
 
       /* Restore current options.  */
       cl_optimization_restore (&global_options, &cur_opts);
+      cl_target_option_restore (&global_options, &cur_target_opts);
     }
 
   return NULL_TREE;

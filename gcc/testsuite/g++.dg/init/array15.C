@@ -1,4 +1,6 @@
 // { dg-do run }
+// { dg-require-effective-target nds32_full_addr_space { target nds32*-*-elf* } }
+// { dg-options "-mcmodel=large" { target nds32*-*-elf* } }
 
 // Copyright (C) 2004 Free Software Foundation, Inc.
 // Contributed by Nathan Sidwell 8 Dec 2004 <nathan@codesourcery.com>

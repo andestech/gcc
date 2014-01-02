@@ -1,5 +1,5 @@
 /* Common hooks of Andes NDS32 cpu for GNU compiler
-   Copyright (C) 2012-2014 Free Software Foundation, Inc.
+   Copyright (C) 2012-2015 Free Software Foundation, Inc.
    Contributed by Andes Technology Corporation.
 
    This file is part of GCC.
@@ -53,6 +53,16 @@ nds32_handle_option (struct gcc_options *opts ATTRIBUTE_UNUSED,
 
       return true;
 
+    case OPT_misr_secure_:
+      /* Check the valid security level: 0 1 2 3.  */
+      if (value < 0 || value > 3)
+	{
+	  error_at (loc, "for the option -misr-secure=X, the valid X "
+			 "must be: 0, 1, 2, or 3");
+	  return false;
+	}
+      return true;
+
     case OPT_mcache_block_size_:
       /* Check valid value: 4 8 16 32 64 128 256 512.  */
       if (exact_log2 (value) < 2 || exact_log2 (value) > 9)
@@ -74,15 +84,70 @@ nds32_handle_option (struct gcc_options *opts ATTRIBUTE_UNUSED,
 /* Implement TARGET_OPTION_OPTIMIZATION_TABLE.  */
 static const struct default_options nds32_option_optimization_table[] =
 {
-  /* Enable -fomit-frame-pointer by default at -O1 or higher.  */
-  { OPT_LEVELS_1_PLUS, OPT_fomit_frame_pointer, NULL, 1 },
+#ifdef TARGET_DEFAULT_NO_MATH_ERRNO
+  /* Under some configuration, we would like to use -fno-math-errno by default
+     at all optimization levels for performance and code size consideration.
+     Please check gcc/config.gcc for more implementation details.  */
+  { OPT_LEVELS_ALL,               OPT_fmath_errno,         NULL, 0 },
+#endif
+#if TARGET_LINUX_ABI == 0
+  /* Disable -fdelete-null-pointer-checks by default in ELF toolchain.  */
+  { OPT_LEVELS_ALL,               OPT_fdelete_null_pointer_checks,
+							   NULL, 0 },
+#endif
+  /* Enable -fomit-frame-pointer by default at all optimization levels.  */
+  { OPT_LEVELS_ALL,               OPT_fomit_frame_pointer, NULL, 1 },
+  /* Enable -mrelax-hint by default at all optimization levels.  */
+  { OPT_LEVELS_ALL,               OPT_mrelax_hint,         NULL, 1 },
+  /* Enable -mabi-compatible by default at all optimization levels.  */
+  { OPT_LEVELS_ALL,               OPT_mabi_compatible,     NULL, 1 },
+  /* Enalbe -malways-align by default at -O1 and above, but not -Os or -Og.  */
+  { OPT_LEVELS_1_PLUS_SPEED_ONLY, OPT_malways_align,       NULL, 1 },
   /* Enable -mv3push by default at -Os, but it is useless under V2 ISA.  */
-  { OPT_LEVELS_SIZE,   OPT_mv3push,             NULL, 1 },
+  { OPT_LEVELS_SIZE,              OPT_mv3push,             NULL, 1 },
+  /* Enable -mload-store-opt by default at -Os.  */
+  { OPT_LEVELS_SIZE,              OPT_mload_store_opt,     NULL, 1 },
+  /* Enable -mregrename by default at -O1 and above.  */
+  { OPT_LEVELS_1_PLUS,            OPT_mregrename,          NULL, 1 },
+  /* Enable -mgcse by default at -O1 and above.  */
+  { OPT_LEVELS_1_PLUS,            OPT_mgcse,               NULL, 1 },
+  /* Enable -msign-conversion by default at -O1 and above.  */
+  { OPT_LEVELS_1_PLUS,            OPT_msign_conversion,    NULL, 1 },
+  /* Enable -mscalbn-transform by default at -O1 and above.  */
+  { OPT_LEVELS_1_PLUS,            OPT_mscalbn_transform,   NULL, 1 },
+  /* Enable -mconst_remeterialization by default at -O1 and above.  */
+  { OPT_LEVELS_1_PLUS,            OPT_mconst_remater, NULL, 1 },
+  /* Enable -mcprop-acc by default at -O1 and above.  */
+  { OPT_LEVELS_1_PLUS,            OPT_mcprop_acc,   NULL, 1 },
 
-  { OPT_LEVELS_NONE,   0,                       NULL, 0 }
+  { OPT_LEVELS_ALL,               OPT_msched_prolog_epilog,
+							   NULL, 0 },
+#ifdef TARGET_OS_DEFAULT_IFC
+  /* Enable -mifc by default at -Os, but it is useless under V2/V3M ISA.  */
+  { OPT_LEVELS_SIZE,              OPT_mifc,                NULL, 1 },
+#endif
+#ifdef TARGET_OS_DEFAULT_EX9
+  /* Enable -mex9 by default at -Os, but it is useless under V2/V3M ISA.  */
+  { OPT_LEVELS_SIZE,              OPT_mex9,                NULL, 1 },
+#endif
+
+  { OPT_LEVELS_NONE,              0,                       NULL, 0 }
 };
 
 /* ------------------------------------------------------------------------ */
+
+/* Implement TARGET_EXCEPT_UNWIND_INFO.  */
+static enum unwind_info_type
+nds32_except_unwind_info (struct gcc_options *opts ATTRIBUTE_UNUSED)
+{
+  if (TARGET_LINUX_ABI)
+    return UI_DWARF2;
+
+  return UI_SJLJ;
+}
+
+/* ------------------------------------------------------------------------ */
+
 
 /* Run-time Target Specification.  */
 
@@ -95,16 +160,22 @@ static const struct default_options nds32_option_optimization_table[] =
 
    Other MASK_XXX flags are set individually.
    By default we enable
-     TARGET_GP_DIRECT: Generate gp-imply instruction.
-     TARGET_16_BIT   : Generate 16/32 bit mixed length instruction.
-     TARGET_PERF_EXT : Generate performance extention instrcution.
-     TARGET_CMOV     : Generate conditional move instruction.  */
+     TARGET_16_BIT     : Generate 16/32 bit mixed length instruction.
+     TARGET_EXT_PERF   : Generate performance extention instrcution.
+     TARGET_EXT_PERF2  : Generate performance extention version 2 instrcution.
+     TARGET_EXT_STRING : Generate string extention instrcution.
+     TARGET_HW_ABS     : Generate hardware abs instruction.
+     TARGET_CMOV       : Generate conditional move instruction.  */
 #undef TARGET_DEFAULT_TARGET_FLAGS
 #define TARGET_DEFAULT_TARGET_FLAGS		\
   (TARGET_CPU_DEFAULT				\
-   | MASK_GP_DIRECT				\
+   | TARGET_DEFAULT_FPU_ISA			\
+   | TARGET_DEFAULT_FPU_FMA			\
    | MASK_16_BIT				\
-   | MASK_PERF_EXT				\
+   | MASK_EXT_PERF				\
+   | MASK_EXT_PERF2				\
+   | MASK_EXT_STRING				\
+   | MASK_HW_ABS				\
    | MASK_CMOV)
 
 #undef TARGET_HANDLE_OPTION
@@ -117,7 +188,7 @@ static const struct default_options nds32_option_optimization_table[] =
 /* Defining the Output Assembler Language.  */
 
 #undef TARGET_EXCEPT_UNWIND_INFO
-#define TARGET_EXCEPT_UNWIND_INFO sjlj_except_unwind_info
+#define TARGET_EXCEPT_UNWIND_INFO nds32_except_unwind_info
 
 /* ------------------------------------------------------------------------ */
 

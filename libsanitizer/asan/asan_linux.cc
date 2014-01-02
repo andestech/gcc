@@ -98,6 +98,11 @@ void GetPcSpBp(void *context, uptr *pc, uptr *sp, uptr *bp) {
   *pc = ucontext->uc_mcontext.gregs[31];
   *bp = ucontext->uc_mcontext.gregs[30];
   *sp = ucontext->uc_mcontext.gregs[29];
+# elif defined(__nds32__)
+  ucontext_t *ucontext = (ucontext_t*)context;
+  *pc = ucontext->uc_mcontext.nds32_ipc;
+  *bp = ucontext->uc_mcontext.nds32_fp;
+  *sp = ucontext->uc_mcontext.nds32_sp;
 #else
 # error "Unsupported arch"
 #endif

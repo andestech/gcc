@@ -815,7 +815,7 @@ setup_operand_alternative (lra_insn_recog_data_t data)
 
 	      switch (c)
 		{
-		case '=': case '+': case '*':
+		case '=': case '+': case '*': case '$':
 		case 'E': case 'F': case 'G': case 'H':
 		case 's': case 'i': case 'n':
 		case 'I': case 'J': case 'K': case 'L':

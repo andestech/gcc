@@ -1,5 +1,6 @@
 /* { dg-do run } */
 /* { dg-options "-O2 -fipa-sra -fdump-tree-eipa_sra-details"  } */
+/* { dg-additional-options "-u_printf_float -u_scanf_float" { target nds32*-*-* } } */
 
 struct bovid
 {

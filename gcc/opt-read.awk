@@ -99,6 +99,7 @@ BEGIN {
 			val_flags = "0"
 			val_flags = val_flags \
 			  test_flag("Canonical", props, "| CL_ENUM_CANONICAL") \
+			  test_flag("Undocumented", props, "| CL_UNDOCUMENTED") \
 			  test_flag("DriverOnly", props, "| CL_ENUM_DRIVER_ONLY")
 			enum_data[enum_name] = enum_data[enum_name] \
 			  "  { " quote string quote ", " value ", " val_flags \

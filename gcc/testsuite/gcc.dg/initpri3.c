@@ -1,6 +1,7 @@
 /* { dg-do run { target init_priority } } */
 /* { dg-require-effective-target lto } */
 /* { dg-options "-flto -O3" } */
+/* { dg-options "-flto -O3 -mctor-dtor" { target { nds32*-*-* } } } */
 
 extern void abort ();
 

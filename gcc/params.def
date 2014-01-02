@@ -64,7 +64,7 @@ DEFPARAM (PARAM_INLINE_MIN_SPEEDUP,
 DEFPARAM (PARAM_MAX_INLINE_INSNS_SINGLE,
 	  "max-inline-insns-single",
 	  "The maximum number of instructions in a single function eligible for inlining",
-	  400, 0, 0)
+	  450, 0, 0)
 
 /* The single function inlining limit for functions that are
    inlined by virtue of -finline-functions (-O3).
@@ -76,7 +76,7 @@ DEFPARAM (PARAM_MAX_INLINE_INSNS_SINGLE,
 DEFPARAM (PARAM_MAX_INLINE_INSNS_AUTO,
 	  "max-inline-insns-auto",
 	  "The maximum number of instructions when automatically inlining",
-	  40, 0, 0)
+	  90, 0, 0)
 
 DEFPARAM (PARAM_MAX_INLINE_INSNS_RECURSIVE,
 	  "max-inline-insns-recursive",
@@ -284,6 +284,11 @@ DEFPARAM(PARAM_MAX_UNROLL_TIMES,
 	"max-unroll-times",
 	"The maximum number of unrollings of a single loop",
 	8, 0, 0)
+/* Maximum number of loop unroll loop branch count.  */
+DEFPARAM (PARAM_MAX_LOOP_UNROLL_BRANCH,
+         "max-unroll-loop-branch",
+         "Maximum number of loop branch count",
+         1, 1, 20)
 /* The maximum number of insns of a peeled loop.  */
 DEFPARAM(PARAM_MAX_PEELED_INSNS,
 	"max-peeled-insns",
@@ -1053,6 +1058,22 @@ DEFPARAM (PARAM_MAX_SLSR_CANDIDATE_SCAN,
 	  "Maximum length of candidate scans for straight-line "
 	  "strength reduction",
 	  50, 1, 999999)
+
+/* Maximum number of instructions to duplicate when shortcutting a switch.  */
+DEFPARAM (PARAM_MAX_SWITCH_INSNS,
+	  "max-switch-insns",
+	  "Maximum number of instructions to duplicate when "
+	  "shortcutting a switch statement",
+	  100, 1, 999999)
+
+/* Maximum number of paths to duplicate when shortcutting a switch.  */
+DEFPARAM (PARAM_MAX_SWITCH_PATHS,
+	  "max-switch-paths",
+	  "Maximum number of new paths to create when"
+	  " shortcutting a switch statement",
+	  50, 1, 999999)
+
+
 
 DEFPARAM (PARAM_ASAN_STACK,
          "asan-stack",

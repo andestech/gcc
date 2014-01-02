@@ -1,4 +1,5 @@
 /* { dg-do compile { target init_priority } } */
+/* { dg-options "-mctor-dtor" { target { nds32*-*-* } } } */
 
 /* Priorities must be in the range [0, 65535].  */
 void c1()

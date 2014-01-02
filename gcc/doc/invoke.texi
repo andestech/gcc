@@ -835,12 +835,17 @@ Objective-C and Objective-C++ Dialects}.
 -mreduced-regs -mfull-regs @gol
 -mcmov -mno-cmov @gol
 -mperf-ext -mno-perf-ext @gol
+-mperf2-ext -mno-perf2-ext @gol
+-mstring-ext -mno-string-ext @gol
 -mv3push -mno-v3push @gol
 -m16bit -mno-16bit @gol
 -mgp-direct -mno-gp-direct @gol
 -misr-vector-size=@var{num} @gol
 -mcache-block-size=@var{num} @gol
 -march=@var{arch} @gol
+-mcpu=@var{cpu} @gol
+-mmemory-model=@var{cpu} @gol
+-mconfig-register-ports=@var{ports} @gol
 -mforce-fp-as-gp -mforbid-fp-as-gp @gol
 -mex9 -mctor-dtor -mrelax}
 
@@ -18350,6 +18355,22 @@ Generate performance extension instructions.
 @opindex mno-perf-ext
 Do not generate performance extension instructions.
 
+@item -mperf2-ext
+@opindex mperf2-ext
+Generate performance extension version 2 instructions.
+
+@item -mno-perf2-ext
+@opindex mno-perf2-ext
+Do not generate performance extension version 2 instructions.
+
+@item -mstring-ext
+@opindex mstring-ext
+Generate string extension instructions.
+
+@item -mno-string-ext
+@opindex mno-string-ext
+Do not generate string extension instructions.
+
 @item -mv3push
 @opindex mv3push
 Generate v3 push25/pop25 instructions.
@@ -18386,6 +18407,19 @@ which must be a power of 2 between 4 and 512.
 @item -march=@var{arch}
 @opindex march
 Specify the name of the target architecture.
+
+@item -mcpu=@var{cpu}
+@opindex mcpu
+Specify the cpu for pipeline model.
+
+@item -mmemory-model=@var{cpu}
+@opindex mmemory-model
+Specify fast or slow memory model.
+
+@item -mconfig-register-ports=@var{ports}
+@opindex mconfig-register-ports
+Specify how many read/write ports for n9/n10 cores.
+The value should be 3r2w or 2r1w.
 
 @item -mforce-fp-as-gp
 @opindex mforce-fp-as-gp
