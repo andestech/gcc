@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-O -fdump-tree-ccp1" } */
+/* { dg-options "-O -fdump-tree-ccp1 -fdelete-null-pointer-checks" } */
 
 // See pr19476-1.C for a version that includes <new>.
 

@@ -210,7 +210,7 @@ struct constraint_data
 /* This is a complete list (unlike the one in genpreds.c) of constraint
    letters and modifiers with machine-independent meaning.  The only
    omission is digits, as these are handled specially.  */
-static const char indep_constraints[] = ",=+%*?!#&<>EFVXgimnoprs";
+static const char indep_constraints[] = ",=+%*$?!#&<>EFVXgimnoprs";
 
 static struct constraint_data *
 constraints_by_letter_table[1 << CHAR_BIT];

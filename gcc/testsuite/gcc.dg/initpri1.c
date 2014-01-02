@@ -1,4 +1,5 @@
 /* { dg-do run { target init_priority } } */
+/* { dg-options "-mctor-dtor" { target { nds32*-*-* } } } */
 
 extern void abort ();
 

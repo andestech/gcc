@@ -453,6 +453,10 @@ proc check_effective_target_trampolines { } {
 	 || [istarget hppa64-hp-hpux11.23] } {
 	return 0;
     }
+    if { [istarget nds32*-*-*]
+	 && [check_effective_target_nds32_reduced_regs] } {
+	return 0;
+    }
     return 1
 }
 
@@ -464,7 +468,7 @@ proc check_effective_target_keeps_null_pointer_checks { } {
     if [target_info exists keeps_null_pointer_checks] {
       return 1
     }
-    if { [istarget avr-*-*] } {
+    if { [istarget avr-*-*] || [istarget nds32*-*-elf] } {
 	return 1;   
     }
     return 0
@@ -3027,6 +3031,125 @@ proc check_effective_target_arm_prefer_ldrd_strd { } {
     return [check_no_messages_and_pattern arm_prefer_ldrd_strd "strd\tr" assembly {
         void foo (int *p) { p[0] = 1; p[1] = 0;}
     }  "-O2 -mthumb" ]
+}
+
+# If board info says it only has 16M addressing space, return 0.
+# Otherwise, return 1.
+proc check_effective_target_nds32_full_addr_space { } {
+    if [board_info target exists addr16m] {
+	return 0
+    }
+    return 1;
+}
+
+# Return 1 if gp direct is enable by default.
+proc check_effective_target_nds32_gp_direct { } {
+    return [check_no_compiler_messages gp_direct object {
+	#ifdef __NDS32_GP_DIRECT__
+	int dummy;
+	#else
+	#error no GP_DIRECT
+	#endif
+    }]
+}
+
+# Return 1 if this is a nds32 target supporting -mext-perf.
+proc check_effective_target_nds32_ext_perf { } {
+    return [check_no_compiler_messages ext_perf object {
+	#ifdef __NDS32_EXT_PERF__
+	int dummy;
+	#else
+	#error no EXT_PERF
+	#endif
+    }]
+}
+
+# Return 1 if this is a nds32 target supporting -mext-perf2.
+proc check_effective_target_nds32_ext_perf2 { } {
+    return [check_no_compiler_messages ext_perf2 object {
+	#ifdef __NDS32_EXT_PERF2__
+	int dummy;
+	#else
+	#error no EXT_PERF2
+	#endif
+    }]
+}
+
+# Return 1 if this is a nds32 target supporting -mext-string.
+proc check_effective_target_nds32_ext_string { } {
+    return [check_no_compiler_messages ext_string object {
+	#ifdef __NDS32_EXT_STRING__
+	int dummy;
+	#else
+	#error no EXT_STRING
+	#endif
+    }]
+}
+
+# Return 1 if this is a nds32 target supporting -mext-fpu-sp or -mext-fpu-dp.
+proc check_effective_target_nds32_ext_fpu { } {
+    return [check_no_compiler_messages ext_fpu object {
+	#if defined(__NDS32_EXT_FPU_SP__) || defined(__NDS32_EXT_FPU_DP__)
+	int dummy;
+	#else
+	#error no support FPU
+	#endif
+    }]
+}
+
+# Return 1 if this is a nds32 target not supporting -mext-fpu-sp or -mext-fpu-dp.
+proc check_effective_target_nds32_soft_fp { } {
+    return [check_no_compiler_messages soft_fp object {
+	#if defined(__NDS32_EXT_FPU_SP__) || defined(__NDS32_EXT_FPU_DP__)
+	#error Hard FP
+	#else
+	int dummy;
+	#endif
+    }]
+}
+
+# Return 1 if this is a nds32 target supporting -mext-fpu-sp.
+proc check_effective_target_nds32_ext_fpu_sp { } {
+    return [check_no_compiler_messages ext_fpu_sp object {
+	#ifdef __NDS32_EXT_FPU_SP__
+	int dummy;
+	#else
+	#error no EXT_FPU_SP
+	#endif
+    }]
+}
+
+# Return 1 if this is a nds32 target supporting -mext-fpu-dp.
+proc check_effective_target_nds32_ext_fpu_dp { } {
+    return [check_no_compiler_messages ext_fpu_dp object {
+	#ifdef __NDS32_EXT_FPU_DP__
+	int dummy;
+	#else
+	#error no EXT_FPU_DP
+	#endif
+    }]
+}
+
+# Return 1 if this is a nds32 target supporting -mreduced-regs.
+proc check_effective_target_nds32_reduced_regs { } {
+    return [check_no_compiler_messages reduced_regs object {
+	#ifdef __NDS32_REDUCED_REGS__
+	int dummy;
+	#else
+	#error no REDUCED_REGS
+	#endif
+    }]
+}
+
+# Return 1 if this is a nds32 target not supporting v3m ISA.
+proc check_effective_target_nds32_no_v3m { } {
+    return [check_no_compiler_messages no_v3m object {
+	#if !defined(__NDS32_BASELINE_V3M__)
+	int dummy;
+	#else
+	#error Support V3M ISA
+	#endif
+    }]
 }
 
 # Return 1 if this is a PowerPC target supporting -meabi.
@@ -5875,6 +5998,7 @@ proc check_effective_target_logical_op_short_circuit {} {
 	 || [istarget arc*-*-*]
 	 || [istarget avr*-*-*]
 	 || [istarget crisv32-*-*] || [istarget cris-*-*]
+	 || [istarget nds32*-*-*]
 	 || [istarget s390*-*-*]
 	 || [check_effective_target_arm_cortex_m] } {
 	return 1

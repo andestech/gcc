@@ -1004,6 +1004,7 @@ shorten_branches (rtx first)
   /* Allocate the rest of the arrays.  */
   insn_lengths = XNEWVEC (int, max_uid);
   insn_lengths_max_uid = max_uid;
+  memset (insn_lengths, 0, sizeof (int) * max_uid);
   /* Syntax errors can lead to labels being outside of the main insn stream.
      Initialize insn_addresses, so that we get reproducible results.  */
   INSN_ADDRESSES_ALLOC (max_uid);

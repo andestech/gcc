@@ -3208,7 +3208,7 @@ find_reloads (rtx insn, int replace, int ind_levels, int live_known,
 		    c = '\0';
 		    break;
 
-		  case '=':  case '+':  case '*':
+		  case '=':  case '+':  case '*': case '$':
 		    break;
 
 		  case '%':

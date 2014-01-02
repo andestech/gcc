@@ -652,6 +652,11 @@ record_reg_classes (int n_alts, int n_ops, rtx *ops,
 		  c = *++p;
 		  break;
 
+		case '$':
+		  if (optimize_size)
+		    alt_cost -= 2;
+		  break;
+
 		case '?':
 		  alt_cost += 2;
 		case '!':  case '#':  case '&':

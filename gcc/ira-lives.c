@@ -770,6 +770,7 @@ single_reg_class (const char *constraints, rtx op, rtx equiv_const)
 	case '%':
 	case '!':
 	case '?':
+	case '$':
 	  break;
 	case 'i':
 	  if (CONSTANT_P (op)

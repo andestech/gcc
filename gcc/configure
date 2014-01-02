@@ -26524,7 +26524,7 @@ esac
 # version to the per-target configury.
 case "$cpu_type" in
   aarch64 | alpha | arm | avr | bfin | cris | i386 | m32c | m68k | microblaze \
-  | mips | nios2 | pa | rs6000 | score | sparc | spu | tilegx | tilepro \
+  | mips | nds32 | nios2 | pa | rs6000 | score | sparc | spu | tilegx | tilepro \
   | xstormy16 | xtensa)
     insn="nop"
     ;;

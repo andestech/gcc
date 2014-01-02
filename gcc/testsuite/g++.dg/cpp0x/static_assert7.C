@@ -1,6 +1,6 @@
 // PR c++/53166
 // { dg-do compile { target c++11 } }
-// { dg-options "-Waddress" }
+// { dg-options "-Waddress -fdelete-null-pointer-checks" }
 
 template <typename X, X a>
 struct A

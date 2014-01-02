@@ -1067,7 +1067,7 @@ classify_partition (loop_p loop, struct graph *rdg, partition_t partition)
 		      gimple_bb (DR_STMT (single_store))))
     plus_one = true;
 
-  if (single_store && !single_load)
+  if (single_store && !single_load && !flag_no_builtin)
     {
       gimple stmt = DR_STMT (single_store);
       tree rhs = gimple_assign_rhs1 (stmt);
@@ -1089,7 +1089,7 @@ classify_partition (loop_p loop, struct graph *rdg, partition_t partition)
       partition->niter = nb_iter;
       partition->plus_one = plus_one;
     }
-  else if (single_store && single_load)
+  else if (single_store && single_load && !flag_no_builtin)
     {
       gimple store = DR_STMT (single_store);
       gimple load = DR_STMT (single_load);

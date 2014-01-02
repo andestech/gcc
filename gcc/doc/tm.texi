@@ -2044,8 +2044,8 @@ Normally, IRA tries to estimate the costs for saving a register in the
 prologue and restoring it in the epilogue.  This discourages it from
 using call-saved registers.  If a machine wants to ensure that IRA
 allocates registers in the order given by REG_ALLOC_ORDER even if some
-call-saved registers appear earlier than call-used ones, this macro
-should be defined.
+call-saved registers appear earlier than call-used ones, then define this
+ macro as a C expression to nonzero. Default is 0.
 @end defmac
 
 @defmac IRA_HARD_REGNO_ADD_COST_MULTIPLIER (@var{regno})
@@ -9958,6 +9958,12 @@ This target hook returns @code{false} if the @var{caller} function
 cannot inline @var{callee}, based on target specific information.  By
 default, inlining is not allowed if the callee function has function
 specific target options and the caller does not use the same options.
+@end deftypefn
+
+@deftypefn {Target Hook} void TARGET_REGISTER_PASSES (void)
+This target hook register cusiomized passes for the particular
+target machine. You can insert the cusiomized passes by the
+@code{TARGET_REGISTER_PASSES} hook.
 @end deftypefn
 
 @node Emulated TLS

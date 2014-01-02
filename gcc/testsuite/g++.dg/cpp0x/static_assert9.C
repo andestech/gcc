@@ -1,5 +1,6 @@
 // PR c++/58837
 // { dg-require-effective-target c++11 }
+// { dg-options "-fdelete-null-pointer-checks" }
 
 void f();
 static_assert(f, "");

@@ -8,4 +8,12 @@ set torture_eval_before_compile {
   }
 }
 
+# Please see Andes Bugzilla #10942 for the details.
+if { [istarget "nds32*-*-*"] } {
+  # The __builtin_return_address(1) on nds32 target is able to
+  # return something useful as long as we always save $lp register
+  # in the stack.
+  set additional_flags "-malways-save-lp"
+}
+
 return 0

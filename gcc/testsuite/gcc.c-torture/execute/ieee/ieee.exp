@@ -30,6 +30,10 @@ load_lib c-torture.exp
 # Disable tests on machines with no hardware support for IEEE arithmetic.
 if { [istarget "vax-*-*"] || [ istarget "powerpc-*-*spe"] || [istarget "pdp11-*-*"] } { return }
 
+# Since we cannot use dg-skip-if or dg-require-effective-target for individual
+# test case under ieee category, we disable all ieee tests on nds32 fpu toolchains.
+if { [istarget "nds32*-*-*"] && [check_effective_target_nds32_ext_fpu] } { return }
+
 if $tracelevel then {
     strace $tracelevel
 }

@@ -851,10 +851,6 @@ Recognize the \"asm\" keyword
 fbuilding-libgcc
 C ObjC C++ ObjC++ Undocumented Var(flag_building_libgcc)
 
-fbuiltin
-C ObjC C++ ObjC++ Var(flag_no_builtin, 0)
-Recognize built-in functions
-
 fbuiltin-
 C ObjC C++ ObjC++ Joined
 
