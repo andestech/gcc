@@ -1509,7 +1509,7 @@ ffast-math
 Common Optimization
 
 ffat-lto-objects
-Common Var(flag_fat_lto_objects)
+Common Var(flag_fat_lto_objects) Init(1)
 Output lto objects containing both the intermediate language and binary output.
 
 ffinite-math-only
