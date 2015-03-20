@@ -1074,11 +1074,11 @@ proper position among the other output files.  */
 #endif
 
 #ifndef STARTFILE_CXX_SPEC
-#define STARTFILE_CXX_SPEC ""
+#define STARTFILE_CXX_SPEC STARTFILE_SPEC
 #endif
 
 #ifndef ENDFILE_CXX_SPEC
-#define ENDFILE_CXX_SPEC ""
+#define ENDFILE_CXX_SPEC ENDFILE_SPEC
 #endif
 
 static const char *asm_debug = ASM_DEBUG_SPEC;
