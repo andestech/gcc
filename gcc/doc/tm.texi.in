@@ -7235,6 +7235,8 @@ on this implementation detail.
 
 @hook TARGET_RELAYOUT_FUNCTION
 
+@hook TARGET_REGISTER_PASSES
+
 @node Emulated TLS
 @section Emulating TLS
 @cindex Emulated TLS
