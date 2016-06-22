@@ -1307,7 +1307,7 @@ static const struct compiler default_compilers[] =
   {".go", "#Go", 0, 1, 0},
   {".d", "#D", 0, 1, 0}, {".dd", "#D", 0, 1, 0}, {".di", "#D", 0, 1, 0},
   /* Next come the entries for C.  */
-  {".c", "@c", 0, 0, 1},
+  {".c", "@nds32_c", 0, 0, 1},
   {"@c",
    /* cc1 has an integrated ISO C preprocessor.  We should invoke the
       external preprocessor if -save-temps is given.  */
@@ -1322,6 +1322,38 @@ static const struct compiler default_compilers[] =
       %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
 	  cc1 %(cpp_unique_options) %(cc1_options)}}}\
       %{!fsyntax-only:%(invoke_as)}}}}", 0, 0, 1},
+  {"@nds32_c",
+   /* cc1 has an integrated ISO C preprocessor.  We should invoke the
+      external preprocessor if -save-temps is given.  */
+     "%{E|M|MM:%(trad_capable_cpp) %(cpp_options) %(cpp_debug_options)}\
+      %{mace:\
+	  %{!E:%{!M:%{!MM:\
+	      %{traditional:\
+%eGNU C no longer supports -traditional without -E}\
+	  %{save-temps*|traditional-cpp|no-integrated-cpp:%(trad_capable_cpp) \
+	      %(cpp_options) -o %{save-temps*:%b.i} %{!save-temps*:%g.i} \n\
+		cs2 %{mace-s2s*} %{save-temps*:%b.i} %{!save-temps*:%g.i} \
+		    -o %{save-temps*:%b.ace.i} %{!save-temps*:%g.ace.i} --\n\
+		cc1 -fpreprocessed %{save-temps*:%b.ace.i} %{!save-temps*:%g.ace.i} \
+	      %(cc1_options)}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      %(trad_capable_cpp) %(cpp_options) -o %u.i\n}}}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cs2 %{mace-s2s*} %U.i -o %u.ace.i --\n}}}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cc1 -fpreprocessed %U.ace.i %(cc1_options)}}}\
+	  %{!fsyntax-only:%(invoke_as)}}}}}\
+      %{!mace:\
+	  %{!E:%{!M:%{!MM:\
+	      %{traditional:\
+%eGNU C no longer supports -traditional without -E}\
+	  %{save-temps*|traditional-cpp|no-integrated-cpp:%(trad_capable_cpp) \
+	      %(cpp_options) -o %{save-temps*:%b.i} %{!save-temps*:%g.i} \n\
+		cc1 -fpreprocessed %{save-temps*:%b.i} %{!save-temps*:%g.i} \
+	      %(cc1_options)}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cc1 %(cpp_unique_options) %(cc1_options)}}}\
+	  %{!fsyntax-only:%(invoke_as)}}}}}", 0, 0, 1},
   {"-",
    "%{!E:%e-E or -x required when input is from standard input}\
     %(trad_capable_cpp) %(cpp_options) %(cpp_debug_options)", 0, 0, 0},
