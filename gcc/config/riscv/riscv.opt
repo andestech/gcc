@@ -138,6 +138,18 @@ Mask(RVC)
 
 Mask(RVE)
 
+Os1
+Target
+Optimize for size level 1. This option will disable IFC and EX9 to prevent performance drop.
+
+Os2
+Target
+Optimize for size level 2. This option will disable IFC and EX9 for innermost loop to prevent performance drop.
+
+Os3
+Target
+Optimize for size level 3 which mean don't care performance.
+
 mriscv-attribute
 Target Report Var(riscv_emit_attribute_p) Init(-1)
 Emit RISC-V ELF attribute.

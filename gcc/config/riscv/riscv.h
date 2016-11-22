@@ -55,6 +55,11 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_64BIT           (__riscv_xlen == 64)
 #endif /* IN_LIBGCC2 */
 
+#define CC1_SPEC \
+  " %{Os1:-Os -mno-save-restore}" \
+  " %{Os2:-Os}" \
+  " %{Os3:-Os}"
+
 #undef ASM_SPEC
 #define ASM_SPEC "\
 %(subtarget_asm_debugging_spec) \
