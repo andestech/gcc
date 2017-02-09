@@ -105,6 +105,16 @@ Enum(code_model) String(medlow) Value(CM_MEDLOW)
 EnumValue
 Enum(code_model) String(medany) Value(CM_MEDANY)
 
+; Compatible for nds32 toolchain
+EnumValue
+Enum(code_model) String(small) Value(CM_MEDLOW)
+
+EnumValue
+Enum(code_model) String(medium) Value(CM_MEDANY)
+
+EnumValue
+Enum(code_model) String(large) Value(CM_MEDANY)
+
 mexplicit-relocs
 Target Report Mask(EXPLICIT_RELOCS)
 Use %reloc() operators, rather than assembly macros, to load addresses.
