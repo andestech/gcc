@@ -23,6 +23,7 @@ along with GCC; see the file COPYING3.  If not see
 
 enum riscv_abi_type {
   ABI_ILP32,
+  ABI_ILP32E,
   ABI_ILP32F,
   ABI_ILP32D,
   ABI_LP64,
@@ -34,8 +35,42 @@ extern enum riscv_abi_type riscv_abi;
 enum riscv_code_model {
   CM_MEDLOW,
   CM_MEDANY,
-  CM_PIC
+  CM_PIC,
+  CM_LARGE
 };
 extern enum riscv_code_model riscv_cmodel;
+
+/* Multiply instruction configuration.  */
+enum riscv_mul_type
+{
+  MUL_TYPE_AUTO,
+  MUL_TYPE_FAST,
+  MUL_TYPE_SLOW
+};
+
+enum riscv_processor
+{
+  rocket,
+  vicuna,
+  vicuna2,
+  kavalan,
+  /* Used to mark the end of the processor table.  */
+  riscv_none
+};
+
+/* The ict model defines the address generation strategy.  */
+enum riscv_ict_model_type
+{
+  ICT_MODEL_TINY,
+  ICT_MODEL_SMALL,
+  ICT_MODEL_LARGE
+};
+
+extern enum riscv_ict_model_type riscv_ict_model;
+
+enum riscv_align_data {
+  riscv_align_data_type_xlen,
+  riscv_align_data_type_natural
+};
 
 #endif /* ! GCC_RISCV_OPTS_H */

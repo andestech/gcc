@@ -1,0 +1,1 @@
+MULTILIB_OPTIONS += mcmodel=medlow/mcmodel=medany/mcmodel=large

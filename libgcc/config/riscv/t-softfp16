@@ -1,0 +1,6 @@
+V5_OLD_FP16_ABI_SINGLE:=$(findstring __riscv_float_abi_single,$(shell $(gcc_compile_bare) -dM -E - </dev/null))
+V5_OLD_FP16_ABI_DOUBLE:=$(findstring __riscv_float_abi_double,$(shell $(gcc_compile_bare) -dM -E - </dev/null))
+
+ifneq ($(findstring $(V5_OLD_FP16_ABI_SINGLE)$(V5_OLD_FP16_ABI_DOUBLE), __riscv_float_abi_single __riscv_float_abi_double),)
+HOST_LIBGCC2_CFLAGS += -msoft-fp16
+endif

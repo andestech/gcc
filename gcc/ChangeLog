@@ -2245,7 +2245,8 @@
 
 2018-01-25  Release Manager
 
-	* GCC 7.3.0 released.
+	* config/riscv/elf.h (LIB_SPEC): Don't include -lgloss when nosys.specs
+	specified.
 
 2018-01-23  Eric Botcazou  <ebotcazou@adacore.com>
 

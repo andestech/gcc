@@ -142,7 +142,7 @@ CFILES = alloca.c argv.c asprintf.c atexit.c				\
 	partition.c pexecute.c						\
 	 pex-common.c pex-djgpp.c pex-msdos.c pex-one.c			\
 	 pex-unix.c pex-win32.c						\
-         physmem.c putenv.c						\
+         physmem.c putenv.c qsort.c					\
 	random.c regex.c rename.c rindex.c				\
 	rust-demangle.c							\
 	safe-ctype.c setenv.c setproctitle.c sha1.c sigsetmask.c        \
@@ -182,7 +182,7 @@ REQUIRED_OFILES =							\
 	./partition.$(objext) ./pexecute.$(objext) ./physmem.$(objext)	\
 	./pex-common.$(objext) ./pex-one.$(objext)			\
 	./@pexecute@.$(objext) ./vprintf-support.$(objext)		\
-	./rust-demangle.$(objext)					\
+	./rust-demangle.$(objext) ./qsort.$(objext)			\
 	./safe-ctype.$(objext)						\
 	./simple-object.$(objext) ./simple-object-coff.$(objext)	\
 	./simple-object-elf.$(objext) ./simple-object-mach-o.$(objext)	\
@@ -1151,6 +1151,15 @@ $(CONFIGURED_OFILES): stamp-picdir stamp-noasandir
 	  $(COMPILE.c) $(PICFLAG) $(NOASANFLAG) $(srcdir)/putenv.c -o noasan/$@; \
 	else true; fi
 	$(COMPILE.c) $(srcdir)/putenv.c $(OUTPUT_OPTION)
+
+./qsort.$(objext): $(srcdir)/qsort.c $(INCDIR)/ansidecl.h
+	if [ x"$(PICFLAG)" != x ]; then \
+	  $(COMPILE.c) $(PICFLAG) $(srcdir)/qsort.c -o pic/$@; \
+	else true; fi
+	if [ x"$(NOASANFLAG)" != x ]; then \
+ 	  $(COMPILE.c) $(PICFLAG) $(NOASANFLAG) $(srcdir)/qsort.c -o noasan/$@; \
+	else true; fi
+	  $(COMPILE.c) $(srcdir)/qsort.c $(OUTPUT_OPTION)
 
 ./random.$(objext): $(srcdir)/random.c $(INCDIR)/ansidecl.h
 	if [ x"$(PICFLAG)" != x ]; then \

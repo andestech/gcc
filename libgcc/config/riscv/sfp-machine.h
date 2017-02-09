@@ -41,6 +41,9 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define _FP_DIV_MEAT_D(R,X,Y)	_FP_DIV_MEAT_2_udiv(D,R,X,Y)
 #define _FP_DIV_MEAT_Q(R,X,Y)	_FP_DIV_MEAT_4_udiv(Q,R,X,Y)
 
+#if defined(__nds_fp16) || defined(__nds_soft_fp16)
+#define _FP_NANFRAC_H		_FP_QNANBIT_H
+#endif
 #define _FP_NANFRAC_S		_FP_QNANBIT_S
 #define _FP_NANFRAC_D		_FP_QNANBIT_D, 0
 #define _FP_NANFRAC_Q		_FP_QNANBIT_Q, 0, 0, 0
@@ -63,6 +66,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define _FP_DIV_MEAT_D(R,X,Y)	_FP_DIV_MEAT_1_udiv_norm(D,R,X,Y)
 #define _FP_DIV_MEAT_Q(R,X,Y)	_FP_DIV_MEAT_2_udiv(Q,R,X,Y)
 
+#define _FP_NANFRAC_H		_FP_QNANBIT_H
 #define _FP_NANFRAC_S		_FP_QNANBIT_S
 #define _FP_NANFRAC_D		_FP_QNANBIT_D
 #define _FP_NANFRAC_Q		_FP_QNANBIT_Q, 0
@@ -80,6 +84,9 @@ typedef unsigned int UTItype __attribute__ ((mode (TI)));
 typedef int __gcc_CMPtype __attribute__ ((mode (__libgcc_cmp_return__)));
 #define CMPtype __gcc_CMPtype
 
+#if defined(__nds_fp16) || defined(__nds_soft_fp16)
+#define _FP_NANSIGN_H		0
+#endif
 #define _FP_NANSIGN_S		0
 #define _FP_NANSIGN_D		0
 #define _FP_NANSIGN_Q		0

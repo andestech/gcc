@@ -1098,12 +1098,41 @@ powerpcle-*-eabi*)
 	extra_parts="$extra_parts crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o ecrti.o ecrtn.o ncrti.o ncrtn.o"
 	;;
 riscv*-*-linux*)
-	tmake_file="${tmake_file} riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}"
+	case "${with_arch}" in
+	*32imf* | *32imaf* | *64imf* | *64imaf* )
+		tmake_file="${tmake_file} riscv/t-softfp16 riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}"
+		;;
+	*)
+		tmake_file="${tmake_file} riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}"
+		;;
+	esac
+
 	extra_parts="$extra_parts crtbegin.o crtend.o crti.o crtn.o crtendS.o crtbeginT.o"
 	md_unwind_header=riscv/linux-unwind.h
 	;;
 riscv*-*-*)
-	tmake_file="${tmake_file} riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}"
+	case "${with_arch}" in
+	*32E* | *32e* )
+		tmake_file="${tmake_file} riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}e"
+		;;
+	*32imf* | *32imaf* | *64imf* | *64imaf* )
+		tmake_file="${tmake_file} riscv/t-softfp16 riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}"
+		;;
+	*)
+		tmake_file="${tmake_file} riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}"
+		;;
+	esac
+
+	# process --with-libc
+	case "${with_libc}" in
+	mculib)
+		case "${with_arch}" in
+		*32EM* | *32em* | *32IM* | *32im* )
+		    tmake_file="${tmake_file} riscv/t-riscv-mculib-generic"
+		    ;;
+		esac
+		;;
+	esac
 	extra_parts="$extra_parts crtbegin.o crtend.o crti.o crtn.o"
 	;;
 rs6000-ibm-aix4.[3456789]* | powerpc-ibm-aix4.[3456789]*)

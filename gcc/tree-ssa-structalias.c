@@ -40,7 +40,8 @@
 #include "params.h"
 #include "gimple-walk.h"
 #include "varasm.h"
-
+#include "gimple-pretty-print.h"
+#include "tree-eh.h"
 
 /* The idea behind this analyzer is to generate set constraints from the
    program, then solve the resulting constraints in order to generate the
@@ -8153,4 +8154,332 @@ simple_ipa_opt_pass *
 make_pass_ipa_pta (gcc::context *ctxt)
 {
   return new pass_ipa_pta (ctxt);
+}
+
+
+/* Check if the input pointer parameter is escaped. */
+static tree
+find_ptr_parm_escape (tree *tp, int *walk_subtrees, void *data)
+{
+  tree t = *tp;
+  bool *may_escape_ptr_parm = (bool *)data;
+
+  if (*may_escape_ptr_parm)
+    {
+      /* We don't consider the individual parameter, but the function unit. */
+      *walk_subtrees = 0;
+    }
+  else if (TREE_CODE (t) == MEM_REF || TREE_CODE (t) == INDIRECT_REF)
+    {
+      /* don't care of `*ptr_parm' or other `*...' */
+      *walk_subtrees = 0;
+    }
+  else if (TREE_CODE (t) == PARM_DECL)
+    {
+      /* This parameter may be escape! e.g.
+       *    ... = ptr_parm;
+       *    ... = &ptr_parm;
+       *    func(ptr_parm);
+       *    func(&ptr_parm);
+       *    ... other cases ...
+       */
+      *may_escape_ptr_parm = true;
+      *walk_subtrees = 0;
+    }
+
+  return NULL_TREE;
+}
+
+/* Check if the input pointer parameter is escaped. */
+static bool
+find_escaped_ptr_parm_in (gimple *stmt)
+{
+  size_t i;
+  bool may_escape_ptr_parm = false;
+
+  if (gimple_code (stmt) != GIMPLE_PHI)
+    {
+      for (i = 0; i < gimple_num_ops (stmt); i++)
+        {
+         walk_tree (gimple_op_ptr (stmt, i), find_ptr_parm_escape, &may_escape_ptr_parm, NULL);
+          if (may_escape_ptr_parm)
+            return true;
+       }
+    }
+  else
+    {
+      walk_tree (gimple_phi_result_ptr (stmt), find_ptr_parm_escape, &may_escape_ptr_parm, NULL);
+      if (may_escape_ptr_parm)
+        return true;
+
+      for (i = 0; i < gimple_phi_num_args (stmt); i++)
+       {
+         tree arg = gimple_phi_arg_def (stmt, i);
+         walk_tree (&arg, find_ptr_parm_escape, &may_escape_ptr_parm, NULL);
+          if (may_escape_ptr_parm)
+            return true;
+       }
+    }
+
+  return false;
+}
+
+static unsigned int
+find_referenced_ptrargs (void)
+{
+  basic_block bb;
+  gimple_stmt_iterator si;
+  bool may_escape_ptr_parm = false;
+  tree arg0;
+
+  /* Prepare for reduce_passed_addressof() simple optimization.
+   * Accept only one pointer-to-pure parmeter and try to skip any possible
+   * damages.
+   */
+  arg0 = DECL_ARGUMENTS (current_function_decl);
+  if (   ! arg0
+      || TREE_CHAIN (arg0)
+      || ! POINTER_TYPE_P (TREE_TYPE (arg0))
+      || AGGREGATE_TYPE_P (TREE_TYPE (TREE_TYPE (arg0)))
+      || POINTER_TYPE_P (TREE_TYPE (TREE_TYPE (arg0)))
+     )
+    {
+      may_escape_ptr_parm = true;
+      goto L_set_escape_ptr_parm;
+    }
+
+  FOR_EACH_BB_FN (bb, cfun)
+    {
+      for (si = gsi_start_bb (bb); !gsi_end_p (si); gsi_next (&si))
+        {
+          gimple *stmt = gsi_stmt (si);
+          if (is_gimple_debug (stmt))
+            continue;
+          may_escape_ptr_parm = find_escaped_ptr_parm_in (gsi_stmt (si));
+          if (may_escape_ptr_parm)
+            goto L_set_escape_ptr_parm;
+        }
+
+      for (si = gsi_start_phis (bb); !gsi_end_p (si); gsi_next (&si))
+        {
+          may_escape_ptr_parm = find_escaped_ptr_parm_in (gsi_stmt (si));
+          if (may_escape_ptr_parm)
+            goto L_set_escape_ptr_parm;
+       }
+    }
+
+L_set_escape_ptr_parm:
+  cfun->not_escape_ptr_parm = !may_escape_ptr_parm;
+
+  if (dump_file)
+    {
+      if (cfun->not_escape_ptr_parm)
+        fprintf (dump_file, "NOTE: %s may not escape the pointer parameter.\n\n", get_name (current_function_decl));
+    }
+
+  return 0;
+}
+
+namespace {
+
+const pass_data pass_data_referenced_ptrargs =
+{
+  GIMPLE_PASS,			/* type */
+  "referenced_ptrargs",         /* name */
+  OPTGROUP_NONE,                /* optinfo_flags */
+  TV_NONE,                      /* tv_id */
+  PROP_cfg,                     /* properties_required */
+  0,                            /* properties_provided */
+  0,                            /* properties_destroyed */
+  0,                            /* todo_flags_start */
+  0,                            /* todo_flags_finish */
+};
+
+class pass_referenced_ptrargs : public gimple_opt_pass
+{
+public:
+  pass_referenced_ptrargs (gcc::context *ctxt)
+    : gimple_opt_pass (pass_data_referenced_ptrargs, ctxt)
+  {}
+
+  /* opt_pass methods: */
+  virtual bool gate (function *) { return flag_ipa_escape_analysis; }
+  virtual unsigned int execute (function *) { return find_referenced_ptrargs (); }
+}; // class pass_referenced_ptrargs
+
+} //end of namespace
+
+gimple_opt_pass *
+make_pass_referenced_ptrargs (gcc::context *ctxt)
+{
+  return new pass_referenced_ptrargs (ctxt);
+}
+
+
+/* Try to reduce passing &var arg for improving points-to
+ * analysis.
+ *
+ * If func(&var) does not escape the current function's local 'var'
+ * outside, we can modify it to
+ *
+ *     reg = var;      // load 'var' to gimple 'reg'
+ *     tmp = reg;      // store to 'tmp'
+ *     func(&tmp);     // maybe update
+ *     reg = tmp;      // load 'tmp' to gimple 'reg'
+ *     var = reg;      // store to 'var'
+ *
+ * So the points-to analysis may not think 'var' escaped. If lucky, the
+ * 'var' maybe become no longer having address taken.  This may help
+ * the latter optimizations.
+ *
+ * The previous pass find_referenced_ptrargs() has checked if
+ * 'func()' escaped the input argument or not.
+ *
+ * Don't care above redundancy 'tmp' codes, because the latter TREE-
+ * and RTL-level will optimize them.
+ */
+static unsigned int
+reduce_passed_addressof (void)
+{
+  basic_block bb;
+  gimple_stmt_iterator si;
+  struct function *func;
+
+  if (!flag_ipa_escape_analysis)
+    return 0;
+
+  if (dump_file)
+    fprintf (dump_file,
+             "Try to reduce passed addressof parameters. (%s)\n\n",
+             get_name (current_function_decl));
+
+  FOR_EACH_BB_FN (bb, cfun)
+    {
+      for (si = gsi_start_bb (bb); !gsi_end_p (si); gsi_next (&si))
+        {
+          tree fndecl, var, arg0, tmp, reg;
+          gimple *load1_stmt, *store1_stmt;
+          gimple *call_stmt;
+          gimple *load2_stmt, *store2_stmt;
+
+          call_stmt = gsi_stmt (si);
+          if (gimple_code (call_stmt) != GIMPLE_CALL)
+            continue;
+
+          fndecl = gimple_call_fndecl (call_stmt);
+          if (!fndecl)
+            continue;
+
+          func = DECL_STRUCT_FUNCTION (fndecl);
+          if (!func || !func->not_escape_ptr_parm)
+           continue;
+
+          /* TODO: maybe do more tuning if we study more! */
+          if (gimple_call_num_args (call_stmt) != 1)
+            continue;
+
+	  /* Do not optimize for the throw statement.  Because the statement has
+	     to be kept as the last statement in a basic block.  */
+	  if (lookup_stmt_eh_lp (call_stmt))
+	    continue;
+
+          arg0 = gimple_call_arg (call_stmt, 0);
+          if (TREE_CODE (arg0) != ADDR_EXPR)
+            continue;
+
+         /* Skip any damaged conditions */
+          var = TREE_OPERAND (arg0, 0);
+          if (   TREE_CODE (var) != VAR_DECL
+              || AGGREGATE_TYPE_P (TREE_TYPE (var))
+             || POINTER_TYPE_P (var)
+              || is_global_var (var)
+              || TYPE_QUALS (TREE_TYPE (var)))
+            continue;
+
+          /* func(&var);
+           * ==> load1:  reg = var;    // load 'var' to gimple 'reg'
+           *     store1: tmp = reg;    // store to 'tmp'
+           *     call:   func(&tmp);   // maybe update
+           *     load2:  reg = tmp;    // load 'tmp' to gimple 'reg'
+           *     store2: var = reg;    // store to 'var'
+           */
+          if (dump_file)
+           {
+             fprintf (dump_file, "Original call statement that may not escape the pointer parameter {\n\n");
+             fprintf (dump_file, "  "); print_gimple_stmt (dump_file, call_stmt, 0, 0);
+           }
+
+          reg = create_tmp_var (TREE_TYPE (var), "tmp_reg");
+          tmp = create_tmp_var (TREE_TYPE (var), "tmp_escaped");
+          TREE_ADDRESSABLE (tmp) = 1;
+
+          /* load1:  reg = var; */
+          load1_stmt = gimple_build_assign (reg, var);
+          gsi_insert_before (&si, load1_stmt, GSI_SAME_STMT);
+
+          /* store1: tmp = reg; */
+          store1_stmt = gimple_build_assign (tmp, reg);
+          gsi_insert_before (&si, store1_stmt, GSI_SAME_STMT);
+
+          /* call: func(&tmp); */
+          TREE_OPERAND (arg0, 0) = tmp;
+          update_stmt (call_stmt);
+
+          /* store2: var = reg; */
+          store2_stmt = gimple_build_assign (var, reg);
+          gsi_insert_after (&si, store2_stmt, GSI_SAME_STMT);
+
+          /* load2:  reg = tmp; */
+          load2_stmt = gimple_build_assign (reg, tmp);
+          gsi_insert_after (&si, load2_stmt, GSI_SAME_STMT);
+
+          if (dump_file)
+            {
+              fprintf (dump_file, "\n} is modified to {\n\n");
+              fprintf (dump_file, "  "); print_gimple_stmt (dump_file, load1_stmt, 0, 0);
+              fprintf (dump_file, "  "); print_gimple_stmt (dump_file, store1_stmt, 0, 0);
+              fprintf (dump_file, "  "); print_gimple_stmt (dump_file, call_stmt, 0, 0);
+              fprintf (dump_file, "  "); print_gimple_stmt (dump_file, load2_stmt, 0, 0);
+              fprintf (dump_file, "  "); print_gimple_stmt (dump_file, store2_stmt, 0, 0);
+              fprintf (dump_file, "\n}\n\n");
+            }
+        }
+    }
+
+  return 0;
+}
+
+
+namespace {
+const pass_data pass_data_reduce_passed_addressof =
+{
+  GIMPLE_PASS,			/* type */
+  "reduce_pass_addr",           /* name */
+  OPTGROUP_NONE,                /* optinfo_flags */
+  TV_NONE,                      /* tv_id */
+  PROP_cfg,                     /* properties_required */
+  0,                            /* properties_provided */
+  0,                            /* properties_destroyed */
+  0,                            /* todo_flags_start */
+  0,                            /* todo_flags_finish */
+};
+
+class pass_reduce_passed_addressof : public gimple_opt_pass
+{
+public:
+  pass_reduce_passed_addressof (gcc::context *ctxt)
+    : gimple_opt_pass (pass_data_referenced_ptrargs, ctxt)
+  {}
+
+  /* opt_pass methods: */
+  virtual bool gate (function *) { return flag_ipa_escape_analysis; }
+  virtual unsigned int execute (function *) { return reduce_passed_addressof (); }
+}; // class pass_referenced_ptrargs
+
+} //end of namespace
+
+gimple_opt_pass *
+make_pass_reduce_passed_addressof (gcc::context *ctxt)
+{
+  return new pass_reduce_passed_addressof (ctxt);
 }

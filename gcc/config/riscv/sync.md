@@ -64,8 +64,14 @@
       [(match_operand:GPR 1 "reg_or_0_operand" "rJ")
        (match_operand:SI 2 "const_int_operand")]      ;; model
       UNSPEC_ATOMIC_STORE))]
-  "TARGET_ATOMIC"
-  "%F2amoswap.<amo>%A2 zero,%z1,%0"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
+{
+  if (!TARGET_ATOMIC)
+    error ("Atomic not support, try -matomic");
+
+  return "%F2amoswap.<amo>%A2 zero,%z1,%0";
+
+}
   [(set (attr "length") (const_int 8))])
 
 (define_insn "atomic_<atomic_optab><mode>"
@@ -75,8 +81,13 @@
 		     (match_operand:GPR 1 "reg_or_0_operand" "rJ"))
 	   (match_operand:SI 2 "const_int_operand")] ;; model
 	 UNSPEC_SYNC_OLD_OP))]
-  "TARGET_ATOMIC"
-  "%F2amo<insn>.<amo>%A2 zero,%z1,%0"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
+{
+  if (!TARGET_ATOMIC)
+    error ("Atomic not support, try -matomic");
+
+  return "%F2amo<insn>.<amo>%A2 zero,%z1,%0";
+}
   [(set (attr "length") (const_int 8))])
 
 (define_insn "atomic_fetch_<atomic_optab><mode>"
@@ -88,8 +99,13 @@
 		     (match_operand:GPR 2 "reg_or_0_operand" "rJ"))
 	   (match_operand:SI 3 "const_int_operand")] ;; model
 	 UNSPEC_SYNC_OLD_OP))]
-  "TARGET_ATOMIC"
-  "%F3amo<insn>.<amo>%A3 %0,%z2,%1"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
+{
+  if (!TARGET_ATOMIC)
+    error ("Atomic not support, try -matomic");
+
+  return "%F3amo<insn>.<amo>%A3 %0,%z2,%1";
+}
   [(set (attr "length") (const_int 8))])
 
 (define_insn "atomic_exchange<mode>"
@@ -100,8 +116,13 @@
 	  UNSPEC_SYNC_EXCHANGE))
    (set (match_dup 1)
 	(match_operand:GPR 2 "register_operand" "0"))]
-  "TARGET_ATOMIC"
-  "%F3amoswap.<amo>%A3 %0,%z2,%1"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
+{
+  if (!TARGET_ATOMIC)
+    error ("Atomic not support, try -matomic");
+
+  return "%F3amoswap.<amo>%A3 %0,%z2,%1";
+}
   [(set (attr "length") (const_int 8))])
 
 (define_insn "atomic_cas_value_strong<mode>"
@@ -114,8 +135,13 @@
 			      (match_operand:SI 5 "const_int_operand")] ;; mod_f
 	 UNSPEC_COMPARE_AND_SWAP))
    (clobber (match_scratch:GPR 6 "=&r"))]
-  "TARGET_ATOMIC"
-  "%F5 1: lr.<amo>%A5 %0,%1; bne %0,%z2,1f; sc.<amo>%A4 %6,%z3,%1; bnez %6,1b; 1:"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
+{
+  if (!TARGET_ATOMIC)
+    error ("Atomic not support, try -matomic");
+
+  return "%F5 1: lr.<amo>%A5 %0,%1; bne %0,%z2,1f; sc.<amo>%A4 %6,%z3,%1; bnez %6,1b; 1:";
+}
   [(set (attr "length") (const_int 20))])
 
 (define_expand "atomic_compare_and_swap<mode>"
@@ -127,8 +153,11 @@
    (match_operand:SI 5 "const_int_operand" "")  ;; is_weak
    (match_operand:SI 6 "const_int_operand" "")  ;; mod_s
    (match_operand:SI 7 "const_int_operand" "")] ;; mod_f
-  "TARGET_ATOMIC"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
 {
+  if (!TARGET_ATOMIC)
+    error ("Atomic not support, try -matomic");
+
   emit_insn (gen_atomic_cas_value_strong<mode> (operands[1], operands[2],
 						operands[3], operands[4],
 						operands[6], operands[7]));
@@ -156,8 +185,11 @@
   [(match_operand:QI 0 "register_operand" "")     ;; bool output
    (match_operand:QI 1 "memory_operand" "+A")    ;; memory
    (match_operand:SI 2 "const_int_operand" "")]   ;; model
-  "TARGET_ATOMIC"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
 {
+  if (!TARGET_ATOMIC)
+    error ("Atomic not support, try -matomic");
+
   /* We have no QImode atomics, so use the address LSBs to form a mask,
      then use an aligned SImode atomic. */
   rtx result = operands[0];

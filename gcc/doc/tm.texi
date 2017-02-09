@@ -10233,6 +10233,12 @@ specific target options and the caller does not use the same options.
 This target hook fixes function @var{fndecl} after attributes are processed. Default does nothing. On ARM, the default function's alignment is updated with the attribute target.
 @end deftypefn
 
+@deftypefn {Target Hook} void TARGET_REGISTER_PASSES (void)
+This target hook register cusiomized passes for the particular
+target machine. You can insert the cusiomized passes by the
+@code{TARGET_REGISTER_PASSES} hook.
+@end deftypefn
+
 @node Emulated TLS
 @section Emulating TLS
 @cindex Emulated TLS

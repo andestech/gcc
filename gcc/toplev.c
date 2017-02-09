@@ -2111,6 +2111,9 @@ toplev::main (int argc, char **argv)
   /* Perform language-specific options initialization.  */
   lang_hooks.init_options (save_decoded_options_count, save_decoded_options);
 
+  /* Registering target specific pass.  */
+  targetm.register_passes ();
+
   /* Parse the options and do minimal processing; basically just
      enough to default flags appropriately.  */
   decode_options (&global_options, &global_options_set,

@@ -972,11 +972,14 @@ See RS/6000 and PowerPC Options.
 -mdiv  -mno-div @gol
 -march=@var{ISA-string} @gol
 -mtune=@var{processor-string} @gol
+-mpreferred-stack-boundary=@var{num} @gol
 -msmall-data-limit=@var{N-bytes} @gol
 -msave-restore  -mno-save-restore @gol
 -mstrict-align -mno-strict-align @gol
 -mcmodel=medlow -mcmodel=medany @gol
--mexplicit-relocs  -mno-explicit-relocs @gol}
+-mexplicit-relocs  -mno-explicit-relocs @gol
+-mrelax -mno-relax @gol
+-malign-data=@var{type}}
 
 @emph{RL78 Options}
 @gccoptlist{-msim  -mmul=none  -mmul=g13  -mmul=g14  -mallregs @gol
@@ -20943,6 +20946,16 @@ lower-case.  Examples include @samp{rv64i}, @samp{rv32g}, and @samp{rv32imaf}.
 Optimize the output for the given processor, specified by microarchitecture
 name.
 
+@item -mpreferred-stack-boundary=@var{num}
+@opindex mpreferred-stack-boundary
+Attempt to keep the stack boundary aligned to a 2 raised to @var{num}
+byte boundary.  If @option{-mpreferred-stack-boundary} is not specified,
+the default is 4 (16 bytes or 128-bits).
+
+@strong{Warning:} If you use this switch, then you must build all modules with
+the same value, including any libraries.  This includes the system libraries
+and startup modules.
+
 @item -msmall-data-limit=@var{n}
 @opindex msmall-data-limit
 Put global and static data smaller than @var{n} bytes into a special section
@@ -20981,6 +20994,18 @@ Use or do not use assembler relocation operators when dealing with symbolic
 addresses.  The alternative is to use assembler macros instead, which may
 limit optimization.
 
+@item -mrelax
+@itemx -mno-relax
+Take advantage of linker relaxations to reduce the number of instructions
+required to materialize symbol addresses. The default is to take advantage of
+linker relaxations.
+
+@item -malign-data=@var{type}
+@opindex malign-data
+Control how GCC aligns variables and constants of array, structure, or union
+types.  Supported values for @var{type} are @samp{xlen} which uses x register
+width as the alignment value, and @samp{natural} which uses natural alignment.
+@samp{xlen} is the default.
 @end table
 
 @node RL78 Options

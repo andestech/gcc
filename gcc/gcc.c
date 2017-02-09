@@ -1062,6 +1062,14 @@ proper position among the other output files.  */
 # define SYSROOT_HEADERS_SUFFIX_SPEC ""
 #endif
 
+#ifndef STARTFILE_CXX_SPEC
+#define STARTFILE_CXX_SPEC STARTFILE_SPEC
+#endif
+
+#ifndef ENDFILE_CXX_SPEC
+#define ENDFILE_CXX_SPEC ENDFILE_SPEC
+#endif
+
 static const char *asm_debug = ASM_DEBUG_SPEC;
 static const char *cpp_spec = CPP_SPEC;
 static const char *cc1_spec = CC1_SPEC;
@@ -1088,6 +1096,9 @@ static const char *sysroot_spec = SYSROOT_SPEC;
 static const char *sysroot_suffix_spec = SYSROOT_SUFFIX_SPEC;
 static const char *sysroot_hdrs_suffix_spec = SYSROOT_HEADERS_SUFFIX_SPEC;
 static const char *self_spec = "";
+
+static const char *startfile_cxx_spec = STARTFILE_CXX_SPEC;
+static const char *endfile_cxx_spec = ENDFILE_CXX_SPEC;
 
 /* Standard options to cpp, cc1, and as, to reduce duplication in specs.
    There should be no need to override these in target dependent files,
@@ -1304,7 +1315,7 @@ static const struct compiler default_compilers[] =
   {".zip", "#Java", 0, 0, 0}, {".jar", "#Java", 0, 0, 0},
   {".go", "#Go", 0, 1, 0},
   /* Next come the entries for C.  */
-  {".c", "@c", 0, 0, 1},
+  {".c", "@nds32_c", 0, 0, 1},
   {"@c",
    /* cc1 has an integrated ISO C preprocessor.  We should invoke the
       external preprocessor if -save-temps is given.  */
@@ -1319,6 +1330,38 @@ static const struct compiler default_compilers[] =
       %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
 	  cc1 %(cpp_unique_options) %(cc1_options)}}}\
       %{!fsyntax-only:%(invoke_as)}}}}", 0, 0, 1},
+  {"@nds32_c",
+   /* cc1 has an integrated ISO C preprocessor.  We should invoke the
+      external preprocessor if -save-temps is given.  */
+     "%{E|M|MM:%(trad_capable_cpp) %(cpp_options) %(cpp_debug_options)}\
+      %{mace:\
+	  %{!E:%{!M:%{!MM:\
+	      %{traditional:\
+%eGNU C no longer supports -traditional without -E}\
+	  %{save-temps*|traditional-cpp|no-integrated-cpp:%(trad_capable_cpp) \
+	      %(cpp_options) -o %{save-temps*:%b.i} %{!save-temps*:%g.i} \n\
+		cs2 %{mace-s2s*} %{save-temps*:%b.i} %{!save-temps*:%g.i} \
+		    -o %{save-temps*:%b.ace.i} %{!save-temps*:%g.ace.i} --\n\
+		cc1 -fpreprocessed %{save-temps*:%b.ace.i} %{!save-temps*:%g.ace.i} \
+	      %(cc1_options)}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      %(trad_capable_cpp) %(cpp_options) -o %u.i\n}}}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cs2 %{mace-s2s*} %U.i -o %u.ace.i --\n}}}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cc1 -fpreprocessed %U.ace.i %(cc1_options)}}}\
+	  %{!fsyntax-only:%(invoke_as)}}}}}\
+      %{!mace:\
+	  %{!E:%{!M:%{!MM:\
+	      %{traditional:\
+%eGNU C no longer supports -traditional without -E}\
+	  %{save-temps*|traditional-cpp|no-integrated-cpp:%(trad_capable_cpp) \
+	      %(cpp_options) -o %{save-temps*:%b.i} %{!save-temps*:%g.i} \n\
+		cc1 -fpreprocessed %{save-temps*:%b.i} %{!save-temps*:%g.i} \
+	      %(cc1_options)}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cc1 %(cpp_unique_options) %(cc1_options)}}}\
+	  %{!fsyntax-only:%(invoke_as)}}}}}", 0, 0, 1},
   {"-",
    "%{!E:%e-E or -x required when input is from standard input}\
     %(trad_capable_cpp) %(cpp_options) %(cpp_debug_options)", 0, 0, 0},
@@ -1603,6 +1646,9 @@ static struct spec_list static_specs[] =
   INIT_STATIC_SPEC ("sysroot_suffix_spec",	&sysroot_suffix_spec),
   INIT_STATIC_SPEC ("sysroot_hdrs_suffix_spec",	&sysroot_hdrs_suffix_spec),
   INIT_STATIC_SPEC ("self_spec",		&self_spec),
+
+  INIT_STATIC_SPEC ("startfile_cxx",		&startfile_cxx_spec),
+  INIT_STATIC_SPEC ("endfile_cxx",		&endfile_cxx_spec),
 };
 
 #ifdef EXTRA_SPECS		/* additional specs needed */
@@ -3476,10 +3522,15 @@ add_preprocessor_option (const char *option, int len)
   preprocessor_options.safe_push (save_string (option, len));
 }
 
+/* -mace=/path/to/libacetool.so */
+static const char *acetool = NULL;
+
 static void
 add_assembler_option (const char *option, int len)
 {
   assembler_options.safe_push (save_string (option, len));
+  if (strncmp(option, "-mace=", 6) == 0)
+    acetool = assembler_options.last();
 }
 
 static void
@@ -4649,6 +4700,15 @@ set_collect_gcc_options (void)
 		sizeof ("COLLECT_GCC_OPTIONS=") - 1);
 
   first_time = TRUE;
+
+  if (acetool != NULL)
+    {
+      obstack_grow (&collect_obstack, "'-Wa,", 5);
+      obstack_grow (&collect_obstack, acetool, strlen (acetool));
+      obstack_grow (&collect_obstack, "'", 1);
+      first_time = FALSE;
+    }
+
   for (i = 0; (int) i < n_switches; i++)
     {
       const char *const *args;
@@ -5775,7 +5835,11 @@ do_spec_1 (const char *spec, int inswitch, const char *soft_matched_part)
 	    break;
 
 	  case 'E':
-	    value = do_spec_1 (endfile_spec, 0, NULL);
+	    if (lang_specific_is_c_plus_plus ())
+	      value = do_spec_1 (endfile_cxx_spec, 0, NULL);
+	    else
+	      value = do_spec_1 (endfile_spec, 0, NULL);
+
 	    if (value != 0)
 	      return value;
 	    break;
@@ -5820,7 +5884,11 @@ do_spec_1 (const char *spec, int inswitch, const char *soft_matched_part)
 	    break;
 
 	  case 'S':
-	    value = do_spec_1 (startfile_spec, 0, NULL);
+	    if (lang_specific_is_c_plus_plus ())
+	      value = do_spec_1 (startfile_cxx_spec, 0, NULL);
+	    else
+	      value = do_spec_1 (startfile_spec, 0, NULL);
+
 	    if (value != 0)
 	      return value;
 	    break;
@@ -10116,6 +10184,7 @@ driver::finalize ()
   added_libraries = 0;
   XDELETEVEC (outfiles);
   outfiles = NULL;
+  acetool = NULL;
   spec_lang = 0;
   last_language_n_infiles = 0;
   gcc_input_filename = NULL;

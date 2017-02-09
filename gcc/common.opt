@@ -797,6 +797,10 @@ Wvector-operation-performance
 Common Var(warn_vector_operation_performance) Warning
 Warn when a vector operation is compiled outside the SIMD.
 
+Wrestrict_argument
+Common Var(warn_argument_restrict) Warning
+Warn when an argument is set to restrict by -mrestrict-argument option.
+
 Xassembler
 Driver Separate
 
@@ -966,6 +970,14 @@ Does nothing. Preserved for backward compatibility.
 fargument-noalias-anything
 Common Ignore
 Does nothing. Preserved for backward compatibility.
+
+mrestrict-argument
+Common Report Var(flag_restrict_argument) Optimization
+Force pointer arguments to be qualified with restrict keyword.
+
+mipa-escape-analysis
+Common Report Var(flag_ipa_escape_analysis) Optimization
+Try to reduce the number of passing &var argument for improving points-to analysis.
 
 fsanitize=
 Common Driver Report Joined
@@ -1351,7 +1363,7 @@ ffast-math
 Common Optimization
 
 ffat-lto-objects
-Common Var(flag_fat_lto_objects)
+Common Var(flag_fat_lto_objects) Init(1)
 Output lto objects containing both the intermediate language and binary output.
 
 ffinite-math-only
@@ -1427,6 +1439,10 @@ fgcse-after-reload
 Common Report Var(flag_gcse_after_reload) Optimization
 Perform global common subexpression elimination after register allocation has
 finished.
+
+fgcse-const
+Common Report Var(flag_gcse_const) Optimization
+Always enable const_int in GCSE optimization pass.
 
 Enum
 Name(dwarf_gnat_encodings) Type(int)
@@ -2635,6 +2651,10 @@ Common Driver Negative(fuse-ld=gold)
 Use the bfd linker instead of the default linker.
 
 fuse-ld=gold
+Common Driver Negative(fuse-ld=lld)
+Use the gold linker instead of the default linker.
+
+fuse-ld=lld
 Common Driver Negative(fuse-ld=bfd)
 Use the gold linker instead of the default linker.
 

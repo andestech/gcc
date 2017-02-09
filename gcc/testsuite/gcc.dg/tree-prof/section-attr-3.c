@@ -4,7 +4,7 @@
 /* { dg-require-effective-target freorder } */
 /* { dg-options "-O2 -fno-profile-reorder-functions -freorder-blocks-and-partition -save-temps" } */
 
-#define SIZE 10000
+#define SIZE 1000
 
 #define NOINLINE __attribute__((noinline)) __attribute__ ((noclone))
 
@@ -20,7 +20,7 @@ main (int argc, char *argv[])
   int i;
   buf_hot =  "hello";
   buf_cold = "world";
-  for (i = 0; i < 1000000; i++)
+  for (i = 0; i < 10000; i++)
     foo (argc);
   return 0;
 }

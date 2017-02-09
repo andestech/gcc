@@ -27,6 +27,9 @@
 (define_register_constraint "j" "SIBCALL_REGS"
   "@internal")
 
+(define_register_constraint "e" "TARGET_RVE ? T0_REG : A7_REG"
+  "A syscall register.")
+
 ;; Avoid using register t0 for JALR's argument, because for some
 ;; microarchitectures that is a return-address stack hint.
 (define_register_constraint "l" "JALR_REGS"
@@ -48,6 +51,11 @@
   "A 5-bit unsigned immediate for CSR access instructions."
   (and (match_code "const_int")
        (match_test "IN_RANGE (ival, 0, 31)")))
+
+(define_constraint "Lu03"
+  "A 3-bit unsigned immediate."
+  (and (match_code "const_int")
+       (match_test "IN_RANGE (ival, 0, 7)")))
 
 ;; Floating-point constant +0.0, used for FCVT-based moves when FMV is
 ;; not available in RV32.
@@ -76,3 +84,93 @@
    A constant @code{move_operand}."
   (and (match_operand 0 "move_operand")
        (match_test "CONSTANT_P (op)")))
+
+(define_constraint "Bz07"
+  "Zero extended immediate 7-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 7) && ival >= 0")))
+
+(define_constraint "u01"
+  "Unsigned immediate 1-bit value"
+  (and (match_code "const_int")
+       (match_test "ival == 1 || ival == 0")))
+
+(define_constraint "u02"
+  "Unsigned immediate 2-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 2) && ival >= 0")))
+
+(define_constraint "u03"
+  "Unsigned immediate 3-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 3) && ival >= 0")))
+
+(define_constraint "u04"
+  "Unsigned immediate 4-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 4) && ival >= 0")))
+
+(define_constraint "u05"
+  "Unsigned immediate 5-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 5) && ival >= 0")))
+
+(define_constraint "u06"
+  "Unsigned immediate 6-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 6) && ival >= 0")))
+
+(define_constraint "u08"
+  "Unsigned immediate 8-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 8) && ival >= 0")))
+
+(define_constraint "D07"
+  "A constraint that matches the integers 2^(0...7)."
+  (and (match_code "const_int")
+       (match_test "(unsigned) exact_log2 (ival) <= 7")))
+
+(define_constraint "v00"
+  "Constant value 1"
+  (and (match_code "const_int")
+       (match_test "ival == 0")))
+
+(define_constraint "v01"
+  "Constant value 1"
+  (and (match_code "const_int")
+       (match_test "ival == 1")))
+
+(define_constraint "v02"
+  "Constant value 2"
+  (and (match_code "const_int")
+       (match_test "ival == 2")))
+
+(define_constraint "v03"
+  "Constant value 3"
+  (and (match_code "const_int")
+       (match_test "ival == 3")))
+
+(define_constraint "v04"
+  "Constant value 4"
+  (and (match_code "const_int")
+       (match_test "ival == 4")))
+
+(define_constraint "v08"
+  "Constant value 8"
+  (and (match_code "const_int")
+       (match_test "ival == 8")))
+
+(define_constraint "Bext"
+  "Sequence bit extract."
+  (and (match_code "const_int")
+       (match_test "(ival & (ival + 1)) == 0")))
+
+(define_constraint "v15"
+  "Constant value 15"
+  (and (match_code "const_int")
+       (match_test "ival == 15")))
+
+(define_constraint "v16"
+  "Constant value 16"
+  (and (match_code "const_int")
+       (match_test "ival == 16")))
