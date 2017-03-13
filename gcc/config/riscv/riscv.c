@@ -1598,7 +1598,8 @@ riscv_rtx_costs (rtx x, machine_mode mode, int outer_code, int opno ATTRIBUTE_UN
   switch (GET_CODE (x))
     {
     case CONST_INT:
-      if (riscv_immediate_operand_p (outer_code, INTVAL (x)))
+      if (riscv_immediate_operand_p (outer_code, INTVAL (x))
+	  || (outer_code == SET && LUI_OPERAND (INTVAL (x))))
 	{
 	  *total = 0;
 	  return true;

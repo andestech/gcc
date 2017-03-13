@@ -1578,6 +1578,10 @@ Common Report Var(flag_gcse_after_reload) Optimization
 Perform global common subexpression elimination after register allocation has
 finished.
 
+fgcse-const
+Common Report Var(flag_gcse_const) Optimization
+Always enable const_int in GCSE optimization pass.
+
 Enum
 Name(dwarf_gnat_encodings) Type(int)
 
