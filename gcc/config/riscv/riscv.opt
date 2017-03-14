@@ -150,6 +150,10 @@ Os3
 Target
 Optimize for size level 3 which mean don't care performance.
 
+mvh
+Target Report Var(riscv_virtual_hosting)
+Enable Virtual Hosting support.
+
 mriscv-attribute
 Target Report Var(riscv_emit_attribute_p) Init(-1)
 Emit RISC-V ELF attribute.
