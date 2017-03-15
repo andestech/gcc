@@ -45,6 +45,10 @@
 
   ;; Stack tie
   UNSPEC_TIE
+
+  ;; builtin
+  UNSPECV_CSRR
+  UNSPECV_CSRW
 ])
 
 (define_c_enum "unspecv" [
@@ -69,6 +73,7 @@
 
 (define_constants
   [(RETURN_ADDR_REGNUM		1)
+   (SP_REGNUM			2)
    (GP_REGNUM 			3)
    (TP_REGNUM			4)
    (T0_REGNUM			5)
@@ -2438,17 +2443,6 @@
   ""
   "")
 
-(define_insn "riscv_frflags"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(unspec_volatile [(const_int 0)] UNSPECV_FRFLAGS))]
-  "TARGET_HARD_FLOAT"
-  "frflags\t%0")
-
-(define_insn "riscv_fsflags"
-  [(unspec_volatile [(match_operand:SI 0 "csr_operand" "rK")] UNSPECV_FSFLAGS)]
-  "TARGET_HARD_FLOAT"
-  "fsflags\t%0")
-
 (define_insn "riscv_mret"
   [(return)
    (unspec_volatile [(const_int 0)] UNSPECV_MRET)]
@@ -2506,3 +2500,4 @@
 (include "pic.md")
 (include "generic.md")
 (include "sifive-7.md")
+(include "builtins.md")

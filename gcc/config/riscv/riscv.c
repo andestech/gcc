@@ -312,6 +312,201 @@ static const struct riscv_tune_info optimize_size_tune_info = {
   false,					/* slow_unaligned_access */
 };
 
+static const char * const riscv_csr_register_names[] =
+{
+  "fflags",
+  "frm",
+  "fcsr",
+  "cycle",
+  "time",
+  "instret",
+  "hpmcounter3",
+  "hpmcounter4",
+  "hpmcounter5",
+  "hpmcounter6",
+  "hpmcounter7",
+  "hpmcounter8",
+  "hpmcounter9",
+  "hpmcounter10",
+  "hpmcounter11",
+  "hpmcounter12",
+  "hpmcounter13",
+  "hpmcounter14",
+  "hpmcounter15",
+  "hpmcounter16",
+  "hpmcounter17",
+  "hpmcounter18",
+  "hpmcounter19",
+  "hpmcounter20",
+  "hpmcounter21",
+  "hpmcounter22",
+  "hpmcounter23",
+  "hpmcounter24",
+  "hpmcounter25",
+  "hpmcounter26",
+  "hpmcounter27",
+  "hpmcounter28",
+  "hpmcounter29",
+  "hpmcounter30",
+  "hpmcounter31",
+  "sstatus",
+  "sie",
+  "stvec",
+  "sscratch",
+  "sepc",
+  "scause",
+  "sbadaddr",
+  "sip",
+  "sptbr",
+  "mstatus",
+  "misa",
+  "medeleg",
+  "mideleg",
+  "mie",
+  "mtvec",
+  "mscratch",
+  "mepc",
+  "mcause",
+  "mbadaddr",
+  "mip",
+  "tselect",
+  "tdata1",
+  "tdata2",
+  "tdata3",
+  "dcsr",
+  "dpc",
+  "dscratch",
+  "mcycle",
+  "minstret",
+  "mhpmcounter3",
+  "mhpmcounter4",
+  "mhpmcounter5",
+  "mhpmcounter6",
+  "mhpmcounter7",
+  "mhpmcounter8",
+  "mhpmcounter9",
+  "mhpmcounter10",
+  "mhpmcounter11",
+  "mhpmcounter12",
+  "mhpmcounter13",
+  "mhpmcounter14",
+  "mhpmcounter15",
+  "mhpmcounter16",
+  "mhpmcounter17",
+  "mhpmcounter18",
+  "mhpmcounter19",
+  "mhpmcounter20",
+  "mhpmcounter21",
+  "mhpmcounter22",
+  "mhpmcounter23",
+  "mhpmcounter24",
+  "mhpmcounter25",
+  "mhpmcounter26",
+  "mhpmcounter27",
+  "mhpmcounter28",
+  "mhpmcounter29",
+  "mhpmcounter30",
+  "mhpmcounter31",
+  "mucounteren",
+  "mscounteren",
+  "mhpmevent3",
+  "mhpmevent4",
+  "mhpmevent5",
+  "mhpmevent6",
+  "mhpmevent7",
+  "mhpmevent8",
+  "mhpmevent9",
+  "mhpmevent10",
+  "mhpmevent11",
+  "mhpmevent12",
+  "mhpmevent13",
+  "mhpmevent14",
+  "mhpmevent15",
+  "mhpmevent16",
+  "mhpmevent17",
+  "mhpmevent18",
+  "mhpmevent19",
+  "mhpmevent20",
+  "mhpmevent21",
+  "mhpmevent22",
+  "mhpmevent23",
+  "mhpmevent24",
+  "mhpmevent25",
+  "mhpmevent26",
+  "mhpmevent27",
+  "mhpmevent28",
+  "mhpmevent29",
+  "mhpmevent30",
+  "mhpmevent31",
+  "mvendorid",
+  "marchid",
+  "mimpid",
+  "mhartid",
+  "cycleh",
+  "timeh",
+  "instreth",
+  "hpmcounter3h",
+  "hpmcounter4h",
+  "hpmcounter5h",
+  "hpmcounter6h",
+  "hpmcounter7h",
+  "hpmcounter8h",
+  "hpmcounter9h",
+  "hpmcounter10h",
+  "hpmcounter11h",
+  "hpmcounter12h",
+  "hpmcounter13h",
+  "hpmcounter14h",
+  "hpmcounter15h",
+  "hpmcounter16h",
+  "hpmcounter17h",
+  "hpmcounter18h",
+  "hpmcounter19h",
+  "hpmcounter20h",
+  "hpmcounter21h",
+  "hpmcounter22h",
+  "hpmcounter23h",
+  "hpmcounter24h",
+  "hpmcounter25h",
+  "hpmcounter26h",
+  "hpmcounter27h",
+  "hpmcounter28h",
+  "hpmcounter29h",
+  "hpmcounter30h",
+  "hpmcounter31h",
+  "mcycleh",
+  "minstreth",
+  "mhpmcounter3h",
+  "mhpmcounter4h",
+  "mhpmcounter5h",
+  "mhpmcounter6h",
+  "mhpmcounter7h",
+  "mhpmcounter8h",
+  "mhpmcounter9h",
+  "mhpmcounter10h",
+  "mhpmcounter11h",
+  "mhpmcounter12h",
+  "mhpmcounter13h",
+  "mhpmcounter14h",
+  "mhpmcounter15h",
+  "mhpmcounter16h",
+  "mhpmcounter17h",
+  "mhpmcounter18h",
+  "mhpmcounter19h",
+  "mhpmcounter20h",
+  "mhpmcounter21h",
+  "mhpmcounter22h",
+  "mhpmcounter23h",
+  "mhpmcounter24h",
+  "mhpmcounter25h",
+  "mhpmcounter26h",
+  "mhpmcounter27h",
+  "mhpmcounter28h",
+  "mhpmcounter29h",
+  "mhpmcounter30h",
+  "mhpmcounter31h"
+};
+
 static tree riscv_handle_fndecl_attribute (tree *, tree, tree, int, bool *);
 static tree riscv_handle_type_attribute (tree *, tree, tree, int, bool *);
 
@@ -3321,6 +3516,40 @@ riscv_print_operand (FILE *file, rtx op, int letter)
       if (riscv_memmodel_needs_release_fence ((enum memmodel) INTVAL (op)))
 	fputs ("fence iorw,ow; ", file);
       break;
+
+    case 'V':
+      {
+	gcc_assert (CONST_INT_P (op));
+
+	HOST_WIDE_INT op_value = INTVAL (op);
+
+      /* According to the RISCV architecture,
+	 the system/user register index range is 0 ~ 4095.
+	 In order to avoid conflict between user-specified-integer value
+	 and enum-specified-register value,
+	 the 'enum riscv_csrs' value
+	 in nds32_intrinsic.h starts from 4096.  */
+        if (op_value < 4096 && op_value >= 0)
+	  {
+	    /* If user gives integer value directly (0~4095),
+	       we just print out the value.  */
+	    fprintf (file, HOST_WIDE_INT_PRINT_DEC, op_value);
+	  }
+	else if (op_value < 0
+		 || op_value >= ((int) ARRAY_SIZE (riscv_csr_register_names)
+				 + 4096))
+	  {
+	    /* The enum index value for array size is out of range.  */
+	    error ("intrinsic register index is out of range");
+	  }
+	else
+	  {
+	    /* If user applies normal way with NDS_XXX enum data,
+	       we can print out register name.  Remember to substract 1024.  */
+	    fprintf (file, "%s", riscv_csr_register_names[op_value - 4096]);
+	  }
+	break;
+      }
 
     case 'i':
       if (code != REG)
