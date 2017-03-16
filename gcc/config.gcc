@@ -525,7 +525,7 @@ pru-*-*)
 	;;
 riscv*)
 	cpu_type=riscv
-	extra_headers="nds32_intrinsic.h"
+	extra_headers="nds32_intrinsic.h nds_intrinsic.h"
 	extra_objs="riscv-builtins.o riscv-c.o riscv-sr.o"
 	d_target_objs="riscv-d.o"
 	;;
