@@ -2482,11 +2482,25 @@ riscv*-*-elf* | riscv*-*-rtems*)
 	  tmake_file="${tmake_file} riscv/t-rtems"
 	  ;;
 	*)
-	  case "x${enable_multilib}" in
-	  xno) ;;
-	  xyes) tmake_file="${tmake_file} riscv/t-elf-multilib" ;;
-	  *) echo "Unknown value for enable_multilib"; exit 1
-	  esac
+	  riscv_multilibs="${with_multilib_list}"
+	  if test "$riscv_multilibs" = "default"; then
+		  riscv_multilibs="all"
+	  fi
+	  riscv_multilibs=`echo $riscv_multilibs | sed -e 's/,/ /g'`
+	  for riscv_multilib in ${riscv_multilibs}; do
+		  case ${riscv_multilib} in
+		  all )
+			  tmake_file="${tmake_file} riscv/t-elf-multilib riscv/t-elf-vh"
+			  ;;
+		  vh )
+			  tmake_file="${tmake_file} riscv/t-elf-vh"
+			  ;;
+		  *)
+			  echo "--with-multilib-list=${riscv_multilib} not supported."
+			  exit 1
+		  esac
+	  done
+
 	esac
 	tmake_file="${tmake_file} riscv/t-riscv"
 	gnu_ld=yes
