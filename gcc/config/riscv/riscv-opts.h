@@ -39,6 +39,14 @@ enum riscv_code_model {
 };
 extern enum riscv_code_model riscv_cmodel;
 
+/* Multiply instruction configuration.  */
+enum riscv_mul_type
+{
+  MUL_TYPE_AUTO,
+  MUL_TYPE_FAST,
+  MUL_TYPE_SLOW
+};
+
 /* Keep this list in sync with define_attr "tune" in riscv.md.  */
 enum riscv_microarchitecture_type {
   generic,

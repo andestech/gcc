@@ -1960,12 +1960,36 @@ riscv_rtx_costs (rtx x, machine_mode mode, int outer_code, int opno ATTRIBUTE_UN
       else if (!TARGET_MUL)
 	/* Estimate the cost of a library call.  */
 	*total = COSTS_N_INSNS (speed ? 32 : 6);
-      else if (GET_MODE_SIZE (mode) > UNITS_PER_WORD)
-	*total = 3 * tune_info->int_mul[0] + COSTS_N_INSNS (2);
-      else if (!speed)
-	*total = COSTS_N_INSNS (1);
       else
-	*total = tune_info->int_mul[mode == DImode];
+	{
+	  switch (riscv_mul_config)
+	    {
+	    case MUL_TYPE_SLOW:
+	      if (GET_MODE_SIZE (mode) > UNITS_PER_WORD)
+		*total = 3 * COSTS_N_INSNS (16) + COSTS_N_INSNS (2);
+	      else if (!speed)
+		*total = COSTS_N_INSNS (1);
+	      else
+		*total = COSTS_N_INSNS (16);
+	      break;
+	    case MUL_TYPE_FAST:
+	      if (GET_MODE_SIZE (mode) > UNITS_PER_WORD)
+		*total = 3 * COSTS_N_INSNS (2) + COSTS_N_INSNS (2);
+	      else if (!speed)
+		*total = COSTS_N_INSNS (1);
+	      else
+		*total = COSTS_N_INSNS (2);
+	      break;
+	    case MUL_TYPE_AUTO:
+	      if (GET_MODE_SIZE (mode) > UNITS_PER_WORD)
+		*total = 3 * tune_info->int_mul[0] + COSTS_N_INSNS (2);
+	      else if (!speed)
+		*total = COSTS_N_INSNS (1);
+	      else
+		*total = tune_info->int_mul[mode == DImode];
+	      break;
+	    }
+	}
       return false;
 
     case DIV:

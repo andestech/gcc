@@ -154,6 +154,28 @@ mvh
 Target Report Var(riscv_virtual_hosting)
 Enable Virtual Hosting support.
 
+mconfig-mul=
+Target RejectNegative Joined Enum(riscv_mul_type) Var(riscv_mul_config) Init(MUL_TYPE_AUTO)
+Specify configuration of instruction mul.
+
+Enum
+Name(riscv_mul_type) Type(enum riscv_mul_type)
+
+EnumValue
+Enum(riscv_mul_type) String(auto) Value(MUL_TYPE_AUTO)
+
+EnumValue
+Enum(riscv_mul_type) String(fast) Value(MUL_TYPE_FAST)
+
+EnumValue
+Enum(riscv_mul_type) String(fast1) Value(MUL_TYPE_FAST)
+
+EnumValue
+Enum(riscv_mul_type) String(fast2) Value(MUL_TYPE_FAST)
+
+EnumValue
+Enum(riscv_mul_type) String(slow) Value(MUL_TYPE_SLOW)
+
 mriscv-attribute
 Target Report Var(riscv_emit_attribute_p) Init(-1)
 Emit RISC-V ELF attribute.
