@@ -1,0 +1,75 @@
+;; Generic DFA-based pipeline description for RISC-V targets.
+;; Copyright (C) 2011-2016 Free Software Foundation, Inc.
+;; Contributed by Andrew Waterman (andrew@sifive.com).
+;; Based on MIPS target for GNU compiler.
+
+;; This file is part of GCC.
+
+;; GCC is free software; you can redistribute it and/or modify it
+;; under the terms of the GNU General Public License as published
+;; by the Free Software Foundation; either version 3, or (at your
+;; option) any later version.
+
+;; GCC is distributed in the hope that it will be useful, but WITHOUT
+;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+;; License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with GCC; see the file COPYING3.  If not see
+;; <http://www.gnu.org/licenses/>.
+
+
+(define_automaton "vicuna2_pipe")
+(define_cpu_unit "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb" "vicuna2_pipe")
+(define_cpu_unit "vicuna2_mdu,vicuna2_alu,vicuna2_ag" "vicuna2_pipe")
+
+(define_insn_reservation "vicuna2_alu_insn" 1
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "unknown,const,arith,shift,slt,multi,nop,logical,move"))
+  "vicuna2_ii,vicuna2_ex+vicuna2_alu,vicuna2_wb")
+
+(define_insn_reservation "vicuna2_load_wd" 2
+  (and (eq_attr "tune" "vicuna2")
+       (and (eq_attr "type" "load")
+            (eq_attr "mode" "SI,DI")))
+  "vicuna2_ii,vicuna2_ex+vicuna2_ag,vicuna2_mm*2,vicuna2_wb")
+
+(define_insn_reservation "vicuna2_load_bh" 3
+  (and (eq_attr "tune" "vicuna2")
+       (and (eq_attr "type" "load")
+            (eq_attr "mode" "QI,HI")))
+  "vicuna2_ii,vicuna2_ex+vicuna2_ag,vicuna2_mm*3,vicuna2_wb")
+
+(define_insn_reservation "vicuna2_store" 1
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "store"))
+  "vicuna2_ii,vicuna2_ex+vicuna2_ag,vicuna2_mm,vicuna2_wb")
+
+(define_insn_reservation "vicuna2_branch" 0
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "branch,jump,call"))
+  "vicuna2_ii,vicuna2_ex+vicuna2_ag,vicuna2_mm,vicuna2_wb")
+
+(define_insn_reservation "vicuna2_imul" 10
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "imul"))
+  "vicuna2_ii,(vicuna2_ex+vicuna2_mdu)*8,vicuna2_mm,vicuna2_wb")
+
+(define_insn_reservation "vicuna2_idivsi" 38
+  (and (eq_attr "tune" "vicuna2")
+       (and (eq_attr "type" "idiv")
+            (eq_attr "mode" "SI")))
+  "vicuna2_ii,(vicuna2_ex+vicuna2_mdu)*36,vicuna2_mm,vicuna2_wb")
+
+(define_insn_reservation "vicuna2_idivdi" 70
+  (and (eq_attr "tune" "vicuna2")
+       (and (eq_attr "type" "idiv")
+            (eq_attr "mode" "DI")))
+  "vicuna2_ii,(vicuna2_ex+vicuna2_mdu)*68,vicuna2_mm,vicuna2_wb")
+
+(define_insn_reservation "vicuna2_xfer" 3
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "mfc,mtc"))
+  "vicuna2_ii,vicuna2_ex+vicuna2_alu,vicuna2_mm,vicuna2_wb")
+

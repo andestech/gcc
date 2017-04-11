@@ -50,7 +50,12 @@ enum riscv_mul_type
 /* Keep this list in sync with define_attr "tune" in riscv.md.  */
 enum riscv_microarchitecture_type {
   generic,
-  sifive_7
+  sifive_7,
+  rocket,
+  vicuna,
+  vicuna2,
+  /* Used to mark the end of the processor table.  */
+  riscv_none
 };
 extern enum riscv_microarchitecture_type riscv_microarchitecture;
 

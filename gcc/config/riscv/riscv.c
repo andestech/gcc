@@ -250,7 +250,7 @@ static int epilogue_cfa_sp_offset;
 static const struct riscv_tune_info *tune_info;
 
 /* Which automaton to use for tuning.  */
-enum riscv_microarchitecture_type riscv_microarchitecture;
+enum riscv_microarchitecture_type riscv_microarchitecture = vicuna;
 
 /* Index R is the smallest register class that contains register R.  */
 const enum reg_class riscv_regno_to_class[FIRST_PSEUDO_REGISTER] = {
@@ -550,12 +550,13 @@ static const unsigned gpr_save_reg_order[] = {
 
 /* A table describing all the processors GCC knows about.  */
 static const struct riscv_cpu_info riscv_cpu_info_table[] = {
-  { "rocket", generic, &rocket_tune_info },
   { "sifive-3-series", generic, &rocket_tune_info },
   { "sifive-5-series", generic, &rocket_tune_info },
   { "sifive-7-series", sifive_7, &sifive_7_tune_info },
-  { "size", generic, &optimize_size_tune_info },
-  { "vicuna", &vicuna_tune_info },
+  { "rocket", rocket, &rocket_tune_info },
+  { "size", rocket, &optimize_size_tune_info },
+  { "vicuna", vicuna, &vicuna_tune_info },
+  { "vicuna2", vicuna2, &vicuna_tune_info },
 };
 
 /* Return the riscv_cpu_info entry for the given name string.  */
