@@ -3275,6 +3275,7 @@ static void
 riscv_block_move_straight (rtx dest, rtx src, unsigned HOST_WIDE_INT length)
 {
   unsigned HOST_WIDE_INT offset, delta;
+  unsigned HOST_WIDE_INT stride, stride_begin, stride_end;
   unsigned HOST_WIDE_INT bits;
   int i;
   enum machine_mode mode;
@@ -3285,21 +3286,29 @@ riscv_block_move_straight (rtx dest, rtx src, unsigned HOST_WIDE_INT length)
 
   mode = mode_for_size (bits, MODE_INT, 0).require ();
   delta = bits / BITS_PER_UNIT;
+  stride = get_move_ratio(1) * delta;
 
   /* Allocate a buffer for the temporary registers.  */
-  regs = XALLOCAVEC (rtx, length / delta);
+  regs = XALLOCAVEC (rtx, stride / delta);
 
-  /* Load as many BITS-sized chunks as possible.  Use a normal load if
-     the source has enough alignment, otherwise use left/right pairs.  */
-  for (offset = 0, i = 0; offset + delta <= length; offset += delta, i++)
+  for (stride_begin = 0, stride_end = stride_begin + stride;
+       stride_begin + stride <= length;
+       stride_begin = stride_end, stride_end = stride_begin + stride)
     {
-      regs[i] = gen_reg_rtx (mode);
-      riscv_emit_move (regs[i], adjust_address (src, mode, offset));
-    }
+      /* Load as many BITS-sized chunks as possible.  Use a normal load if
+	 the source has enough alignment, otherwise use left/right pairs.  */
+      for (offset = stride_begin, i = 0; offset + delta <= stride_end; offset += delta, i++)
+	{
+	  regs[i] = gen_reg_rtx (mode);
+	  riscv_emit_move (regs[i], adjust_address (src, mode, offset));
+	}
 
-  /* Copy the chunks to the destination.  */
-  for (offset = 0, i = 0; offset + delta <= length; offset += delta, i++)
-    riscv_emit_move (adjust_address (dest, mode, offset), regs[i]);
+      /* Copy the chunks to the destination.  */
+      for (offset = stride_begin, i = 0; offset + delta <= stride_end; offset += delta, i++)
+	{
+	  riscv_emit_move (adjust_address (dest, mode, offset), regs[i]);
+	}
+    }
 
   /* Mop up any left-over bytes.  */
   if (offset < length)
@@ -3385,11 +3394,16 @@ riscv_block_move_loop (rtx dest, rtx src, unsigned HOST_WIDE_INT length,
 bool
 riscv_expand_block_move (rtx dest, rtx src, rtx length)
 {
+  /* do not generate pieces of move insns for -Os */
+  if(optimize_size)
+    return false;
+
   if (CONST_INT_P (length))
     {
       unsigned HOST_WIDE_INT hwi_length = UINTVAL (length);
-      unsigned HOST_WIDE_INT factor, align;
+      unsigned HOST_WIDE_INT factor, align, max_move_straight;
 
+      max_move_straight = (RISCV_MAX_MOVE_BYTES_STRAIGHT < 64) ? 64 : RISCV_MAX_MOVE_BYTES_STRAIGHT;
       align = MIN (MIN (MEM_ALIGN (src), MEM_ALIGN (dest)), BITS_PER_WORD);
       factor = BITS_PER_WORD / align;
 
@@ -3397,7 +3411,7 @@ riscv_expand_block_move (rtx dest, rtx src, rtx length)
 	  && hwi_length * factor * UNITS_PER_WORD > MOVE_RATIO (false))
 	return false;
 
-      if (hwi_length <= (RISCV_MAX_MOVE_BYTES_STRAIGHT / factor))
+      if (hwi_length <= max_move_straight / factor)
 	{
 	  riscv_block_move_straight (dest, src, INTVAL (length));
 	  return true;

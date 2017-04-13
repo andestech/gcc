@@ -868,12 +868,16 @@ while (0)
 
 /* The maximum number of bytes copied by one iteration of a cpymemsi loop.  */
 
-#define RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER (UNITS_PER_WORD * 4)
+#define RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER riscv_movebytes_per_loop
 
 /* The maximum number of bytes that can be copied by a straight-line
    cpymemsi implementation.  */
 
 #define RISCV_MAX_MOVE_BYTES_STRAIGHT (RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER * 3)
+
+/* The base cost of a memcpy call, for MOVE_RATIO and friends. */
+
+#define RISCV_CALL_RATIO 6
 
 /* If a memory-to-memory move would take MOVE_RATIO or more simple
    move-instruction pairs, we will do a cpymem or libcall instead.
@@ -881,10 +885,10 @@ while (0)
    in effect but the target has slow unaligned accesses; in this
    case, cpymem or libcall is more efficient.  */
 
-#define MOVE_RATIO(speed)						\
-  (!STRICT_ALIGNMENT && riscv_slow_unaligned_access_p ? 1 :		\
-   (speed) ? RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER / UNITS_PER_WORD :	\
-   CLEAR_RATIO (speed) / 2)
+#define MOVE_RATIO(speed)				\
+  ((HAVE_cpymemsi && !optimize_size)                    \
+	? RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER / MOVE_MAX \
+	: RISCV_CALL_RATIO / 2)
 
 /* For CLEAR_RATIO, when optimizing for size, give a better estimate
    of the length of a memset call, but use the default otherwise.  */
