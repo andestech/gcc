@@ -3309,11 +3309,11 @@ riscv_block_move_straight (rtx dest, rtx src, unsigned HOST_WIDE_INT length)
     }
 
   /* Mop up any left-over bytes.  */
-  if (offset < length)
+  if (stride_begin < length)
     {
-      src = adjust_address (src, BLKmode, offset);
-      dest = adjust_address (dest, BLKmode, offset);
-      move_by_pieces (dest, src, length - offset,
+      src = adjust_address (src, BLKmode, stride_begin);
+      dest = adjust_address (dest, BLKmode, stride_begin);
+      move_by_pieces (dest, src, length - stride_begin,
 		      MIN (MEM_ALIGN (src), MEM_ALIGN (dest)), RETURN_BEGIN);
     }
 }
