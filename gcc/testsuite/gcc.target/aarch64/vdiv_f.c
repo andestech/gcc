@@ -99,6 +99,13 @@
 #define EPSILON_64 __DBL_EPSILON__
 #define EPSILON(data_len) EPSILON_##data_len
 
+#define INDEX64_32 [i]
+#define INDEX64_64
+#define INDEX128_32 [i]
+#define INDEX128_64 [i]
+#define INDEX(reg_len, data_len) \
+  CONCAT1 (INDEX, reg_len##_##data_len)
+
 #define LOAD_INST(reg_len, data_len) \
   CONCAT1 (vld1, POSTFIX (reg_len, data_len))
 #define DIV_INST(reg_len, data_len) \
@@ -128,7 +135,9 @@
   for (i = 0; i < n; i++)						\
   {									\
     INHIB_OPTIMIZATION;							\
-    if (!FP_equals ((a) [i], (c) [i], EPSILON (data_len)))		\
+    if (!FP_equals ((a) INDEX (reg_len, data_len),			\
+		    (c) INDEX (reg_len, data_len),			\
+		    EPSILON (data_len)))				\
       return 1;								\
   }									\
 }

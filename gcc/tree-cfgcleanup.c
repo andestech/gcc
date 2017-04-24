@@ -23,21 +23,10 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm.h"
 #include "tree.h"
 #include "tm_p.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfganal.h"
-#include "cfgcleanup.h"
 #include "basic-block.h"
 #include "diagnostic-core.h"
 #include "flags.h"
+#include "function.h"
 #include "langhooks.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -60,6 +49,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-pass.h"
 #include "except.h"
 #include "cfgloop.h"
+#include "hashtab.h"
 #include "tree-ssa-propagate.h"
 #include "tree-scalar-evolution.h"
 
@@ -568,6 +558,7 @@ bool
 fixup_noreturn_call (gimple stmt)
 {
   basic_block bb = gimple_bb (stmt);
+  bool changed = false;
 
   if (gimple_call_builtin_p (stmt, BUILT_IN_RETURN))
     return false;
@@ -589,25 +580,46 @@ fixup_noreturn_call (gimple stmt)
 	split_block (bb, stmt);
     }
 
-  /* If there is an LHS, remove it.  */
-  tree lhs = gimple_call_lhs (stmt);
-  if (lhs)
+  changed |= remove_fallthru_edge (bb->succs);
+
+  /* If there is LHS, remove it.  */
+  if (gimple_call_lhs (stmt))
     {
+      tree op = gimple_call_lhs (stmt);
       gimple_call_set_lhs (stmt, NULL_TREE);
 
-      /* We need to fix up the SSA name to avoid checking errors.  */
-      if (TREE_CODE (lhs) == SSA_NAME)
+      /* We need to remove SSA name to avoid checking errors.
+	 All uses are dominated by the noreturn and thus will
+	 be removed afterwards.
+	 We proactively remove affected non-PHI statements to avoid
+	 fixup_cfg from trying to update them and crashing.  */
+      if (TREE_CODE (op) == SSA_NAME)
 	{
-	  tree new_var = create_tmp_reg (TREE_TYPE (lhs), NULL);
-	  SET_SSA_NAME_VAR_OR_IDENTIFIER (lhs, new_var);
-	  SSA_NAME_DEF_STMT (lhs) = gimple_build_nop ();
-	  set_ssa_default_def (cfun, new_var, lhs);
+	  use_operand_p use_p;
+          imm_use_iterator iter;
+	  gimple use_stmt;
+	  bitmap_iterator bi;
+	  unsigned int bb_index;
+
+	  bitmap blocks = BITMAP_ALLOC (NULL);
+
+          FOR_EACH_IMM_USE_STMT (use_stmt, iter, op)
+	    {
+	      if (gimple_code (use_stmt) != GIMPLE_PHI)
+	        bitmap_set_bit (blocks, gimple_bb (use_stmt)->index);
+	      else
+		FOR_EACH_IMM_USE_ON_STMT (use_p, iter)
+		  SET_USE (use_p, error_mark_node);
+	    }
+	  EXECUTE_IF_SET_IN_BITMAP (blocks, 0, bb_index, bi)
+	    delete_basic_block (BASIC_BLOCK_FOR_FN (cfun, bb_index));
+	  BITMAP_FREE (blocks);
+	  release_ssa_name (op);
 	}
-
       update_stmt (stmt);
+      changed = true;
     }
-
-  return remove_fallthru_edge (bb->succs);
+  return changed;
 }
 
 
@@ -881,14 +893,16 @@ remove_forwarder_block_with_phi (basic_block bb)
 
 	  if (TREE_CODE (def) == SSA_NAME)
 	    {
+	      edge_var_map_vector *head;
+	      edge_var_map *vm;
+	      size_t i;
+
 	      /* If DEF is one of the results of PHI nodes removed during
 		 redirection, replace it with the PHI argument that used
 		 to be on E.  */
-	      vec<edge_var_map> *head = redirect_edge_var_map_vector (e);
-	      size_t length = head ? head->length () : 0;
-	      for (size_t i = 0; i < length; i++)
+	      head = redirect_edge_var_map_vector (e);
+	      FOR_EACH_VEC_SAFE_ELT (head, i, vm)
 		{
-		  edge_var_map *vm = &(*head)[i];
 		  tree old_arg = redirect_edge_var_map_result (vm);
 		  tree new_arg = redirect_edge_var_map_def (vm);
 
@@ -958,45 +972,17 @@ remove_forwarder_block_with_phi (basic_block bb)
 <L10>:;
 */
 
-namespace {
-
-const pass_data pass_data_merge_phi =
+static unsigned int
+merge_phi_nodes (void)
 {
-  GIMPLE_PASS, /* type */
-  "mergephi", /* name */
-  OPTGROUP_NONE, /* optinfo_flags */
-  TV_TREE_MERGE_PHI, /* tv_id */
-  ( PROP_cfg | PROP_ssa ), /* properties_required */
-  0, /* properties_provided */
-  0, /* properties_destroyed */
-  0, /* todo_flags_start */
-  0, /* todo_flags_finish */
-};
-
-class pass_merge_phi : public gimple_opt_pass
-{
-public:
-  pass_merge_phi (gcc::context *ctxt)
-    : gimple_opt_pass (pass_data_merge_phi, ctxt)
-  {}
-
-  /* opt_pass methods: */
-  opt_pass * clone () { return new pass_merge_phi (m_ctxt); }
-  virtual unsigned int execute (function *);
-
-}; // class pass_merge_phi
-
-unsigned int
-pass_merge_phi::execute (function *fun)
-{
-  basic_block *worklist = XNEWVEC (basic_block, n_basic_blocks_for_fn (fun));
+  basic_block *worklist = XNEWVEC (basic_block, n_basic_blocks_for_fn (cfun));
   basic_block *current = worklist;
   basic_block bb;
 
   calculate_dominance_info (CDI_DOMINATORS);
 
   /* Find all PHI nodes that we may be able to merge.  */
-  FOR_EACH_BB_FN (bb, fun)
+  FOR_EACH_BB_FN (bb, cfun)
     {
       basic_block dest;
 
@@ -1077,6 +1063,43 @@ pass_merge_phi::execute (function *fun)
   return 0;
 }
 
+static bool
+gate_merge_phi (void)
+{
+  return 1;
+}
+
+namespace {
+
+const pass_data pass_data_merge_phi =
+{
+  GIMPLE_PASS, /* type */
+  "mergephi", /* name */
+  OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
+  TV_TREE_MERGE_PHI, /* tv_id */
+  ( PROP_cfg | PROP_ssa ), /* properties_required */
+  0, /* properties_provided */
+  0, /* properties_destroyed */
+  0, /* todo_flags_start */
+  TODO_verify_ssa, /* todo_flags_finish */
+};
+
+class pass_merge_phi : public gimple_opt_pass
+{
+public:
+  pass_merge_phi (gcc::context *ctxt)
+    : gimple_opt_pass (pass_data_merge_phi, ctxt)
+  {}
+
+  /* opt_pass methods: */
+  opt_pass * clone () { return new pass_merge_phi (m_ctxt); }
+  bool gate () { return gate_merge_phi (); }
+  unsigned int execute () { return merge_phi_nodes (); }
+
+}; // class pass_merge_phi
+
 } // anon namespace
 
 gimple_opt_pass *
@@ -1138,6 +1161,8 @@ const pass_data pass_data_cleanup_cfg_post_optimizing =
   GIMPLE_PASS, /* type */
   "optimized", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  false, /* has_gate */
+  true, /* has_execute */
   TV_TREE_CLEANUP_CFG, /* tv_id */
   PROP_cfg, /* properties_required */
   0, /* properties_provided */
@@ -1154,10 +1179,9 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual unsigned int execute (function *)
-    {
-      return execute_cleanup_cfg_post_optimizing ();
-    }
+  unsigned int execute () {
+    return execute_cleanup_cfg_post_optimizing ();
+  }
 
 }; // class pass_cleanup_cfg_post_optimizing
 

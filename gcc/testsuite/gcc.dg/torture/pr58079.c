@@ -43,7 +43,6 @@ struct dvb_demux {
  struct list_head feed_list;
 };
 
-int dvb_dmx_swfilter_section_packet (struct dvb_demux_feed *, const u8 *);
 
 static
 inline

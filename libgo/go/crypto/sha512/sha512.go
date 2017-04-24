@@ -106,10 +106,16 @@ func (d *digest) Write(p []byte) (nn int, err error) {
 	nn = len(p)
 	d.len += uint64(nn)
 	if d.nx > 0 {
-		n := copy(d.x[d.nx:], p)
+		n := len(p)
+		if n > chunk-d.nx {
+			n = chunk - d.nx
+		}
+		for i := 0; i < n; i++ {
+			d.x[d.nx+i] = p[i]
+		}
 		d.nx += n
 		if d.nx == chunk {
-			block(d, d.x[:])
+			block(d, d.x[0:])
 			d.nx = 0
 		}
 		p = p[n:]

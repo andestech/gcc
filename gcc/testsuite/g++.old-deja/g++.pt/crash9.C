@@ -1,9 +1,9 @@
 // { dg-do assemble  }
 
 template <class T>
-void f(T) {}			// { dg-message "initializing" }
+void f(T) {}			// { dg-error "initializing" }
 
-class C;    // { dg-message "forward declaration" }
+class C;    // { dg-error "forward declaration" }
 
 void g(const C& c)
 {

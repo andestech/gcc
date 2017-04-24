@@ -66,13 +66,11 @@ void
 gfc_init_options_struct (struct gcc_options *opts)
 {
   opts->x_flag_errno_math = 0;
-  opts->frontend_set_flag_errno_math = true;
   opts->x_flag_associative_math = -1;
-  opts->frontend_set_flag_associative_math = true;
 }
 
 /* Get ready for options handling. Keep in sync with
-   libgfortran/runtime/compile_options.c (init_compile_options).  */
+   libgfortran/runtime/compile_options.c (init_compile_options). */
 
 void
 gfc_init_options (unsigned int decoded_options_count,
@@ -107,7 +105,6 @@ gfc_init_options (unsigned int decoded_options_count,
   gfc_option.warn_tabs = 1;
   gfc_option.warn_underflow = 1;
   gfc_option.warn_intrinsic_shadow = 0;
-  gfc_option.warn_use_without_only = 0;
   gfc_option.warn_intrinsics_std = 0;
   gfc_option.warn_align_commons = 1;
   gfc_option.warn_real_q_constant = 0;
@@ -172,17 +169,10 @@ gfc_init_options (unsigned int decoded_options_count,
   gfc_option.rtcheck = 0;
   gfc_option.coarray = GFC_FCOARRAY_NONE;
 
-  /* ??? Wmissing-include-dirs is disabled by default in C/C++ but
-     enabled by default in Fortran.  Ideally, we should express this
-     in .opt, but that is not supported yet.  */
-  if (!global_options_set.x_cpp_warn_missing_include_dirs)
-    global_options.x_cpp_warn_missing_include_dirs = 1;;
-
   set_default_std_flags ();
 
   /* Initialize cpp-related options.  */
   gfc_cpp_init_options (decoded_options_count, decoded_options);
-  gfc_diagnostics_init ();
 }
 
 
@@ -290,7 +280,7 @@ gfc_post_options (const char **pfilename)
     gfc_option.flag_stack_arrays = optimize_fast;
 
   /* By default, disable (re)allocation during assignment for -std=f95,
-     and enable it for F2003/F2008/GNU/Legacy.  */
+     and enable it for F2003/F2008/GNU/Legacy. */
   if (gfc_option.flag_realloc_lhs == -1)
     {
       if (gfc_option.allow_std & GFC_STD_F2003)
@@ -362,8 +352,8 @@ gfc_post_options (const char **pfilename)
       if (gfc_current_form == FORM_UNKNOWN)
 	{
 	  gfc_current_form = FORM_FREE;
-	  gfc_warning_now_2 ("Reading file %qs as free form", 
-			     (filename[0] == '\0') ? "<stdin>" : filename);
+	  gfc_warning_now ("Reading file '%s' as free form", 
+			   (filename[0] == '\0') ? "<stdin>" : filename);
 	}
     }
 
@@ -372,10 +362,10 @@ gfc_post_options (const char **pfilename)
   if (gfc_current_form == FORM_FREE)
     {
       if (gfc_option.flag_d_lines == 0)
-	gfc_warning_now_2 ("%<-fd-lines-as-comments%> has no effect "
-			   "in free form");
+	gfc_warning_now ("'-fd-lines-as-comments' has no effect "
+			 "in free form");
       else if (gfc_option.flag_d_lines == 1)
-	gfc_warning_now_2 ("%<-fd-lines-as-code%> has no effect in free form");
+	gfc_warning_now ("'-fd-lines-as-code' has no effect in free form");
     }
 
   /* If -pedantic, warn about the use of GNU extensions.  */
@@ -393,21 +383,21 @@ gfc_post_options (const char **pfilename)
 
   if (!gfc_option.flag_automatic && gfc_option.flag_max_stack_var_size != -2
       && gfc_option.flag_max_stack_var_size != 0)
-    gfc_warning_now_2 ("Flag %<-fno-automatic%> overwrites %<-fmax-stack-var-size=%d%>",
-		       gfc_option.flag_max_stack_var_size);
+    gfc_warning_now ("Flag -fno-automatic overwrites -fmax-stack-var-size=%d",
+		     gfc_option.flag_max_stack_var_size);
   else if (!gfc_option.flag_automatic && gfc_option.flag_recursive)
-    gfc_warning_now_2 ("Flag %<-fno-automatic%> overwrites %<-frecursive%>");
+    gfc_warning_now ("Flag -fno-automatic overwrites -frecursive");
   else if (!gfc_option.flag_automatic && gfc_option.gfc_flag_openmp)
-    gfc_warning_now_2 ("Flag %<-fno-automatic%> overwrites %<-frecursive%> implied by "
-		       "%<-fopenmp%>");
+    gfc_warning_now ("Flag -fno-automatic overwrites -frecursive implied by "
+		     "-fopenmp");
   else if (gfc_option.flag_max_stack_var_size != -2
 	   && gfc_option.flag_recursive)
-    gfc_warning_now_2 ("Flag %<-frecursive%> overwrites %<-fmax-stack-var-size=%d%>",
-		       gfc_option.flag_max_stack_var_size);
+    gfc_warning_now ("Flag -frecursive overwrites -fmax-stack-var-size=%d",
+		     gfc_option.flag_max_stack_var_size);
   else if (gfc_option.flag_max_stack_var_size != -2
 	   && gfc_option.gfc_flag_openmp)
-    gfc_warning_now_2 ("Flag %<-fmax-stack-var-size=%d%> overwrites %<-frecursive%> "
-		       "implied by %<-fopenmp%>", 
+    gfc_warning_now ("Flag -fmax-stack-var-size=%d overwrites -frecursive "
+		     "implied by -fopenmp", 
 		     gfc_option.flag_max_stack_var_size);
 
   /* Implement -frecursive as -fmax-stack-var-size=-1.  */
@@ -517,7 +507,7 @@ gfc_handle_fpe_option (const char *arg, bool trap)
 				       GFC_FPE_INEXACT,
 				       0 };
 
-  /* As the default for -ffpe-summary= is nonzero, set it to 0.  */
+  /* As the default for -ffpe-summary= is nonzero, set it to 0. */
   if (!trap)
     gfc_option.fpe_summary = 0;
 
@@ -640,8 +630,6 @@ gfc_handle_option (size_t scode, const char *arg, int value,
   switch (code)
     {
     default:
-      if (cl_options[code].flags & gfc_option_lang_mask ())
-	break;
       result = false;
       break;
 
@@ -686,7 +674,12 @@ gfc_handle_option (size_t scode, const char *arg, int value,
       break;
 
     case OPT_Wextra:
+      handle_generated_option (&global_options, &global_options_set,
+			       OPT_Wunused_parameter, NULL, value,
+			       gfc_option_lang_mask (), kind, loc,
+			       handlers, global_dc);
       set_Wextra (value);
+
       break;
 
     case OPT_Wfunction_elimination:
@@ -735,10 +728,6 @@ gfc_handle_option (size_t scode, const char *arg, int value,
 
     case OPT_Wintrinsic_shadow:
       gfc_option.warn_intrinsic_shadow = value;
-      break;
-
-    case OPT_Wuse_without_only:
-      gfc_option.warn_use_without_only = value;
       break;
 
     case OPT_Walign_commons:
@@ -1197,7 +1186,7 @@ gfc_get_option_string (void)
           /* Ignore these.  */
           break;
 	default:
-	  /* Ignore file names.  */
+	  /* Ignore file names. */
 	  if (save_decoded_options[j].orig_option_with_args_text[0] == '-')
 	    len += 1
 		 + strlen (save_decoded_options[j].orig_option_with_args_text);
@@ -1229,7 +1218,7 @@ gfc_get_option_string (void)
 	  break;
 
         default:
-	  /* Ignore file names.  */
+	  /* Ignore file names. */
 	  if (save_decoded_options[j].orig_option_with_args_text[0] != '-')
 	    continue;
 

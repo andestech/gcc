@@ -36,6 +36,7 @@ test01()
 {
   std::auto_ptr<Base> ptr2;
   ptr2 = new Base; // { dg-error "no match" }
+  // { dg-error "candidate" "candidate note" { target *-*-* } 38 }
   return 0;
 }
 

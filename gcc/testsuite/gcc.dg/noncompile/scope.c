@@ -2,7 +2,6 @@ extern void abort (void);
 extern void exit (int);
 static int v = 3;
 
-void
 f ()
 {
   int v = 4;
@@ -13,7 +12,6 @@ f ()
   }
 }
 
-int
 main ()
 {
   f ();

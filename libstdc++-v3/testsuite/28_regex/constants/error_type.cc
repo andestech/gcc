@@ -1,4 +1,4 @@
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=c++0x" }
 // { dg-do compile }
 //
 // 2009-06-17  Stephen M. Webb  <stephen.webb@xandros.com>

@@ -42,24 +42,22 @@ extern void init_insn_lengths (void);
 
 /* Obtain the current length of an insn.  If branch shortening has been done,
    get its actual length.  Otherwise, get its maximum length.  */
-extern int get_attr_length (rtx_insn *);
+extern int get_attr_length (rtx);
 
 /* Obtain the current length of an insn.  If branch shortening has been done,
    get its actual length.  Otherwise, get its minimum length.  */
-extern int get_attr_min_length (rtx_insn *);
+extern int get_attr_min_length (rtx);
 
 /* Make a pass over all insns and compute their actual lengths by shortening
    any branches of variable length if possible.  */
-extern void shorten_branches (rtx_insn *);
-
-const char *get_some_local_dynamic_name ();
+extern void shorten_branches (rtx);
 
 /* Output assembler code for the start of a function,
    and initialize some of the variables in this file
    for the new function.  The label for the function and associated
    assembler pseudo-ops have already been output in
    `assemble_start_function'.  */
-extern void final_start_function (rtx_insn *, FILE *, int);
+extern void final_start_function (rtx, FILE *, int);
 
 /* Output assembler code for the end of a function.
    For clarity, args are same as those of `final_start_function'
@@ -67,12 +65,12 @@ extern void final_start_function (rtx_insn *, FILE *, int);
 extern void final_end_function (void);
 
 /* Output assembler code for some insns: all or part of a function.  */
-extern void final (rtx_insn *, FILE *, int);
+extern void final (rtx, FILE *, int);
 
 /* The final scan for one insn, INSN.  Args are same as in `final', except
    that INSN is the insn being scanned.  Value returned is the next insn to
    be scanned.  */
-extern rtx_insn *final_scan_insn (rtx_insn *, FILE *, int, int, int *);
+extern rtx final_scan_insn (rtx, FILE *, int, int, int *);
 
 /* Replace a SUBREG with a REG or a MEM, based on the thing it is a
    subreg of.  */
@@ -92,7 +90,7 @@ extern void output_asm_insn (const char *, rtx *);
 /* Compute a worst-case reference address of a branch so that it
    can be safely used in the presence of aligned labels.
    Defined in final.c.  */
-extern int insn_current_reference_address (rtx_insn *);
+extern int insn_current_reference_address (rtx);
 
 /* Find the alignment associated with a CODE_LABEL.
    Defined in final.c.  */
@@ -138,7 +136,7 @@ extern int leaf_function_p (void);
 /* Return 1 if branch is a forward branch.
    Uses insn_shuid array, so it works only in the final pass.  May be used by
    output templates to add branch prediction hints, for example.  */
-extern int final_forward_branch_p (rtx_insn *);
+extern int final_forward_branch_p (rtx);
 
 /* Return 1 if this function uses only the registers that can be
    safely renumbered.  */
@@ -273,7 +271,7 @@ extern section *get_named_text_section (tree, const char *, const char *);
 
 #ifdef REAL_VALUE_TYPE_SIZE
 /* Assemble the floating-point constant D into an object of size MODE.  */
-extern void assemble_real (REAL_VALUE_TYPE, machine_mode, unsigned);
+extern void assemble_real (REAL_VALUE_TYPE, enum machine_mode, unsigned);
 #endif
 
 /* Write the address of the entity given by SYMBOL to SEC.  */
@@ -283,7 +281,7 @@ extern void assemble_addr_to_section (rtx, section *);
 extern int get_pool_size (void);
 
 #ifdef HAVE_peephole
-extern rtx_insn *peephole (rtx_insn *);
+extern rtx peephole (rtx);
 #endif
 
 extern void output_shared_constant_pool (void);
@@ -298,7 +296,7 @@ extern void output_quoted_string (FILE *, const char *);
    insn output code.
 
    This variable is defined  in final.c.  */
-extern rtx_sequence *final_sequence;
+extern rtx final_sequence;
 
 /* The line number of the beginning of the current function.  Various
    md code needs this so that it can output relative linenumbers.  */
@@ -323,12 +321,12 @@ extern const char *weak_global_object_name;
 extern rtx current_insn_predicate;
 
 /* Last insn processed by final_scan_insn.  */
-extern rtx_insn *current_output_insn;
+extern rtx current_output_insn;
 
 /* Nonzero while outputting an `asm' with operands.
    This means that inconsistencies are the user's fault, so don't die.
    The precise value is the insn being output, to pass to error_for_asm.  */
-extern const rtx_insn *this_is_asm_operands;
+extern rtx this_is_asm_operands;
 
 /* Carry information from ASM_DECLARE_OBJECT_NAME
    to ASM_FINISH_DECLARE_OBJECT.  */
@@ -486,7 +484,7 @@ struct GTY(()) noswitch_section {
 };
 
 /* Information about a section, which may be named or unnamed.  */
-union GTY ((desc ("SECTION_STYLE (&(%h))"), for_user)) section {
+union GTY ((desc ("SECTION_STYLE (&(%h))"))) section {
   struct section_common GTY ((skip)) common;
   struct named_section GTY ((tag ("SECTION_NAMED"))) named;
   struct unnamed_section GTY ((tag ("SECTION_UNNAMED"))) unnamed;
@@ -525,7 +523,7 @@ extern section *get_variable_section (tree, bool);
 extern void place_block_symbol (rtx);
 extern rtx get_section_anchor (struct object_block *, HOST_WIDE_INT,
 			       enum tls_model);
-extern section *mergeable_constant_section (machine_mode,
+extern section *mergeable_constant_section (enum machine_mode,
 					    unsigned HOST_WIDE_INT,
 					    unsigned int);
 extern section *function_section (tree);
@@ -569,9 +567,9 @@ extern void default_unique_section (tree, int);
 extern section *default_function_rodata_section (tree);
 extern section *default_no_function_rodata_section (tree);
 extern section *default_clone_table_section (void);
-extern section *default_select_rtx_section (machine_mode, rtx,
+extern section *default_select_rtx_section (enum machine_mode, rtx,
 					    unsigned HOST_WIDE_INT);
-extern section *default_elf_select_rtx_section (machine_mode, rtx,
+extern section *default_elf_select_rtx_section (enum machine_mode, rtx,
 						unsigned HOST_WIDE_INT);
 extern void default_encode_section_info (tree, rtx, int);
 extern const char *default_strip_name_encoding (const char *);
@@ -602,7 +600,7 @@ extern void default_elf_init_array_asm_out_constructor (rtx, int);
 extern void default_elf_fini_array_asm_out_destructor (rtx, int);
 extern int maybe_assemble_visibility (tree);
 
-extern int default_address_cost (rtx, machine_mode, addr_space_t, bool);
+extern int default_address_cost (rtx, enum machine_mode, addr_space_t, bool);
 
 /* Output stack usage information.  */
 extern void output_stack_usage (void);

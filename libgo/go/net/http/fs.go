@@ -13,7 +13,6 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/textproto"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -53,14 +52,12 @@ type FileSystem interface {
 
 // A File is returned by a FileSystem's Open method and can be
 // served by the FileServer implementation.
-//
-// The methods should behave the same as those on an *os.File.
 type File interface {
-	io.Closer
-	io.Reader
-	Readdir(count int) ([]os.FileInfo, error)
-	Seek(offset int64, whence int) (int64, error)
+	Close() error
 	Stat() (os.FileInfo, error)
+	Readdir(count int) ([]os.FileInfo, error)
+	Read([]byte) (int, error)
+	Seek(offset int64, whence int) (int64, error)
 }
 
 func dirList(w ResponseWriter, f File) {
@@ -76,11 +73,8 @@ func dirList(w ResponseWriter, f File) {
 			if d.IsDir() {
 				name += "/"
 			}
-			// name may contain '?' or '#', which must be escaped to remain
-			// part of the URL path, and not indicate the start of a query
-			// string or fragment.
-			url := url.URL{Path: name}
-			fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", url.String(), htmlReplacer.Replace(name))
+			// TODO htmlescape
+			fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", name, name)
 		}
 	}
 	fmt.Fprintf(w, "</pre>\n")
@@ -527,7 +521,7 @@ func (w *countingWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-// rangesMIMESize returns the number of bytes it takes to encode the
+// rangesMIMESize returns the nunber of bytes it takes to encode the
 // provided ranges as a multipart response.
 func rangesMIMESize(ranges []httpRange, contentType string, contentSize int64) (encSize int64) {
 	var w countingWriter

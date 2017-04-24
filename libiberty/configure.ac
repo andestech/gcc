@@ -236,12 +236,6 @@ if [[ "${shared}" != "yes" ]]; then
 fi
 AC_SUBST(PICFLAG)
 
-NOASANFLAG=
-case " ${CFLAGS} " in
-  *\ -fsanitize=address\ *) NOASANFLAG=-fno-sanitize=address ;;
-esac
-AC_SUBST(NOASANFLAG)
-
 echo "# Warning: this fragment is automatically generated" > temp-frag
 
 if [[ -n "${frag}" ]] && [[ -f "${frag}" ]]; then
@@ -272,14 +266,8 @@ AC_HEADER_TIME
 
 libiberty_AC_DECLARE_ERRNO
 
-# Determine sizes of some types.
+# Determine the size of an int for struct fibnode.
 AC_CHECK_SIZEOF([int])
-AC_CHECK_SIZEOF([long])
-
-# Check for presense of long long
-AC_CHECK_TYPE([long long],
-  [AC_DEFINE(HAVE_LONG_LONG, 1, [Define if you have the `long long' type.]) AC_CHECK_SIZEOF([long long])],
-  [])
 
 # Look for a 64-bit type.
 AC_MSG_CHECKING([for a 64-bit type])
@@ -371,8 +359,6 @@ funcs="$funcs strstr"
 funcs="$funcs strtod"
 funcs="$funcs strtol"
 funcs="$funcs strtoul"
-funcs="$funcs strtoll"
-funcs="$funcs strtoull"
 funcs="$funcs strverscmp"
 funcs="$funcs tmpnam"
 funcs="$funcs vasprintf"
@@ -409,11 +395,11 @@ if test "x" = "y"; then
     sbrk setenv setproctitle setrlimit sigsetmask snprintf spawnve spawnvpe \
      stpcpy stpncpy strcasecmp strchr strdup \
      strerror strncasecmp strndup strnlen strrchr strsignal strstr strtod \
-     strtol strtoul strtoll strtoull strverscmp sysconf sysctl sysmp \
+     strtol strtoul strverscmp sysconf sysctl sysmp \
     table times tmpnam \
     vasprintf vfprintf vprintf vsprintf \
     wait3 wait4 waitpid)
-  AC_CHECK_DECLS([basename(char *), ffs, asprintf, vasprintf, snprintf, vsnprintf, strtol, strtoul, strtoll, strtoull])
+  AC_CHECK_DECLS([basename(char *), ffs, asprintf, vasprintf, snprintf, vsnprintf])
   AC_DEFINE(HAVE_SYS_ERRLIST, 1, [Define if you have the sys_errlist variable.])
   AC_DEFINE(HAVE_SYS_NERR,    1, [Define if you have the sys_nerr variable.])
   AC_DEFINE(HAVE_SYS_SIGLIST, 1, [Define if you have the sys_siglist variable.])

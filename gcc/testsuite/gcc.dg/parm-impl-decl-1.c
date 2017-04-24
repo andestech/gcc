@@ -2,7 +2,7 @@
    function prototypes.  Bug 18239.  */
 /* Origin: Joseph Myers <joseph@codesourcery.com> */
 /* { dg-do compile } */
-/* { dg-options "-std=gnu89" } */
+/* { dg-options "" } */
 
 /* Implicit function declaration in attribute in definition (testcase
    from bug).  */

@@ -1,4 +1,5 @@
 /* { dg-do link } */
+/* { dg-options "--param allow-packed-store-data-races=0" } */
 /* { dg-final { simulate-thread } } */
 
 #include <stdio.h>

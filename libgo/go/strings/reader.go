@@ -15,41 +15,40 @@ import (
 // from a string.
 type Reader struct {
 	s        string
-	i        int64 // current reading index
-	prevRune int   // index of previous rune; or < 0
+	i        int // current reading index
+	prevRune int // index of previous rune; or < 0
 }
 
 // Len returns the number of bytes of the unread portion of the
 // string.
 func (r *Reader) Len() int {
-	if r.i >= int64(len(r.s)) {
+	if r.i >= len(r.s) {
 		return 0
 	}
-	return int(int64(len(r.s)) - r.i)
+	return len(r.s) - r.i
 }
 
 func (r *Reader) Read(b []byte) (n int, err error) {
 	if len(b) == 0 {
 		return 0, nil
 	}
-	if r.i >= int64(len(r.s)) {
+	if r.i >= len(r.s) {
 		return 0, io.EOF
 	}
-	r.prevRune = -1
 	n = copy(b, r.s[r.i:])
-	r.i += int64(n)
+	r.i += n
+	r.prevRune = -1
 	return
 }
 
 func (r *Reader) ReadAt(b []byte, off int64) (n int, err error) {
-	// cannot modify state - see io.ReaderAt
 	if off < 0 {
-		return 0, errors.New("strings.Reader.ReadAt: negative offset")
+		return 0, errors.New("strings: invalid offset")
 	}
 	if off >= int64(len(r.s)) {
 		return 0, io.EOF
 	}
-	n = copy(b, r.s[off:])
+	n = copy(b, r.s[int(off):])
 	if n < len(b) {
 		err = io.EOF
 	}
@@ -57,51 +56,49 @@ func (r *Reader) ReadAt(b []byte, off int64) (n int, err error) {
 }
 
 func (r *Reader) ReadByte() (b byte, err error) {
-	r.prevRune = -1
-	if r.i >= int64(len(r.s)) {
+	if r.i >= len(r.s) {
 		return 0, io.EOF
 	}
 	b = r.s[r.i]
 	r.i++
+	r.prevRune = -1
 	return
 }
 
 func (r *Reader) UnreadByte() error {
-	r.prevRune = -1
 	if r.i <= 0 {
-		return errors.New("strings.Reader.UnreadByte: at beginning of string")
+		return errors.New("strings.Reader: at beginning of string")
 	}
 	r.i--
+	r.prevRune = -1
 	return nil
 }
 
 func (r *Reader) ReadRune() (ch rune, size int, err error) {
-	if r.i >= int64(len(r.s)) {
-		r.prevRune = -1
+	if r.i >= len(r.s) {
 		return 0, 0, io.EOF
 	}
-	r.prevRune = int(r.i)
+	r.prevRune = r.i
 	if c := r.s[r.i]; c < utf8.RuneSelf {
 		r.i++
 		return rune(c), 1, nil
 	}
 	ch, size = utf8.DecodeRuneInString(r.s[r.i:])
-	r.i += int64(size)
+	r.i += size
 	return
 }
 
 func (r *Reader) UnreadRune() error {
 	if r.prevRune < 0 {
-		return errors.New("strings.Reader.UnreadRune: previous operation was not ReadRune")
+		return errors.New("strings.Reader: previous operation was not ReadRune")
 	}
-	r.i = int64(r.prevRune)
+	r.i = r.prevRune
 	r.prevRune = -1
 	return nil
 }
 
 // Seek implements the io.Seeker interface.
 func (r *Reader) Seek(offset int64, whence int) (int64, error) {
-	r.prevRune = -1
 	var abs int64
 	switch whence {
 	case 0:
@@ -111,19 +108,22 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	case 2:
 		abs = int64(len(r.s)) + offset
 	default:
-		return 0, errors.New("strings.Reader.Seek: invalid whence")
+		return 0, errors.New("strings: invalid whence")
 	}
 	if abs < 0 {
-		return 0, errors.New("strings.Reader.Seek: negative position")
+		return 0, errors.New("strings: negative position")
 	}
-	r.i = abs
+	if abs >= 1<<31 {
+		return 0, errors.New("strings: position out of range")
+	}
+	r.i = int(abs)
 	return abs, nil
 }
 
 // WriteTo implements the io.WriterTo interface.
 func (r *Reader) WriteTo(w io.Writer) (n int64, err error) {
 	r.prevRune = -1
-	if r.i >= int64(len(r.s)) {
+	if r.i >= len(r.s) {
 		return 0, nil
 	}
 	s := r.s[r.i:]
@@ -131,7 +131,7 @@ func (r *Reader) WriteTo(w io.Writer) (n int64, err error) {
 	if m > len(s) {
 		panic("strings.Reader.WriteTo: invalid WriteString count")
 	}
-	r.i += int64(m)
+	r.i += m
 	n = int64(m)
 	if m != len(s) && err == nil {
 		err = io.ErrShortWrite

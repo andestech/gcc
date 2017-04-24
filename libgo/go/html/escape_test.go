@@ -64,24 +64,6 @@ var unescapeTests = []unescapeTest{
 		"Footnote&#x87;",
 		"Footnote‡",
 	},
-	// Handle single ampersand.
-	{
-		"copySingleAmpersand",
-		"&",
-		"&",
-	},
-	// Handle ampersand followed by non-entity.
-	{
-		"copyAmpersandNonEntity",
-		"text &test",
-		"text &test",
-	},
-	// Handle "&#".
-	{
-		"copyAmpersandHash",
-		"text &#",
-		"text &#",
-	},
 }
 
 func TestUnescape(t *testing.T) {

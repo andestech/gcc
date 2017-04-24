@@ -25,19 +25,12 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "flags.h"
 #include "tm_p.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
 #include "basic-block.h"
 #include "cfgloop.h"
+#include "function.h"
 #include "timevar.h"
 #include "dumpfile.h"
+#include "pointer-set.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
 #include "gimple-expr.h"
@@ -55,7 +48,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "langhooks.h"
 #include "params.h"
 #include "tree-ssa-threadedge.h"
-#include "builtins.h"
 
 /* To avoid code explosion due to jump threading, we limit the
    number of statements we are going to copy.  This variable
@@ -549,26 +541,16 @@ simplify_control_stmt_condition (edge e,
       /* Get the current value of both operands.  */
       if (TREE_CODE (op0) == SSA_NAME)
 	{
-	  for (int i = 0; i < 2; i++)
-	    {
-	      if (TREE_CODE (op0) == SSA_NAME
-		  && SSA_NAME_VALUE (op0))
-		op0 = SSA_NAME_VALUE (op0);
-	      else
-		break;
-	    }
+          tree tmp = SSA_NAME_VALUE (op0);
+	  if (tmp)
+	    op0 = tmp;
 	}
 
       if (TREE_CODE (op1) == SSA_NAME)
 	{
-	  for (int i = 0; i < 2; i++)
-	    {
-	      if (TREE_CODE (op1) == SSA_NAME
-		  && SSA_NAME_VALUE (op1))
-		op1 = SSA_NAME_VALUE (op1);
-	      else
-		break;
-	    }
+	  tree tmp = SSA_NAME_VALUE (op1);
+	  if (tmp)
+	    op1 = tmp;
 	}
 
       if (handle_dominating_asserts)
@@ -642,17 +624,10 @@ simplify_control_stmt_condition (edge e,
 	 It is possible to get loops in the SSA_NAME_VALUE chains
 	 (consider threading the backedge of a loop where we have
 	 a loop invariant SSA_NAME used in the condition.  */
-      if (cached_lhs)
-	{
-	  for (int i = 0; i < 2; i++)
-	    {
-	      if (TREE_CODE (cached_lhs) == SSA_NAME
-		  && SSA_NAME_VALUE (cached_lhs))
-		cached_lhs = SSA_NAME_VALUE (cached_lhs);
-	      else
-		break;
-	    }
-	}
+      if (cached_lhs
+	  && TREE_CODE (cached_lhs) == SSA_NAME
+	  && SSA_NAME_VALUE (cached_lhs))
+	cached_lhs = SSA_NAME_VALUE (cached_lhs);
 
       /* If we're dominated by a suitable ASSERT_EXPR, then
 	 update CACHED_LHS appropriately.  */
@@ -700,13 +675,13 @@ propagate_threaded_block_debug_into (basic_block dest, basic_block src)
     }
 
   auto_vec<tree, alloc_count> fewvars;
-  hash_set<tree> *vars = NULL;
+  pointer_set_t *vars = NULL;
 
   /* If we're already starting with 3/4 of alloc_count, go for a
-     hash_set, otherwise start with an unordered stack-allocated
+     pointer_set, otherwise start with an unordered stack-allocated
      VEC.  */
   if (i * 4 > alloc_count * 3)
-    vars = new hash_set<tree>;
+    vars = pointer_set_create ();
 
   /* Now go through the initial debug stmts in DEST again, this time
      actually inserting in VARS or FEWVARS.  Don't bother checking for
@@ -727,7 +702,7 @@ propagate_threaded_block_debug_into (basic_block dest, basic_block src)
 	gcc_unreachable ();
 
       if (vars)
-	vars->add (var);
+	pointer_set_insert (vars, var);
       else
 	fewvars.quick_push (var);
     }
@@ -761,7 +736,7 @@ propagate_threaded_block_debug_into (basic_block dest, basic_block src)
 	     or somesuch.  Adding `&& bb == src' to the condition
 	     below will preserve all potentially relevant debug
 	     notes.  */
-	  if (vars && vars->add (var))
+	  if (vars && pointer_set_insert (vars, var))
 	    continue;
 	  else if (!vars)
 	    {
@@ -776,11 +751,11 @@ propagate_threaded_block_debug_into (basic_block dest, basic_block src)
 		fewvars.quick_push (var);
 	      else
 		{
-		  vars = new hash_set<tree>;
+		  vars = pointer_set_create ();
 		  for (i = 0; i < alloc_count; i++)
-		    vars->add (fewvars[i]);
+		    pointer_set_insert (vars, fewvars[i]);
 		  fewvars.release ();
-		  vars->add (var);
+		  pointer_set_insert (vars, var);
 		}
 	    }
 
@@ -793,7 +768,7 @@ propagate_threaded_block_debug_into (basic_block dest, basic_block src)
   while (bb != src && single_pred_p (bb));
 
   if (vars)
-    delete vars;
+    pointer_set_destroy (vars);
   else if (fewvars.exists ())
     fewvars.release ();
 }

@@ -12,6 +12,7 @@ extern panama dig();
 
 void foo() {
    panama obj;
-   obj = dig(); // { dg-error "rvalue" }
+   obj = dig(); // { dg-error "no match" }
+   // { dg-message "candidate" "candidate note" { target *-*-* } 15 }
 }
 

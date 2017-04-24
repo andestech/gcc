@@ -1,5 +1,4 @@
 /* { dg-do run { target { powerpc64le-*-* } } } */
-/* { dg-skip-if "do not override -mcpu" { powerpc*-*-* } { "-mcpu=*" } { "-mcpu=power8" } } */
 /* { dg-options "-mcpu=power8 " } */
 
 #include <altivec.h>

@@ -1,7 +1,5 @@
 /* { dg-do compile } */
 
-void work (int, int);
-
 void
 wrong6 (int n)
 {

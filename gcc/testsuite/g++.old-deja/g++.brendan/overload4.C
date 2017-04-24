@@ -18,6 +18,7 @@
 	  B::WantsNew ( (NewObject) A::NewOne );
 	  // This used to die in convert_harshness_{ansi,old} cuz it
 	  // didn't know what to do about a void type.
-	  B::WantsNew ( A::NewOne );// { dg-error "no matching|conversion" }
+	  B::WantsNew ( A::NewOne );// { dg-error "no matching" } 
+	  // { dg-message "candidate" "candidate note" { target *-*-* } 21 }
       }
   };

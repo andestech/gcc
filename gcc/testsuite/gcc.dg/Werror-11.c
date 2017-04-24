@@ -6,7 +6,6 @@
 
 #pragma GCC diagnostic warning "-Waddress"
 
-void grill ();
 void __attribute__((dj)) bar() { }	/* { dg-error ".* attribute directive ignored" } */
 
 int i;

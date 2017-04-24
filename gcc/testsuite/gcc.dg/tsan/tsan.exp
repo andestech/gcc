@@ -23,6 +23,10 @@ load_lib gcc-dg.exp
 load_lib tsan-dg.exp
 load_lib torture-options.exp
 
+if ![check_effective_target_fthread_sanitizer] {
+  return
+}
+
 # Initialize `dg'.
 dg-init
 torture-init
@@ -30,11 +34,11 @@ set-torture-options [list \
 	{ -O0 } \
 	{ -O2 } ]
 
-tsan_init
+if [tsan_init] {
 
 # Main loop.
-if [check_effective_target_fsanitize_thread] {
-  gcc-dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/*.c $srcdir/c-c++-common/tsan/*.c]] "" ""
+gcc-dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/*.c $srcdir/c-c++-common/tsan/*.c]] ""
+
 }
 
 # All done.

@@ -67,13 +67,13 @@
   { return func (A, B, C, imm1, imm2, imm3); }
 
 #define test_3v(func, op1_type, op2_type, op3_type, imm)		\
-  int _CONCAT(_,func) (op1_type A, op2_type B,				\
-		       op3_type C, int const I)				\
+  _CONCAT(_,func) (op1_type A, op2_type B,				\
+		   op3_type C, int const I)				\
   { func (A, B, C, imm); }
 
 #define test_3vx(func, op1_type, op2_type, op3_type, imm1, imm2)   \
-  int _CONCAT(_,func) (op1_type A, op2_type B,             	   \
-		       op3_type C, int const I, int const L)       \
+  _CONCAT(_,func) (op1_type A, op2_type B,             \
+           op3_type C, int const I, int const L)       \
   { func (A, B, C, imm1, imm2); }
 
 #define test_4(func, type, op1_type, op2_type, op3_type, op4_type, imm)	\
@@ -93,13 +93,13 @@
 
 
 #define test_4v(func, op1_type, op2_type, op3_type, op4_type, imm)	\
-  int _CONCAT(_,func) (op1_type A, op2_type B,				\
-		       op3_type C, op4_type D, int const I)		\
+  _CONCAT(_,func) (op1_type A, op2_type B,				\
+		   op3_type C, op4_type D, int const I)			\
   { func (A, B, C, D, imm); }
 
 
 #ifndef DIFFERENT_PRAGMAS
-#pragma GCC target ("sse4a,3dnow,avx,avx2,fma4,xop,aes,pclmul,popcnt,abm,lzcnt,bmi,bmi2,tbm,lwp,fsgsbase,rdrnd,f16c,rtm,rdseed,prfchw,adx,fxsr,xsaveopt,avx512f,avx512er,avx512cd,avx512pf,sha,prefetchwt1,avx512vl,avx512bw,avx512dq")
+#pragma GCC target ("sse4a,3dnow,avx,avx2,fma4,xop,aes,pclmul,popcnt,abm,lzcnt,bmi,bmi2,tbm,lwp,fsgsbase,rdrnd,f16c,rtm,rdseed,prfchw,adx,fxsr,xsaveopt,avx512f,avx512er,avx512cd,avx512pf,sha,prefetchwt1")
 #endif
 
 /* Following intrinsics require immediate arguments.  They
@@ -137,6 +137,8 @@ test_1 (_mm_prefetch, void, void *, _MM_HINT_NTA)
 #endif
 #include <emmintrin.h>
 test_2 (_mm_shuffle_pd, __m128d, __m128d, __m128d, 1)
+test_1 (_mm_bsrli_si128, __m128i, __m128i, 1)
+test_1 (_mm_bslli_si128, __m128i, __m128i, 1)
 test_1 (_mm_srli_si128, __m128i, __m128i, 1)
 test_1 (_mm_slli_si128, __m128i, __m128i, 1)
 test_1 (_mm_extract_epi16, int, __m128i, 1)
@@ -214,7 +216,7 @@ test_4 (_mm_cmpestrz, int, __m128i, int, __m128i, int, 1)
 
 /* immintrin.h (AVX/AVX2/RDRND/FSGSBASE/F16C/RTM/AVX512F/SHA) */
 #ifdef DIFFERENT_PRAGMAS
-#pragma GCC target ("avx,avx2,rdrnd,fsgsbase,f16c,rtm,avx512f,avx512er,avx512cd,avx512pf,sha,avx512vl,avx512bw,avx512dq")
+#pragma GCC target ("avx,avx2,rdrnd,fsgsbase,f16c,rtm,avx512f,avx512er,avx512cd,avx512pf,sha")
 #endif
 #include <immintrin.h>
 test_1 (_cvtss_sh, unsigned short, float, 1)
@@ -268,6 +270,8 @@ test_2 ( _mm256_blend_epi16, __m256i, __m256i, __m256i, 1)
 test_1 ( _mm256_shuffle_epi32, __m256i, __m256i, 1)
 test_1 ( _mm256_shufflehi_epi16, __m256i, __m256i, 1)
 test_1 ( _mm256_shufflelo_epi16, __m256i, __m256i, 1)
+test_1 ( _mm256_bslli_epi128, __m256i, __m256i, 8)
+test_1 ( _mm256_bsrli_epi128, __m256i, __m256i, 8)
 test_1 ( _mm256_slli_si256, __m256i, __m256i, 8)
 test_1 ( _mm256_srli_si256, __m256i, __m256i, 8)
 test_2 ( _mm_blend_epi32, __m128i, __m128i, __m128i, 1)
@@ -694,7 +698,7 @@ test_2 (_mm_clmulepi64_si128, __m128i, __m128i, __m128i, 1)
 
 /* x86intrin.h (FMA4/XOP/LWP/BMI/BMI2/TBM/LZCNT/FMA). */
 #ifdef DIFFERENT_PRAGMAS
-#pragma GCC target ("fma4,xop,lwp,bmi,bmi2,tbm,lzcnt,fma,rdseed,prfchw,adx,fxsr,xsaveopt,xsavec,xsaves,clflushopt")
+#pragma GCC target ("fma4,xop,lwp,bmi,bmi2,tbm,lzcnt,fma,rdseed,prfchw,adx,fxsr,xsaveopt")
 #endif
 #include <x86intrin.h>
 /* xopintrin.h */

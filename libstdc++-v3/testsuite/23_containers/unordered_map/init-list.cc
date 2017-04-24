@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 //
 
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 
 #include <unordered_map>
 #include <testsuite_hooks.h>

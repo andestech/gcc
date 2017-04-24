@@ -6,6 +6,7 @@ int main() {
   int i;
   void* operator new(__SIZE_TYPE__ s, int* p);
   int* e = new(&i) int;                    // { dg-error "no matching function" }
+  // { dg-message "candidate" "candidate note" { target *-*-* } 8 }
   int* f = new int;
   return 0;
 }

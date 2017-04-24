@@ -1,23 +1,21 @@
-/* { dg-options "-O2 -fdump-tree-fre2-details"  } */
-typedef enum
+// PR c++/62224
+// { dg-options "-O2" }
+// For 4.9, we don't want to devirtualize f and thus create a reference to g.
+
+struct A
 {
-} UErrorCode;
-class UnicodeString
-{
-public:
-  UnicodeString ();
-  virtual ~UnicodeString ();
+  virtual void f () = 0;
 };
-class A
+
+class B : A
 {
-  UnicodeString &m_fn1 (UnicodeString &, int &p2, UErrorCode &) const;
+  virtual void f () { g(); }
+  void g();
 };
-UnicodeString::UnicodeString () {}
-UnicodeString &
-A::m_fn1 (UnicodeString &, int &p2, UErrorCode &) const
+
+void h (A *a)
 {
-  UnicodeString a[2];
+  a->f ();
 }
 
-/* { dg-final { scan-tree-dump-not "\\n  OBJ_TYPE_REF" "fre2"  } } */
-/* { dg-final { cleanup-tree-dump "fre2" } } */
+// { dg-final { scan-assembler-not "_ZN1B1gEv" } }

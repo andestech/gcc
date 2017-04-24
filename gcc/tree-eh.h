@@ -20,10 +20,6 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef GCC_TREE_EH_H
 #define GCC_TREE_EH_H
 
-#include "hash-map.h"
-
-typedef struct eh_region_d *eh_region;
-
 extern void using_eh_for_cleanups (void);
 extern void add_stmt_to_eh_lp (gimple, int);
 extern bool remove_stmt_from_eh_lp_fn (struct function *, gimple);
@@ -47,7 +43,7 @@ extern bool maybe_clean_eh_stmt (gimple);
 extern bool maybe_clean_or_replace_eh_stmt (gimple, gimple);
 extern bool maybe_duplicate_eh_stmt_fn (struct function *, gimple,
 					struct function *, gimple,
-					hash_map<void *, void *> *, int);
+					struct pointer_map_t *, int);
 extern bool maybe_duplicate_eh_stmt (gimple, gimple);
 extern void maybe_remove_unreachable_handlers (void);
 extern bool verify_eh_edges (gimple);

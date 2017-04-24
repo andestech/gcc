@@ -2,8 +2,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -fopenmp" } */
 
-extern int omp_get_thread_num (void);
-
 void
 foo (void)
 {

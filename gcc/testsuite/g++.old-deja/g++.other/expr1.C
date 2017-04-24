@@ -2,7 +2,7 @@
 
 // Simplified from bug report by Trevor Taylor <ttaylor@powerup.com.au>
 
-struct T {
+struct T {			// { dg-message "candidate" }
   int operator()(int) { } // { dg-message "operator|candidate expects" }
 };
 

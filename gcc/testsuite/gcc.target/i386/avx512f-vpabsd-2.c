@@ -21,7 +21,7 @@ CALC (int *i1, int *r)
       r[i] = i1[i];
 }
 
-void
+static void
 TEST (void)
 {
   int ck[SIZE];

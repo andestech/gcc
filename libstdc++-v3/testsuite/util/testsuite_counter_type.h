@@ -95,10 +95,7 @@ namespace __gnu_test
     { return val == rhs.val; }
 
     bool operator<(const counter_type& rhs) const
-    {
-      ++less_compare_count;
-      return val < rhs.val;
-    }
+    { return val < rhs.val; }
   };
 
   int counter_type::default_count = 0;

@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-O2 -fgnu89-inline" } */
+/* { dg-options "-O2" } */
 
 int bar (int, const char *, int, ...);
 int baz (int, const char *, long int);

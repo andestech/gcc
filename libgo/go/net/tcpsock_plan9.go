@@ -32,7 +32,7 @@ func (c *TCPConn) CloseRead() error {
 	if !c.ok() {
 		return syscall.EINVAL
 	}
-	return c.fd.closeRead()
+	return c.fd.CloseRead()
 }
 
 // CloseWrite shuts down the writing side of the TCP connection.
@@ -41,21 +41,20 @@ func (c *TCPConn) CloseWrite() error {
 	if !c.ok() {
 		return syscall.EINVAL
 	}
-	return c.fd.closeWrite()
+	return c.fd.CloseWrite()
 }
 
-// SetLinger sets the behavior of Close on a connection which still
+// SetLinger sets the behavior of Close() on a connection which still
 // has data waiting to be sent or to be acknowledged.
 //
-// If sec < 0 (the default), the operating system finishes sending the
-// data in the background.
+// If sec < 0 (the default), Close returns immediately and the
+// operating system finishes sending the data in the background.
 //
-// If sec == 0, the operating system discards any unsent or
-// unacknowledged data.
+// If sec == 0, Close returns immediately and the operating system
+// discards any unsent or unacknowledged data.
 //
-// If sec > 0, the data is sent in the background as with sec < 0. On
-// some operating systems after sec seconds have elapsed any remaining
-// unsent data may be discarded.
+// If sec > 0, Close blocks for at most sec seconds waiting for data
+// to be sent and acknowledged.
 func (c *TCPConn) SetLinger(sec int) error {
 	return syscall.EPLAN9
 }
@@ -63,18 +62,12 @@ func (c *TCPConn) SetLinger(sec int) error {
 // SetKeepAlive sets whether the operating system should send
 // keepalive messages on the connection.
 func (c *TCPConn) SetKeepAlive(keepalive bool) error {
-	if !c.ok() {
-		return syscall.EPLAN9
-	}
-	return setKeepAlive(c.fd, keepalive)
+	return syscall.EPLAN9
 }
 
 // SetKeepAlivePeriod sets period between keep alives.
 func (c *TCPConn) SetKeepAlivePeriod(d time.Duration) error {
-	if !c.ok() {
-		return syscall.EPLAN9
-	}
-	return setKeepAlivePeriod(c.fd, d)
+	return syscall.EPLAN9
 }
 
 // SetNoDelay controls whether the operating system should delay

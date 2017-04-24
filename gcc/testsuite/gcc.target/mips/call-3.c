@@ -4,7 +4,6 @@
 
 __attribute__ ((visibility ("hidden"))) void g ();
 
-int
 NOMIPS16 f ()
 {
   g ();

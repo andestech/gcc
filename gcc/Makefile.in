@@ -115,10 +115,6 @@ vpath %.texi $(gcc_docdir)/include
 # UNSORTED
 # --------
 
-# Extra flags to pass to indicate cross compilation, which
-# might be used or tested by Make-lang fragments.
-CROSS=@CROSS@
-
 # Variables that exist for you to override.
 # See below for how to change them for certain systems.
 
@@ -127,8 +123,7 @@ SUBDIRS =@subdirs@ build
 
 # Selection of languages to be made.
 CONFIG_LANGUAGES = @all_selected_languages@
-LANGUAGES = c gcov$(exeext) gcov-dump$(exeext) gcov-tool$(exeext) \
-            $(CONFIG_LANGUAGES)
+LANGUAGES = c gcov$(exeext) gcov-dump$(exeext) $(CONFIG_LANGUAGES)
 
 # Default values for variables overridden in Makefile fragments.
 # CFLAGS is for the user to override to, e.g., do a cross build with -O2.
@@ -201,11 +196,6 @@ GCC_WARN_CXXFLAGS = $(LOOSE_WARN) $($(@D)-warn) $(NOCOMMON_FLAG) $($@-warn)
 # flex output may yield harmless "no previous prototype" warnings
 build/gengtype-lex.o-warn = -Wno-error
 gengtype-lex.o-warn = -Wno-error
-libgcov-util.o-warn = -Wno-error
-libgcov-driver-tool.o-warn = -Wno-error
-libgcov-merge-tool.o-warn = -Wno-error
-gimple-match.o-warn = -Wno-unused-variable -Wno-unused-parameter
-generic-match.o-warn = -Wno-unused-variable -Wno-unused-parameter
 
 # All warnings have to be shut off in stage1 if the compiler used then
 # isn't gcc; configure determines that.  WARN_CFLAGS will be either
@@ -341,7 +331,6 @@ GMPLIBS = @GMPLIBS@
 GMPINC = @GMPINC@
 
 # How to find ISL
-ISLLIBS = @ISLLIBS@
 ISLINC = @ISLINC@
 
 # How to find CLOOG
@@ -502,7 +491,7 @@ out_file=$(srcdir)/config/@out_file@
 out_object_file=@out_object_file@
 common_out_file=$(srcdir)/common/config/@common_out_file@
 common_out_object_file=@common_out_object_file@
-md_file=$(srcdir)/common.md $(srcdir)/config/@md_file@
+md_file=$(srcdir)/config/@md_file@
 tm_file_list=@tm_file_list@
 tm_include_list=@tm_include_list@
 tm_defines=@tm_defines@
@@ -519,10 +508,34 @@ xm_include_list=@xm_include_list@
 xm_defines=@xm_defines@
 lang_checks=
 lang_checks_parallelized=
-# Upper limit to which it is useful to parallelize this lang target.
-# It doesn't make sense to try e.g. 128 goals for small testsuites
-# like objc or go.
-check_gcc_parallelize=10000
+dg_target_exps:=aarch64.exp,alpha.exp,arm.exp,avr.exp,bfin.exp,cris.exp
+dg_target_exps:=$(dg_target_exps),epiphany.exp,frv.exp,i386.exp,ia64.exp
+dg_target_exps:=$(dg_target_exps),m68k.exp,microblaze.exp,mips.exp,powerpc.exp
+dg_target_exps:=$(dg_target_exps),rx.exp,s390.exp,sh.exp,sparc.exp,spu.exp
+dg_target_exps:=$(dg_target_exps),tic6x.exp,xstormy16.exp
+# This lists a couple of test files that take most time during check-gcc.
+# When doing parallelized check-gcc, these can run in parallel with the
+# remaining tests.  Each word in this variable stands for work for one
+# make goal and one extra make goal is added to handle all the *.exp
+# files not handled explicitly already.  If multiple *.exp files
+# should be run in the same runtest invocation (usually if they aren't
+# very long running, but still should be split of from the check-parallel-$lang
+# remaining tests runtest invocation), they should be concatenated with commas.
+# Note that [a-zA-Z] wildcards need to have []s prefixed with \ (needed
+# by tcl) and as the *.exp arguments are mached both as is and with
+# */ prefixed to it in runtest_file_p, it is usually desirable to include
+# a subdirectory name.
+check_gcc_parallelize=execute.exp=execute/2* \
+		      execute.exp=execute/\[013-9a-fA-F\]* \
+		      execute.exp=execute/\[pP\]*,dg.exp \
+		      execute.exp=execute/\[g-oq-zG-OQ-Z\]*,compile.exp=compile/2* \
+		      compile.exp=compile/\[9pP\]*,builtins.exp \
+		      compile.exp=compile/\[013-8a-oq-zA-OQ-Z\]* \
+		      dg-torture.exp,ieee.exp \
+		      vect.exp,unsorted.exp \
+		      guality.exp \
+		      struct-layout-1.exp,stackalign.exp \
+		      $(dg_target_exps)
 lang_opt_files=@lang_opt_files@ $(srcdir)/c-family/c.opt $(srcdir)/common.opt
 lang_specs_files=@lang_specs_files@
 lang_tree_files=@lang_tree_files@
@@ -756,7 +769,6 @@ GCC_INSTALL_NAME := $(shell echo gcc|sed '$(program_transform_name)')
 GCC_TARGET_INSTALL_NAME := $(target_noncanonical)-$(shell echo gcc|sed '$(program_transform_name)')
 CPP_INSTALL_NAME := $(shell echo cpp|sed '$(program_transform_name)')
 GCOV_INSTALL_NAME := $(shell echo gcov|sed '$(program_transform_name)')
-GCOV_TOOL_INSTALL_NAME := $(shell echo gcov-tool|sed '$(program_transform_name)')
 
 # Setup the testing framework, if you have one
 EXPECT = `if [ -f $${rootme}/../expect/expect ] ; then \
@@ -875,10 +887,10 @@ TREE_H = tree.h $(TREE_CORE_H)  tree-check.h
 REGSET_H = regset.h $(BITMAP_H) hard-reg-set.h
 BASIC_BLOCK_H = basic-block.h $(PREDICT_H) $(VEC_H) $(FUNCTION_H) \
 	cfg-flags.def cfghooks.h
-GIMPLE_H = gimple.h gimple.def gsstruct.def $(VEC_H) \
+GIMPLE_H = gimple.h gimple.def gsstruct.def pointer-set.h $(VEC_H) \
 	$(GGC_H) $(BASIC_BLOCK_H) $(TREE_H) tree-ssa-operands.h \
 	tree-ssa-alias.h $(INTERNAL_FN_H) $(HASH_TABLE_H) is-a.h
-GCOV_IO_H = gcov-io.h gcov-iov.h auto-host.h gcov-counter.def
+GCOV_IO_H = gcov-io.h gcov-iov.h auto-host.h
 RECOG_H = recog.h
 EMIT_RTL_H = emit-rtl.h
 FLAGS_H = flags.h flag-types.h $(OPTIONS_H)
@@ -893,7 +905,7 @@ CFGLOOP_H = cfgloop.h $(BASIC_BLOCK_H) double-int.h \
 IPA_UTILS_H = ipa-utils.h $(TREE_H) $(CGRAPH_H)
 IPA_REFERENCE_H = ipa-reference.h $(BITMAP_H) $(TREE_H)
 CGRAPH_H = cgraph.h $(VEC_H) $(TREE_H) $(BASIC_BLOCK_H) $(FUNCTION_H) \
-	cif-code.def ipa-ref.h $(LINKER_PLUGIN_API_H) is-a.h
+	cif-code.def ipa-ref.h ipa-ref-inline.h $(LINKER_PLUGIN_API_H) is-a.h
 DF_H = df.h $(BITMAP_H) $(REGSET_H) sbitmap.h $(BASIC_BLOCK_H) \
 	alloc-pool.h $(TIMEVAR_H)
 RESOURCE_H = resource.h hard-reg-set.h $(DF_H)
@@ -922,7 +934,7 @@ TREE_SSA_H = tree-ssa.h tree-ssa-operands.h \
 		$(BITMAP_H) sbitmap.h $(BASIC_BLOCK_H) $(GIMPLE_H) \
 		$(HASHTAB_H) $(CGRAPH_H) $(IPA_REFERENCE_H) \
 		tree-ssa-alias.h
-PRETTY_PRINT_H = pretty-print.h $(INPUT_H) $(OBSTACK_H) wide-int-print.h
+PRETTY_PRINT_H = pretty-print.h $(INPUT_H) $(OBSTACK_H)
 TREE_PRETTY_PRINT_H = tree-pretty-print.h $(PRETTY_PRINT_H)
 GIMPLE_PRETTY_PRINT_H = gimple-pretty-print.h $(TREE_PRETTY_PRINT_H)
 DIAGNOSTIC_CORE_H = diagnostic-core.h $(INPUT_H) bversion.h diagnostic.def
@@ -933,7 +945,7 @@ TREE_INLINE_H = tree-inline.h
 REAL_H = real.h $(MACHMODE_H)
 LTO_STREAMER_H = lto-streamer.h $(LINKER_PLUGIN_API_H) $(TARGET_H) \
 		$(CGRAPH_H) $(VEC_H) $(HASH_TABLE_H) $(TREE_H) $(GIMPLE_H) \
-		$(GCOV_IO_H) $(DIAGNOSTIC_H) alloc-pool.h
+		$(GCOV_IO_H) $(DIAGNOSTIC_H) alloc-pool.h pointer-set.h
 IPA_PROP_H = ipa-prop.h $(TREE_H) $(VEC_H) $(CGRAPH_H) $(GIMPLE_H) alloc-pool.h
 BITMAP_H = bitmap.h $(HASHTAB_H) statistics.h
 GCC_PLUGIN_H = gcc-plugin.h highlev-plugin-common.h plugin.def \
@@ -994,7 +1006,7 @@ BUILD_LIBDEPS= $(BUILD_LIBIBERTY)
 # and the system's installed libraries.
 LIBS = @LIBS@ libcommon.a $(CPPLIB) $(LIBINTL) $(LIBICONV) $(LIBBACKTRACE) \
 	$(LIBIBERTY) $(LIBDECNUMBER) $(HOST_LIBS)
-BACKENDLIBS = $(CLOOGLIBS) $(ISLLIBS) $(GMPLIBS) $(PLUGINLIBS) $(HOST_LIBS) \
+BACKENDLIBS = $(CLOOGLIBS) $(GMPLIBS) $(PLUGINLIBS) $(HOST_LIBS) \
 	$(ZLIB)
 # Any system libraries needed just for GNAT.
 SYSLIBS = @GNAT_LIBEXC@
@@ -1080,10 +1092,6 @@ FLAGS_TO_PASS = \
 	"LDFLAGS=$(LDFLAGS)" \
 	"FLEX=$(FLEX)" \
 	"FLEXFLAGS=$(FLEXFLAGS)" \
-	"INSTALL=$(INSTALL)" \
-	"INSTALL_DATA=$(INSTALL_DATA)" \
-	"INSTALL_PROGRAM=$(INSTALL_PROGRAM)" \
-	"INSTALL_SCRIPT=$(INSTALL_SCRIPT)" \
 	"LN=$(LN)" \
 	"LN_S=$(LN_S)" \
 	"MAKEINFO=$(MAKEINFO)" \
@@ -1155,7 +1163,6 @@ OBJS = \
 	alias.o \
 	alloc-pool.o \
 	auto-inc-dec.o \
-	auto-profile.o \
 	bb-reorder.o \
 	bitmap.o \
 	bt-load.o \
@@ -1229,8 +1236,6 @@ OBJS = \
 	gimple-iterator.o \
 	gimple-fold.o \
 	gimple-low.o \
-	gimple-match.o \
-	generic-match.o \
 	gimple-pretty-print.o \
 	gimple-ssa-isolate-paths.o \
 	gimple-ssa-strength-reduction.o \
@@ -1245,7 +1250,6 @@ OBJS = \
 	graphite.o \
 	graphite-blocking.o \
 	graphite-clast-to-gimple.o \
-	graphite-isl-ast-to-gimple.o \
 	graphite-dependences.o \
 	graphite-interchange.o \
 	graphite-optimize-isl.o \
@@ -1258,25 +1262,18 @@ OBJS = \
 	hwint.o \
 	ifcvt.o \
 	ree.o \
-	inchash.o \
 	incpath.o \
 	init-regs.o \
 	internal-fn.o \
-	ipa-chkp.o \
 	ipa-cp.o \
 	ipa-devirt.o \
-	ipa-polymorphic-call.o \
 	ipa-split.o \
 	ipa-inline.o \
-	ipa-comdats.o \
-	ipa-visibility.o \
 	ipa-inline-analysis.o \
 	ipa-inline-transform.o \
 	ipa-profile.o \
 	ipa-prop.o \
 	ipa-pure-const.o \
-	ipa-icf.o \
-	ipa-icf-gimple.o \
 	ipa-reference.o \
 	ipa-ref.o \
 	ipa-utils.o \
@@ -1297,6 +1294,7 @@ OBJS = \
 	loop-invariant.o \
 	loop-iv.o \
 	loop-unroll.o \
+	loop-unswitch.o \
 	lower-subreg.o \
 	lra.o \
 	lra-assigns.o \
@@ -1323,6 +1321,7 @@ OBJS = \
 	opts-global.o \
 	passes.o \
 	plugin.o \
+	pointer-set.o \
 	postreload-gcse.o \
 	postreload.o \
 	predict.o \
@@ -1341,10 +1340,8 @@ OBJS = \
 	reload1.o \
 	reorg.o \
 	resource.o \
-	rtl-chkp.o \
 	rtl-error.o \
 	rtl.o \
-	rtlhash.o \
 	rtlanal.o \
 	rtlhooks.o \
 	sbitmap.o \
@@ -1357,7 +1354,6 @@ OBJS = \
 	sel-sched-dump.o \
 	sel-sched.o \
 	sese.o \
-	shrink-wrap.o \
 	simplify-rtx.o \
 	sparseset.o \
 	sreal.o \
@@ -1378,7 +1374,6 @@ OBJS = \
 	asan.o \
 	tsan.o \
 	ubsan.o \
-	sanopt.o \
 	tree-call-cdce.o \
 	tree-cfg.o \
 	tree-cfgcleanup.o \
@@ -1401,14 +1396,13 @@ OBJS = \
 	tree-outof-ssa.o \
 	tree-parloops.o \
 	tree-phinodes.o \
-	tree-chkp.o \
-	tree-chkp-opt.o \
 	tree-predcom.o \
 	tree-pretty-print.o \
 	tree-profile.o \
 	tree-scalar-evolution.o \
 	tree-sra.o \
 	tree-switch-conversion.o \
+	tree-switch-shortcut.o \
 	tree-ssa-address.o \
 	tree-ssa-alias.o \
 	tree-ssa-ccp.o \
@@ -1472,8 +1466,6 @@ OBJS = \
 	vmsdbgout.o \
 	vtable-verify.o \
 	web.o \
-	wide-int.o \
-	wide-int-print.o \
 	xcoffout.o \
 	$(out_object_file) \
 	$(EXTRA_OBJS) \
@@ -1496,7 +1488,7 @@ ALL_HOST_FRONTEND_OBJS = $(foreach v,$(CONFIG_LANGUAGES),$($(v)_OBJS))
 ALL_HOST_BACKEND_OBJS = $(GCC_OBJS) $(OBJS) $(OBJS-libcommon) \
   $(OBJS-libcommon-target) @TREEBROWSER@ main.o c-family/cppspec.o \
   $(COLLECT2_OBJS) $(EXTRA_GCC_OBJS) $(GCOV_OBJS) $(GCOV_DUMP_OBJS) \
-  $(GCOV_TOOL_OBJS) lto-wrapper.o collect-utils.o
+  lto-wrapper.o
 
 # This lists all host object files, whether they are included in this
 # compilation or not.
@@ -1513,7 +1505,7 @@ MOSTLYCLEANFILES = insn-flags.h insn-config.h insn-codes.h \
  insn-output.c insn-recog.c insn-emit.c insn-extract.c insn-peep.c \
  insn-attr.h insn-attr-common.h insn-attrtab.c insn-dfatab.c \
  insn-latencytab.c insn-opinit.c insn-opinit.h insn-preds.c insn-constants.h \
- tm-preds.h tm-constrs.h checksum-options gimple-match.c generic-match.c \
+ tm-preds.h tm-constrs.h checksum-options \
  tree-check.h min-insn-modes.c insn-modes.c insn-modes.h \
  genrtl.h gt-*.h gtype-*.h gtype-desc.c gtyp-input.list \
  xgcc$(exeext) cpp$(exeext) \
@@ -1521,7 +1513,6 @@ MOSTLYCLEANFILES = insn-flags.h insn-config.h insn-codes.h \
  $(SPECS) collect2$(exeext) gcc-ar$(exeext) gcc-nm$(exeext) \
  gcc-ranlib$(exeext) \
  gcov-iov$(build_exeext) gcov$(exeext) gcov-dump$(exeext) \
- gcov-tool$(exeect) \
  gengtype$(exeext) *.[0-9][0-9].* *.[si] *-checksum.c libbackend.a \
  libcommon-target.a libcommon.a libgcc.mk
 
@@ -1678,7 +1669,6 @@ aclocal_deps = \
 	$(srcdir)/../config/codeset.m4 \
 	$(srcdir)/../config/extensions.m4 \
 	$(srcdir)/../config/gettext-sister.m4 \
-	$(srcdir)/../config/gcc-plugin.m4 \
 	$(srcdir)/../config/iconv.m4 \
 	$(srcdir)/../config/lcmessage.m4 \
 	$(srcdir)/../config/lib-ld.m4 \
@@ -1906,8 +1896,7 @@ gcc-ranlib.c: gcc-ar.c
 gcc-nm.c: gcc-ar.c
 	cp $^ $@
 
-COLLECT2_OBJS = collect2.o collect2-aix.o tlink.o vec.o ggc-none.o \
-  collect-utils.o file-find.o
+COLLECT2_OBJS = collect2.o collect2-aix.o tlink.o vec.o ggc-none.o file-find.o
 COLLECT2_LIBS = @COLLECT2_LIBS@
 collect2$(exeext): $(COLLECT2_OBJS) $(LIBDEPS)
 # Don't try modifying collect2 (aka ld) in place--it might be linking this.
@@ -1918,10 +1907,9 @@ collect2$(exeext): $(COLLECT2_OBJS) $(LIBDEPS)
 CFLAGS-collect2.o += -DTARGET_MACHINE=\"$(target_noncanonical)\" \
 	@TARGET_SYSTEM_ROOT_DEFINE@
 
-LTO_WRAPPER_OBJS = lto-wrapper.o collect-utils.o ggc-none.o
-lto-wrapper$(exeext): $(LTO_WRAPPER_OBJS) libcommon-target.a $(LIBDEPS)
+lto-wrapper$(exeext): lto-wrapper.o ggc-none.o libcommon-target.a $(LIBDEPS)
 	+$(LINKER) $(ALL_COMPILERFLAGS) $(LDFLAGS) -o T$@ \
-	   $(LTO_WRAPPER_OBJS) libcommon-target.a $(LIBS)
+	    lto-wrapper.o ggc-none.o libcommon-target.a $(LIBS)
 	mv -f T$@ $@
 
 # Files used by all variants of C or by the stand-alone pre-processor.
@@ -2031,7 +2019,7 @@ $(common_out_object_file): $(common_out_file)
 .PRECIOUS: insn-config.h insn-flags.h insn-codes.h insn-constants.h \
   insn-emit.c insn-recog.c insn-extract.c insn-output.c insn-peep.c \
   insn-attr.h insn-attr-common.h insn-attrtab.c insn-dfatab.c \
-  insn-latencytab.c insn-preds.c gimple-match.c generic-match.c
+  insn-latencytab.c insn-preds.c
 
 # Dependencies for the md file.  The first time through, we just assume
 # the md file itself and the generated dependency file (in order to get
@@ -2240,35 +2228,20 @@ s-tm-texi: build/genhooks$(build_exeext) $(srcdir)/doc/tm.texi.in
 	  false; \
 	fi
 
-gimple-match.c: s-match gimple-match-head.c ; @true
-generic-match.c: s-match generic-match-head.c ; @true
-
-s-match: build/genmatch$(build_exeext) $(srcdir)/match.pd
-	$(RUN_GEN) build/genmatch$(build_exeext) --gimple $(srcdir)/match.pd \
-	    > tmp-gimple-match.c
-	$(RUN_GEN) build/genmatch$(build_exeext) --generic $(srcdir)/match.pd \
-	    > tmp-generic-match.c
-	$(SHELL) $(srcdir)/../move-if-change tmp-gimple-match.c \
-	    					gimple-match.c
-	$(SHELL) $(srcdir)/../move-if-change tmp-generic-match.c \
-	    					generic-match.c
-	$(STAMP) s-match
-
 GTFILES = $(CPP_ID_DATA_H) $(srcdir)/input.h $(srcdir)/coretypes.h \
   $(host_xm_file_list) \
   $(tm_file_list) $(HASHTAB_H) $(SPLAY_TREE_H) $(srcdir)/bitmap.h \
-  $(srcdir)/wide-int.h $(srcdir)/alias.h $(srcdir)/coverage.c $(srcdir)/rtl.h \
+  $(srcdir)/alias.h $(srcdir)/coverage.c $(srcdir)/rtl.h \
   $(srcdir)/optabs.h $(srcdir)/tree.h $(srcdir)/tree-core.h \
   $(srcdir)/libfuncs.h $(SYMTAB_H) \
   $(srcdir)/real.h $(srcdir)/function.h $(srcdir)/insn-addr.h $(srcdir)/hwint.h \
   $(srcdir)/fixed-value.h \
-  $(srcdir)/output.h $(srcdir)/cfgloop.h $(srcdir)/cfg.h \
+  $(srcdir)/output.h $(srcdir)/cfgloop.h \
   $(srcdir)/cselib.h $(srcdir)/basic-block.h  $(srcdir)/ipa-ref.h $(srcdir)/cgraph.h \
   $(srcdir)/reload.h $(srcdir)/caller-save.c $(srcdir)/symtab.c \
   $(srcdir)/alias.c $(srcdir)/bitmap.c $(srcdir)/cselib.c $(srcdir)/cgraph.c \
   $(srcdir)/ipa-prop.c $(srcdir)/ipa-cp.c $(srcdir)/ipa-utils.h \
   $(srcdir)/dbxout.c \
-  $(srcdir)/signop.h \
   $(srcdir)/dwarf2out.h \
   $(srcdir)/dwarf2asm.c \
   $(srcdir)/dwarf2cfi.c \
@@ -2286,7 +2259,6 @@ GTFILES = $(CPP_ID_DATA_H) $(srcdir)/input.h $(srcdir)/coretypes.h \
   $(srcdir)/stringpool.c $(srcdir)/tree.c $(srcdir)/varasm.c \
   $(srcdir)/gimple.h \
   $(srcdir)/gimple-ssa.h \
-  $(srcdir)/tree-chkp.c \
   $(srcdir)/tree-ssanames.c $(srcdir)/tree-eh.c $(srcdir)/tree-ssa-address.c \
   $(srcdir)/tree-cfg.c \
   $(srcdir)/tree-dfa.c \
@@ -2299,6 +2271,7 @@ GTFILES = $(CPP_ID_DATA_H) $(srcdir)/input.h $(srcdir)/coretypes.h \
   $(srcdir)/omp-low.c \
   $(srcdir)/targhooks.c $(out_file) $(srcdir)/passes.c $(srcdir)/cgraphunit.c \
   $(srcdir)/cgraphclones.c \
+  $(srcdir)/tree-ssa-propagate.c \
   $(srcdir)/tree-phinodes.c \
   $(srcdir)/tree-ssa-alias.h \
   $(srcdir)/tree-ssanames.h \
@@ -2311,7 +2284,6 @@ GTFILES = $(CPP_ID_DATA_H) $(srcdir)/input.h $(srcdir)/coretypes.h \
   $(srcdir)/asan.c \
   $(srcdir)/ubsan.c \
   $(srcdir)/tsan.c \
-  $(srcdir)/sanopt.c \
   $(srcdir)/ipa-devirt.c \
   $(srcdir)/internal-fn.h \
   @all_gtfiles@
@@ -2404,8 +2376,6 @@ build/rtl.o: rtl.c $(BCONFIG_H) coretypes.h $(GTM_H) $(SYSTEM_H)	\
   $(RTL_H) $(GGC_H) errors.h
 build/vec.o : vec.c $(BCONFIG_H) $(SYSTEM_H) coretypes.h $(VEC_H)	\
    $(GGC_H) toplev.h $(DIAGNOSTIC_CORE_H)
-build/hash-table.o : hash-table.c $(BCONFIG_H) $(SYSTEM_H) coretypes.h  \
-   $(HASH_TABLE_H) $(GGC_H) toplev.h $(DIAGNOSTIC_CORE_H)
 build/gencondmd.o : build/gencondmd.c $(BCONFIG_H) $(SYSTEM_H)		\
   coretypes.h $(GTM_H) insn-constants.h					\
   $(filter-out insn-flags.h, $(RTL_H) $(TM_P_H) $(FUNCTION_H) $(REGS_H) \
@@ -2476,9 +2446,10 @@ gengtype-state.o build/gengtype-state.o: gengtype-state.c $(SYSTEM_H) \
 gengtype-state.o: $(CONFIG_H)
 CFLAGS-gengtype-state.o += -DGENERATOR_FILE
 build/gengtype-state.o: $(BCONFIG_H)
+
 gengtype.o build/gengtype.o : gengtype.c $(SYSTEM_H) gengtype.h 	\
-  rtl.def insn-notes.def errors.h double-int.h version.h     		\
-  $(HASHTAB_H) $(OBSTACK_H) $(XREGEX_H)
+  rtl.def insn-notes.def errors.h double-int.h version.h $(HASHTAB_H) \
+  $(OBSTACK_H) $(XREGEX_H)
 gengtype.o: $(CONFIG_H)
 CFLAGS-gengtype.o += -DGENERATOR_FILE
 build/gengtype.o: $(BCONFIG_H)
@@ -2501,8 +2472,6 @@ build/genhooks.o : genhooks.c $(TARGET_DEF) $(C_TARGET_DEF)		\
   $(COMMON_TARGET_DEF) $(BCONFIG_H) $(SYSTEM_H) errors.h
 build/genmddump.o : genmddump.c $(RTL_BASE_H) $(BCONFIG_H) $(SYSTEM_H)	\
   coretypes.h $(GTM_H) errors.h $(READ_MD_H) gensupport.h
-build/genmatch.o : genmatch.c $(BCONFIG_H) $(SYSTEM_H) \
-  coretypes.h errors.h $(HASH_TABLE_H) hash-map.h $(GGC_H)
 
 # Compile the programs that generate insn-* from the machine description.
 # They are compiled with $(COMPILER_FOR_BUILD), and associated libraries,
@@ -2523,24 +2492,10 @@ genprogerr = $(genprogmd) genrtl modes gtype hooks
 $(genprogerr:%=build/gen%$(build_exeext)): $(BUILD_ERRORS)
 
 # Remaining build programs.
-genprog = $(genprogerr) check checksum condmd match
+genprog = $(genprogerr) check checksum condmd
 
 # These programs need libs over and above what they get from the above list.
 build/genautomata$(build_exeext) : BUILD_LIBS += -lm
-
-# For stage1 and when cross-compiling use the build libcpp which is
-# built with NLS disabled.  For stage2+ use the host library and
-# its dependencies.
-ifeq ($(build_objdir),$(build_libobjdir))
-BUILD_CPPLIB = $(build_libobjdir)/libcpp/libcpp.a
-else
-BUILD_CPPLIB = $(CPPLIB) $(LIBIBERTY)
-build/genmatch$(build_exeext): BUILD_LIBDEPS += $(LIBINTL_DEP) $(LIBICONV_DEP)
-build/genmatch$(build_exeext): BUILD_LIBS += $(LIBINTL) $(LIBICONV)
-endif
-
-build/genmatch$(build_exeext) : $(BUILD_CPPLIB) \
-  $(BUILD_ERRORS) build/vec.o build/hash-table.o
 
 # These programs are not linked with the MD reader.
 build/gengtype$(build_exeext) : build/gengtype-lex.o build/gengtype-parse.o \
@@ -2618,22 +2573,6 @@ GCOV_DUMP_OBJS = gcov-dump.o
 gcov-dump$(exeext): $(GCOV_DUMP_OBJS) $(LIBDEPS)
 	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_DUMP_OBJS) \
 		$(LIBS) -o $@
-
-GCOV_TOOL_DEP_FILES = $(srcdir)/../libgcc/libgcov-util.c gcov-io.c $(GCOV_IO_H) \
-  $(srcdir)/../libgcc/libgcov-driver.c $(srcdir)/../libgcc/libgcov-driver-system.c \
-  $(srcdir)/../libgcc/libgcov-merge.c $(srcdir)/../libgcc/libgcov.h \
-  $(SYSTEM_H) coretypes.h $(TM_H) $(CONFIG_H) version.h intl.h $(DIAGNOSTIC_H)
-libgcov-util.o: $(srcdir)/../libgcc/libgcov-util.c $(GCOV_TOOL_DEP_FILES)
-	+$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) -o $@ $<
-libgcov-driver-tool.o: $(srcdir)/../libgcc/libgcov-driver.c $(GCOV_TOOL_DEP_FILES)
-	+$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) \
-	  -DIN_GCOV_TOOL=1 -o $@ $<
-libgcov-merge-tool.o: $(srcdir)/../libgcc/libgcov-merge.c $(GCOV_TOOL_DEP_FILES)
-	+$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) \
-	  -DIN_GCOV_TOOL=1 -o $@ $<
-GCOV_TOOL_OBJS = gcov-tool.o libgcov-util.o libgcov-driver-tool.o libgcov-merge-tool.o
-gcov-tool$(exeext): $(GCOV_TOOL_OBJS) $(LIBDEPS)
-	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) $(GCOV_TOOL_OBJS) $(LIBS) -o $@
 #
 # Build the include directories.  The stamp files are stmp-* rather than
 # s-* so that mostlyclean does not force the include directory to
@@ -2862,8 +2801,7 @@ TEXI_GCC_FILES = gcc.texi gcc-common.texi gcc-vers.texi frontends.texi	\
 	 contribute.texi compat.texi funding.texi gnu.texi gpl_v3.texi	\
 	 fdl.texi contrib.texi cppenv.texi cppopts.texi avr-mmcu.texi	\
 	 implement-c.texi implement-cxx.texi arm-neon-intrinsics.texi	\
-	 arm-acle-intrinsics.texi aarch64-acle-intrinsics.texi          \
-	 gcov-tool.texi
+	 arm-acle-intrinsics.texi
 
 # we explicitly use $(srcdir)/doc/tm.texi here to avoid confusion with
 # the generated tm.texi; the latter might have a more recent timestamp,
@@ -2876,8 +2814,7 @@ TEXI_GCCINT_FILES = gccint.texi gcc-common.texi gcc-vers.texi		\
 	 configfiles.texi collect2.texi headerdirs.texi funding.texi	\
 	 gnu.texi gpl_v3.texi fdl.texi contrib.texi languages.texi	\
 	 sourcebuild.texi gty.texi libgcc.texi cfg.texi tree-ssa.texi	\
-	 loop.texi generic.texi gimple.texi plugins.texi optinfo.texi   \
-	 match-and-simplify.texi
+	 loop.texi generic.texi gimple.texi plugins.texi optinfo.texi
 
 TEXI_GCCINSTALL_FILES = install.texi install-old.texi fdl.texi		\
 	 gcc-common.texi gcc-vers.texi
@@ -2985,8 +2922,7 @@ $(build_htmldir)/gccinstall/index.html: $(TEXI_GCCINSTALL_FILES)
 	DESTDIR=$(@D) \
 	$(SHELL) $(srcdir)/doc/install.texi2html
 
-MANFILES = doc/gcov.1 doc/cpp.1 doc/gcc.1 doc/gfdl.7 doc/gpl.7 \
-           doc/fsf-funding.7 doc/gcov-tool.1
+MANFILES = doc/gcov.1 doc/cpp.1 doc/gcc.1 doc/gfdl.7 doc/gpl.7 doc/fsf-funding.7
 
 generated-manpages: man
 
@@ -3175,7 +3111,7 @@ installdirs:
 	$(mkinstalldirs) $(DESTDIR)$(man7dir)
 
 PLUGIN_HEADERS = $(TREE_H) $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) \
-  toplev.h $(DIAGNOSTIC_CORE_H) $(BASIC_BLOCK_H) $(HASH_TABLE_H) \
+  toplev.h $(DIAGNOSTIC_CORE_H) $(BASIC_BLOCK_H) pointer-set.h $(HASH_TABLE_H) \
   tree-ssa-alias.h $(INTERNAL_FN_H) gimple-fold.h tree-eh.h gimple-expr.h \
   gimple.h is-a.h $(TREE_PASS_H) $(GCC_PLUGIN_H) \
   $(GGC_H) $(TREE_DUMP_H) $(PRETTY_PRINT_H) $(OPTS_H) $(PARAMS_H) \
@@ -3199,8 +3135,7 @@ PLUGIN_HEADERS = $(TREE_H) $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) \
   tree-parloops.h tree-ssa-address.h tree-ssa-coalesce.h tree-ssa-dom.h \
   tree-ssa-loop.h tree-ssa-loop-ivopts.h tree-ssa-loop-manip.h \
   tree-ssa-loop-niter.h tree-ssa-ter.h tree-ssa-threadedge.h \
-  tree-ssa-threadupdate.h inchash.h wide-int.h signop.h hash-map.h \
-  hash-set.h pass-instances.def
+  tree-ssa-threadupdate.h pass-instances.def
 
 # generate the 'build fragment' b-header-vars
 s-header-vars: Makefile
@@ -3273,13 +3208,6 @@ install-common: native lang.install-common installdirs
 	then \
 	    rm -f $(DESTDIR)$(bindir)/$(GCOV_INSTALL_NAME)$(exeext); \
 	    $(INSTALL_PROGRAM) gcov$(exeext) $(DESTDIR)$(bindir)/$(GCOV_INSTALL_NAME)$(exeext); \
-	fi
-# Install gcov-tool if it was compiled.
-	-if [ -f gcov-tool$(exeext) ]; \
-	then \
-	    rm -f $(DESTDIR)$(bindir)/$(GCOV_TOOL_INSTALL_NAME)$(exeext); \
-	    $(INSTALL_PROGRAM) \
-	    gcov-tool$(exeext) $(DESTDIR)$(bindir)/$(GCOV_TOOL_INSTALL_NAME)$(exeext); \
 	fi
 
 # Install the driver program as $(target_noncanonical)-gcc,
@@ -3382,11 +3310,6 @@ $(DESTDIR)$(man1dir)/$(CPP_INSTALL_NAME)$(man1ext): doc/cpp.1 installdirs
 	-chmod a-x $@
 
 $(DESTDIR)$(man1dir)/$(GCOV_INSTALL_NAME)$(man1ext): doc/gcov.1 installdirs
-	-rm -f $@
-	-$(INSTALL_DATA) $< $@
-	-chmod a-x $@
-
-$(DESTDIR)$(man1dir)/$(GCOV_TOOL_INSTALL_NAME)$(man1ext): doc/gcov-tool.1 installdirs
 	-rm -f $@
 	-$(INSTALL_DATA) $< $@
 	-chmod a-x $@
@@ -3660,33 +3583,27 @@ $(filter-out $(lang_checks_parallelized),$(lang_checks)): check-% : site.exp
 	    export TCL_LIBRARY ; fi ; \
 	$(RUNTEST) --tool $* $(RUNTESTFLAGS))
 
-$(patsubst %,%-subtargets,$(lang_checks)): check-%-subtargets:
+$(patsubst %,%-subtargets,$(filter-out $(lang_checks_parallelized),$(lang_checks))): check-%-subtargets:
 	@echo check-$*
 
 check_p_tool=$(firstword $(subst _, ,$*))
-check_p_count=$(check_$(check_p_tool)_parallelize)
+check_p_vars=$(check_$(check_p_tool)_parallelize)
 check_p_subno=$(word 2,$(subst _, ,$*))
-check_p_numbers0:=1 2 3 4 5 6 7 8 9
-check_p_numbers1:=0 $(check_p_numbers0)
-check_p_numbers2:=$(foreach i,$(check_p_numbers0),$(addprefix $(i),$(check_p_numbers1)))
-check_p_numbers3:=$(addprefix 0,$(check_p_numbers1)) $(check_p_numbers2)
-check_p_numbers4:=$(foreach i,$(check_p_numbers0),$(addprefix $(i),$(check_p_numbers3)))
-check_p_numbers5:=$(addprefix 0,$(check_p_numbers3)) $(check_p_numbers4)
-check_p_numbers6:=$(foreach i,$(check_p_numbers0),$(addprefix $(i),$(check_p_numbers5)))
-check_p_numbers:=$(check_p_numbers0) $(check_p_numbers2) $(check_p_numbers4) $(check_p_numbers6)
+check_p_comma=,
+check_p_subwork=$(subst $(check_p_comma), ,$(if $(check_p_subno),$(word $(check_p_subno),$(check_p_vars))))
+check_p_numbers=1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
 check_p_subdir=$(subst _,,$*)
-check_p_subdirs=$(wordlist 1,$(check_p_count),$(wordlist 1, \
-		$(if $(GCC_TEST_PARALLEL_SLOTS),$(GCC_TEST_PARALLEL_SLOTS),128), \
-		$(check_p_numbers)))
+check_p_subdirs=$(wordlist 1,$(words $(check_$*_parallelize)),$(check_p_numbers))
 
 # For parallelized check-% targets, this decides whether parallelization
-# is desirable (if -jN is used).  If desirable, recursive make is run with
-# check-parallel-$lang{,1,2,3,4,5} etc. goals, which can be executed in
-# parallel, as they are run in separate directories.
-# check-parallel-$lang{,1,2,3,4,5} etc. goals invoke runtest with
-# GCC_RUNTEST_PARALLELIZE_DIR var in the environment and runtest_file_p
-# dejaGNU procedure is overridden to additionally synchronize through
-# a $lang-parallel directory which tests will be run by which runtest instance.
+# is desirable (if -jN is used and RUNTESTFLAGS doesn't contain anything
+# but optional --target_board or --extra_opts arguments).  If desirable,
+# recursive make is run with check-parallel-$lang{,1,2,3,4,5} etc. goals,
+# which can be executed in parallel, as they are run in separate directories.
+# check-parallel-$lang{1,2,3,4,5} etc. goals invoke runtest with the longest
+# running *.exp files from the testsuite, as determined by check_$lang_parallelize
+# variable.  The check-parallel-$lang goal in that case invokes runtest with
+# all the remaining *.exp files not handled by the separate goals.
 # Afterwards contrib/dg-extract-results.sh is used to merge the sum and log
 # files.  If parallelization isn't desirable, only one recursive make
 # is run with check-parallel-$lang goal and check_$lang_parallelize variable
@@ -3697,60 +3614,76 @@ check_p_subdirs=$(wordlist 1,$(check_p_count),$(wordlist 1, \
 # to lang_checks_parallelized variable and define check_$lang_parallelize
 # variable (see above check_gcc_parallelize description).
 $(lang_checks_parallelized): check-% : site.exp
-	-rm -rf $(TESTSUITEDIR)/$*-parallel
-	@if [ "$(filter -j, $(MFLAGS))" = "-j" ]; then \
-	  test -d $(TESTSUITEDIR) || mkdir $(TESTSUITEDIR) || true; \
-	  test -d $(TESTSUITEDIR)/$*-parallel || mkdir $(TESTSUITEDIR)/$*-parallel || true; \
-	  GCC_RUNTEST_PARALLELIZE_DIR=`${PWD_COMMAND}`/$(TESTSUITEDIR)/$(check_p_tool)-parallel ; \
-	  export GCC_RUNTEST_PARALLELIZE_DIR ; \
+	@if [ -z "$(filter-out --target_board=%,$(filter-out --extra_opts%,$(RUNTESTFLAGS)))" ] \
+	    && [ "$(filter -j, $(MFLAGS))" = "-j" ]; then \
 	  $(MAKE) TESTSUITEDIR="$(TESTSUITEDIR)" RUNTESTFLAGS="$(RUNTESTFLAGS)" \
 	    check-parallel-$* \
 	    $(patsubst %,check-parallel-$*_%, $(check_p_subdirs)); \
-	  sums= ; logs= ; \
-	  for dir in $(TESTSUITEDIR)/$* \
-		     $(patsubst %,$(TESTSUITEDIR)/$*%,$(check_p_subdirs));\
+	  for file in $(TESTSUITEDIR)/$*/$* \
+		      $(patsubst %,$(TESTSUITEDIR)/$*%/$*,$(check_p_subdirs));\
 	  do \
-	    if [ -d $$dir ]; then \
-	      mv -f $$dir/$*.sum $$dir/$*.sum.sep; mv -f $$dir/$*.log $$dir/$*.log.sep; \
-	      sums="$$sums $$dir/$*.sum.sep"; logs="$$logs $$dir/$*.log.sep"; \
-	    fi; \
+	    mv -f $$file.sum $$file.sum.sep; mv -f $$file.log $$file.log.sep; \
 	  done; \
-	  $(SHELL) $(srcdir)/../contrib/dg-extract-results.sh $$sums \
+	  $(SHELL) $(srcdir)/../contrib/dg-extract-results.sh \
+	    $(TESTSUITEDIR)/$*/$*.sum.sep \
+	    $(patsubst %,$(TESTSUITEDIR)/$*%/$*.sum.sep,$(check_p_subdirs)) \
 	    > $(TESTSUITEDIR)/$*/$*.sum; \
-	  $(SHELL) $(srcdir)/../contrib/dg-extract-results.sh -L $$logs \
+	  $(SHELL) $(srcdir)/../contrib/dg-extract-results.sh -L \
+	    $(TESTSUITEDIR)/$*/$*.log.sep \
+	    $(patsubst %,$(TESTSUITEDIR)/$*%/$*.log.sep,$(check_p_subdirs)) \
 	    > $(TESTSUITEDIR)/$*/$*.log; \
-	  rm -rf $(TESTSUITEDIR)/$*-parallel || true; \
 	else \
 	  $(MAKE) TESTSUITEDIR="$(TESTSUITEDIR)" RUNTESTFLAGS="$(RUNTESTFLAGS)" \
 	    check_$*_parallelize= check-parallel-$*; \
 	fi
 
+# Just print the parallelized subtargets for those that want to split
+# the testing across machines.
+$(patsubst %,%-subtargets,$(lang_checks_parallelized)): check-%-subtargets:
+	@echo check-parallel-$* \
+	  $(patsubst %,check-parallel-$*_%, $(check_p_subdirs))
+
+# In the if [ -n "$(check_p_subno)" ] case runtest should be given the name of
+# the given *.exp file(s).  See comment above check_gcc_parallelize variable
+# for details on the content of these variables.
+#
+# In the elif [ -n "$(check_p_vars)" ] case runtest should be given
+# names of all the *.exp files for this tool that aren't already handled by
+# other goals.  First it finds all the *.exp files for this tool, then
+# prunes those already specified in check_$lang_parallelize or duplicates.
+#
+# Otherwise check-$lang isn't parallelized and runtest is invoked just with
+# the $(RUNTESTFLAGS) arguments.
 check-parallel-% : site.exp
-	-@test -d plugin || mkdir plugin
-	-@test -d $(TESTSUITEDIR) || mkdir $(TESTSUITEDIR)
-	@test -d $(TESTSUITEDIR)/$(check_p_subdir) || mkdir $(TESTSUITEDIR)/$(check_p_subdir)
-	-$(if $(check_p_subno),@)(rootme=`${PWD_COMMAND}`; export rootme; \
+	-test -d plugin || mkdir plugin
+	-test -d $(TESTSUITEDIR) || mkdir $(TESTSUITEDIR)
+	test -d $(TESTSUITEDIR)/$(check_p_subdir) || mkdir $(TESTSUITEDIR)/$(check_p_subdir)
+	-(rootme=`${PWD_COMMAND}`; export rootme; \
 	srcdir=`cd ${srcdir}; ${PWD_COMMAND}` ; export srcdir ; \
-	if [ -n "$(check_p_subno)" ] \
-	   && [ -n "$$GCC_RUNTEST_PARALLELIZE_DIR" ] \
-	   && [ -f $(TESTSUITEDIR)/$(check_p_tool)-parallel/finished ]; then \
-	  rm -rf $(TESTSUITEDIR)/$(check_p_subdir); \
-	else \
-	  cd $(TESTSUITEDIR)/$(check_p_subdir); \
-	  rm -f tmp-site.exp; \
-	  sed '/set tmpdir/ s|testsuite$$|$(TESTSUITEDIR)/$(check_p_subdir)|' \
+	cd $(TESTSUITEDIR)/$(check_p_subdir); \
+	rm -f tmp-site.exp; \
+	sed '/set tmpdir/ s|testsuite$$|$(TESTSUITEDIR)/$(check_p_subdir)|' \
 		< ../../site.exp > tmp-site.exp; \
-	  $(SHELL) $${srcdir}/../move-if-change tmp-site.exp site.exp; \
-	  EXPECT=${EXPECT} ; export EXPECT ; \
-	  if [ -f $${rootme}/../expect/expect ] ; then  \
-	    TCL_LIBRARY=`cd .. ; cd $${srcdir}/../tcl/library ; ${PWD_COMMAND}` ; \
-	    export TCL_LIBRARY ; \
-	  fi ; \
-	  $(RUNTEST) --tool $(check_p_tool) $(RUNTESTFLAGS); \
-	  if [ -n "$$GCC_RUNTEST_PARALLELIZE_DIR" ] ; then \
-	    touch $${rootme}/$(TESTSUITEDIR)/$(check_p_tool)-parallel/finished; \
-	  fi ; \
-	fi )
+	$(SHELL) $${srcdir}/../move-if-change tmp-site.exp site.exp; \
+	EXPECT=${EXPECT} ; export EXPECT ; \
+	if [ -f $${rootme}/../expect/expect ] ; then  \
+	   TCL_LIBRARY=`cd .. ; cd $${srcdir}/../tcl/library ; ${PWD_COMMAND}` ; \
+	    export TCL_LIBRARY ; fi ; \
+	runtestflags= ; \
+	if [ -n "$(check_p_subno)" ] ; then \
+	  runtestflags="$(check_p_subwork)"; \
+	elif [ -n "$(check_p_vars)" ] ; then \
+	  parts="`echo ' $(strip $(subst $(check_p_comma), ,$(check_p_vars))) ' \
+		  | sed 's/=[^ ]* / /g'`"; \
+	  for part in `find $$srcdir/testsuite/$(check_p_tool)* -name \*.exp` ; do \
+	    part=`basename $$part` ; \
+	    case " $$parts $$runtestflags " in \
+	      *" $$part "*) ;; \
+	      *) runtestflags="$$runtestflags $$part" ;; \
+	    esac ; \
+	  done ; \
+	fi ; \
+	$(RUNTEST) --tool $(check_p_tool) $(RUNTESTFLAGS) $$runtestflags)
 
 # QMTest targets
 
@@ -3823,12 +3756,7 @@ TAGS: lang.tags
 	    incs="$$incs --include $$dir/TAGS.sub";	\
 	  fi;						\
 	done;						\
-	etags -o TAGS.sub c-family/*.h c-family/*.c *.h *.c *.cc \
-	      ../include/*.h \
-	      --language=none --regex="/\(char\|unsigned int\|int\|bool\|void\|HOST_WIDE_INT\|enum [A-Za-z_0-9]+\) [*]?\([A-Za-z_0-9]+\)/\2/" common.opt	\
-	      --language=none --regex="/\(DEF_RTL_EXPR\|DEFTREECODE\|DEFGSCODE\).*(\([A-Za-z_0-9]+\)/\2/" rtl.def tree.def gimple.def \
-	      --language=none --regex="/DEFTIMEVAR (\([A-Za-z_0-9]+\)/\1/" timevar.def \
-		; \
+	etags -o TAGS.sub c-family/*.h c-family/*.c *.h *.c; \
 	etags --include TAGS.sub $$incs)
 
 # -----------------------------------------------------

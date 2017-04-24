@@ -175,7 +175,8 @@ ghs_pragma_section (cpp_reader * pfile ATTRIBUTE_UNUSED)
       if (streq (alias, "default"))
 	GHS_current_section_names [kind] = NULL;
       else
-	GHS_current_section_names [kind] = alias;
+	GHS_current_section_names [kind] =
+	  build_string (strlen (alias) + 1, alias);
     }
   while (repeat);
 

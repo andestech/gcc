@@ -67,7 +67,7 @@ const (
 //	   along with the non-.. element that precedes it.
 //	4. Eliminate .. elements that begin a rooted path:
 //	   that is, replace "/.." by "/" at the beginning of a path,
-//	   assuming Separator is '/'.
+//         assuming Separator is '/'.
 //
 // The returned path ends in a slash only if it represents a root directory,
 // such as "/" on Unix or `C:\` on Windows.
@@ -336,8 +336,6 @@ var SkipDir = errors.New("skip this directory")
 // the next file.
 type WalkFunc func(path string, info os.FileInfo, err error) error
 
-var lstat = os.Lstat // for testing
-
 // walk recursively descends path, calling w.
 func walk(path string, info os.FileInfo, walkFn WalkFunc) error {
 	err := walkFn(path, info, nil)
@@ -352,24 +350,16 @@ func walk(path string, info os.FileInfo, walkFn WalkFunc) error {
 		return nil
 	}
 
-	names, err := readDirNames(path)
+	list, err := readDir(path)
 	if err != nil {
 		return walkFn(path, info, err)
 	}
 
-	for _, name := range names {
-		filename := Join(path, name)
-		fileInfo, err := lstat(filename)
+	for _, fileInfo := range list {
+		err = walk(Join(path, fileInfo.Name()), fileInfo, walkFn)
 		if err != nil {
-			if err := walkFn(filename, fileInfo, err); err != nil && err != SkipDir {
+			if !fileInfo.IsDir() || err != SkipDir {
 				return err
-			}
-		} else {
-			err = walk(filename, fileInfo, walkFn)
-			if err != nil {
-				if !fileInfo.IsDir() || err != SkipDir {
-					return err
-				}
 			}
 		}
 	}
@@ -390,21 +380,29 @@ func Walk(root string, walkFn WalkFunc) error {
 	return walk(root, info, walkFn)
 }
 
-// readDirNames reads the directory named by dirname and returns
+// readDir reads the directory named by dirname and returns
 // a sorted list of directory entries.
-func readDirNames(dirname string) ([]string, error) {
+// Copied from io/ioutil to avoid the circular import.
+func readDir(dirname string) ([]os.FileInfo, error) {
 	f, err := os.Open(dirname)
 	if err != nil {
 		return nil, err
 	}
-	names, err := f.Readdirnames(-1)
+	list, err := f.Readdir(-1)
 	f.Close()
 	if err != nil {
 		return nil, err
 	}
-	sort.Strings(names)
-	return names, nil
+	sort.Sort(byName(list))
+	return list, nil
 }
+
+// byName implements sort.Interface.
+type byName []os.FileInfo
+
+func (f byName) Len() int           { return len(f) }
+func (f byName) Less(i, j int) bool { return f[i].Name() < f[j].Name() }
+func (f byName) Swap(i, j int)      { f[i], f[j] = f[j], f[i] }
 
 // Base returns the last element of path.
 // Trailing path separators are removed before extracting the last element.

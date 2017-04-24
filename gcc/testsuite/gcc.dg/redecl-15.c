@@ -2,7 +2,7 @@
    despite incompatible type.  */
 /* Origin: Joseph Myers <joseph@codesourcery.com> */
 /* { dg-do compile } */
-/* { dg-options "-std=gnu89" } */
+/* { dg-options "" } */
 
 void
 f (void)

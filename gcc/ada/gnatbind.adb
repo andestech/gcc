@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -76,6 +76,8 @@ procedure Gnatbind is
 
    Output_File_Name_Seen : Boolean := False;
    Output_File_Name      : String_Ptr := new String'("");
+
+   L_Switch_Seen : Boolean := False;
 
    Mapping_File : String_Ptr := null;
 
@@ -335,6 +337,12 @@ procedure Gnatbind is
 
          elsif Argv (2) = 'L' then
             if Argv'Length >= 3 then
+
+               --  Remember that the -L switch was specified, so that if this
+               --  is on OpenVMS, the export names are put in uppercase.
+               --  This is not known before the target parameters are read.
+
+               L_Switch_Seen := True;
 
                Opt.Bind_For_Library := True;
                Opt.Ada_Init_Name :=
@@ -634,6 +642,17 @@ begin
 
    Cumulative_Restrictions := Targparm.Restrictions_On_Target;
 
+   --  On OpenVMS, when -L is used, all external names used in pragmas Export
+   --  are in upper case. The reason is that on OpenVMS, the macro-assembler
+   --  MACASM-32, used to build Stand-Alone Libraries, only understands
+   --  uppercase.
+
+   if L_Switch_Seen and then OpenVMS_On_Target then
+      To_Upper (Opt.Ada_Init_Name.all);
+      To_Upper (Opt.Ada_Final_Name.all);
+      To_Upper (Opt.Ada_Main_Name.all);
+   end if;
+
    --  Acquire configurable run-time mode
 
    if Configurable_Run_Time_On_Target then
@@ -647,15 +666,10 @@ begin
       Display_Version ("GNATBIND", "1995");
    end if;
 
-   --  Output usage information if no arguments
+   --  Output usage information if no files
 
    if not More_Lib_Files then
-      if Argument_Count = 0 then
-         Bindusg.Display;
-      else
-         Write_Line ("try ""gnatbind --help"" for more information.");
-      end if;
-
+      Bindusg.Display;
       Exit_Program (E_Fatal);
    end if;
 
@@ -773,13 +787,6 @@ begin
       --  Quit if some file needs compiling
 
       if No_Object_Specified then
-         raise Unrecoverable_Error;
-      end if;
-
-      --  Quit with message if we had a GNATprove file
-
-      if GNATprove_Mode_Specified then
-         Error_Msg ("one or more files compiled in GNATprove mode");
          raise Unrecoverable_Error;
       end if;
 
@@ -906,8 +913,7 @@ begin
                   --------------------
 
                   function Put_In_Sources
-                    (S : File_Name_Type) return Boolean
-                  is
+                    (S : File_Name_Type) return Boolean is
                   begin
                      for J in 1 .. Closure_Sources.Last loop
                         if Closure_Sources.Table (J) = S then
@@ -933,14 +939,11 @@ begin
                   for J in reverse Elab_Order.First .. Elab_Order.Last loop
                      Source := Units.Table (Elab_Order.Table (J)).Sfile;
 
-                     --  Do not include same source more than once
+                     --  Do not include the sources of the runtime and do not
+                     --  include the same source several times.
 
                      if Put_In_Sources (Source)
-
-                       --  Do not include run-time units unless -Ra switch set
-
-                       and then (List_Closure_All
-                                  or else not Is_Internal_File_Name (Source))
+                       and then not Is_Internal_File_Name (Source)
                      then
                         if not Zero_Formatting then
                            Write_Str ("   ");

@@ -1,6 +1,6 @@
 /* PR c/48517 */
 /* { dg-do compile } */
-/* { dg-options "-std=gnu89" } */
+/* { dg-options "" } */
 
 void bar (const unsigned short *);
 

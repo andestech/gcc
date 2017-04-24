@@ -43,9 +43,11 @@ gostringsize(intgo l, byte** pmem)
 		*pmem = nil;
 		return runtime_emptystring;
 	}
-	mem = runtime_mallocgc(l, 0, FlagNoScan|FlagNoZero);
+	// leave room for NUL for C runtime (e.g., callers of getenv)
+	mem = runtime_mallocgc(l+1, 0, FlagNoScan|FlagNoZero);
 	s.str = mem;
 	s.len = l;
+	mem[l] = 0;
 	*pmem = mem;
 	return s;
 }
@@ -73,8 +75,13 @@ runtime_gostringnocopy(const byte *str)
 	return s;
 }
 
-func cstringToGo(str *byte) (s String) {
-	s = runtime_gostringnocopy(str);
+String runtime_cstringToGo(byte*)
+  __asm__ (GOSYM_PREFIX "runtime.cstringToGo");
+
+String
+runtime_cstringToGo(byte *str)
+{
+	return runtime_gostringnocopy(str);
 }
 
 enum

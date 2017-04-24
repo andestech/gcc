@@ -1,8 +1,6 @@
 /* { dg-do link } */
 /* { dg-options "-O2" } */
 
-extern void link_error (void);
-
 int main (void)
 {
   int exp = -1;

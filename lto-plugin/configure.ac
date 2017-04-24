@@ -4,11 +4,6 @@ AC_CANONICAL_SYSTEM
 GCC_TOPLEV_SUBDIRS
 AM_INIT_AUTOMAKE([foreign no-dist])
 AM_MAINTAINER_MODE
-AC_ARG_WITH(libiberty,
-  [AS_HELP_STRING([--with-libiberty=PATH],
-    [specify the directory where to find libiberty [../libiberty]])],
-  [], with_libiberty=../libiberty)
-AC_SUBST(with_libiberty)
 AC_PROG_CC
 AC_SYS_LARGEFILE
 ACX_PROG_CC_WARNING_OPTS([-Wall], [ac_lto_plugin_warn_cflags])
@@ -26,13 +21,6 @@ if test "x$have_static_libgcc" = xyes; then
    ac_lto_plugin_ldflags="-Wc,-static-libgcc"
 fi
 AC_SUBST(ac_lto_plugin_ldflags)
-
-if test x"$host_subdir" = x.; then
-   gcc_build_dir=../gcc
-else
-   gcc_build_dir=../../$host_subdir/gcc
-fi
-AC_SUBST(gcc_build_dir)
 
 AM_PROG_LIBTOOL
 ACX_LT_HOST_FLAGS

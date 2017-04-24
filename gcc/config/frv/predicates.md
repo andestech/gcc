@@ -1216,7 +1216,7 @@
 (define_predicate "ccr_eqne_operator"
   (match_code "eq,ne")
 {
-  machine_mode op_mode = GET_MODE (op);
+  enum machine_mode op_mode = GET_MODE (op);
   rtx op0;
   rtx op1;
   int regno;
@@ -1279,7 +1279,7 @@
 (define_predicate "condexec_si_binary_operator"
   (match_code "plus,minus,and,ior,xor,ashift,ashiftrt,lshiftrt")
 {
-  machine_mode op_mode = GET_MODE (op);
+  enum machine_mode op_mode = GET_MODE (op);
 
   if (mode != VOIDmode && op_mode != mode)
     return FALSE;
@@ -1307,7 +1307,7 @@
 (define_predicate "condexec_si_media_operator"
   (match_code "and,ior,xor")
 {
-  machine_mode op_mode = GET_MODE (op);
+  enum machine_mode op_mode = GET_MODE (op);
 
   if (mode != VOIDmode && op_mode != mode)
     return FALSE;
@@ -1330,7 +1330,7 @@
 (define_predicate "condexec_si_divide_operator"
   (match_code "div,udiv")
 {
-  machine_mode op_mode = GET_MODE (op);
+  enum machine_mode op_mode = GET_MODE (op);
 
   if (mode != VOIDmode && op_mode != mode)
     return FALSE;
@@ -1352,7 +1352,7 @@
 (define_predicate "condexec_si_unary_operator"
   (match_code "not,neg")
 {
-  machine_mode op_mode = GET_MODE (op);
+  enum machine_mode op_mode = GET_MODE (op);
 
   if (mode != VOIDmode && op_mode != mode)
     return FALSE;
@@ -1375,7 +1375,7 @@
 (define_predicate "condexec_sf_add_operator"
   (match_code "plus,minus")
 {
-  machine_mode op_mode = GET_MODE (op);
+  enum machine_mode op_mode = GET_MODE (op);
 
   if (mode != VOIDmode && op_mode != mode)
     return FALSE;
@@ -1397,7 +1397,7 @@
 (define_predicate "condexec_sf_conv_operator"
   (match_code "abs,neg")
 {
-  machine_mode op_mode = GET_MODE (op);
+  enum machine_mode op_mode = GET_MODE (op);
 
   if (mode != VOIDmode && op_mode != mode)
     return FALSE;

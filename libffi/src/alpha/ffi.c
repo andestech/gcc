@@ -27,6 +27,7 @@
 
 #include <ffi.h>
 #include <ffi_common.h>
+#include <stdlib.h>
 
 /* Force FFI_TYPE_LONGDOUBLE to be different than FFI_TYPE_DOUBLE;
    all further uses in this file will refer to the 128-bit type.  */
@@ -272,7 +273,7 @@ ffi_closure_osf_inner(ffi_closure *closure, void *rvalue, unsigned long *argp)
 	  break;
 
 	default:
-	  FFI_ASSERT (0);
+	  abort ();
 	}
 
       argn += ALIGN(size, FFI_SIZEOF_ARG) / FFI_SIZEOF_ARG;

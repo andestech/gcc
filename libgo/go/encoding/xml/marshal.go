@@ -184,12 +184,10 @@ var (
 // EncodeToken does not call Flush, because usually it is part of a larger operation
 // such as Encode or EncodeElement (or a custom Marshaler's MarshalXML invoked
 // during those), and those will call Flush when finished.
+//
 // Callers that create an Encoder and then invoke EncodeToken directly, without
 // using Encode or EncodeElement, need to call Flush when finished to ensure
 // that the XML is written to the underlying writer.
-//
-// EncodeToken allows writing a ProcInst with Target set to "xml" only as the first token
-// in the stream.
 func (enc *Encoder) EncodeToken(t Token) error {
 	p := &enc.p
 	switch t := t.(type) {
@@ -212,12 +210,7 @@ func (enc *Encoder) EncodeToken(t Token) error {
 		p.WriteString("-->")
 		return p.cachedWriteError()
 	case ProcInst:
-		// First token to be encoded which is also a ProcInst with target of xml
-		// is the xml declaration.  The only ProcInst where target of xml is allowed.
-		if t.Target == "xml" && p.Buffered() != 0 {
-			return fmt.Errorf("xml: EncodeToken of ProcInst xml target only valid for xml declaration, first token encoded")
-		}
-		if !isNameString(t.Target) {
+		if t.Target == "xml" || !isNameString(t.Target) {
 			return fmt.Errorf("xml: EncodeToken of ProcInst with invalid Target")
 		}
 		if bytes.Contains(t.Inst, endProcInst) {

@@ -500,7 +500,7 @@ static void
 print_version (void)
 {
   fnotice (stdout, "gcov %s%s\n", pkgversion_string, version_string);
-  fprintf (stdout, "Copyright %s 2014 Free Software Foundation, Inc.\n",
+  fprintf (stdout, "Copyright %s 2015 Free Software Foundation, Inc.\n",
 	   _("(C)"));
   fnotice (stdout,
 	   _("This is free software; see the source for copying conditions.\n"
@@ -1846,7 +1846,7 @@ format_gcov (gcov_type top, gcov_type bottom, int dp)
 	}
     }
   else
-    sprintf (buffer, "%"PRId64, (int64_t)top);
+    sprintf (buffer, HOST_WIDEST_INT_PRINT_DEC, (HOST_WIDEST_INT)top);
 
   return buffer;
 }

@@ -19,6 +19,12 @@
 
 namespace __tsan {
 
+ScopedInRtl::ScopedInRtl() {
+}
+
+ScopedInRtl::~ScopedInRtl() {
+}
+
 uptr GetShadowMemoryConsumption() {
   return 0;
 }
@@ -26,14 +32,8 @@ uptr GetShadowMemoryConsumption() {
 void FlushShadowMemory() {
 }
 
-void WriteMemoryProfile(char *buf, uptr buf_size, uptr nthread, uptr nlive) {
-}
-
-uptr GetRSS() {
-  return 0;
-}
-
-void InitializePlatform() {
+const char *InitializePlatform() {
+  return GetEnv(kTsanOptionsEnv);
 }
 
 void FinalizePlatform() {

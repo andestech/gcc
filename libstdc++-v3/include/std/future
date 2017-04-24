@@ -45,7 +45,7 @@
 #include <bits/unique_ptr.h>
 #include <bits/shared_ptr.h>
 #include <bits/uses_allocator.h>
-#include <bits/allocated_ptr.h>
+#include <bits/alloc_traits.h>
 #include <ext/aligned_buffer.h>
 
 namespace std _GLIBCXX_VISIBILITY(default)
@@ -251,31 +251,42 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     template<typename _Res, typename _Alloc>
       struct _Result_alloc final : _Result<_Res>, _Alloc
       {
-	using __allocator_type = __alloc_rebind<_Alloc, _Result_alloc>;
+        typedef typename allocator_traits<_Alloc>::template
+          rebind_alloc<_Result_alloc> __allocator_type;
 
         explicit
 	_Result_alloc(const _Alloc& __a) : _Result<_Res>(), _Alloc(__a)
-	{ }
+        { }
 	
       private:
 	void _M_destroy()
-	{
-	  __allocator_type __a(*this);
-	  __allocated_ptr<__allocator_type> __guard_ptr{ __a, this };
-	  this->~_Result_alloc();
-	}
+        {
+	  typedef allocator_traits<__allocator_type> __traits;
+          __allocator_type __a(*this);
+	  __traits::destroy(__a, this);
+	  __traits::deallocate(__a, this, 1);
+        }
       };
 
     template<typename _Res, typename _Allocator>
       static _Ptr<_Result_alloc<_Res, _Allocator>>
       _S_allocate_result(const _Allocator& __a)
       {
-	using __result_type = _Result_alloc<_Res, _Allocator>;
-	typename __result_type::__allocator_type __a2(__a);
-	auto __guard = std::__allocate_guarded(__a2);
-	__result_type* __p = ::new((void*)__guard.get()) __result_type{__a};
-	__guard = nullptr;
-	return _Ptr<__result_type>(__p);
+        typedef _Result_alloc<_Res, _Allocator>	__result_type;
+	typedef allocator_traits<typename __result_type::__allocator_type>
+	  __traits;
+        typename __traits::allocator_type __a2(__a);
+        __result_type* __p = __traits::allocate(__a2, 1);
+        __try
+	  {
+	    __traits::construct(__a2, __p, __a);
+	  }
+        __catch(...)
+	  {
+	    __traits::deallocate(__a2, __p, 1);
+	    __throw_exception_again;
+	  }
+        return _Ptr<__result_type>(__p);
       }
 
     template<typename _Res, typename _Tp>
@@ -354,12 +365,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       void
       _M_set_result(function<_Ptr_type()> __res, bool __ignore_failure = false)
       {
-	unique_lock<mutex> __lock(_M_mutex, defer_lock);
+        bool __set = false;
         // all calls to this function are serialized,
         // side-effects of invoking __res only happen once
-	call_once(_M_once, &_State_baseV2::_M_do_set, this,
-		  std::__addressof(__res), std::__addressof(__lock));
-	if (__lock.owns_lock())
+        call_once(_M_once, &_State_baseV2::_M_do_set, this, ref(__res),
+            ref(__set));
+	if (__set)
 	  _M_cond.notify_all();
 	else if (!__ignore_failure)
           __throw_future_error(int(future_errc::promise_already_satisfied));
@@ -396,19 +407,19 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
         struct _Setter<_Res, _Arg&>
         {
           // check this is only used by promise<R>::set_value(const R&)
-          // or promise<R&>::set_value(R&)
+          // or promise<R>::set_value(R&)
           static_assert(is_same<_Res, _Arg&>::value  // promise<R&>
-              || is_same<const _Res, _Arg>::value,   // promise<R>
+              || is_same<const _Res, _Arg>::value,  // promise<R>
               "Invalid specialisation");
 
           typename promise<_Res>::_Ptr_type operator()()
           {
             _State_baseV2::_S_check(_M_promise->_M_future);
-            _M_promise->_M_storage->_M_set(*_M_arg);
+            _M_promise->_M_storage->_M_set(_M_arg);
             return std::move(_M_promise->_M_storage);
           }
           promise<_Res>*    _M_promise;
-          _Arg*             _M_arg;
+          _Arg&             _M_arg;
         };
 
       // set rvalues
@@ -418,11 +429,11 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
           typename promise<_Res>::_Ptr_type operator()()
           {
             _State_baseV2::_S_check(_M_promise->_M_future);
-            _M_promise->_M_storage->_M_set(std::move(*_M_arg));
+            _M_promise->_M_storage->_M_set(std::move(_M_arg));
             return std::move(_M_promise->_M_storage);
           }
           promise<_Res>*    _M_promise;
-          _Res*             _M_arg;
+          _Res&             _M_arg;
         };
 
       struct __exception_ptr_tag { };
@@ -434,27 +445,30 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
           typename promise<_Res>::_Ptr_type operator()()
           {
             _State_baseV2::_S_check(_M_promise->_M_future);
-            _M_promise->_M_storage->_M_error = *_M_ex;
+            _M_promise->_M_storage->_M_error = _M_ex;
             return std::move(_M_promise->_M_storage);
           }
 
           promise<_Res>*   _M_promise;
-          exception_ptr*    _M_ex;
+          exception_ptr&    _M_ex;
         };
 
       template<typename _Res, typename _Arg>
         static _Setter<_Res, _Arg&&>
         __setter(promise<_Res>* __prom, _Arg&& __arg)
         {
-          return _Setter<_Res, _Arg&&>{ __prom, &__arg };
+          return _Setter<_Res, _Arg&&>{ __prom, __arg };
         }
 
       template<typename _Res>
         static _Setter<_Res, __exception_ptr_tag>
         __setter(exception_ptr& __ex, promise<_Res>* __prom)
         {
-          return _Setter<_Res, __exception_ptr_tag>{ __prom, &__ex };
+          return _Setter<_Res, __exception_ptr_tag>{ __prom, __ex };
         }
+
+      static _Setter<void, void>
+      __setter(promise<void>* __prom);
 
       template<typename _Tp>
         static void
@@ -466,11 +480,14 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
     private:
       void
-      _M_do_set(function<_Ptr_type()>* __f, unique_lock<mutex>* __lock)
+      _M_do_set(function<_Ptr_type()>& __f, bool& __set)
       {
-        _Ptr_type __res = (*__f)(); // do not hold lock while running setter
-	__lock->lock();
-        _M_result.swap(__res);
+        _Ptr_type __res = __f();
+        {
+          lock_guard<mutex> __lock(_M_mutex);
+          _M_result.swap(__res);
+        }
+        __set = true;
       }
 
       bool _M_ready() const noexcept { return static_cast<bool>(_M_result); }
@@ -511,15 +528,15 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       static std::shared_ptr<_State_base>
       _S_make_async_state(_BoundFn&& __fn);
 
-    template<typename _Res_ptr, typename _Fn,
+    template<typename _Res_ptr,
 	     typename _Res = typename _Res_ptr::element_type::result_type>
       struct _Task_setter;
 
     template<typename _Res_ptr, typename _BoundFn>
-      static _Task_setter<_Res_ptr, _BoundFn>
-      _S_task_setter(_Res_ptr& __ptr, _BoundFn& __call)
+      static _Task_setter<_Res_ptr>
+      _S_task_setter(_Res_ptr& __ptr, _BoundFn&& __call)
       {
-	return { std::__addressof(__ptr), std::__addressof(__call) };
+	return _Task_setter<_Res_ptr>{ __ptr, std::ref(__call) };
       }
   };
 
@@ -552,18 +569,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     };
 
 #ifndef _GLIBCXX_ASYNC_ABI_COMPAT
-
-  // Allow _Setter objects to be stored locally in std::function
-  template<typename _Res, typename _Arg>
-    struct __is_location_invariant
-    <__future_base::_State_base::_Setter<_Res, _Arg>>
-    : true_type { };
-
-  // Allow _Task_setter objects to be stored locally in std::function
-  template<typename _Res_ptr, typename _Fn, typename _Res>
-    struct __is_location_invariant
-    <__future_base::_Task_setter<_Res_ptr, _Fn, _Res>>
-    : true_type { };
 
   /// Common implementation for future and shared_future.
   template<typename _Res>
@@ -1003,15 +1008,27 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       // Setting the result
       void
       set_value(const _Res& __r)
-      { _M_future->_M_set_result(_State::__setter(this, __r)); }
+      {
+	auto __future = _M_future;
+        auto __setter = _State::__setter(this, __r);
+        __future->_M_set_result(std::move(__setter));
+      }
 
       void
       set_value(_Res&& __r)
-      { _M_future->_M_set_result(_State::__setter(this, std::move(__r))); }
+      {
+	auto __future = _M_future;
+        auto __setter = _State::__setter(this, std::move(__r));
+        __future->_M_set_result(std::move(__setter));
+      }
 
       void
       set_exception(exception_ptr __p)
-      { _M_future->_M_set_result(_State::__setter(__p, this)); }
+      {
+	auto __future = _M_future;
+        auto __setter = _State::__setter(__p, this);
+        __future->_M_set_result(std::move(__setter));
+      }
     };
 
   template<typename _Res>
@@ -1092,11 +1109,19 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       // Setting the result
       void
       set_value(_Res& __r)
-      { _M_future->_M_set_result(_State::__setter(this, __r)); }
+      {
+	auto __future = _M_future;
+        auto __setter = _State::__setter(this, __r);
+        __future->_M_set_result(std::move(__setter));
+      }
 
       void
       set_exception(exception_ptr __p)
-      { _M_future->_M_set_result(_State::__setter(__p, this)); }
+      {
+	auto __future = _M_future;
+        auto __setter = _State::__setter(__p, this);
+        __future->_M_set_result(std::move(__setter));
+      }
     };
 
   /// Explicit specialization for promise<void>
@@ -1171,7 +1196,11 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       void
       set_exception(exception_ptr __p)
-      { _M_future->_M_set_result(_State::__setter(__p, this)); }
+      {
+	auto __future = _M_future;
+        auto __setter = _State::__setter(__p, this);
+        __future->_M_set_result(std::move(__setter));
+      }
     };
 
   // set void
@@ -1187,18 +1216,29 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       promise<void>*    _M_promise;
     };
 
+  inline __future_base::_State_base::_Setter<void, void>
+  __future_base::_State_base::__setter(promise<void>* __prom)
+  {
+    return _Setter<void, void>{ __prom };
+  }
+
   inline void
   promise<void>::set_value()
-  { _M_future->_M_set_result(_State::_Setter<void, void>{ this }); }
+  {
+    auto __future = _M_future;
+    auto __setter = _State::__setter(this);
+    __future->_M_set_result(std::move(__setter));
+  }
 
-  template<typename _Ptr_type, typename _Fn, typename _Res>
+
+  template<typename _Ptr_type, typename _Res>
     struct __future_base::_Task_setter
     {
       _Ptr_type operator()()
       {
 	__try
 	  {
-	    (*_M_result)->_M_set((*_M_fn)());
+	    _M_result->_M_set(_M_fn());
 	  }
 	__catch(const __cxxabiv1::__forced_unwind&)
 	  {
@@ -1206,22 +1246,22 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	  }
 	__catch(...)
 	  {
-	    (*_M_result)->_M_error = current_exception();
+	    _M_result->_M_error = current_exception();
 	  }
-	return std::move(*_M_result);
+	return std::move(_M_result);
       }
-      _Ptr_type*	_M_result;
-      _Fn*		_M_fn;
+      _Ptr_type&                _M_result;
+      std::function<_Res()>     _M_fn;
     };
 
-  template<typename _Ptr_type, typename _Fn>
-    struct __future_base::_Task_setter<_Ptr_type, _Fn, void>
+  template<typename _Ptr_type>
+    struct __future_base::_Task_setter<_Ptr_type, void>
     {
       _Ptr_type operator()()
       {
 	__try
 	  {
-	    (*_M_fn)();
+	    _M_fn();
 	  }
 	__catch(const __cxxabiv1::__forced_unwind&)
 	  {
@@ -1229,12 +1269,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	  }
 	__catch(...)
 	  {
-	    (*_M_result)->_M_error = current_exception();
+	    _M_result->_M_error = current_exception();
 	  }
-	return std::move(*_M_result);
+	return std::move(_M_result);
       }
-      _Ptr_type*	_M_result;
-      _Fn*		_M_fn;
+      _Ptr_type&                _M_result;
+      std::function<void()>     _M_fn;
     };
 
   template<typename _Res, typename... _Args>
@@ -1275,7 +1315,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	// bound arguments decay so wrap lvalue references
 	auto __boundfn = std::__bind_simple(std::ref(_M_impl._M_fn),
 	    _S_maybe_wrap_ref(std::forward<_Args>(__args))...);
-	this->_M_set_result(_S_task_setter(this->_M_result, __boundfn));
+	auto __setter = _S_task_setter(this->_M_result, std::move(__boundfn));
+	this->_M_set_result(std::move(__setter));
       }
 
       virtual shared_ptr<_Task_state_base<_Res(_Args...)>>
@@ -1409,7 +1450,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       operator()(_ArgTypes... __args)
       {
 	__future_base::_State_base::_S_check(_M_state);
-	_M_state->_M_run(std::forward<_ArgTypes>(__args)...);
+	auto __state = _M_state;
+	__state->_M_run(std::forward<_ArgTypes>(__args)...);
       }
 
       void

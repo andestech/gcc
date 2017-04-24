@@ -31,19 +31,6 @@ along with GCC; see the file COPYING3.  If not see
 #error "gfortran.h must be included after coretypes.h"
 #endif
 
-/* In order for the format checking to accept the Fortran front end
-   diagnostic framework extensions, you must include this file before
-   diagnostic-core.h, not after.  We override the definition of GCC_DIAG_STYLE
-   in c-common.h.  */
-#undef GCC_DIAG_STYLE
-#define GCC_DIAG_STYLE __gcc_gfc__
-#if defined(GCC_DIAGNOSTIC_CORE_H)
-#error \
-In order for the format checking to accept the Fortran front end diagnostic \
-framework extensions, you must include this file before diagnostic-core.h, \
-not after.
-#endif
-
 /* Declarations common to the front-end and library are put in
    libgfortran/libgfortran_frontend.h  */
 #include "libgfortran.h"
@@ -345,35 +332,19 @@ enum gfc_isym_id
   GFC_ISYM_ATAN,
   GFC_ISYM_ATAN2,
   GFC_ISYM_ATANH,
-  GFC_ISYM_ATOMIC_ADD,
-  GFC_ISYM_ATOMIC_AND,
-  GFC_ISYM_ATOMIC_CAS,
   GFC_ISYM_ATOMIC_DEF,
-  GFC_ISYM_ATOMIC_FETCH_ADD,
-  GFC_ISYM_ATOMIC_FETCH_AND,
-  GFC_ISYM_ATOMIC_FETCH_OR,
-  GFC_ISYM_ATOMIC_FETCH_XOR,
-  GFC_ISYM_ATOMIC_OR,
   GFC_ISYM_ATOMIC_REF,
-  GFC_ISYM_ATOMIC_XOR,
   GFC_ISYM_BGE,
   GFC_ISYM_BGT,
   GFC_ISYM_BIT_SIZE,
   GFC_ISYM_BLE,
   GFC_ISYM_BLT,
   GFC_ISYM_BTEST,
-  GFC_ISYM_CAF_GET,
-  GFC_ISYM_CAF_SEND,
   GFC_ISYM_CEILING,
   GFC_ISYM_CHAR,
   GFC_ISYM_CHDIR,
   GFC_ISYM_CHMOD,
   GFC_ISYM_CMPLX,
-  GFC_ISYM_CO_BROADCAST,
-  GFC_ISYM_CO_MAX,
-  GFC_ISYM_CO_MIN,
-  GFC_ISYM_CO_REDUCE,
-  GFC_ISYM_CO_SUM,
   GFC_ISYM_COMMAND_ARGUMENT_COUNT,
   GFC_ISYM_COMPILER_OPTIONS,
   GFC_ISYM_COMPILER_VERSION,
@@ -702,8 +673,7 @@ iso_c_binding_symbol;
 
 typedef enum
 {
-  INTMOD_NONE = 0, INTMOD_ISO_FORTRAN_ENV, INTMOD_ISO_C_BINDING,
-  INTMOD_IEEE_FEATURES, INTMOD_IEEE_EXCEPTIONS, INTMOD_IEEE_ARITHMETIC
+  INTMOD_NONE = 0, INTMOD_ISO_FORTRAN_ENV, INTMOD_ISO_C_BINDING
 }
 intmod_id;
 
@@ -1655,9 +1625,6 @@ typedef struct gfc_namespace
   /* Set to 1 if namespace is an interface body with "IMPORT" used.  */
   unsigned has_import_set:1;
 
-  /* Set to 1 if the namespace uses "IMPLICT NONE (export)".  */
-  unsigned has_implicit_none_export:1;
-
   /* Set to 1 if resolved has been called for this namespace.
      Holds -1 during resolution.  */
   signed resolved:2;
@@ -2455,7 +2422,6 @@ typedef struct
   int warn_tabs;
   int warn_underflow;
   int warn_intrinsic_shadow;
-  int warn_use_without_only;
   int warn_intrinsics_std;
   int warn_character_truncation;
   int warn_array_temp;
@@ -2691,22 +2657,17 @@ typedef struct gfc_error_buf
 } gfc_error_buf;
 
 void gfc_error_init_1 (void);
-void gfc_diagnostics_init(void);
 void gfc_buffer_error (int);
 
 const char *gfc_print_wide_char (gfc_char_t);
 
 void gfc_warning (const char *, ...) ATTRIBUTE_GCC_GFC(1,2);
 void gfc_warning_now (const char *, ...) ATTRIBUTE_GCC_GFC(1,2);
-bool gfc_warning_now_2 (const char *gmsgid, ...) ATTRIBUTE_GCC_GFC(1,2);
-bool gfc_warning_now_2 (int opt, const char *gmsgid, ...) ATTRIBUTE_GCC_GFC(2,3);
-
 void gfc_clear_warning (void);
 void gfc_warning_check (void);
 
 void gfc_error (const char *, ...) ATTRIBUTE_GCC_GFC(1,2);
 void gfc_error_now (const char *, ...) ATTRIBUTE_GCC_GFC(1,2);
-void gfc_error_now_2 (const char *gmsgid, ...) ATTRIBUTE_GCC_GFC(1,2);
 void gfc_fatal_error (const char *, ...) ATTRIBUTE_NORETURN ATTRIBUTE_GCC_GFC(1,2);
 void gfc_internal_error (const char *, ...) ATTRIBUTE_NORETURN ATTRIBUTE_GCC_GFC(1,2);
 void gfc_clear_error (void);
@@ -2759,7 +2720,7 @@ extern int gfc_character_storage_size;
 void gfc_clear_new_implicit (void);
 bool gfc_add_new_implicit_range (int, int);
 bool gfc_merge_new_implicit (gfc_typespec *);
-void gfc_set_implicit_none (bool, bool, locus *);
+void gfc_set_implicit_none (void);
 void gfc_check_function_type (gfc_namespace *);
 bool gfc_is_intrinsic_typename (const char *);
 
@@ -2854,6 +2815,7 @@ bool verify_bind_c_derived_type (gfc_symbol *);
 bool verify_com_block_vars_c_interop (gfc_common_head *);
 gfc_symtree *generate_isocbinding_symbol (const char *, iso_c_binding_symbol,
 					  const char *, gfc_symtree *, bool);
+void gfc_save_symbol_data (gfc_symbol *);
 int gfc_get_sym_tree (const char *, gfc_namespace *, gfc_symtree **, bool);
 int gfc_get_ha_symbol (const char *, gfc_symbol **);
 int gfc_get_ha_sym_tree (const char *, gfc_symtree **);
@@ -2889,8 +2851,7 @@ gfc_symbol* gfc_get_ultimate_derived_super_type (gfc_symbol*);
 bool gfc_type_is_extension_of (gfc_symbol *, gfc_symbol *);
 bool gfc_type_compatible (gfc_typespec *, gfc_typespec *);
 
-void gfc_copy_formal_args_intr (gfc_symbol *, gfc_intrinsic_sym *,
-				gfc_actual_arglist *);
+void gfc_copy_formal_args_intr (gfc_symbol *, gfc_intrinsic_sym *);
 
 void gfc_free_finalizer (gfc_finalizer *el); /* Needed in resolve.c, too  */
 
@@ -2903,8 +2864,6 @@ gfc_formal_arglist *gfc_sym_get_dummy_args (gfc_symbol *);
 
 /* intrinsic.c -- true if working in an init-expr, false otherwise.  */
 extern bool gfc_init_expr_flag;
-
-gfc_expr *gfc_simplify_ieee_selected_real_kind (gfc_expr *);
 
 /* Given a symbol that we have decided is intrinsic, mark it as such
    by placing it into a special module that is otherwise impossible to
@@ -3172,6 +3131,7 @@ bool gfc_convert_to_structure_constructor (gfc_expr *, gfc_symbol *,
 /* trans.c */
 void gfc_generate_code (gfc_namespace *);
 void gfc_generate_module_code (gfc_namespace *);
+void gfc_init_coarray_decl (bool);
 
 /* trans-intrinsic.c */
 bool gfc_inline_intrinsic_function_p (gfc_expr *);
@@ -3214,6 +3174,7 @@ bool gfc_is_class_scalar_expr (gfc_expr *);
 bool gfc_is_class_container_ref (gfc_expr *e);
 gfc_expr *gfc_class_initializer (gfc_typespec *, gfc_expr *);
 unsigned int gfc_hash_value (gfc_symbol *);
+gfc_expr *gfc_get_len_component (gfc_expr *e);
 bool gfc_build_class_symbol (gfc_typespec *, symbol_attribute *,
 			     gfc_array_spec **);
 gfc_symbol *gfc_find_derived_vtab (gfc_symbol *);
@@ -3245,9 +3206,5 @@ typedef int (*walk_expr_fn_t) (gfc_expr **, int *, void *);
 int gfc_dummy_code_callback (gfc_code **, int *, void *);
 int gfc_expr_walker (gfc_expr **, walk_expr_fn_t, void *);
 int gfc_code_walker (gfc_code **, walk_code_fn_t, walk_expr_fn_t, void *);
-
-/* simplify.c */
-
-void gfc_convert_mpz_to_signed (mpz_t, int);
 
 #endif /* GCC_GFORTRAN_H  */

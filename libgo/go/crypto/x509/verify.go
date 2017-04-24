@@ -425,7 +425,6 @@ func checkChainForKeyUsage(chain []*Certificate, keyUsages []ExtKeyUsage) bool {
 	// by each certificate. If we cross out all the usages, then the chain
 	// is unacceptable.
 
-NextCert:
 	for i := len(chain) - 1; i >= 0; i-- {
 		cert := chain[i]
 		if len(cert.ExtKeyUsage) == 0 && len(cert.UnknownExtKeyUsage) == 0 {
@@ -436,7 +435,7 @@ NextCert:
 		for _, usage := range cert.ExtKeyUsage {
 			if usage == ExtKeyUsageAny {
 				// The certificate is explicitly good for any usage.
-				continue NextCert
+				continue
 			}
 		}
 

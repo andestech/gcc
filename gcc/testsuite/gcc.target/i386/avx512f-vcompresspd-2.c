@@ -23,7 +23,7 @@ CALC (double *s, double *r, MASK_TYPE mask)
     }
 }
 
-void
+static void
 TEST (void)
 {
   UNION_TYPE (AVX512F_LEN, d) s, res1, res2;

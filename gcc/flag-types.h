@@ -104,16 +104,6 @@ enum symbol_visibility
 };
 #endif
 
-/* Enumerate Objective-c instance variable visibility settings. */
-
-enum ivar_visibility
-{
-  IVAR_VISIBILITY_PRIVATE,
-  IVAR_VISIBILITY_PROTECTED,
-  IVAR_VISIBILITY_PUBLIC,
-  IVAR_VISIBILITY_PACKAGE
-};
-
 /* The stack reuse level.  */
 enum stack_reuse_level
 {
@@ -230,21 +220,9 @@ enum sanitize_code {
   SANITIZE_SI_OVERFLOW = 1 << 11,
   SANITIZE_BOOL = 1 << 12,
   SANITIZE_ENUM = 1 << 13,
-  SANITIZE_FLOAT_DIVIDE = 1 << 14,
-  SANITIZE_FLOAT_CAST = 1 << 15,
-  SANITIZE_BOUNDS = 1UL << 16,
-  SANITIZE_ALIGNMENT = 1UL << 17,
-  SANITIZE_NONNULL_ATTRIBUTE = 1UL << 18,
-  SANITIZE_RETURNS_NONNULL_ATTRIBUTE = 1UL << 19,
-  SANITIZE_OBJECT_SIZE = 1UL << 20,
   SANITIZE_UNDEFINED = SANITIZE_SHIFT | SANITIZE_DIVIDE | SANITIZE_UNREACHABLE
 		       | SANITIZE_VLA | SANITIZE_NULL | SANITIZE_RETURN
 		       | SANITIZE_SI_OVERFLOW | SANITIZE_BOOL | SANITIZE_ENUM
-		       | SANITIZE_BOUNDS | SANITIZE_ALIGNMENT
-		       | SANITIZE_NONNULL_ATTRIBUTE
-		       | SANITIZE_RETURNS_NONNULL_ATTRIBUTE
-		       | SANITIZE_OBJECT_SIZE,
-  SANITIZE_NONDEFAULT = SANITIZE_FLOAT_DIVIDE | SANITIZE_FLOAT_CAST
 };
 
 /* flag_vtable_verify initialization levels. */
@@ -253,20 +231,4 @@ enum vtv_priority {
   VTV_STANDARD_PRIORITY = 1,
   VTV_PREINIT_PRIORITY  = 2
 };
-
-/* flag_lto_partition initialization values.  */
-enum lto_partition_model {
-  LTO_PARTITION_NONE = 0,
-  LTO_PARTITION_ONE = 1,
-  LTO_PARTITION_BALANCED = 2,
-  LTO_PARTITION_1TO1 = 3,
-  LTO_PARTITION_MAX = 4
-};
-
-/* The code generator used by graphite */
-enum fgraphite_generator {
-  FGRAPHITE_CODE_GEN_ISL = 0,
-  FGRAPHITE_CODE_GEN_CLOOG = 1
-};
-
 #endif /* ! GCC_FLAG_TYPES_H */

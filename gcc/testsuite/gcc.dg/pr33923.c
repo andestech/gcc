@@ -12,7 +12,6 @@ typedef struct
 }
 ProtocolOperations;
 static const ProtocolOperations *protocol;
-int
 brl_readCommand (void)
 {
   unsigned long int keys;

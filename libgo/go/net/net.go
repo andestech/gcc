@@ -275,16 +275,7 @@ type Listener interface {
 	Addr() Addr
 }
 
-// Various errors contained in OpError.
-var (
-	// For connection setup and write operations.
-	errMissingAddress = errors.New("missing address")
-
-	// For both read and write operations.
-	errTimeout          error = &timeoutError{}
-	errClosing                = errors.New("use of closed network connection")
-	ErrWriteToConnected       = errors.New("use of WriteTo with pre-connected connection")
-)
+var errMissingAddress = errors.New("missing address")
 
 // OpError is the error type usually returned by functions in the net
 // package. It describes the operation, network type, and address of
@@ -345,6 +336,10 @@ type timeoutError struct{}
 func (e *timeoutError) Error() string   { return "i/o timeout" }
 func (e *timeoutError) Timeout() bool   { return true }
 func (e *timeoutError) Temporary() bool { return true }
+
+var errTimeout error = &timeoutError{}
+
+var errClosing = errors.New("use of closed network connection")
 
 type AddrError struct {
 	Err  string

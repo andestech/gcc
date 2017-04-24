@@ -12,8 +12,7 @@ typedef enum pgpArmor_e
     5, PGPARMOR_PRIVKEY = 6, PGPARMOR_SECKEY = 7
 }
 pgpArmor;
-int b64decode (const char *, void **, size_t *);
-unsigned int pgpCRC (const byte * octets, size_t len)
+pgpCRC (const byte * octets, size_t len)
 {
   unsigned int crc = 0xb704ce;
   int i;
@@ -27,7 +26,7 @@ unsigned int pgpCRC (const byte * octets, size_t len)
 	}
     }
 }
-pgpArmor pgpReadPkts (const char *fn, const byte ** pkt, size_t * pktlen)
+pgpReadPkts (const char *fn, const byte ** pkt, size_t * pktlen)
 {
   const byte *b = ((void *) 0);
   const char *enc = ((void *) 0);

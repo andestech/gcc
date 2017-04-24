@@ -28,28 +28,19 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm_p.h"
 #include "hard-reg-set.h"
 #include "regs.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "input.h"
 #include "function.h"
 #include "flags.h"
 #include "insn-config.h"
 #include "insn-attr.h"
 #include "except.h"
 #include "recog.h"
-#include "predict.h"
-#include "basic-block.h"
 #include "sched-int.h"
 #include "target.h"
 #include "cfgloop.h"
 #include "sbitmap.h"
 #include "expr.h"
 #include "bitmap.h"
-#include "df.h"
 #include "ddg.h"
-#include "rtl-iter.h"
 
 #ifdef INSN_SCHEDULING
 
@@ -72,24 +63,27 @@ static void add_edge_to_ddg (ddg_ptr g, ddg_edge_ptr);
 static bool mem_ref_p;
 
 /* Auxiliary function for mem_read_insn_p.  */
-static void
-mark_mem_use (rtx *x, void *)
+static int
+mark_mem_use (rtx *x, void *data ATTRIBUTE_UNUSED)
 {
-  subrtx_iterator::array_type array;
-  FOR_EACH_SUBRTX (iter, array, *x, NONCONST)
-    if (MEM_P (*x))
-      {
-	mem_ref_p = true;
-	break;
-      }
+  if (MEM_P (*x))
+    mem_ref_p = true;
+  return 0;
+}
+
+/* Auxiliary function for mem_read_insn_p.  */
+static void
+mark_mem_use_1 (rtx *x, void *data)
+{
+  for_each_rtx (x, mark_mem_use, data);
 }
 
 /* Returns nonzero if INSN reads from memory.  */
 static bool
-mem_read_insn_p (rtx_insn *insn)
+mem_read_insn_p (rtx insn)
 {
   mem_ref_p = false;
-  note_uses (&PATTERN (insn), mark_mem_use, NULL);
+  note_uses (&PATTERN (insn), mark_mem_use_1, NULL);
   return mem_ref_p;
 }
 
@@ -102,7 +96,7 @@ mark_mem_store (rtx loc, const_rtx setter ATTRIBUTE_UNUSED, void *data ATTRIBUTE
 
 /* Returns nonzero if INSN writes to memory.  */
 static bool
-mem_write_insn_p (rtx_insn *insn)
+mem_write_insn_p (rtx insn)
 {
   mem_ref_p = false;
   note_stores (PATTERN (insn), mark_mem_store, NULL);
@@ -144,7 +138,7 @@ rtx_mem_access_p (rtx x)
 
 /* Returns nonzero if INSN reads to or writes from memory.  */
 static bool
-mem_access_insn_p (rtx_insn *insn)
+mem_access_insn_p (rtx insn)
 {
   return rtx_mem_access_p (PATTERN (insn));
 }
@@ -158,7 +152,7 @@ mem_access_insn_p (rtx_insn *insn)
    by use_insn, if use_insn uses an address register auto-inc'ed by
    def_insn.  */
 bool
-autoinc_var_is_used_p (rtx_insn *def_insn, rtx_insn *use_insn)
+autoinc_var_is_used_p (rtx def_insn, rtx use_insn)
 {
   rtx note;
 
@@ -173,13 +167,13 @@ autoinc_var_is_used_p (rtx_insn *def_insn, rtx_insn *use_insn)
 /* Return true if one of the definitions in INSN has MODE_CC.  Otherwise
    return false.  */
 static bool
-def_has_ccmode_p (rtx_insn *insn)
+def_has_ccmode_p (rtx insn)
 {
-  df_ref def;
+  df_ref *def;
 
-  FOR_EACH_INSN_DEF (def, insn)
+  for (def = DF_INSN_DEFS (insn); *def; def++)
     {
-      machine_mode mode = GET_MODE (DF_REF_REG (def));
+      enum machine_mode mode = GET_MODE (DF_REF_REG (*def));
 
       if (GET_MODE_CLASS (mode) == MODE_CC)
 	return true;
@@ -299,7 +293,7 @@ add_cross_iteration_register_deps (ddg_ptr g, df_ref last_def)
   int regno = DF_REF_REGNO (last_def);
   struct df_link *r_use;
   int has_use_in_bb_p = false;
-  rtx_insn *def_insn = DF_REF_INSN (last_def);
+  rtx def_insn = DF_REF_INSN (last_def);
   ddg_node_ptr last_def_node = get_node_of_insn (g, def_insn);
   ddg_node_ptr use_node;
 #ifdef ENABLE_CHECKING
@@ -319,7 +313,7 @@ add_cross_iteration_register_deps (ddg_ptr g, df_ref last_def)
   /* Create inter-loop true dependences and anti dependences.  */
   for (r_use = DF_REF_CHAIN (last_def); r_use != NULL; r_use = r_use->next)
     {
-      rtx_insn *use_insn = DF_REF_INSN (r_use->ref);
+      rtx use_insn = DF_REF_INSN (r_use->ref);
 
       if (BLOCK_FOR_INSN (use_insn) != g->bb)
 	continue;
@@ -405,25 +399,41 @@ build_inter_loop_deps (ddg_ptr g)
 }
 
 
-/* Return true if two specified instructions have mem expr with conflict
-   alias sets.  */
-static bool
-insns_may_alias_p (rtx_insn *insn1, rtx_insn *insn2)
+static int
+walk_mems_2 (rtx *x, rtx mem)
 {
-  subrtx_iterator::array_type array1;
-  subrtx_iterator::array_type array2;
-  FOR_EACH_SUBRTX (iter1, array1, PATTERN (insn1), NONCONST)
+  if (MEM_P (*x))
     {
-      const_rtx x1 = *iter1;
-      if (MEM_P (x1))
-	FOR_EACH_SUBRTX (iter2, array2, PATTERN (insn2), NONCONST)
-	  {
-	    const_rtx x2 = *iter2;
-	    if (MEM_P (x2) && may_alias_p (x2, x1))
-	      return true;
-	  }
+      if (may_alias_p (*x, mem))
+        return 1;
+
+      return -1;
     }
-  return false;
+  return 0;
+}
+
+static int
+walk_mems_1 (rtx *x, rtx *pat)
+{
+  if (MEM_P (*x))
+    {
+      /* Visit all MEMs in *PAT and check independence.  */
+      if (for_each_rtx (pat, (rtx_function) walk_mems_2, *x))
+        /* Indicate that dependence was determined and stop traversal.  */
+        return 1;
+
+      return -1;
+    }
+  return 0;
+}
+
+/* Return 1 if two specified instructions have mem expr with conflict alias sets*/
+static int
+insns_may_alias_p (rtx insn1, rtx insn2)
+{
+  /* For each pair of MEMs in INSN1 and INSN2 check their independence.  */
+  return  for_each_rtx (&PATTERN (insn1), (rtx_function) walk_mems_1,
+			 &PATTERN (insn2));
 }
 
 /* Given two nodes, analyze their RTL insns and add intra-loop mem deps
@@ -497,7 +507,7 @@ build_intra_loop_deps (ddg_ptr g)
   int i;
   /* Hold the dependency analysis state during dependency calculations.  */
   struct deps_desc tmp_deps;
-  rtx_insn *head, *tail;
+  rtx head, tail;
 
   /* Build the dependence information, using the sched_analyze function.  */
   init_deps_global ();
@@ -520,7 +530,7 @@ build_intra_loop_deps (ddg_ptr g)
 
       FOR_EACH_DEP (dest_node->insn, SD_LIST_BACK, sd_it, dep)
 	{
-	  rtx_insn *src_insn = DEP_PRO (dep);
+	  rtx src_insn = DEP_PRO (dep);
 	  ddg_node_ptr src_node;
 
 	  /* Don't add dependencies on debug insns to non-debug insns
@@ -584,7 +594,7 @@ ddg_ptr
 create_ddg (basic_block bb, int closing_branch_deps)
 {
   ddg_ptr g;
-  rtx_insn *insn, *first_note;
+  rtx insn, first_note;
   int i;
   int num_nodes = 0;
 
@@ -624,7 +634,7 @@ create_ddg (basic_block bb, int closing_branch_deps)
   g->nodes = (ddg_node_ptr) xcalloc (num_nodes, sizeof (struct ddg_node));
   g->closing_branch = NULL;
   i = 0;
-  first_note = NULL;
+  first_note = NULL_RTX;
   for (insn = BB_HEAD (bb); insn != NEXT_INSN (BB_END (bb));
        insn = NEXT_INSN (insn))
     {
@@ -654,7 +664,7 @@ create_ddg (basic_block bb, int closing_branch_deps)
       bitmap_clear (g->nodes[i].predecessors);
       g->nodes[i].first_note = (first_note ? first_note : insn);
       g->nodes[i++].insn = insn;
-      first_note = NULL;
+      first_note = NULL_RTX;
     }
 
   /* We must have found a branch in DDG.  */
@@ -947,7 +957,7 @@ add_scc_to_ddg (ddg_all_sccs_ptr g, ddg_scc_ptr scc)
 
 /* Given the instruction INSN return the node that represents it.  */
 ddg_node_ptr
-get_node_of_insn (ddg_ptr g, rtx_insn *insn)
+get_node_of_insn (ddg_ptr g, rtx insn)
 {
   int i;
 

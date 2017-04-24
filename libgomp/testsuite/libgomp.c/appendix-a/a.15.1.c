@@ -1,6 +1,5 @@
 /* { dg-do run } */
 
-#include <omp.h>
 #include <stdio.h>
 
 void

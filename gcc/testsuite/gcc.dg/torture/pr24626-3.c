@@ -1,7 +1,6 @@
 /* { dg-do compile } */
 
 long fff(int*);
-void T(int*);
 
 long F2(int *node)
 {

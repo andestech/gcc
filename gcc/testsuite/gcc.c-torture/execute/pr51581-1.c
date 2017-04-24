@@ -1,7 +1,5 @@
 /* PR tree-optimization/51581 */
 
-/* { dg-require-effective-target int32plus } */
-
 extern void abort (void);
 
 #define N 4096

@@ -3,7 +3,6 @@
 /* { dg-options "-O3" } */
 
 int a, b, c;
-int bar (void);
 
 void foo()
 {

@@ -189,7 +189,7 @@ Caller (int skip)
   int32 n;
 
   runtime_memclr (&ret, sizeof ret);
-  n = runtime_callers (skip + 1, &loc, 1, false);
+  n = runtime_callers (skip + 1, &loc, 1);
   if (n < 1)
     return ret;
   ret.pc = loc.pc;
@@ -255,6 +255,8 @@ String runtime_funcname_go (Func *f)
 String
 runtime_funcname_go (Func *f)
 {
+  if (f == NULL)
+    return runtime_gostringnocopy ((const byte *) "");
   return f->name;
 }
 

@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 2004-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2004-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- This specification is derived from the Ada Reference Manual for use with --
 -- GNAT. The copyright notice above, and the license provisions that follow --
@@ -67,7 +67,6 @@ generic
 package Ada.Containers.Formal_Ordered_Sets is
    pragma Annotate (GNATprove, External_Axiomatization);
    pragma Pure;
-   pragma SPARK_Mode (On);
 
    function Equivalent_Elements (Left, Right : Element_Type) return Boolean
    with
@@ -77,8 +76,7 @@ package Ada.Containers.Formal_Ordered_Sets is
      Iterable => (First       => First,
                   Next        => Next,
                   Has_Element => Has_Element,
-                  Element     => Element),
-     Default_Initial_Condition;
+                  Element     => Element);
    pragma Preelaborable_Initialization (Set);
 
    type Cursor is private;
@@ -327,21 +325,17 @@ package Ada.Containers.Formal_Ordered_Sets is
    end Generic_Keys;
 
    function Strict_Equal (Left, Right : Set) return Boolean with
-     Ghost,
-     Global => null;
+        Global => null;
    --  Strict_Equal returns True if the containers are physically equal, i.e.
    --  they are structurally equal (function "=" returns True) and that they
    --  have the same set of cursors.
 
    function First_To_Previous (Container : Set; Current : Cursor) return Set
    with
-     Ghost,
      Global => null,
      Pre    => Has_Element (Container, Current) or else Current = No_Element;
-
    function Current_To_Last (Container : Set; Current : Cursor) return Set
    with
-     Ghost,
      Global => null,
      Pre    => Has_Element (Container, Current) or else Current = No_Element;
    --  First_To_Previous returns a container containing all elements preceding
@@ -353,9 +347,9 @@ package Ada.Containers.Formal_Ordered_Sets is
    --  scanned yet.
 
 private
+
    pragma Inline (Next);
    pragma Inline (Previous);
-   pragma SPARK_Mode (Off);
 
    type Node_Type is record
       Has_Element : Boolean := False;

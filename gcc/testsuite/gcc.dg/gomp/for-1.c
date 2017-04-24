@@ -1,8 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-fopenmp -fshow-column" } */
 
-void baz (int);
-
 void foo (int j, int k)
 {
   int i;

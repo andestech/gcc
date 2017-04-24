@@ -1,4 +1,4 @@
-// { dg-do compile { target c++14 } }
+// { dg-do compile { target c++1y } }
 
 template <class T>
 constexpr auto f(T t) { return t+1; }

@@ -1,5 +1,5 @@
 // { dg-do run { xfail *-*-* } }
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 
 // Copyright (C) 2011-2014 Free Software Foundation, Inc.
 //

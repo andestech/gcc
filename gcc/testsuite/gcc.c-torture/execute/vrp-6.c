@@ -1,4 +1,3 @@
-/* { dg-require-effective-target int32plus } */
 #include <limits.h>
 
 extern void exit (int);

@@ -33,6 +33,7 @@
 #pragma GCC system_header
 
 #include <bits/c++config.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <bits/atomic_lockfree_defines.h>
 

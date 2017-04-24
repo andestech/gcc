@@ -1117,26 +1117,25 @@ parse_format_list (st_parameter_dt *dtp, bool *seen_dd)
 void
 format_error (st_parameter_dt *dtp, const fnode *f, const char *message)
 {
-  int width, i, offset;
+  int width, i, j, offset;
 #define BUFLEN 300
   char *p, buffer[BUFLEN];
   format_data *fmt = dtp->u.p.fmt;
 
   if (f != NULL)
-    p = f->source;
-  else                /* This should not happen.  */
-    p = dtp->format;
+    fmt->format_string = f->source;
 
   if (message == unexpected_element)
     snprintf (buffer, BUFLEN, message, fmt->error_element);
   else
     snprintf (buffer, BUFLEN, "%s\n", message);
 
-  /* Get the offset into the format string where the error occurred.  */
-  offset = dtp->format_len - (fmt->reversion_ok ?
-			      (int) strlen(p) : fmt->format_string_len);
+  j = fmt->format_string - dtp->format;
 
-  width = dtp->format_len;
+  offset = (j > 60) ? j - 40 : 0;
+
+  j -= offset;
+  width = dtp->format_len - offset;
 
   if (width > 80)
     width = 80;
@@ -1145,14 +1144,14 @@ format_error (st_parameter_dt *dtp, const fnode *f, const char *message)
 
   p = strchr (buffer, '\0');
 
-  memcpy (p, dtp->format, width);
+  memcpy (p, dtp->format + offset, width);
 
   p += width;
   *p++ = '\n';
 
   /* Show where the problem is */
 
-  for (i = 1; i < offset; i++)
+  for (i = 1; i < j; i++)
     *p++ = ' ';
 
   *p++ = '^';
@@ -1220,10 +1219,9 @@ parse_format (st_parameter_dt *dtp)
 
   if (format_cache_ok)
     {
-      char *fmt_string = xmalloc (dtp->format_len + 1);
+      char *fmt_string = xmalloc (dtp->format_len);
       memcpy (fmt_string, dtp->format, dtp->format_len);
       dtp->format = fmt_string;
-      dtp->format[dtp->format_len] = '\0';
     }
 
   dtp->u.p.fmt = fmt = xmalloc (sizeof (format_data));

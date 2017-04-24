@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-O2 -fdump-tree-vrp1 -std=gnu89" } */
+/* { dg-options "-O2 -fdump-tree-vrp1" } */
 
 foo (int *p)
 {

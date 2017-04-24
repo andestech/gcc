@@ -16,5 +16,6 @@ void f(X *x = new X[4]);       // { dg-error "" }
 void f(X *x = new (3) X(6));   // { dg-error "" } 
 
 void f(X *x = new (2) X[10]);  // { dg-error "" } 
+// { dg-message "candidate" "candidate note" { target *-*-* } 18 }
 
 void f(X *x = new X[10][5]);   // { dg-error "" } 

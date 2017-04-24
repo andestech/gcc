@@ -20,8 +20,6 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef GCC_TREE_SSA_LOOP_H
 #define GCC_TREE_SSA_LOOP_H
 
-#include "wide-int.h"
-
 /* Affine iv.  */
 
 struct affine_iv
@@ -51,7 +49,7 @@ struct tree_niter_desc
 			   a loop (provided that assumptions == true and
 			   may_be_zero == false), more precisely the number
 			   of executions of the latch of the loop.  */
-  widest_int max;	/* The upper bound on the number of iterations of
+  double_int max;	/* The upper bound on the number of iterations of
 			   the loop.  */
 
   /* The simplified shape of the exit condition.  The loop exits if

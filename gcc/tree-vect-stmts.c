@@ -27,16 +27,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "stor-layout.h"
 #include "target.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "gimple-pretty-print.h"
 #include "tree-ssa-alias.h"
@@ -60,16 +50,11 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-scalar-evolution.h"
 #include "expr.h"
 #include "recog.h"		/* FIXME: for insn_data */
-#include "insn-codes.h"
 #include "optabs.h"
 #include "diagnostic-core.h"
 #include "tree-vectorizer.h"
 #include "dumpfile.h"
-#include "hash-map.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
-#include "builtins.h"
 
 /* For lang_hooks.types.type_for_mode.  */
 #include "langhooks.h"
@@ -340,7 +325,8 @@ vect_stmt_relevant_p (gimple stmt, loop_vec_info loop_vinfo,
 
   /* changing memory.  */
   if (gimple_code (stmt) != GIMPLE_PHI)
-    if (gimple_vdef (stmt))
+    if (gimple_vdef (stmt)
+	&& !gimple_clobber_p (stmt))
       {
 	if (dump_enabled_p ())
 	  dump_printf_loc (MSG_NOTE, vect_location,
@@ -989,9 +975,9 @@ vect_model_store_cost (stmt_vec_info stmt_info, int ncopies,
      include the cost of the permutes.  */
   if (!store_lanes_p && group_size > 1)
     {
-      /* Uses a high and low interleave or shuffle operations for each
-	 needed permute.  */
-      int nstmts = ncopies * ceil_log2 (group_size) * group_size;
+      /* Uses a high and low interleave operation for each needed permute.  */
+      
+      int nstmts = ncopies * exact_log2 (group_size) * group_size;
       inside_cost = record_stmt_cost (body_cost_vec, nstmts, vec_perm,
 				      stmt_info, 0, vect_body);
 
@@ -1106,11 +1092,10 @@ vect_model_load_cost (stmt_vec_info stmt_info, int ncopies,
      include the cost of the permutes.  */
   if (!load_lanes_p && group_size > 1)
     {
-      /* Uses an even and odd extract operations or shuffle operations
-	 for each needed permute.  */
-      int nstmts = ncopies * ceil_log2 (group_size) * group_size;
-      inside_cost = record_stmt_cost (body_cost_vec, nstmts, vec_perm,
-				      stmt_info, 0, vect_body);
+      /* Uses an even and odd extract operations for each needed permute.  */
+      int nstmts = ncopies * exact_log2 (group_size) * group_size;
+      inside_cost += record_stmt_cost (body_cost_vec, nstmts, vec_perm,
+				       stmt_info, 0, vect_body);
 
       if (dump_enabled_p ())
         dump_printf_loc (MSG_NOTE, vect_location,
@@ -2657,7 +2642,7 @@ vectorizable_simd_clone_call (gimple stmt, gimple_stmt_iterator *gsi,
   if (fndecl == NULL_TREE)
     return false;
 
-  struct cgraph_node *node = cgraph_node::get (fndecl);
+  struct cgraph_node *node = cgraph_get_node (fndecl);
   if (node == NULL || node->simd_clones == NULL)
     return false;
 
@@ -2740,7 +2725,7 @@ vectorizable_simd_clone_call (gimple stmt, gimple_stmt_iterator *gsi,
   unsigned int badness = 0;
   struct cgraph_node *bestn = NULL;
   if (STMT_VINFO_SIMD_CLONE_FNDECL (stmt_info))
-    bestn = cgraph_node::get (STMT_VINFO_SIMD_CLONE_FNDECL (stmt_info));
+    bestn = cgraph_get_node (STMT_VINFO_SIMD_CLONE_FNDECL (stmt_info));
   else
     for (struct cgraph_node *n = node->simd_clones; n != NULL;
 	 n = n->simdclone->next_clone)
@@ -3008,10 +2993,11 @@ vectorizable_simd_clone_call (gimple stmt, gimple_stmt_iterator *gsi,
 		      ? POINTER_PLUS_EXPR : PLUS_EXPR;
 		  tree type = POINTER_TYPE_P (TREE_TYPE (op))
 			      ? sizetype : TREE_TYPE (op);
-		  widest_int cst
-		    = wi::mul (bestn->simdclone->args[i].linear_step,
-			       ncopies * nunits);
-		  tree tcst = wide_int_to_tree (type, cst);
+		  double_int cst
+		    = double_int::from_shwi
+			(bestn->simdclone->args[i].linear_step);
+		  cst *= double_int::from_uhwi (ncopies * nunits);
+		  tree tcst = double_int_to_tree (type, cst);
 		  tree phi_arg = copy_ssa_name (op, NULL);
 		  new_stmt = gimple_build_assign_with_ops (code, phi_arg,
 							   phi_res, tcst);
@@ -3032,10 +3018,11 @@ vectorizable_simd_clone_call (gimple stmt, gimple_stmt_iterator *gsi,
 		      ? POINTER_PLUS_EXPR : PLUS_EXPR;
 		  tree type = POINTER_TYPE_P (TREE_TYPE (op))
 			      ? sizetype : TREE_TYPE (op);
-		  widest_int cst
-		    = wi::mul (bestn->simdclone->args[i].linear_step,
-			       j * nunits);
-		  tree tcst = wide_int_to_tree (type, cst);
+		  double_int cst
+		    = double_int::from_shwi
+			(bestn->simdclone->args[i].linear_step);
+		  cst *= double_int::from_uhwi (j * nunits);
+		  tree tcst = double_int_to_tree (type, cst);
 		  new_temp = make_ssa_name (TREE_TYPE (op), NULL);
 		  new_stmt
 		    = gimple_build_assign_with_ops (code, new_temp,
@@ -3198,7 +3185,7 @@ vectorizable_simd_clone_call (gimple stmt, gimple_stmt_iterator *gsi,
   set_vinfo_for_stmt (new_stmt, stmt_info);
   set_vinfo_for_stmt (stmt, NULL);
   STMT_VINFO_STMT (stmt_info) = new_stmt;
-  gsi_replace (gsi, new_stmt, false);
+  gsi_replace (gsi, new_stmt, true);
   unlink_stmt_vdef (stmt);
 
   return true;
@@ -3449,7 +3436,7 @@ vectorizable_conversion (gimple stmt, gimple_stmt_iterator *gsi,
   vec<tree> interm_types = vNULL;
   tree last_oprnd, intermediate_type, cvt_type = NULL_TREE;
   int op_type;
-  machine_mode rhs_mode;
+  enum machine_mode rhs_mode;
   unsigned short fltsz;
 
   /* Is STMT a vectorizable conversion?   */
@@ -4158,7 +4145,7 @@ bool
 vect_supportable_shift (enum tree_code code, tree scalar_type)
 {
 
-  machine_mode vec_mode;
+  enum machine_mode vec_mode;
   optab optab;
   int icode;
   tree vectype;
@@ -4206,11 +4193,11 @@ vectorizable_shift (gimple stmt, gimple_stmt_iterator *gsi,
   tree vectype;
   loop_vec_info loop_vinfo = STMT_VINFO_LOOP_VINFO (stmt_info);
   enum tree_code code;
-  machine_mode vec_mode;
+  enum machine_mode vec_mode;
   tree new_temp;
   optab optab;
   int icode;
-  machine_mode optab_op2_mode;
+  enum machine_mode optab_op2_mode;
   tree def;
   gimple def_stmt;
   enum vect_def_type dt[2] = {vect_unknown_def_type, vect_unknown_def_type};
@@ -4568,7 +4555,7 @@ vectorizable_operation (gimple stmt, gimple_stmt_iterator *gsi,
   tree vectype;
   loop_vec_info loop_vinfo = STMT_VINFO_LOOP_VINFO (stmt_info);
   enum tree_code code;
-  machine_mode vec_mode;
+  enum machine_mode vec_mode;
   tree new_temp;
   int op_type;
   optab optab;
@@ -4965,7 +4952,7 @@ vectorizable_store (gimple stmt, gimple_stmt_iterator *gsi, gimple *vec_stmt,
   tree elem_type;
   loop_vec_info loop_vinfo = STMT_VINFO_LOOP_VINFO (stmt_info);
   struct loop *loop = NULL;
-  machine_mode vec_mode;
+  enum machine_mode vec_mode;
   tree dummy;
   enum dr_alignment_support alignment_support_scheme;
   tree def;
@@ -5602,7 +5589,7 @@ vectorizable_load (gimple stmt, gimple_stmt_iterator *gsi, gimple *vec_stmt,
   tree vectype = STMT_VINFO_VECTYPE (stmt_info);
   tree elem_type;
   tree new_temp;
-  machine_mode mode;
+  enum machine_mode mode;
   gimple new_stmt = NULL;
   tree dummy;
   enum dr_alignment_support alignment_support_scheme;
@@ -5728,6 +5715,22 @@ vectorizable_load (gimple stmt, gimple_stmt_iterator *gsi, gimple *vec_stmt,
       gcc_assert (! nested_in_vect_loop && !STMT_VINFO_GATHER_P (stmt_info));
 
       first_stmt = GROUP_FIRST_ELEMENT (stmt_info);
+
+      /* If this is single-element interleaving with an element distance
+         that leaves unused vector loads around punt - we at least create
+	 very sub-optimal code in that case (and blow up memory,
+	 see PR65518).  */
+      if (first_stmt == stmt
+	  && !GROUP_NEXT_ELEMENT (stmt_info)
+	  && GROUP_SIZE (stmt_info) > TYPE_VECTOR_SUBPARTS (vectype))
+	{
+	  if (dump_enabled_p ())
+	    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
+			     "single-element interleaving not supported "
+			     "for not adjacent vector loads\n");
+	  return false;
+	}
+
       if (!slp && !PURE_SLP_STMT (stmt_info))
 	{
 	  group_size = GROUP_SIZE (vinfo_for_stmt (first_stmt));
@@ -7491,8 +7494,8 @@ free_stmt_vec_info (gimple stmt)
 static tree
 get_vectype_for_scalar_type_and_size (tree scalar_type, unsigned size)
 {
-  machine_mode inner_mode = TYPE_MODE (scalar_type);
-  machine_mode simd_mode;
+  enum machine_mode inner_mode = TYPE_MODE (scalar_type);
+  enum machine_mode simd_mode;
   unsigned int nbytes = GET_MODE_SIZE (inner_mode);
   int nunits;
   tree vectype;
@@ -7807,7 +7810,7 @@ supportable_widening_operation (enum tree_code code, gimple stmt,
   stmt_vec_info stmt_info = vinfo_for_stmt (stmt);
   loop_vec_info loop_info = STMT_VINFO_LOOP_VINFO (stmt_info);
   struct loop *vect_loop = NULL;
-  machine_mode vec_mode;
+  enum machine_mode vec_mode;
   enum insn_code icode1, icode2;
   optab optab1, optab2;
   tree vectype = vectype_in;
@@ -7815,7 +7818,7 @@ supportable_widening_operation (enum tree_code code, gimple stmt,
   enum tree_code c1, c2;
   int i;
   tree prev_type, intermediate_type;
-  machine_mode intermediate_mode, prev_mode;
+  enum machine_mode intermediate_mode, prev_mode;
   optab optab3, optab4;
 
   *multi_step_cvt = 0;
@@ -8025,14 +8028,14 @@ supportable_narrowing_operation (enum tree_code code,
 				 enum tree_code *code1, int *multi_step_cvt,
                                  vec<tree> *interm_types)
 {
-  machine_mode vec_mode;
+  enum machine_mode vec_mode;
   enum insn_code icode1;
   optab optab1, interm_optab;
   tree vectype = vectype_in;
   tree narrow_vectype = vectype_out;
   enum tree_code c1;
   tree intermediate_type;
-  machine_mode intermediate_mode, prev_mode;
+  enum machine_mode intermediate_mode, prev_mode;
   int i;
   bool uns;
 

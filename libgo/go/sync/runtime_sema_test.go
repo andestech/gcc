@@ -7,6 +7,7 @@ package sync_test
 import (
 	"runtime"
 	. "sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -15,44 +16,72 @@ func BenchmarkSemaUncontended(b *testing.B) {
 		sem uint32
 		pad [32]uint32
 	}
-	b.RunParallel(func(pb *testing.PB) {
-		sem := new(PaddedSem)
-		for pb.Next() {
-			Runtime_Semrelease(&sem.sem)
-			Runtime_Semacquire(&sem.sem)
-		}
-	})
+	const CallsPerSched = 1000
+	procs := runtime.GOMAXPROCS(-1)
+	N := int32(b.N / CallsPerSched)
+	c := make(chan bool, procs)
+	for p := 0; p < procs; p++ {
+		go func() {
+			sem := new(PaddedSem)
+			for atomic.AddInt32(&N, -1) >= 0 {
+				runtime.Gosched()
+				for g := 0; g < CallsPerSched; g++ {
+					Runtime_Semrelease(&sem.sem)
+					Runtime_Semacquire(&sem.sem)
+				}
+			}
+			c <- true
+		}()
+	}
+	for p := 0; p < procs; p++ {
+		<-c
+	}
 }
 
 func benchmarkSema(b *testing.B, block, work bool) {
+	const CallsPerSched = 1000
+	const LocalWork = 100
+	procs := runtime.GOMAXPROCS(-1)
+	N := int32(b.N / CallsPerSched)
+	c := make(chan bool, procs)
+	c2 := make(chan bool, procs/2)
 	sem := uint32(0)
 	if block {
-		done := make(chan bool)
-		go func() {
-			for p := 0; p < runtime.GOMAXPROCS(0)/2; p++ {
+		for p := 0; p < procs/2; p++ {
+			go func() {
 				Runtime_Semacquire(&sem)
-			}
-			done <- true
-		}()
-		defer func() {
-			<-done
-		}()
+				c2 <- true
+			}()
+		}
 	}
-	b.RunParallel(func(pb *testing.PB) {
-		foo := 0
-		for pb.Next() {
-			Runtime_Semrelease(&sem)
-			if work {
-				for i := 0; i < 100; i++ {
-					foo *= 2
-					foo /= 2
+	for p := 0; p < procs; p++ {
+		go func() {
+			foo := 0
+			for atomic.AddInt32(&N, -1) >= 0 {
+				runtime.Gosched()
+				for g := 0; g < CallsPerSched; g++ {
+					Runtime_Semrelease(&sem)
+					if work {
+						for i := 0; i < LocalWork; i++ {
+							foo *= 2
+							foo /= 2
+						}
+					}
+					Runtime_Semacquire(&sem)
 				}
 			}
-			Runtime_Semacquire(&sem)
+			c <- foo == 42
+			Runtime_Semrelease(&sem)
+		}()
+	}
+	if block {
+		for p := 0; p < procs/2; p++ {
+			<-c2
 		}
-		_ = foo
-		Runtime_Semrelease(&sem)
-	})
+	}
+	for p := 0; p < procs; p++ {
+		<-c
+	}
 }
 
 func BenchmarkSemaSyntNonblock(b *testing.B) {

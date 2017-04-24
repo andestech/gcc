@@ -8,6 +8,17 @@
 
 #include <algorithm>
 
+#include "toplev.h"
+#include "intl.h"
+#include "tree.h"
+#include "stringpool.h"
+#include "stor-layout.h"
+#include "gimple-expr.h"
+#include "tree-iterator.h"
+#include "convert.h"
+#include "real.h"
+#include "realmpfr.h"
+
 #include "go-c.h"
 #include "gogo.h"
 #include "types.h"
@@ -129,78 +140,128 @@ Expression::determine_type_no_context()
   this->do_determine_type(&context);
 }
 
-// Return an expression handling any conversions which must be done during
+// Return a tree handling any conversions which must be done during
 // assignment.
 
-Expression*
-Expression::convert_for_assignment(Gogo* gogo, Type* lhs_type,
-				   Expression* rhs, Location location)
+tree
+Expression::convert_for_assignment(Translate_context* context, Type* lhs_type,
+				   Type* rhs_type, tree rhs_tree,
+				   Location location)
 {
-  Type* rhs_type = rhs->type();
-  if (lhs_type->is_error()
-      || rhs_type->is_error()
-      || rhs->is_error_expression())
-    return Expression::make_error(location);
+  if (lhs_type->is_error() || rhs_type->is_error())
+    return error_mark_node;
+
+  if (rhs_tree == error_mark_node || TREE_TYPE(rhs_tree) == error_mark_node)
+    return error_mark_node;
+
+  Gogo* gogo = context->gogo();
+
+  tree lhs_type_tree = type_to_tree(lhs_type->get_backend(gogo));
+  if (lhs_type_tree == error_mark_node)
+    return error_mark_node;
 
   if (lhs_type->forwarded() != rhs_type->forwarded()
       && lhs_type->interface_type() != NULL)
     {
       if (rhs_type->interface_type() == NULL)
-        return Expression::convert_type_to_interface(lhs_type, rhs, location);
+	return Expression::convert_type_to_interface(context, lhs_type,
+						     rhs_type, rhs_tree,
+						     location);
       else
-        return Expression::convert_interface_to_interface(lhs_type, rhs, false,
-                                                          location);
+	return Expression::convert_interface_to_interface(context, lhs_type,
+							  rhs_type, rhs_tree,
+							  false, location);
     }
   else if (lhs_type->forwarded() != rhs_type->forwarded()
 	   && rhs_type->interface_type() != NULL)
-    return Expression::convert_interface_to_type(lhs_type, rhs, location);
+    return Expression::convert_interface_to_type(context, lhs_type, rhs_type,
+						 rhs_tree, location);
   else if (lhs_type->is_slice_type() && rhs_type->is_nil_type())
     {
-      // Assigning nil to a slice.
-      Expression* nil = Expression::make_nil(location);
-      Expression* zero = Expression::make_integer_ul(0, NULL, location);
-      return Expression::make_slice_value(lhs_type, nil, zero, zero, location);
+      // Assigning nil to an open array.
+      go_assert(TREE_CODE(lhs_type_tree) == RECORD_TYPE);
+
+      vec<constructor_elt, va_gc> *init;
+      vec_alloc(init, 3);
+
+      constructor_elt empty = {NULL, NULL};
+      constructor_elt* elt = init->quick_push(empty);
+      tree field = TYPE_FIELDS(lhs_type_tree);
+      go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)),
+			"__values") == 0);
+      elt->index = field;
+      elt->value = fold_convert(TREE_TYPE(field), null_pointer_node);
+
+      elt = init->quick_push(empty);
+      field = DECL_CHAIN(field);
+      go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)),
+			"__count") == 0);
+      elt->index = field;
+      elt->value = fold_convert(TREE_TYPE(field), integer_zero_node);
+
+      elt = init->quick_push(empty);
+      field = DECL_CHAIN(field);
+      go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)),
+			"__capacity") == 0);
+      elt->index = field;
+      elt->value = fold_convert(TREE_TYPE(field), integer_zero_node);
+
+      tree val = build_constructor(lhs_type_tree, init);
+      TREE_CONSTANT(val) = 1;
+
+      return val;
     }
   else if (rhs_type->is_nil_type())
-    return Expression::make_nil(location);
-  else if (Type::are_identical(lhs_type, rhs_type, false, NULL))
+    {
+      // The left hand side should be a pointer type at the tree
+      // level.
+      go_assert(POINTER_TYPE_P(lhs_type_tree));
+      return fold_convert(lhs_type_tree, null_pointer_node);
+    }
+  else if (lhs_type_tree == TREE_TYPE(rhs_tree))
     {
       // No conversion is needed.
-      return rhs;
+      return rhs_tree;
     }
-  else if (lhs_type->points_to() != NULL)
-    return Expression::make_unsafe_cast(lhs_type, rhs, location);
-  else if (lhs_type->is_numeric_type())
-    return Expression::make_cast(lhs_type, rhs, location);
-  else if ((lhs_type->struct_type() != NULL
-            && rhs_type->struct_type() != NULL)
-           || (lhs_type->array_type() != NULL
-               && rhs_type->array_type() != NULL))
+  else if (POINTER_TYPE_P(lhs_type_tree)
+	   || INTEGRAL_TYPE_P(lhs_type_tree)
+	   || SCALAR_FLOAT_TYPE_P(lhs_type_tree)
+	   || COMPLEX_FLOAT_TYPE_P(lhs_type_tree))
+    return fold_convert_loc(location.gcc_location(), lhs_type_tree, rhs_tree);
+  else if ((TREE_CODE(lhs_type_tree) == RECORD_TYPE
+	    && TREE_CODE(TREE_TYPE(rhs_tree)) == RECORD_TYPE)
+	   || (TREE_CODE(lhs_type_tree) == ARRAY_TYPE
+	       && TREE_CODE(TREE_TYPE(rhs_tree)) == ARRAY_TYPE))
     {
       // Avoid confusion from zero sized variables which may be
       // represented as non-zero-sized.
-      // TODO(cmang): This check is for a GCC-specific issue, and should be
-      // removed from the frontend.  FIXME.
-      size_t lhs_size = gogo->backend()->type_size(lhs_type->get_backend(gogo));
-      size_t rhs_size = gogo->backend()->type_size(rhs_type->get_backend(gogo));
-      if (rhs_size == 0 || lhs_size == 0)
-	return rhs;
+      if (int_size_in_bytes(lhs_type_tree) == 0
+	  || int_size_in_bytes(TREE_TYPE(rhs_tree)) == 0)
+	return rhs_tree;
 
       // This conversion must be permitted by Go, or we wouldn't have
       // gotten here.
-      return Expression::make_unsafe_cast(lhs_type, rhs, location);
+      go_assert(int_size_in_bytes(lhs_type_tree)
+		== int_size_in_bytes(TREE_TYPE(rhs_tree)));
+      return fold_build1_loc(location.gcc_location(), VIEW_CONVERT_EXPR,
+                             lhs_type_tree, rhs_tree);
     }
   else
-    return rhs;
+    {
+      go_assert(useless_type_conversion_p(lhs_type_tree, TREE_TYPE(rhs_tree)));
+      return rhs_tree;
+    }
 }
 
-// Return an expression for a conversion from a non-interface type to an
+// Return a tree for a conversion from a non-interface type to an
 // interface type.
 
-Expression*
-Expression::convert_type_to_interface(Type* lhs_type, Expression* rhs,
-                                      Location location)
+tree
+Expression::convert_type_to_interface(Translate_context* context,
+				      Type* lhs_type, Type* rhs_type,
+				      tree rhs_tree, Location location)
 {
+  Gogo* gogo = context->gogo();
   Interface_type* lhs_interface_type = lhs_type->interface_type();
   bool lhs_is_empty = lhs_interface_type->is_empty();
 
@@ -209,22 +270,29 @@ Expression::convert_type_to_interface(Type* lhs_type, Expression* rhs,
 
   // When setting an interface to nil, we just set both fields to
   // NULL.
-  Type* rhs_type = rhs->type();
   if (rhs_type->is_nil_type())
     {
-      Expression* nil = Expression::make_nil(location);
-      return Expression::make_interface_value(lhs_type, nil, nil, location);
+      Btype* lhs_btype = lhs_type->get_backend(gogo);
+      return expr_to_tree(gogo->backend()->zero_expression(lhs_btype));
     }
 
   // This should have been checked already.
   go_assert(lhs_interface_type->implements_interface(rhs_type, NULL));
 
+  tree lhs_type_tree = type_to_tree(lhs_type->get_backend(gogo));
+  if (lhs_type_tree == error_mark_node)
+    return error_mark_node;
+
   // An interface is a tuple.  If LHS_TYPE is an empty interface type,
   // then the first field is the type descriptor for RHS_TYPE.
   // Otherwise it is the interface method table for RHS_TYPE.
-  Expression* first_field;
+  tree first_field_value;
   if (lhs_is_empty)
-    first_field = Expression::make_type_descriptor(rhs_type, location);
+    {
+      Bexpression* rhs_bexpr =
+          rhs_type->type_descriptor_pointer(gogo, location);
+      first_field_value = expr_to_tree(rhs_bexpr);
+    }
   else
     {
       // Build the interface method table for this interface and this
@@ -239,71 +307,130 @@ Expression::convert_type_to_interface(Type* lhs_type, Expression* rhs,
 	  rhs_struct_type = rhs_type->deref()->struct_type();
 	  is_pointer = true;
 	}
+      tree method_table;
       if (rhs_named_type != NULL)
-	first_field =
-	  rhs_named_type->interface_method_table(lhs_interface_type,
-                                                 is_pointer);
+	method_table =
+	  rhs_named_type->interface_method_table(gogo, lhs_interface_type,
+						 is_pointer);
       else if (rhs_struct_type != NULL)
-	first_field =
-	  rhs_struct_type->interface_method_table(lhs_interface_type,
-                                                  is_pointer);
+	method_table =
+	  rhs_struct_type->interface_method_table(gogo, lhs_interface_type,
+						  is_pointer);
       else
-	first_field = Expression::make_nil(location);
+	method_table = null_pointer_node;
+      first_field_value = fold_convert_loc(location.gcc_location(),
+                                           const_ptr_type_node, method_table);
     }
+  if (first_field_value == error_mark_node)
+    return error_mark_node;
 
-  Expression* obj;
+  // Start building a constructor for the value we will return.
+
+  vec<constructor_elt, va_gc> *init;
+  vec_alloc(init, 2);
+
+  constructor_elt empty = {NULL, NULL};
+  constructor_elt* elt = init->quick_push(empty);
+  tree field = TYPE_FIELDS(lhs_type_tree);
+  go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)),
+		    (lhs_is_empty ? "__type_descriptor" : "__methods")) == 0);
+  elt->index = field;
+  elt->value = fold_convert_loc(location.gcc_location(), TREE_TYPE(field),
+                                first_field_value);
+
+  elt = init->quick_push(empty);
+  field = DECL_CHAIN(field);
+  go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__object") == 0);
+  elt->index = field;
+
   if (rhs_type->points_to() != NULL)
     {
-      // We are assigning a pointer to the interface; the interface
+      //  We are assigning a pointer to the interface; the interface
       // holds the pointer itself.
-      obj = rhs;
-    }
-  else
-    {
-      // We are assigning a non-pointer value to the interface; the
-      // interface gets a copy of the value in the heap.
-      obj = Expression::make_heap_expression(rhs, location);
+      elt->value = rhs_tree;
+      return build_constructor(lhs_type_tree, init);
     }
 
-  return Expression::make_interface_value(lhs_type, first_field, obj, location);
+  // We are assigning a non-pointer value to the interface; the
+  // interface gets a copy of the value in the heap.
+
+  tree object_size = TYPE_SIZE_UNIT(TREE_TYPE(rhs_tree));
+
+  tree space = gogo->allocate_memory(rhs_type, object_size, location);
+  space = fold_convert_loc(location.gcc_location(),
+                           build_pointer_type(TREE_TYPE(rhs_tree)), space);
+  space = save_expr(space);
+
+  tree ref = build_fold_indirect_ref_loc(location.gcc_location(), space);
+  TREE_THIS_NOTRAP(ref) = 1;
+  tree set = fold_build2_loc(location.gcc_location(), MODIFY_EXPR,
+                             void_type_node, ref, rhs_tree);
+
+  elt->value = fold_convert_loc(location.gcc_location(), TREE_TYPE(field),
+                                space);
+
+  return build2(COMPOUND_EXPR, lhs_type_tree, set,
+		build_constructor(lhs_type_tree, init));
 }
 
-// Return an expression for the type descriptor of RHS.
+// Return a tree for the type descriptor of RHS_TREE, which has
+// interface type RHS_TYPE.  If RHS_TREE is nil the result will be
+// NULL.
 
-Expression*
-Expression::get_interface_type_descriptor(Expression* rhs)
+tree
+Expression::get_interface_type_descriptor(Translate_context*,
+					  Type* rhs_type, tree rhs_tree,
+					  Location location)
 {
-  go_assert(rhs->type()->interface_type() != NULL);
-  Location location = rhs->location();
+  tree rhs_type_tree = TREE_TYPE(rhs_tree);
+  go_assert(TREE_CODE(rhs_type_tree) == RECORD_TYPE);
+  tree rhs_field = TYPE_FIELDS(rhs_type_tree);
+  tree v = build3(COMPONENT_REF, TREE_TYPE(rhs_field), rhs_tree, rhs_field,
+		  NULL_TREE);
+  if (rhs_type->interface_type()->is_empty())
+    {
+      go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(rhs_field)),
+			"__type_descriptor") == 0);
+      return v;
+    }
 
-  // The type descriptor is the first field of an empty interface.
-  if (rhs->type()->interface_type()->is_empty())
-    return Expression::make_interface_info(rhs, INTERFACE_INFO_TYPE_DESCRIPTOR,
-                                           location);
+  go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(rhs_field)), "__methods")
+	     == 0);
+  go_assert(POINTER_TYPE_P(TREE_TYPE(v)));
+  v = save_expr(v);
+  tree v1 = build_fold_indirect_ref_loc(location.gcc_location(), v);
+  go_assert(TREE_CODE(TREE_TYPE(v1)) == RECORD_TYPE);
+  tree f = TYPE_FIELDS(TREE_TYPE(v1));
+  go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(f)), "__type_descriptor")
+	     == 0);
+  v1 = build3(COMPONENT_REF, TREE_TYPE(f), v1, f, NULL_TREE);
 
-  Expression* mtable =
-      Expression::make_interface_info(rhs, INTERFACE_INFO_METHODS, location);
-
-  Expression* descriptor =
-      Expression::make_unary(OPERATOR_MULT, mtable, location);
-  descriptor = Expression::make_field_reference(descriptor, 0, location);
-  Expression* nil = Expression::make_nil(location);
-
-  Expression* eq =
-      Expression::make_binary(OPERATOR_EQEQ, mtable, nil, location);
-  return Expression::make_conditional(eq, nil, descriptor, location);
+  tree eq = fold_build2_loc(location.gcc_location(), EQ_EXPR, boolean_type_node,
+                            v, fold_convert_loc(location.gcc_location(),
+                                                TREE_TYPE(v),
+                                                null_pointer_node));
+  tree n = fold_convert_loc(location.gcc_location(), TREE_TYPE(v1),
+                            null_pointer_node);
+  return fold_build3_loc(location.gcc_location(), COND_EXPR, TREE_TYPE(v1),
+			 eq, n, v1);
 }
 
-// Return an expression for the conversion of an interface type to an
+// Return a tree for the conversion of an interface type to an
 // interface type.
 
-Expression*
-Expression::convert_interface_to_interface(Type *lhs_type, Expression* rhs,
-                                           bool for_type_guard,
-                                           Location location)
+tree
+Expression::convert_interface_to_interface(Translate_context* context,
+					   Type *lhs_type, Type *rhs_type,
+					   tree rhs_tree, bool for_type_guard,
+					   Location location)
 {
+  Gogo* gogo = context->gogo();
   Interface_type* lhs_interface_type = lhs_type->interface_type();
   bool lhs_is_empty = lhs_interface_type->is_empty();
+
+  tree lhs_type_tree = type_to_tree(lhs_type->get_backend(gogo));
+  if (lhs_type_tree == error_mark_node)
+    return error_mark_node;
 
   // In the general case this requires runtime examination of the type
   // method table to match it up with the interface methods.
@@ -315,89 +442,183 @@ Expression::convert_interface_to_interface(Type *lhs_type, Expression* rhs,
 
   // Get the type descriptor for the right hand side.  This will be
   // NULL for a nil interface.
-  Expression* rhs_type_expr = Expression::get_interface_type_descriptor(rhs);
-  Expression* lhs_type_expr =
-      Expression::make_type_descriptor(lhs_type, location);
 
-  Expression* first_field;
+  if (!DECL_P(rhs_tree))
+    rhs_tree = save_expr(rhs_tree);
+
+  tree rhs_type_descriptor =
+    Expression::get_interface_type_descriptor(context, rhs_type, rhs_tree,
+					      location);
+
+  // The result is going to be a two element constructor.
+
+  vec<constructor_elt, va_gc> *init;
+  vec_alloc (init, 2);
+
+  constructor_elt empty = {NULL, NULL};
+  constructor_elt* elt = init->quick_push(empty);
+  tree field = TYPE_FIELDS(lhs_type_tree);
+  elt->index = field;
+
   if (for_type_guard)
     {
       // A type assertion fails when converting a nil interface.
-      first_field =
-          Runtime::make_call(Runtime::ASSERT_INTERFACE, location, 2,
-                             lhs_type_expr, rhs_type_expr);
+      Bexpression* lhs_type_expr = lhs_type->type_descriptor_pointer(gogo,
+                                                                     location);
+      tree lhs_type_descriptor = expr_to_tree(lhs_type_expr);
+      static tree assert_interface_decl;
+      tree call = Gogo::call_builtin(&assert_interface_decl,
+				     location,
+				     "__go_assert_interface",
+				     2,
+				     ptr_type_node,
+				     TREE_TYPE(lhs_type_descriptor),
+				     lhs_type_descriptor,
+				     TREE_TYPE(rhs_type_descriptor),
+				     rhs_type_descriptor);
+      if (call == error_mark_node)
+	return error_mark_node;
+      // This will panic if the interface conversion fails.
+      TREE_NOTHROW(assert_interface_decl) = 0;
+      elt->value = fold_convert_loc(location.gcc_location(), TREE_TYPE(field),
+                                    call);
     }
   else if (lhs_is_empty)
     {
-      // A conversion to an empty interface always succeeds, and the
+      // A convertion to an empty interface always succeeds, and the
       // first field is just the type descriptor of the object.
-      first_field = rhs_type_expr;
+      go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)),
+			"__type_descriptor") == 0);
+      elt->value = fold_convert_loc(location.gcc_location(),
+				    TREE_TYPE(field), rhs_type_descriptor);
     }
   else
     {
       // A conversion to a non-empty interface may fail, but unlike a
       // type assertion converting nil will always succeed.
-      first_field =
-          Runtime::make_call(Runtime::CONVERT_INTERFACE, location, 2,
-                             lhs_type_expr, rhs_type_expr);
+      go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__methods")
+		 == 0);
+      Bexpression* lhs_type_expr = lhs_type->type_descriptor_pointer(gogo,
+                                                                     location);
+      tree lhs_type_descriptor = expr_to_tree(lhs_type_expr);
+
+      static tree convert_interface_decl;
+      tree call = Gogo::call_builtin(&convert_interface_decl,
+				     location,
+				     "__go_convert_interface",
+				     2,
+				     ptr_type_node,
+				     TREE_TYPE(lhs_type_descriptor),
+				     lhs_type_descriptor,
+				     TREE_TYPE(rhs_type_descriptor),
+				     rhs_type_descriptor);
+      if (call == error_mark_node)
+	return error_mark_node;
+      // This will panic if the interface conversion fails.
+      TREE_NOTHROW(convert_interface_decl) = 0;
+      elt->value = fold_convert_loc(location.gcc_location(), TREE_TYPE(field),
+                                    call);
     }
 
   // The second field is simply the object pointer.
-  Expression* obj =
-      Expression::make_interface_info(rhs, INTERFACE_INFO_OBJECT, location);
-  return Expression::make_interface_value(lhs_type, first_field, obj, location);
+
+  elt = init->quick_push(empty);
+  field = DECL_CHAIN(field);
+  go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__object") == 0);
+  elt->index = field;
+
+  tree rhs_type_tree = TREE_TYPE(rhs_tree);
+  go_assert(TREE_CODE(rhs_type_tree) == RECORD_TYPE);
+  tree rhs_field = DECL_CHAIN(TYPE_FIELDS(rhs_type_tree));
+  go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(rhs_field)), "__object") == 0);
+  elt->value = build3(COMPONENT_REF, TREE_TYPE(rhs_field), rhs_tree, rhs_field,
+		      NULL_TREE);
+
+  return build_constructor(lhs_type_tree, init);
 }
 
-// Return an expression for the conversion of an interface type to a
+// Return a tree for the conversion of an interface type to a
 // non-interface type.
 
-Expression*
-Expression::convert_interface_to_type(Type *lhs_type, Expression* rhs,
-                                      Location location)
+tree
+Expression::convert_interface_to_type(Translate_context* context,
+				      Type *lhs_type, Type* rhs_type,
+				      tree rhs_tree, Location location)
 {
+  Gogo* gogo = context->gogo();
+  tree rhs_type_tree = TREE_TYPE(rhs_tree);
+
+  tree lhs_type_tree = type_to_tree(lhs_type->get_backend(gogo));
+  if (lhs_type_tree == error_mark_node)
+    return error_mark_node;
+
   // Call a function to check that the type is valid.  The function
   // will panic with an appropriate runtime type error if the type is
   // not valid.
-  Expression* lhs_type_expr = Expression::make_type_descriptor(lhs_type,
-                                                                location);
-  Expression* rhs_descriptor =
-      Expression::get_interface_type_descriptor(rhs);
+  Bexpression* lhs_type_expr = lhs_type->type_descriptor_pointer(gogo,
+                                                                 location);
+  tree lhs_type_descriptor = expr_to_tree(lhs_type_expr);
 
-  Type* rhs_type = rhs->type();
-  Expression* rhs_inter_expr = Expression::make_type_descriptor(rhs_type,
-                                                                location);
+  if (!DECL_P(rhs_tree))
+    rhs_tree = save_expr(rhs_tree);
 
-  Expression* check_iface = Runtime::make_call(Runtime::CHECK_INTERFACE_TYPE,
-                                               location, 3, lhs_type_expr,
-                                               rhs_descriptor, rhs_inter_expr);
+  tree rhs_type_descriptor =
+    Expression::get_interface_type_descriptor(context, rhs_type, rhs_tree,
+					      location);
+
+  Bexpression* rhs_inter_expr = rhs_type->type_descriptor_pointer(gogo,
+                                                                  location);
+  tree rhs_inter_descriptor = expr_to_tree(rhs_inter_expr);
+
+  static tree check_interface_type_decl;
+  tree call = Gogo::call_builtin(&check_interface_type_decl,
+				 location,
+				 "__go_check_interface_type",
+				 3,
+				 void_type_node,
+				 TREE_TYPE(lhs_type_descriptor),
+				 lhs_type_descriptor,
+				 TREE_TYPE(rhs_type_descriptor),
+				 rhs_type_descriptor,
+				 TREE_TYPE(rhs_inter_descriptor),
+				 rhs_inter_descriptor);
+  if (call == error_mark_node)
+    return error_mark_node;
+  // This call will panic if the conversion is invalid.
+  TREE_NOTHROW(check_interface_type_decl) = 0;
 
   // If the call succeeds, pull out the value.
-  Expression* obj = Expression::make_interface_info(rhs, INTERFACE_INFO_OBJECT,
-                                                    location);
+  go_assert(TREE_CODE(rhs_type_tree) == RECORD_TYPE);
+  tree rhs_field = DECL_CHAIN(TYPE_FIELDS(rhs_type_tree));
+  go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(rhs_field)), "__object") == 0);
+  tree val = build3(COMPONENT_REF, TREE_TYPE(rhs_field), rhs_tree, rhs_field,
+		    NULL_TREE);
 
   // If the value is a pointer, then it is the value we want.
   // Otherwise it points to the value.
   if (lhs_type->points_to() == NULL)
     {
-      obj = Expression::make_unsafe_cast(Type::make_pointer_type(lhs_type), obj,
-                                         location);
-      obj = Expression::make_unary(OPERATOR_MULT, obj, location);
+      val = fold_convert_loc(location.gcc_location(),
+                             build_pointer_type(lhs_type_tree), val);
+      val = build_fold_indirect_ref_loc(location.gcc_location(), val);
     }
-  return Expression::make_compound(check_iface, obj, location);
+
+  return build2(COMPOUND_EXPR, lhs_type_tree, call,
+		fold_convert_loc(location.gcc_location(), lhs_type_tree, val));
 }
 
-// Convert an expression to its backend representation.  This is implemented by
-// the child class.  Not that it is not in general safe to call this multiple
+// Convert an expression to a tree.  This is implemented by the child
+// class.  Not that it is not in general safe to call this multiple
 // times for a single expression, but that we don't catch such errors.
 
-Bexpression*
-Expression::get_backend(Translate_context* context)
+tree
+Expression::get_tree(Translate_context* context)
 {
   // The child may have marked this expression as having an error.
   if (this->classification_ == EXPRESSION_ERROR)
-    return context->backend()->error_expression();
+    return error_mark_node;
 
-  return this->do_get_backend(context);
+  return this->do_get_tree(context);
 }
 
 // Return a backend expression for VAL.
@@ -436,14 +657,16 @@ Expression::backend_numeric_constant_expression(Translate_context* context,
     }
   else if (type->complex_type() != NULL)
     {
-      mpc_t cval;
-      if (!val->to_complex(&cval))
+      mpfr_t real;
+      mpfr_t imag;
+      if (!val->to_complex(&real, &imag))
         {
           go_assert(saw_errors());
           return gogo->backend()->error_expression();
         }
-      ret = gogo->backend()->complex_constant_expression(btype, cval);
-      mpc_clear(cval);
+      ret = gogo->backend()->complex_constant_expression(btype, real, imag);
+      mpfr_clear(real);
+      mpfr_clear(imag);
     }
   else
     go_unreachable();
@@ -451,67 +674,54 @@ Expression::backend_numeric_constant_expression(Translate_context* context,
   return ret;
 }
 
-// Return an expression which evaluates to true if VAL, of arbitrary integer
-// type, is negative or is more than the maximum value of the Go type "int".
+// Return a tree which evaluates to true if VAL, of arbitrary integer
+// type, is negative or is more than the maximum value of BOUND_TYPE.
+// If SOFAR is not NULL, it is or'red into the result.  The return
+// value may be NULL if SOFAR is NULL.
 
-Expression*
-Expression::check_bounds(Expression* val, Location loc)
+tree
+Expression::check_bounds(tree val, tree bound_type, tree sofar,
+			 Location loc)
 {
-  Type* val_type = val->type();
-  Type* bound_type = Type::lookup_integer_type("int");
+  tree val_type = TREE_TYPE(val);
+  tree ret = NULL_TREE;
 
-  int val_type_size;
-  bool val_is_unsigned = false;
-  if (val_type->integer_type() != NULL)
+  if (!TYPE_UNSIGNED(val_type))
     {
-      val_type_size = val_type->integer_type()->bits();
-      val_is_unsigned = val_type->integer_type()->is_unsigned();
-    }
-  else
-    {
-      if (!val_type->is_numeric_type()
-          || !Type::are_convertible(bound_type, val_type, NULL))
-        {
-          go_assert(saw_errors());
-          return Expression::make_boolean(true, loc);
-        }
-
-      if (val_type->complex_type() != NULL)
-        val_type_size = val_type->complex_type()->bits();
-      else
-        val_type_size = val_type->float_type()->bits();
+      ret = fold_build2_loc(loc.gcc_location(), LT_EXPR, boolean_type_node, val,
+			    build_int_cst(val_type, 0));
+      if (ret == boolean_false_node)
+	ret = NULL_TREE;
     }
 
-  Expression* negative_index = Expression::make_boolean(false, loc);
-  Expression* index_overflows = Expression::make_boolean(false, loc);
-  if (!val_is_unsigned)
-    {
-      Expression* zero = Expression::make_integer_ul(0, val_type, loc);
-      negative_index = Expression::make_binary(OPERATOR_LT, val, zero, loc);
-    }
-
-  int bound_type_size = bound_type->integer_type()->bits();
+  HOST_WIDE_INT val_type_size = int_size_in_bytes(val_type);
+  HOST_WIDE_INT bound_type_size = int_size_in_bytes(bound_type);
+  go_assert(val_type_size != -1 && bound_type_size != -1);
   if (val_type_size > bound_type_size
       || (val_type_size == bound_type_size
-	  && val_is_unsigned))
+	  && TYPE_UNSIGNED(val_type)
+	  && !TYPE_UNSIGNED(bound_type)))
     {
-      mpz_t one;
-      mpz_init_set_ui(one, 1UL);
-
-      // maxval = 2^(bound_type_size - 1) - 1
-      mpz_t maxval;
-      mpz_init(maxval);
-      mpz_mul_2exp(maxval, one, bound_type_size - 1);
-      mpz_sub_ui(maxval, maxval, 1);
-      Expression* max = Expression::make_integer_z(&maxval, val_type, loc);
-      mpz_clear(one);
-      mpz_clear(maxval);
-
-      index_overflows = Expression::make_binary(OPERATOR_GT, val, max, loc);
+      tree max = TYPE_MAX_VALUE(bound_type);
+      tree big = fold_build2_loc(loc.gcc_location(), GT_EXPR, boolean_type_node,
+                                 val, fold_convert_loc(loc.gcc_location(),
+                                                       val_type, max));
+      if (big == boolean_false_node)
+	;
+      else if (ret == NULL_TREE)
+	ret = big;
+      else
+	ret = fold_build2_loc(loc.gcc_location(), TRUTH_OR_EXPR,
+                              boolean_type_node, ret, big);
     }
 
-  return Expression::make_binary(OPERATOR_OROR, negative_index, index_overflows,
-                                 loc);
+  if (ret == NULL_TREE)
+    return sofar;
+  else if (sofar == NULL_TREE)
+    return ret;
+  else
+    return fold_build2_loc(loc.gcc_location(), TRUTH_OR_EXPR, boolean_type_node,
+			   sofar, ret);
 }
 
 void
@@ -532,10 +742,6 @@ class Error_expression : public Expression
  protected:
   bool
   do_is_constant() const
-  { return true; }
-
-  bool
-  do_is_immutable() const
   { return true; }
 
   bool
@@ -565,9 +771,9 @@ class Error_expression : public Expression
   do_is_addressable() const
   { return true; }
 
-  Bexpression*
-  do_get_backend(Translate_context* context)
-  { return context->backend()->error_expression(); }
+  tree
+  do_get_tree(Translate_context*)
+  { return error_mark_node; }
 
   void
   do_dump_expression(Ast_dump_context*) const;
@@ -620,8 +826,8 @@ Type_expression : public Expression
   do_copy()
   { return this; }
 
-  Bexpression*
-  do_get_backend(Translate_context*)
+  tree
+  do_get_tree(Translate_context*)
   { go_unreachable(); }
 
   void do_dump_expression(Ast_dump_context*) const;
@@ -731,34 +937,26 @@ Var_expression::do_address_taken(bool escapes)
     }
 }
 
-// Get the backend representation for a reference to a variable.
+// Get the tree for a reference to a variable.
 
-Bexpression*
-Var_expression::do_get_backend(Translate_context* context)
+tree
+Var_expression::do_get_tree(Translate_context* context)
 {
   Bvariable* bvar = this->variable_->get_backend_variable(context->gogo(),
 							  context->function());
   bool is_in_heap;
   Location loc = this->location();
-  Btype* btype;
-  Gogo* gogo = context->gogo();
   if (this->variable_->is_variable())
-    {
-      is_in_heap = this->variable_->var_value()->is_in_heap();
-      btype = this->variable_->var_value()->type()->get_backend(gogo);
-    }
+    is_in_heap = this->variable_->var_value()->is_in_heap();
   else if (this->variable_->is_result_variable())
-    {
-      is_in_heap = this->variable_->result_var_value()->is_in_heap();
-      btype = this->variable_->result_var_value()->type()->get_backend(gogo);
-    }
+    is_in_heap = this->variable_->result_var_value()->is_in_heap();
   else
     go_unreachable();
 
   Bexpression* ret = context->backend()->var_expression(bvar, loc);
   if (is_in_heap)
-    ret = context->backend()->indirect_expression(btype, ret, true, loc);
-  return ret;
+    ret = context->backend()->indirect_expression(ret, true, loc);
+  return expr_to_tree(ret);
 }
 
 // Ast dump for variable expression.
@@ -803,10 +1001,10 @@ Temporary_reference_expression::do_address_taken(bool)
   this->statement_->set_is_address_taken();
 }
 
-// Get a backend expression referring to the variable.
+// Get a tree referring to the variable.
 
-Bexpression*
-Temporary_reference_expression::do_get_backend(Translate_context* context)
+tree
+Temporary_reference_expression::do_get_tree(Translate_context* context)
 {
   Gogo* gogo = context->gogo();
   Bvariable* bvar = this->statement_->get_backend_variable(context);
@@ -825,7 +1023,7 @@ Temporary_reference_expression::do_get_backend(Translate_context* context)
       Btype* btype = this->type()->base()->get_backend(gogo);
       ret = gogo->backend()->convert_expression(btype, ret, this->location());
     }
-  return ret;
+  return expr_to_tree(ret);
 }
 
 // Ast dump for temporary reference.
@@ -875,19 +1073,19 @@ Set_and_use_temporary_expression::do_address_taken(bool)
 
 // Return the backend representation.
 
-Bexpression*
-Set_and_use_temporary_expression::do_get_backend(Translate_context* context)
+tree
+Set_and_use_temporary_expression::do_get_tree(Translate_context* context)
 {
-  Location loc = this->location();
-  Gogo* gogo = context->gogo();
   Bvariable* bvar = this->statement_->get_backend_variable(context);
-  Bexpression* var_ref = gogo->backend()->var_expression(bvar, loc);
-
-  Bexpression* bexpr = this->expr_->get_backend(context);
-  Bstatement* set = gogo->backend()->assignment_statement(var_ref, bexpr, loc);
-  var_ref = gogo->backend()->var_expression(bvar, loc);
-  Bexpression* ret = gogo->backend()->compound_expression(set, var_ref, loc);
-  return ret;
+  tree var_tree = var_to_tree(bvar);
+  tree expr_tree = this->expr_->get_tree(context);
+  if (var_tree == error_mark_node || expr_tree == error_mark_node)
+    return error_mark_node;
+  Location loc = this->location();
+  return build2_loc(loc.gcc_location(), COMPOUND_EXPR, TREE_TYPE(var_tree),
+		    build2_loc(loc.gcc_location(), MODIFY_EXPR, void_type_node,
+			       var_tree, expr_tree),
+		    var_tree);
 }
 
 // Dump.
@@ -919,7 +1117,7 @@ class Sink_expression : public Expression
  public:
   Sink_expression(Location location)
     : Expression(EXPRESSION_SINK, location),
-      type_(NULL), bvar_(NULL)
+      type_(NULL), var_(NULL_TREE)
   { }
 
  protected:
@@ -937,8 +1135,8 @@ class Sink_expression : public Expression
   do_copy()
   { return new Sink_expression(this->location()); }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   void
   do_dump_expression(Ast_dump_context*) const;
@@ -947,7 +1145,7 @@ class Sink_expression : public Expression
   // The type of this sink variable.
   Type* type_;
   // The temporary variable we generate.
-  Bvariable* bvar_;
+  tree var_;
 };
 
 // Return the type of a sink expression.
@@ -972,27 +1170,16 @@ Sink_expression::do_determine_type(const Type_context* context)
 // Return a temporary variable for a sink expression.  This will
 // presumably be a write-only variable which the middle-end will drop.
 
-Bexpression*
-Sink_expression::do_get_backend(Translate_context* context)
+tree
+Sink_expression::do_get_tree(Translate_context* context)
 {
-  Location loc = this->location();
-  Gogo* gogo = context->gogo();
-  if (this->bvar_ == NULL)
+  if (this->var_ == NULL_TREE)
     {
       go_assert(this->type_ != NULL && !this->type_->is_sink_type());
-      Named_object* fn = context->function();
-      go_assert(fn != NULL);
-      Bfunction* fn_ctx = fn->func_value()->get_or_make_decl(gogo, fn);
       Btype* bt = this->type_->get_backend(context->gogo());
-      Bstatement* decl;
-      this->bvar_ =
-	gogo->backend()->temporary_variable(fn_ctx, context->bblock(), bt, NULL,
-					    false, loc, &decl);
-      Bexpression* var_ref = gogo->backend()->var_expression(this->bvar_, loc);
-      var_ref = gogo->backend()->compound_expression(decl, var_ref, loc);
-      return var_ref;
+      this->var_ = create_tmp_var(type_to_tree(bt), "blank");
     }
-  return gogo->backend()->var_expression(this->bvar_, loc);
+  return this->var_;
 }
 
 // Ast dump for sink expression.
@@ -1041,7 +1228,7 @@ Func_expression::do_type()
     go_unreachable();
 }
 
-// Get the backend representation for the code of a function expression.
+// Get the tree for the code of a function expression.
 
 Bexpression*
 Func_expression::get_code_pointer(Gogo* gogo, Named_object* no, Location loc)
@@ -1075,15 +1262,15 @@ Func_expression::get_code_pointer(Gogo* gogo, Named_object* no, Location loc)
   return gogo->backend()->function_code_expression(fndecl, loc);
 }
 
-// Get the backend representation for a function expression.  This is used when
-// we take the address of a function rather than simply calling it.  A func
+// Get the tree for a function expression.  This is used when we take
+// the address of a function rather than simply calling it.  A func
 // value is represented as a pointer to a block of memory.  The first
 // word of that memory is a pointer to the function code.  The
 // remaining parts of that memory are the addresses of variables that
 // the function closes over.
 
-Bexpression*
-Func_expression::do_get_backend(Translate_context* context)
+tree
+Func_expression::do_get_tree(Translate_context* context)
 {
   // If there is no closure, just use the function descriptor.
   if (this->closure_ == NULL)
@@ -1101,15 +1288,17 @@ Func_expression::do_get_backend(Translate_context* context)
 		       ("invalid use of special builtin function %qs; "
 			"must be called"),
 		       no->message_name().c_str());
-	      return gogo->backend()->error_expression();
+	      return error_mark_node;
 	    }
 	  descriptor = no->func_declaration_value()->descriptor(gogo, no);
 	}
       else
 	go_unreachable();
 
-      Bexpression* bdesc = descriptor->get_backend(context);
-      return gogo->backend()->address_expression(bdesc, this->location());
+      tree dtree = descriptor->get_tree(context);
+      if (dtree == error_mark_node)
+	return error_mark_node;
+      return build_fold_addr_expr_loc(this->location().gcc_location(), dtree);
     }
 
   go_assert(this->function_->func_value()->enclosing() != NULL);
@@ -1118,7 +1307,7 @@ Func_expression::do_get_backend(Translate_context* context)
   // expression.  It is a pointer to a struct whose first field points
   // to the function code and whose remaining fields are the addresses
   // of the closed-over variables.
-  return this->closure_->get_backend(context);
+  return this->closure_->get_tree(context);
 }
 
 // Ast dump for function.
@@ -1185,17 +1374,18 @@ Func_descriptor_expression::do_type()
   return Func_descriptor_expression::descriptor_type;
 }
 
-// The backend representation for a function descriptor.
+// The tree for a function descriptor.
 
-Bexpression*
-Func_descriptor_expression::do_get_backend(Translate_context* context)
+tree
+Func_descriptor_expression::do_get_tree(Translate_context* context)
 {
-  Named_object* no = this->fn_;
-  Location loc = no->location();
   if (this->dvar_ != NULL)
-    return context->backend()->var_expression(this->dvar_, loc);
+    return var_to_tree(this->dvar_);
 
   Gogo* gogo = context->gogo();
+  Named_object* no = this->fn_;
+  Location loc = no->location();
+
   std::string var_name;
   if (no->package() == NULL)
     var_name = gogo->pkgpath_symbol();
@@ -1226,13 +1416,13 @@ Func_descriptor_expression::do_get_backend(Translate_context* context)
 	Expression::make_struct_composite_literal(this->type(), vals, bloc);
       Translate_context bcontext(gogo, NULL, NULL, NULL);
       bcontext.set_is_const();
-      Bexpression* binit = init->get_backend(&bcontext);
+      Bexpression* binit = tree_to_expr(init->get_tree(&bcontext));
       context->backend()->immutable_struct_set_init(bvar, var_name, is_hidden,
 						    false, btype, bloc, binit);
     }
 
   this->dvar_ = bvar;
-  return gogo->backend()->var_expression(bvar, loc);
+  return var_to_tree(bvar);
 }
 
 // Print a function descriptor expression.
@@ -1293,8 +1483,8 @@ class Func_code_reference_expression : public Expression
 						this->location());
   }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   void
   do_dump_expression(Ast_dump_context* context) const
@@ -1305,13 +1495,15 @@ class Func_code_reference_expression : public Expression
   Named_object* function_;
 };
 
-// Get the backend representation for a reference to function code.
+// Get the tree for a reference to function code.
 
-Bexpression*
-Func_code_reference_expression::do_get_backend(Translate_context* context)
+tree
+Func_code_reference_expression::do_get_tree(Translate_context* context)
 {
-  return Func_expression::get_code_pointer(context->gogo(), this->function_,
-					   this->location());
+  Bexpression* ret =
+      Func_expression::get_code_pointer(context->gogo(), this->function_,
+                                        this->location());
+  return expr_to_tree(ret);
 }
 
 // Make a reference to the code of a function.
@@ -1420,10 +1612,6 @@ class Boolean_expression : public Expression
   do_is_constant() const
   { return true; }
 
-  bool
-  do_is_immutable() const
-  { return true; }
-
   Type*
   do_type();
 
@@ -1434,9 +1622,9 @@ class Boolean_expression : public Expression
   do_copy()
   { return this; }
 
-  Bexpression*
-  do_get_backend(Translate_context* context)
-  { return context->backend()->boolean_constant_expression(this->val_); }
+  tree
+  do_get_tree(Translate_context*)
+  { return this->val_ ? boolean_true_node : boolean_false_node; }
 
   void
   do_export(Export* exp) const
@@ -1528,25 +1716,10 @@ String_expression::do_determine_type(const Type_context* context)
 
 // Build a string constant.
 
-Bexpression*
-String_expression::do_get_backend(Translate_context* context)
+tree
+String_expression::do_get_tree(Translate_context* context)
 {
-  Gogo* gogo = context->gogo();
-  Btype* btype = Type::make_string_type()->get_backend(gogo);
-
-  Location loc = this->location();
-  std::vector<Bexpression*> init(2);
-  Bexpression* str_cst =
-      gogo->backend()->string_constant_expression(this->val_);
-  init[0] = gogo->backend()->address_expression(str_cst, loc);
-
-  Btype* int_btype = Type::lookup_integer_type("int")->get_backend(gogo);
-  mpz_t lenval;
-  mpz_init_set_ui(lenval, this->val_.length());
-  init[1] = gogo->backend()->integer_constant_expression(int_btype, lenval);
-  mpz_clear(lenval);
-
-  return gogo->backend()->constructor_expression(btype, init, loc);
+  return context->gogo()->go_string_constant_tree(this->val_);
 }
 
  // Write string literal to string dump.
@@ -1653,115 +1826,6 @@ Expression::make_string(const std::string& val, Location location)
   return new String_expression(val, location);
 }
 
-// An expression that evaluates to some characteristic of a string.
-// This is used when indexing, bound-checking, or nil checking a string.
-
-class String_info_expression : public Expression
-{
- public:
-  String_info_expression(Expression* string, String_info string_info,
-                        Location location)
-    : Expression(EXPRESSION_STRING_INFO, location),
-      string_(string), string_info_(string_info)
-  { }
-
- protected:
-  Type*
-  do_type();
-
-  void
-  do_determine_type(const Type_context*)
-  { go_unreachable(); }
-
-  Expression*
-  do_copy()
-  {
-    return new String_info_expression(this->string_->copy(), this->string_info_,
-				      this->location());
-  }
-
-  Bexpression*
-  do_get_backend(Translate_context* context);
-
-  void
-  do_dump_expression(Ast_dump_context*) const;
-
-  void
-  do_issue_nil_check()
-  { this->string_->issue_nil_check(); }
-
- private:
-  // The string for which we are getting information.
-  Expression* string_;
-  // What information we want.
-  String_info string_info_;
-};
-
-// Return the type of the string info.
-
-Type*
-String_info_expression::do_type()
-{
-  switch (this->string_info_)
-    {
-    case STRING_INFO_DATA:
-      {
-	Type* byte_type = Type::lookup_integer_type("uint8");
-	return Type::make_pointer_type(byte_type);
-      }
-    case STRING_INFO_LENGTH:
-        return Type::lookup_integer_type("int");
-    default:
-      go_unreachable();
-    }
-}
-
-// Return string information in GENERIC.
-
-Bexpression*
-String_info_expression::do_get_backend(Translate_context* context)
-{
-  Gogo* gogo = context->gogo();
-
-  Bexpression* bstring = this->string_->get_backend(context);
-  switch (this->string_info_)
-    {
-    case STRING_INFO_DATA:
-    case STRING_INFO_LENGTH:
-      return gogo->backend()->struct_field_expression(bstring,
-						      this->string_info_,
-						      this->location());
-      break;
-    default:
-      go_unreachable();
-    }
-}
-
-// Dump ast representation for a type info expression.
-
-void
-String_info_expression::do_dump_expression(
-    Ast_dump_context* ast_dump_context) const
-{
-  ast_dump_context->ostream() << "stringinfo(";
-  this->string_->dump_expression(ast_dump_context);
-  ast_dump_context->ostream() << ",";
-  ast_dump_context->ostream() << 
-      (this->string_info_ == STRING_INFO_DATA ? "data" 
-    : this->string_info_ == STRING_INFO_LENGTH ? "length"
-    : "unknown");
-  ast_dump_context->ostream() << ")";
-}
-
-// Make a string info expression.
-
-Expression*
-Expression::make_string_info(Expression* string, String_info string_info,
-                            Location location)
-{
-  return new String_info_expression(string, string_info, location);
-}
-
 // Make an integer expression.
 
 class Integer_expression : public Expression
@@ -1790,10 +1854,6 @@ class Integer_expression : public Expression
   { return true; }
 
   bool
-  do_is_immutable() const
-  { return true; }
-
-  bool
   do_numeric_constant_value(Numeric_constant* nc) const;
 
   Type*
@@ -1805,8 +1865,8 @@ class Integer_expression : public Expression
   void
   do_check_types(Gogo*);
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   Expression*
   do_copy()
@@ -1815,8 +1875,8 @@ class Integer_expression : public Expression
       return Expression::make_character(&this->val_, this->type_,
 					this->location());
     else
-      return Expression::make_integer_z(&this->val_, this->type_,
-					this->location());
+      return Expression::make_integer(&this->val_, this->type_,
+				      this->location());
   }
 
   void
@@ -1899,10 +1959,10 @@ Integer_expression::do_check_types(Gogo*)
     this->set_is_error();
 }
 
-// Get the backend representation for an integer constant.
+// Get a tree for an integer constant.
 
-Bexpression*
-Integer_expression::do_get_backend(Translate_context* context)
+tree
+Integer_expression::do_get_tree(Translate_context* context)
 {
   Type* resolved_type = NULL;
   if (this->type_ != NULL && !this->type_->is_abstract())
@@ -1934,12 +1994,15 @@ Integer_expression::do_get_backend(Translate_context* context)
           if (!saw_errors())
             error_at(this->location(),
                      "unknown type for large integer constant");
-          return context->gogo()->backend()->error_expression();
+          Bexpression* ret = context->gogo()->backend()->error_expression();
+          return expr_to_tree(ret);
         }
     }
   Numeric_constant nc;
   nc.set_int(resolved_type, this->val_);
-  return Expression::backend_numeric_constant_expression(context, &nc);
+  Bexpression* ret =
+      Expression::backend_numeric_constant_expression(context, &nc);
+  return expr_to_tree(ret);
 }
 
 // Write VAL to export data.
@@ -2014,13 +2077,10 @@ Integer_expression::do_import(Import* imp)
 		   imag_str.c_str());
 	  return Expression::make_error(imp->location());
 	}
-      mpc_t cval;
-      mpc_init2(cval, mpc_precision);
-      mpc_set_fr_fr(cval, real, imag, MPC_RNDNN);
+      Expression* ret = Expression::make_complex(&real, &imag, NULL,
+						 imp->location());
       mpfr_clear(real);
       mpfr_clear(imag);
-      Expression* ret = Expression::make_complex(&cval, NULL, imp->location());
-      mpc_clear(cval);
       return ret;
     }
   else if (num.find('.') == std::string::npos
@@ -2041,7 +2101,7 @@ Integer_expression::do_import(Import* imp)
       if (is_character_constant)
 	ret = Expression::make_character(&val, NULL, imp->location());
       else
-	ret = Expression::make_integer_z(&val, NULL, imp->location());
+	ret = Expression::make_integer(&val, NULL, imp->location());
       mpz_clear(val);
       return ret;
     }
@@ -2071,36 +2131,12 @@ Integer_expression::do_dump_expression(Ast_dump_context* ast_dump_context) const
     ast_dump_context->ostream() << '\'';
 }
 
-// Build a new integer value from a multi-precision integer.
+// Build a new integer value.
 
 Expression*
-Expression::make_integer_z(const mpz_t* val, Type* type, Location location)
+Expression::make_integer(const mpz_t* val, Type* type, Location location)
 {
   return new Integer_expression(val, type, false, location);
-}
-
-// Build a new integer value from an unsigned long.
-
-Expression*
-Expression::make_integer_ul(unsigned long val, Type *type, Location location)
-{
-  mpz_t zval;
-  mpz_init_set_ui(zval, val);
-  Expression* ret = Expression::make_integer_z(&zval, type, location);
-  mpz_clear(zval);
-  return ret;
-}
-
-// Build a new integer value from a signed long.
-
-Expression*
-Expression::make_integer_sl(long val, Type *type, Location location)
-{
-  mpz_t zval;
-  mpz_init_set_si(zval, val);
-  Expression* ret = Expression::make_integer_z(&zval, type, location);
-  mpz_clear(zval);
-  return ret;
 }
 
 // Build a new character constant value.
@@ -2137,10 +2173,6 @@ class Float_expression : public Expression
   { return true; }
 
   bool
-  do_is_immutable() const
-  { return true; }
-
-  bool
   do_numeric_constant_value(Numeric_constant* nc) const
   {
     nc->set_float(this->type_, this->val_);
@@ -2161,8 +2193,8 @@ class Float_expression : public Expression
   { return Expression::make_float(&this->val_, this->type_,
 				  this->location()); }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   void
   do_export(Export*) const;
@@ -2219,10 +2251,10 @@ Float_expression::do_check_types(Gogo*)
     this->set_is_error();
 }
 
-// Get the backend representation for a float constant.
+// Get a tree for a float constant.
 
-Bexpression*
-Float_expression::do_get_backend(Translate_context* context)
+tree
+Float_expression::do_get_tree(Translate_context* context)
 {
   Type* resolved_type;
   if (this->type_ != NULL && !this->type_->is_abstract())
@@ -2247,7 +2279,9 @@ Float_expression::do_get_backend(Translate_context* context)
 
   Numeric_constant nc;
   nc.set_float(resolved_type, this->val_);
-  return Expression::backend_numeric_constant_expression(context, &nc);
+  Bexpression* ret =
+      Expression::backend_numeric_constant_expression(context, &nc);
+  return expr_to_tree(ret);
 }
 
 // Write a floating point number to a string dump.
@@ -2298,21 +2332,23 @@ Expression::make_float(const mpfr_t* val, Type* type, Location location)
 class Complex_expression : public Expression
 {
  public:
-  Complex_expression(const mpc_t* val, Type* type, Location location)
+  Complex_expression(const mpfr_t* real, const mpfr_t* imag, Type* type,
+		     Location location)
     : Expression(EXPRESSION_COMPLEX, location),
       type_(type)
   {
-    mpc_init2(this->val_, mpc_precision);
-    mpc_set(this->val_, *val, MPC_RNDNN);
+    mpfr_init_set(this->real_, *real, GMP_RNDN);
+    mpfr_init_set(this->imag_, *imag, GMP_RNDN);
   }
 
-  // Write VAL to string dump.
+  // Write REAL/IMAG to string dump.
   static void
-  export_complex(String_dump* exp, const mpc_t val);
+  export_complex(String_dump* exp, const mpfr_t real, const mpfr_t val);
 
   // Write REAL/IMAG to dump context.
   static void
-  dump_complex(Ast_dump_context* ast_dump_context, const mpc_t val);
+  dump_complex(Ast_dump_context* ast_dump_context, 
+	       const mpfr_t real, const mpfr_t val);
   
  protected:
   bool
@@ -2320,13 +2356,9 @@ class Complex_expression : public Expression
   { return true; }
 
   bool
-  do_is_immutable() const
-  { return true; }
-
-  bool
   do_numeric_constant_value(Numeric_constant* nc) const
   {
-    nc->set_complex(this->type_, this->val_);
+    nc->set_complex(this->type_, this->real_, this->imag_);
     return true;
   }
 
@@ -2342,12 +2374,12 @@ class Complex_expression : public Expression
   Expression*
   do_copy()
   {
-    return Expression::make_complex(&this->val_, this->type_,
+    return Expression::make_complex(&this->real_, &this->imag_, this->type_,
 				    this->location());
   }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   void
   do_export(Export*) const;
@@ -2356,8 +2388,10 @@ class Complex_expression : public Expression
   do_dump_expression(Ast_dump_context*) const;
   
  private:
-  // The complex value.
-  mpc_t val_;
+  // The real part.
+  mpfr_t real_;
+  // The imaginary part;
+  mpfr_t imag_;
   // The type if known.
   Type* type_;
 };
@@ -2397,15 +2431,15 @@ Complex_expression::do_check_types(Gogo*)
   if (type == NULL)
     return;
   Numeric_constant nc;
-  nc.set_complex(NULL, this->val_);
+  nc.set_complex(NULL, this->real_, this->imag_);
   if (!nc.set_type(this->type_, true, this->location()))
     this->set_is_error();
 }
 
-// Get the backend representation for a complex constant.
+// Get a tree for a complex constant.
 
-Bexpression*
-Complex_expression::do_get_backend(Translate_context* context)
+tree
+Complex_expression::do_get_tree(Translate_context* context)
 {
   Type* resolved_type;
   if (this->type_ != NULL && !this->type_->is_abstract())
@@ -2429,22 +2463,25 @@ Complex_expression::do_get_backend(Translate_context* context)
     }
 
   Numeric_constant nc;
-  nc.set_complex(resolved_type, this->val_);
-  return Expression::backend_numeric_constant_expression(context, &nc);
+  nc.set_complex(resolved_type, this->real_, this->imag_);
+  Bexpression* ret =
+      Expression::backend_numeric_constant_expression(context, &nc);
+  return expr_to_tree(ret);
 }
 
 // Write REAL/IMAG to export data.
 
 void
-Complex_expression::export_complex(String_dump* exp, const mpc_t val)
+Complex_expression::export_complex(String_dump* exp, const mpfr_t real,
+				   const mpfr_t imag)
 {
-  if (!mpfr_zero_p(mpc_realref(val)))
+  if (!mpfr_zero_p(real))
     {
-      Float_expression::export_float(exp, mpc_realref(val));
-      if (mpfr_sgn(mpc_imagref(val)) > 0)
+      Float_expression::export_float(exp, real);
+      if (mpfr_sgn(imag) > 0)
 	exp->write_c_string("+");
     }
-  Float_expression::export_float(exp, mpc_imagref(val));
+  Float_expression::export_float(exp, imag);
   exp->write_c_string("i");
 }
 
@@ -2453,7 +2490,7 @@ Complex_expression::export_complex(String_dump* exp, const mpc_t val)
 void
 Complex_expression::do_export(Export* exp) const
 {
-  Complex_expression::export_complex(exp, this->val_);
+  Complex_expression::export_complex(exp, this->real_, this->imag_);
   // A trailing space lets us reliably identify the end of the number.
   exp->write_c_string(" ");
 }
@@ -2463,15 +2500,18 @@ Complex_expression::do_export(Export* exp) const
 void
 Complex_expression::do_dump_expression(Ast_dump_context* ast_dump_context) const
 {
-  Complex_expression::export_complex(ast_dump_context, this->val_);
+  Complex_expression::export_complex(ast_dump_context,
+                                      this->real_,
+                                      this->imag_);
 }
 
 // Make a complex expression.
 
 Expression*
-Expression::make_complex(const mpc_t* val, Type* type, Location location)
+Expression::make_complex(const mpfr_t* real, const mpfr_t* imag, Type* type,
+			 Location location)
 {
-  return new Complex_expression(val, type, location);
+  return new Complex_expression(real, imag, type, location);
 }
 
 // Find a named object in an expression.
@@ -2530,10 +2570,6 @@ class Const_expression : public Expression
   { return true; }
 
   bool
-  do_is_immutable() const
-  { return true; }
-
-  bool
   do_numeric_constant_value(Numeric_constant* nc) const;
 
   bool
@@ -2553,8 +2589,8 @@ class Const_expression : public Expression
   do_copy()
   { return this; }
 
-  Bexpression*
-  do_get_backend(Translate_context* context);
+  tree
+  do_get_tree(Translate_context* context);
 
   // When exporting a reference to a const as part of a const
   // expression, we export the value.  We ignore the fact that it has
@@ -2603,7 +2639,12 @@ Const_expression::do_lower(Gogo* gogo, Named_object*,
 		   "iota is only defined in const declarations");
 	  iota_value = 0;
 	}
-      return Expression::make_integer_ul(iota_value, NULL, this->location());
+      mpz_t val;
+      mpz_init_set_ui(val, static_cast<unsigned long>(iota_value));
+      Expression* ret = Expression::make_integer(&val, NULL,
+						 this->location());
+      mpz_clear(val);
+      return ret;
     }
 
   // Make sure that the constant itself has been lowered.
@@ -2780,35 +2821,58 @@ Const_expression::do_check_types(Gogo*)
     }
 }
 
-// Return the backend representation for a const reference.
+// Return a tree for the const reference.
 
-Bexpression*
-Const_expression::do_get_backend(Translate_context* context)
+tree
+Const_expression::do_get_tree(Translate_context* context)
 {
-  if (this->type_ != NULL && this->type_->is_error())
-    return context->backend()->error_expression();
+  Gogo* gogo = context->gogo();
+  tree type_tree;
+  if (this->type_ == NULL)
+    type_tree = NULL_TREE;
+  else
+    {
+      type_tree = type_to_tree(this->type_->get_backend(gogo));
+      if (type_tree == error_mark_node)
+	return error_mark_node;
+    }
 
   // If the type has been set for this expression, but the underlying
   // object is an abstract int or float, we try to get the abstract
   // value.  Otherwise we may lose something in the conversion.
-  Expression* expr = this->constant_->const_value()->expr();
   if (this->type_ != NULL
       && this->type_->is_numeric_type()
       && (this->constant_->const_value()->type() == NULL
 	  || this->constant_->const_value()->type()->is_abstract()))
     {
+      Expression* expr = this->constant_->const_value()->expr();
       Numeric_constant nc;
       if (expr->numeric_constant_value(&nc)
 	  && nc.set_type(this->type_, false, this->location()))
 	{
 	  Expression* e = nc.expression(this->location());
-	  return e->get_backend(context);
+	  return e->get_tree(context);
 	}
     }
 
-  if (this->type_ != NULL)
-    expr = Expression::make_cast(this->type_, expr, this->location());
-  return expr->get_backend(context);
+  tree const_tree = this->constant_->get_tree(gogo, context->function());
+  if (this->type_ == NULL
+      || const_tree == error_mark_node
+      || TREE_TYPE(const_tree) == error_mark_node)
+    return const_tree;
+
+  tree ret;
+  if (TYPE_MAIN_VARIANT(type_tree) == TYPE_MAIN_VARIANT(TREE_TYPE(const_tree)))
+    ret = fold_convert(type_tree, const_tree);
+  else if (TREE_CODE(type_tree) == INTEGER_TYPE)
+    ret = fold(convert_to_integer(type_tree, const_tree));
+  else if (TREE_CODE(type_tree) == REAL_TYPE)
+    ret = fold(convert_to_real(type_tree, const_tree));
+  else if (TREE_CODE(type_tree) == COMPLEX_TYPE)
+    ret = fold(convert_to_complex(type_tree, const_tree));
+  else
+    go_unreachable();
+  return ret;
 }
 
 // Dump ast representation for constant expression.
@@ -2897,9 +2961,9 @@ class Nil_expression : public Expression
   do_copy()
   { return this; }
 
-  Bexpression*
-  do_get_backend(Translate_context* context)
-  { return context->backend()->nil_pointer_expression(); }
+  tree
+  do_get_tree(Translate_context*)
+  { return null_pointer_node; }
 
   void
   do_export(Export* exp) const
@@ -3011,9 +3075,6 @@ class Type_conversion_expression : public Expression
   do_is_constant() const;
 
   bool
-  do_is_immutable() const;
-
-  bool
   do_numeric_constant_value(Numeric_constant*) const;
 
   bool
@@ -3040,8 +3101,8 @@ class Type_conversion_expression : public Expression
 					  this->location());
   }
 
-  Bexpression*
-  do_get_backend(Translate_context* context);
+  tree
+  do_get_tree(Translate_context* context);
 
   void
   do_export(Export*) const;
@@ -3110,10 +3171,13 @@ Type_conversion_expression::do_lower(Gogo*, Named_object*,
 		       p != s.end();
 		       p++)
 		    {
-		      unsigned char c = static_cast<unsigned char>(*p);
-		      vals->push_back(Expression::make_integer_ul(c,
-								  element_type,
-								  location));
+		      mpz_t val;
+		      mpz_init_set_ui(val, static_cast<unsigned char>(*p));
+		      Expression* v = Expression::make_integer(&val,
+							       element_type,
+							       location);
+		      vals->push_back(v);
+		      mpz_clear(val);
 		    }
 		}
 	      else
@@ -3131,9 +3195,13 @@ Type_conversion_expression::do_lower(Gogo*, Named_object*,
 			  adv = 1;
 			}
 		      p += adv;
-		      vals->push_back(Expression::make_integer_ul(c,
-								  element_type,
-								  location));
+		      mpz_t val;
+		      mpz_init_set_ui(val, c);
+		      Expression* v = Expression::make_integer(&val,
+							       element_type,
+							       location);
+		      vals->push_back(v);
+		      mpz_clear(val);
 		    }
 		}
 
@@ -3153,10 +3221,8 @@ Expression*
 Type_conversion_expression::do_flatten(Gogo*, Named_object*,
                                        Statement_inserter* inserter)
 {
-  if (((this->type()->is_string_type()
-        && this->expr_->type()->is_slice_type())
-       || (this->type()->interface_type() != NULL
-           && this->expr_->type()->interface_type() != NULL))
+  if (this->type()->is_string_type()
+      && this->expr_->type()->is_slice_type()
       && !this->expr_->is_variable())
     {
       Temporary_statement* temp =
@@ -3186,27 +3252,6 @@ Type_conversion_expression::do_is_constant() const
     return false;
 
   return true;
-}
-
-// Return whether a type conversion is immutable.
-
-bool
-Type_conversion_expression::do_is_immutable() const
-{
-  Type* type = this->type_;
-  Type* expr_type = this->expr_->type();
-
-  if (type->interface_type() != NULL
-      || expr_type->interface_type() != NULL)
-    return false;
-
-  if (!this->expr_->is_immutable())
-    return false;
-
-  if (Type::are_identical(type, expr_type, false, NULL))
-    return true;
-
-  return type->is_basic_type() && expr_type->is_basic_type();
 }
 
 // Return the constant numeric value if there is one.
@@ -3275,51 +3320,78 @@ Type_conversion_expression::do_check_types(Gogo*)
   this->set_is_error();
 }
 
-// Get the backend representation for a type conversion.
+// Get a tree for a type conversion.
 
-Bexpression*
-Type_conversion_expression::do_get_backend(Translate_context* context)
+tree
+Type_conversion_expression::do_get_tree(Translate_context* context)
 {
+  Gogo* gogo = context->gogo();
+  tree type_tree = type_to_tree(this->type_->get_backend(gogo));
+  tree expr_tree = this->expr_->get_tree(context);
+
+  if (type_tree == error_mark_node
+      || expr_tree == error_mark_node
+      || TREE_TYPE(expr_tree) == error_mark_node)
+    return error_mark_node;
+
+  if (TYPE_MAIN_VARIANT(type_tree) == TYPE_MAIN_VARIANT(TREE_TYPE(expr_tree)))
+    return fold_convert(type_tree, expr_tree);
+
   Type* type = this->type_;
   Type* expr_type = this->expr_->type();
-
-  Gogo* gogo = context->gogo();
-  Btype* btype = type->get_backend(gogo);
-  Bexpression* bexpr = this->expr_->get_backend(context);
-  Location loc = this->location();
-
-  if (Type::are_identical(type, expr_type, false, NULL))
-    return gogo->backend()->convert_expression(btype, bexpr, loc);
-  else if (type->interface_type() != NULL
-	   || expr_type->interface_type() != NULL)
+  tree ret;
+  if (type->interface_type() != NULL || expr_type->interface_type() != NULL)
+    ret = Expression::convert_for_assignment(context, type, expr_type,
+					     expr_tree, this->location());
+  else if (type->integer_type() != NULL)
     {
-      Expression* conversion =
-          Expression::convert_for_assignment(gogo, type, this->expr_,
-                                             this->location());
-      return conversion->get_backend(context);
+      if (expr_type->integer_type() != NULL
+	  || expr_type->float_type() != NULL
+	  || expr_type->is_unsafe_pointer_type())
+	ret = fold(convert_to_integer(type_tree, expr_tree));
+      else
+	go_unreachable();
+    }
+  else if (type->float_type() != NULL)
+    {
+      if (expr_type->integer_type() != NULL
+	  || expr_type->float_type() != NULL)
+	ret = fold(convert_to_real(type_tree, expr_tree));
+      else
+	go_unreachable();
+    }
+  else if (type->complex_type() != NULL)
+    {
+      if (expr_type->complex_type() != NULL)
+	ret = fold(convert_to_complex(type_tree, expr_tree));
+      else
+	go_unreachable();
     }
   else if (type->is_string_type()
 	   && expr_type->integer_type() != NULL)
     {
-      mpz_t intval;
-      Numeric_constant nc;
-      if (this->expr_->numeric_constant_value(&nc)
-	  && nc.to_int(&intval)
-	  && mpz_fits_ushort_p(intval))
+      Type* int_type = Type::lookup_integer_type("int");
+      tree int_type_tree = type_to_tree(int_type->get_backend(gogo));
+
+      expr_tree = fold_convert(int_type_tree, expr_tree);
+      if (tree_fits_shwi_p (expr_tree))
 	{
+	  HOST_WIDE_INT intval = tree_to_shwi (expr_tree);
 	  std::string s;
-	  Lex::append_char(mpz_get_ui(intval), true, &s, loc);
-	  mpz_clear(intval);
-	  Expression* se = Expression::make_string(s, loc);
-	  return se->get_backend(context);
+	  Lex::append_char(intval, true, &s, this->location());
+	  Expression* se = Expression::make_string(s, this->location());
+	  return se->get_tree(context);
 	}
 
       Expression* i2s_expr =
-          Runtime::make_call(Runtime::INT_TO_STRING, loc, 1, this->expr_);
-      return Expression::make_cast(type, i2s_expr, loc)->get_backend(context);
+          Runtime::make_call(Runtime::INT_TO_STRING, this->location(), 1,
+                             this->expr_);
+      i2s_expr = Expression::make_cast(type, i2s_expr, this->location());
+      ret = i2s_expr->get_tree(context);
     }
   else if (type->is_string_type() && expr_type->is_slice_type())
     {
+      Location location = this->location();
       Array_type* a = expr_type->array_type();
       Type* e = a->element_type()->forwarded();
       go_assert(e->integer_type() != NULL);
@@ -3335,45 +3407,46 @@ Type_conversion_expression::do_get_backend(Translate_context* context)
         }
       Expression* valptr = a->get_value_pointer(gogo, this->expr_);
       Expression* len = a->get_length(gogo, this->expr_);
-      return Runtime::make_call(code, loc, 2, valptr,
-				len)->get_backend(context);
+      Expression* a2s_expr = Runtime::make_call(code, location, 2, valptr, len);
+      ret = a2s_expr->get_tree(context);
     }
   else if (type->is_slice_type() && expr_type->is_string_type())
     {
       Type* e = type->array_type()->element_type()->forwarded();
       go_assert(e->integer_type() != NULL);
 
-      Runtime::Function code;
+      Expression* s2a_expr;
       if (e->integer_type()->is_byte())
-	code = Runtime::STRING_TO_BYTE_ARRAY;
+        s2a_expr = Runtime::make_call(Runtime::STRING_TO_BYTE_ARRAY,
+                                      this->location(), 1, this->expr_);
       else
 	{
 	  go_assert(e->integer_type()->is_rune());
-	  code = Runtime::STRING_TO_INT_ARRAY;
+          s2a_expr = Runtime::make_call(Runtime::STRING_TO_INT_ARRAY,
+                                        this->location(), 1, this->expr_);
 	}
-      Expression* s2a = Runtime::make_call(code, loc, 1, this->expr_);
-      return Expression::make_unsafe_cast(type, s2a, loc)->get_backend(context);
-    }
-  else if (type->is_numeric_type())
-    {
-      go_assert(Type::are_convertible(type, expr_type, NULL));
-      return gogo->backend()->convert_expression(btype, bexpr, loc);
+      s2a_expr = Expression::make_unsafe_cast(type, s2a_expr,
+					      this->location());
+      ret = s2a_expr->get_tree(context);
     }
   else if ((type->is_unsafe_pointer_type()
-	    && (expr_type->points_to() != NULL
-                || expr_type->integer_type()))
-           || (expr_type->is_unsafe_pointer_type()
-	       && type->points_to() != NULL)
-           || (this->may_convert_function_types_
-               && type->function_type() != NULL
-               && expr_type->function_type() != NULL))
-    return gogo->backend()->convert_expression(btype, bexpr, loc);
+	    && expr_type->points_to() != NULL)
+	   || (expr_type->is_unsafe_pointer_type()
+	       && type->points_to() != NULL))
+    ret = fold_convert(type_tree, expr_tree);
+  else if (type->is_unsafe_pointer_type()
+	   && expr_type->integer_type() != NULL)
+    ret = convert_to_pointer(type_tree, expr_tree);
+  else if (this->may_convert_function_types_
+	   && type->function_type() != NULL
+	   && expr_type->function_type() != NULL)
+    ret = fold_convert_loc(this->location().gcc_location(), type_tree,
+                           expr_tree);
   else
-    {
-      Expression* conversion =
-          Expression::convert_for_assignment(gogo, type, this->expr_, loc);
-      return conversion->get_backend(context);
-    }
+    ret = Expression::convert_for_assignment(context, type, expr_type,
+					     expr_tree, this->location());
+
+  return ret;
 }
 
 // Output a type conversion in a constant expression.
@@ -3438,9 +3511,6 @@ class Unsafe_type_conversion_expression : public Expression
   int
   do_traverse(Traverse* traverse);
 
-  bool
-  do_is_immutable() const;
-
   Type*
   do_type()
   { return this->type_; }
@@ -3457,8 +3527,8 @@ class Unsafe_type_conversion_expression : public Expression
 						 this->location());
   }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   void
   do_dump_expression(Ast_dump_context*) const;
@@ -3481,85 +3551,67 @@ Unsafe_type_conversion_expression::do_traverse(Traverse* traverse)
   return TRAVERSE_CONTINUE;
 }
 
-// Return whether an unsafe type conversion is immutable.
-
-bool
-Unsafe_type_conversion_expression::do_is_immutable() const
-{
-  Type* type = this->type_;
-  Type* expr_type = this->expr_->type();
-
-  if (type->interface_type() != NULL
-      || expr_type->interface_type() != NULL)
-    return false;
-
-  if (!this->expr_->is_immutable())
-    return false;
-
-  if (Type::are_convertible(type, expr_type, NULL))
-    return true;
-
-  return type->is_basic_type() && expr_type->is_basic_type();
-}
-
 // Convert to backend representation.
 
-Bexpression*
-Unsafe_type_conversion_expression::do_get_backend(Translate_context* context)
+tree
+Unsafe_type_conversion_expression::do_get_tree(Translate_context* context)
 {
   // We are only called for a limited number of cases.
 
   Type* t = this->type_;
   Type* et = this->expr_->type();
-  if (t->array_type() != NULL)
-    go_assert(et->array_type() != NULL
-              && t->is_slice_type() == et->is_slice_type());
-  else if (t->struct_type() != NULL)
-    {
-      if (t->named_type() != NULL
-          && et->named_type() != NULL
-          && !Type::are_convertible(t, et, NULL))
-	{
-	  go_assert(saw_errors());
-	  return context->backend()->error_expression();
-	}
 
-      go_assert(et->struct_type() != NULL
-                && Type::are_convertible(t, et, NULL));
+  tree type_tree = type_to_tree(this->type_->get_backend(context->gogo()));
+  tree expr_tree = this->expr_->get_tree(context);
+  if (type_tree == error_mark_node || expr_tree == error_mark_node)
+    return error_mark_node;
+
+  Location loc = this->location();
+
+  bool use_view_convert = false;
+  if (t->is_slice_type())
+    {
+      go_assert(et->is_slice_type());
+      use_view_convert = true;
     }
   else if (t->map_type() != NULL)
     go_assert(et->map_type() != NULL);
   else if (t->channel_type() != NULL)
     go_assert(et->channel_type() != NULL);
   else if (t->points_to() != NULL)
-    go_assert(et->points_to() != NULL
-              || et->channel_type() != NULL
-              || et->map_type() != NULL
-              || et->function_type() != NULL
-              || et->is_nil_type());
+    go_assert(et->points_to() != NULL || et->is_nil_type());
   else if (et->is_unsafe_pointer_type())
     go_assert(t->points_to() != NULL);
-  else if (t->interface_type() != NULL)
+  else if (t->interface_type() != NULL && !t->interface_type()->is_empty())
     {
-      bool empty_iface = t->interface_type()->is_empty();
       go_assert(et->interface_type() != NULL
-                && et->interface_type()->is_empty() == empty_iface);
+		 && !et->interface_type()->is_empty());
+      use_view_convert = true;
+    }
+  else if (t->interface_type() != NULL && t->interface_type()->is_empty())
+    {
+      go_assert(et->interface_type() != NULL
+		 && et->interface_type()->is_empty());
+      use_view_convert = true;
     }
   else if (t->integer_type() != NULL)
-    go_assert(et->is_boolean_type()
-              || et->integer_type() != NULL
-              || et->function_type() != NULL
-              || et->points_to() != NULL
-              || et->map_type() != NULL
-              || et->channel_type() != NULL);
+    {
+      go_assert(et->is_boolean_type()
+		 || et->integer_type() != NULL
+		 || et->function_type() != NULL
+		 || et->points_to() != NULL
+		 || et->map_type() != NULL
+		 || et->channel_type() != NULL);
+      return convert_to_integer(type_tree, expr_tree);
+    }
   else
     go_unreachable();
 
-  Gogo* gogo = context->gogo();
-  Btype* btype = t->get_backend(gogo);
-  Bexpression* bexpr = this->expr_->get_backend(context);
-  Location loc = this->location();
-  return gogo->backend()->convert_expression(btype, bexpr, loc);
+  if (use_view_convert)
+    return fold_build1_loc(loc.gcc_location(), VIEW_CONVERT_EXPR, type_tree,
+                           expr_tree);
+  else
+    return fold_convert_loc(loc.gcc_location(), type_tree, expr_tree);
 }
 
 // Dump ast representation for an unsafe type conversion expression.
@@ -3583,10 +3635,129 @@ Expression::make_unsafe_cast(Type* type, Expression* expr,
   return new Unsafe_type_conversion_expression(type, expr, location);
 }
 
-// Class Unary_expression.
+// Unary expressions.
+
+class Unary_expression : public Expression
+{
+ public:
+  Unary_expression(Operator op, Expression* expr, Location location)
+    : Expression(EXPRESSION_UNARY, location),
+      op_(op), escapes_(true), create_temp_(false), expr_(expr),
+      issue_nil_check_(false)
+  { }
+
+  // Return the operator.
+  Operator
+  op() const
+  { return this->op_; }
+
+  // Return the operand.
+  Expression*
+  operand() const
+  { return this->expr_; }
+
+  // Record that an address expression does not escape.
+  void
+  set_does_not_escape()
+  {
+    go_assert(this->op_ == OPERATOR_AND);
+    this->escapes_ = false;
+  }
+
+  // Record that this is an address expression which should create a
+  // temporary variable if necessary.  This is used for method calls.
+  void
+  set_create_temp()
+  {
+    go_assert(this->op_ == OPERATOR_AND);
+    this->create_temp_ = true;
+  }
+
+  // Apply unary opcode OP to UNC, setting NC.  Return true if this
+  // could be done, false if not.  Issue errors for overflow.
+  static bool
+  eval_constant(Operator op, const Numeric_constant* unc,
+		Location, Numeric_constant* nc);
+
+  static Expression*
+  do_import(Import*);
+
+ protected:
+  int
+  do_traverse(Traverse* traverse)
+  { return Expression::traverse(&this->expr_, traverse); }
+
+  Expression*
+  do_lower(Gogo*, Named_object*, Statement_inserter*, int);
+
+  Expression*
+  do_flatten(Gogo*, Named_object*, Statement_inserter*);
+
+  bool
+  do_is_constant() const;
+
+  bool
+  do_is_immutable() const
+  { return this->expr_->is_immutable(); }
+
+  bool
+  do_numeric_constant_value(Numeric_constant*) const;
+
+  Type*
+  do_type();
+
+  void
+  do_determine_type(const Type_context*);
+
+  void
+  do_check_types(Gogo*);
+
+  Expression*
+  do_copy()
+  {
+    return Expression::make_unary(this->op_, this->expr_->copy(),
+				  this->location());
+  }
+
+  bool
+  do_must_eval_subexpressions_in_order(int*) const
+  { return this->op_ == OPERATOR_MULT; }
+
+  bool
+  do_is_addressable() const
+  { return this->op_ == OPERATOR_MULT; }
+
+  tree
+  do_get_tree(Translate_context*);
+
+  void
+  do_export(Export*) const;
+
+  void
+  do_dump_expression(Ast_dump_context*) const;
+
+  void
+  do_issue_nil_check()
+  { this->issue_nil_check_ = (this->op_ == OPERATOR_MULT); }
+
+ private:
+  // The unary operator to apply.
+  Operator op_;
+  // Normally true.  False if this is an address expression which does
+  // not escape the current function.
+  bool escapes_;
+  // True if this is an address expression which should create a
+  // temporary variable if necessary.
+  bool create_temp_;
+  // The operand.
+  Expression* expr_;
+  // Whether or not to issue a nil check for this expression if its address
+  // is being taken.
+  bool issue_nil_check_;
+};
 
 // If we are taking the address of a composite literal, and the
-// contents are not constant, then we want to make a heap expression
+// contents are not constant, then we want to make a heap composite
 // instead.
 
 Expression*
@@ -3639,16 +3810,6 @@ Unary_expression::do_lower(Gogo*, Named_object*, Statement_inserter*, int)
   if (op == OPERATOR_MULT && expr->type()->is_unsafe_pointer_type())
     {
       error_at(this->location(), "invalid indirect of %<unsafe.Pointer%>");
-      return Expression::make_error(this->location());
-    }
-
-  // Check for an invalid pointer dereference.  We need to do this
-  // here because Unary_expression::do_type will return an error type
-  // in this case.  That can cause code to appear erroneous, and
-  // therefore disappear at lowering time, without any error message.
-  if (op == OPERATOR_MULT && expr->type()->points_to() == NULL)
-    {
-      this->report_error(_("expected pointer"));
       return Expression::make_error(this->location());
     }
 
@@ -3767,14 +3928,18 @@ Unary_expression::eval_constant(Operator op, const Numeric_constant* unc,
 	}
       else if (unc->is_complex())
 	{
-	  mpc_t uval;
-	  unc->get_complex(&uval);
-	  mpc_t val;
-	  mpc_init2(val, mpc_precision);
-	  mpc_neg(val, uval, MPC_RNDNN);
-	  nc->set_complex(unc->type(), val);
-	  mpc_clear(uval);
-	  mpc_clear(val);
+	  mpfr_t ureal, uimag;
+	  unc->get_complex(&ureal, &uimag);
+	  mpfr_t real, imag;
+	  mpfr_init(real);
+	  mpfr_init(imag);
+	  mpfr_neg(real, ureal, GMP_RNDN);
+	  mpfr_neg(imag, uimag, GMP_RNDN);
+	  nc->set_complex(unc->type(), real, imag);
+	  mpfr_clear(ureal);
+	  mpfr_clear(uimag);
+	  mpfr_clear(real);
+	  mpfr_clear(imag);
 	  return true;
 	}
       else
@@ -4034,10 +4199,10 @@ Unary_expression::do_check_types(Gogo*)
     }
 }
 
-// Get the backend representation for a unary expression.
+// Get a tree for a unary expression.
 
-Bexpression*
-Unary_expression::do_get_backend(Translate_context* context)
+tree
+Unary_expression::do_get_tree(Translate_context* context)
 {
   Gogo* gogo = context->gogo();
   Location loc = this->location();
@@ -4053,18 +4218,23 @@ Unary_expression::do_get_backend(Translate_context* context)
 	  Temporary_statement* temp = sut->temporary();
 	  Bvariable* bvar = temp->get_backend_variable(context);
           Bexpression* bvar_expr = gogo->backend()->var_expression(bvar, loc);
-          Bexpression* bval = sut->expression()->get_backend(context);
+
+          Expression* val = sut->expression();
+          Bexpression* bval = tree_to_expr(val->get_tree(context));
 
           Bstatement* bassign =
               gogo->backend()->assignment_statement(bvar_expr, bval, loc);
           Bexpression* bvar_addr =
               gogo->backend()->address_expression(bvar_expr, loc);
-	  return gogo->backend()->compound_expression(bassign, bvar_addr, loc);
+          Bexpression* ret =
+              gogo->backend()->compound_expression(bassign, bvar_addr, loc);
+          return expr_to_tree(ret);
 	}
     }
 
   Bexpression* ret;
-  Bexpression* bexpr = this->expr_->get_backend(context);
+  tree expr = this->expr_->get_tree(context);
+  Bexpression* bexpr = tree_to_expr(expr);
   Btype* btype = this->expr_->type()->get_backend(gogo);
   switch (this->op_)
     {
@@ -4100,51 +4270,13 @@ Unary_expression::do_get_backend(Translate_context* context)
 	    }
 	}
 
-      static unsigned int counter;
-      char buf[100];
-      if (this->is_gc_root_ || this->is_slice_init_)
-	{
-	  bool copy_to_heap = false;
-	  if (this->is_gc_root_)
-	    {
-	      // Build a decl for a GC root variable.  GC roots are mutable, so
-	      // they cannot be represented as an immutable_struct in the
-	      // backend.
-	      static unsigned int root_counter;
-	      snprintf(buf, sizeof buf, "gc%u", root_counter);
-	      ++root_counter;
-	    }
-	  else
-	    {
-	      // Build a decl for a slice value initializer.  An immutable slice
-	      // value initializer may have to be copied to the heap if it
-	      // contains pointers in a non-constant context.
-	      snprintf(buf, sizeof buf, "C%u", counter);
-	      ++counter;
-
-	      Array_type* at = this->expr_->type()->array_type();
-	      go_assert(at != NULL);
-
-	      // If we are not copying the value to the heap, we will only
-	      // initialize the value once, so we can use this directly
-	      // rather than copying it.  In that case we can't make it
-	      // read-only, because the program is permitted to change it.
-	      copy_to_heap = (at->element_type()->has_pointer()
-			      && !context->is_const());
-	    }
-	  Bvariable* implicit =
-	    gogo->backend()->implicit_variable(buf, btype, true, copy_to_heap,
-					       false, 0);
-	  gogo->backend()->implicit_variable_set_init(implicit, buf, btype,
-						      true, copy_to_heap, false,
-						      bexpr);
-	  bexpr = gogo->backend()->var_expression(implicit, loc);
-	}
-      else if ((this->expr_->is_composite_literal()
+      // Build a decl for a constant constructor.
+      if ((this->expr_->is_composite_literal()
            || this->expr_->string_expression() != NULL)
           && this->expr_->is_immutable())
         {
-	  // Build a decl for a constant constructor.
+          static unsigned int counter;
+          char buf[100];
           snprintf(buf, sizeof buf, "C%u", counter);
           ++counter;
 
@@ -4177,21 +4309,37 @@ Unary_expression::do_get_backend(Translate_context* context)
 	    if (s >= 4096 || this->issue_nil_check_)
 	      {
                 go_assert(this->expr_->is_variable());
-                Bexpression* nil =
-		  Expression::make_nil(loc)->get_backend(context);
+
+                Expression* nil_expr = Expression::make_nil(loc);
+                Bexpression* nil = tree_to_expr(nil_expr->get_tree(context));
                 Bexpression* compare =
                     gogo->backend()->binary_expression(OPERATOR_EQEQ, bexpr,
                                                        nil, loc);
+
+		Expression* crash_expr =
+		    gogo->runtime_error(RUNTIME_ERROR_NIL_DEREFERENCE, loc);
                 Bexpression* crash =
-		  gogo->runtime_error(RUNTIME_ERROR_NIL_DEREFERENCE,
-				      loc)->get_backend(context);
+                    tree_to_expr(crash_expr->get_tree(context));
                 bexpr = gogo->backend()->conditional_expression(btype, compare,
                                                                 crash, bexpr,
                                                                 loc);
 
 	      }
 	  }
-        ret = gogo->backend()->indirect_expression(pbtype, bexpr, false, loc);
+
+	// If the type of EXPR is a recursive pointer type, then we
+	// need to insert a cast before indirecting.
+        tree expr = expr_to_tree(bexpr);
+        tree target_type_tree = TREE_TYPE(TREE_TYPE(expr));
+        if (VOID_TYPE_P(target_type_tree))
+          {
+            tree ind = type_to_tree(pbtype);
+            expr = fold_convert_loc(loc.gcc_location(),
+                                    build_pointer_type(ind), expr);
+            bexpr = tree_to_expr(expr);
+          }
+
+        ret = gogo->backend()->indirect_expression(bexpr, false, loc);
       }
       break;
 
@@ -4199,7 +4347,7 @@ Unary_expression::do_get_backend(Translate_context* context)
       go_unreachable();
     }
 
-  return ret;
+  return expr_to_tree(ret);
 }
 
 // Export a unary expression.
@@ -4494,13 +4642,14 @@ Binary_expression::compare_complex(const Numeric_constant* left_nc,
 				   const Numeric_constant* right_nc,
 				   int* cmp)
 {
-  mpc_t left_val;
-  if (!left_nc->to_complex(&left_val))
+  mpfr_t left_real, left_imag;
+  if (!left_nc->to_complex(&left_real, &left_imag))
     return false;
-  mpc_t right_val;
-  if (!right_nc->to_complex(&right_val))
+  mpfr_t right_real, right_imag;
+  if (!right_nc->to_complex(&right_real, &right_imag))
     {
-      mpc_clear(left_val);
+      mpfr_clear(left_real);
+      mpfr_clear(left_imag);
       return false;
     }
 
@@ -4510,16 +4659,19 @@ Binary_expression::compare_complex(const Numeric_constant* left_nc,
   if (!type->is_abstract() && type->complex_type() != NULL)
     {
       int bits = type->complex_type()->bits();
-      mpfr_prec_round(mpc_realref(left_val), bits / 2, GMP_RNDN);
-      mpfr_prec_round(mpc_imagref(left_val), bits / 2, GMP_RNDN);
-      mpfr_prec_round(mpc_realref(right_val), bits / 2, GMP_RNDN);
-      mpfr_prec_round(mpc_imagref(right_val), bits / 2, GMP_RNDN);
+      mpfr_prec_round(left_real, bits / 2, GMP_RNDN);
+      mpfr_prec_round(left_imag, bits / 2, GMP_RNDN);
+      mpfr_prec_round(right_real, bits / 2, GMP_RNDN);
+      mpfr_prec_round(right_imag, bits / 2, GMP_RNDN);
     }
 
-  *cmp = mpc_cmp(left_val, right_val) != 0;
+  *cmp = (mpfr_cmp(left_real, right_real) != 0
+	  || mpfr_cmp(left_imag, right_imag) != 0);
 
-  mpc_clear(left_val);
-  mpc_clear(right_val);
+  mpfr_clear(left_real);
+  mpfr_clear(left_imag);
+  mpfr_clear(right_real);
+  mpfr_clear(right_imag);
 
   return true;
 }
@@ -4606,19 +4758,9 @@ Binary_expression::eval_integer(Operator op, const Numeric_constant* left_nc,
     {
     case OPERATOR_PLUS:
       mpz_add(val, left_val, right_val);
-      if (mpz_sizeinbase(val, 2) > 0x100000)
-	{
-	  error_at(location, "constant addition overflow");
-	  mpz_set_ui(val, 1);
-	}
       break;
     case OPERATOR_MINUS:
       mpz_sub(val, left_val, right_val);
-      if (mpz_sizeinbase(val, 2) > 0x100000)
-	{
-	  error_at(location, "constant subtraction overflow");
-	  mpz_set_ui(val, 1);
-	}
       break;
     case OPERATOR_OR:
       mpz_ior(val, left_val, right_val);
@@ -4628,11 +4770,6 @@ Binary_expression::eval_integer(Operator op, const Numeric_constant* left_nc,
       break;
     case OPERATOR_MULT:
       mpz_mul(val, left_val, right_val);
-      if (mpz_sizeinbase(val, 2) > 0x100000)
-	{
-	  error_at(location, "constant multiplication overflow");
-	  mpz_set_ui(val, 1);
-	}
       break;
     case OPERATOR_DIV:
       if (mpz_sgn(right_val) != 0)
@@ -4660,7 +4797,7 @@ Binary_expression::eval_integer(Operator op, const Numeric_constant* left_nc,
 	else
 	  {
 	    error_at(location, "shift count overflow");
-	    mpz_set_ui(val, 1);
+	    mpz_set_ui(val, 0);
 	  }
 	break;
       }
@@ -4671,7 +4808,7 @@ Binary_expression::eval_integer(Operator op, const Numeric_constant* left_nc,
 	if (mpz_cmp_ui(right_val, shift) != 0)
 	  {
 	    error_at(location, "shift count overflow");
-	    mpz_set_ui(val, 1);
+	    mpz_set_ui(val, 0);
 	  }
 	else
 	  {
@@ -4790,27 +4927,31 @@ Binary_expression::eval_complex(Operator op, const Numeric_constant* left_nc,
 				const Numeric_constant* right_nc,
 				Location location, Numeric_constant* nc)
 {
-  mpc_t left_val;
-  if (!left_nc->to_complex(&left_val))
+  mpfr_t left_real, left_imag;
+  if (!left_nc->to_complex(&left_real, &left_imag))
     return false;
-  mpc_t right_val;
-  if (!right_nc->to_complex(&right_val))
+  mpfr_t right_real, right_imag;
+  if (!right_nc->to_complex(&right_real, &right_imag))
     {
-      mpc_clear(left_val);
+      mpfr_clear(left_real);
+      mpfr_clear(left_imag);
       return false;
     }
 
-  mpc_t val;
-  mpc_init2(val, mpc_precision);
+  mpfr_t real, imag;
+  mpfr_init(real);
+  mpfr_init(imag);
 
   bool ret = true;
   switch (op)
     {
     case OPERATOR_PLUS:
-      mpc_add(val, left_val, right_val, MPC_RNDNN);
+      mpfr_add(real, left_real, right_real, GMP_RNDN);
+      mpfr_add(imag, left_imag, right_imag, GMP_RNDN);
       break;
     case OPERATOR_MINUS:
-      mpc_sub(val, left_val, right_val, MPC_RNDNN);
+      mpfr_sub(real, left_real, right_real, GMP_RNDN);
+      mpfr_sub(imag, left_imag, right_imag, GMP_RNDN);
       break;
     case OPERATOR_OR:
     case OPERATOR_XOR:
@@ -4819,30 +4960,310 @@ Binary_expression::eval_complex(Operator op, const Numeric_constant* left_nc,
     case OPERATOR_MOD:
     case OPERATOR_LSHIFT:
     case OPERATOR_RSHIFT:
-      mpc_set_ui(val, 0, MPC_RNDNN);
+      mpfr_set_ui(real, 0, GMP_RNDN);
+      mpfr_set_ui(imag, 0, GMP_RNDN);
       ret = false;
       break;
     case OPERATOR_MULT:
-      mpc_mul(val, left_val, right_val, MPC_RNDNN);
+      {
+	// You might think that multiplying two complex numbers would
+	// be simple, and you would be right, until you start to think
+	// about getting the right answer for infinity.  If one
+	// operand here is infinity and the other is anything other
+	// than zero or NaN, then we are going to wind up subtracting
+	// two infinity values.  That will give us a NaN, but the
+	// correct answer is infinity.
+
+	mpfr_t lrrr;
+	mpfr_init(lrrr);
+	mpfr_mul(lrrr, left_real, right_real, GMP_RNDN);
+
+	mpfr_t lrri;
+	mpfr_init(lrri);
+	mpfr_mul(lrri, left_real, right_imag, GMP_RNDN);
+
+	mpfr_t lirr;
+	mpfr_init(lirr);
+	mpfr_mul(lirr, left_imag, right_real, GMP_RNDN);
+
+	mpfr_t liri;
+	mpfr_init(liri);
+	mpfr_mul(liri, left_imag, right_imag, GMP_RNDN);
+
+	mpfr_sub(real, lrrr, liri, GMP_RNDN);
+	mpfr_add(imag, lrri, lirr, GMP_RNDN);
+
+	// If we get NaN on both sides, check whether it should really
+	// be infinity.  The rule is that if either side of the
+	// complex number is infinity, then the whole value is
+	// infinity, even if the other side is NaN.  So the only case
+	// we have to fix is the one in which both sides are NaN.
+	if (mpfr_nan_p(real) && mpfr_nan_p(imag)
+	    && (!mpfr_nan_p(left_real) || !mpfr_nan_p(left_imag))
+	    && (!mpfr_nan_p(right_real) || !mpfr_nan_p(right_imag)))
+	  {
+	    bool is_infinity = false;
+
+	    mpfr_t lr;
+	    mpfr_t li;
+	    mpfr_init_set(lr, left_real, GMP_RNDN);
+	    mpfr_init_set(li, left_imag, GMP_RNDN);
+
+	    mpfr_t rr;
+	    mpfr_t ri;
+	    mpfr_init_set(rr, right_real, GMP_RNDN);
+	    mpfr_init_set(ri, right_imag, GMP_RNDN);
+
+	    // If the left side is infinity, then the result is
+	    // infinity.
+	    if (mpfr_inf_p(lr) || mpfr_inf_p(li))
+	      {
+		mpfr_set_ui(lr, mpfr_inf_p(lr) ? 1 : 0, GMP_RNDN);
+		mpfr_copysign(lr, lr, left_real, GMP_RNDN);
+		mpfr_set_ui(li, mpfr_inf_p(li) ? 1 : 0, GMP_RNDN);
+		mpfr_copysign(li, li, left_imag, GMP_RNDN);
+		if (mpfr_nan_p(rr))
+		  {
+		    mpfr_set_ui(rr, 0, GMP_RNDN);
+		    mpfr_copysign(rr, rr, right_real, GMP_RNDN);
+		  }
+		if (mpfr_nan_p(ri))
+		  {
+		    mpfr_set_ui(ri, 0, GMP_RNDN);
+		    mpfr_copysign(ri, ri, right_imag, GMP_RNDN);
+		  }
+		is_infinity = true;
+	      }
+
+	    // If the right side is infinity, then the result is
+	    // infinity.
+	    if (mpfr_inf_p(rr) || mpfr_inf_p(ri))
+	      {
+		mpfr_set_ui(rr, mpfr_inf_p(rr) ? 1 : 0, GMP_RNDN);
+		mpfr_copysign(rr, rr, right_real, GMP_RNDN);
+		mpfr_set_ui(ri, mpfr_inf_p(ri) ? 1 : 0, GMP_RNDN);
+		mpfr_copysign(ri, ri, right_imag, GMP_RNDN);
+		if (mpfr_nan_p(lr))
+		  {
+		    mpfr_set_ui(lr, 0, GMP_RNDN);
+		    mpfr_copysign(lr, lr, left_real, GMP_RNDN);
+		  }
+		if (mpfr_nan_p(li))
+		  {
+		    mpfr_set_ui(li, 0, GMP_RNDN);
+		    mpfr_copysign(li, li, left_imag, GMP_RNDN);
+		  }
+		is_infinity = true;
+	      }
+
+	    // If we got an overflow in the intermediate computations,
+	    // then the result is infinity.
+	    if (!is_infinity
+		&& (mpfr_inf_p(lrrr) || mpfr_inf_p(lrri)
+		    || mpfr_inf_p(lirr) || mpfr_inf_p(liri)))
+	      {
+		if (mpfr_nan_p(lr))
+		  {
+		    mpfr_set_ui(lr, 0, GMP_RNDN);
+		    mpfr_copysign(lr, lr, left_real, GMP_RNDN);
+		  }
+		if (mpfr_nan_p(li))
+		  {
+		    mpfr_set_ui(li, 0, GMP_RNDN);
+		    mpfr_copysign(li, li, left_imag, GMP_RNDN);
+		  }
+		if (mpfr_nan_p(rr))
+		  {
+		    mpfr_set_ui(rr, 0, GMP_RNDN);
+		    mpfr_copysign(rr, rr, right_real, GMP_RNDN);
+		  }
+		if (mpfr_nan_p(ri))
+		  {
+		    mpfr_set_ui(ri, 0, GMP_RNDN);
+		    mpfr_copysign(ri, ri, right_imag, GMP_RNDN);
+		  }
+		is_infinity = true;
+	      }
+
+	    if (is_infinity)
+	      {
+		mpfr_mul(lrrr, lr, rr, GMP_RNDN);
+		mpfr_mul(lrri, lr, ri, GMP_RNDN);
+		mpfr_mul(lirr, li, rr, GMP_RNDN);
+		mpfr_mul(liri, li, ri, GMP_RNDN);
+		mpfr_sub(real, lrrr, liri, GMP_RNDN);
+		mpfr_add(imag, lrri, lirr, GMP_RNDN);
+		mpfr_set_inf(real, mpfr_sgn(real));
+		mpfr_set_inf(imag, mpfr_sgn(imag));
+	      }
+
+	    mpfr_clear(lr);
+	    mpfr_clear(li);
+	    mpfr_clear(rr);
+	    mpfr_clear(ri);
+	  }
+
+	mpfr_clear(lrrr);
+	mpfr_clear(lrri);
+	mpfr_clear(lirr);
+	mpfr_clear(liri);				  
+      }
       break;
     case OPERATOR_DIV:
-      if (mpc_cmp_si(right_val, 0) == 0)
-	{
-	  error_at(location, "division by zero");
-	  mpc_set_ui(val, 0, MPC_RNDNN);
-	  break;
-	}
-      mpc_div(val, left_val, right_val, MPC_RNDNN);
+      {
+	// For complex division we want to avoid having an
+	// intermediate overflow turn the whole result in a NaN.  We
+	// scale the values to try to avoid this.
+
+	if (mpfr_zero_p(right_real) && mpfr_zero_p(right_imag))
+	  {
+	    error_at(location, "division by zero");
+	    mpfr_set_ui(real, 0, GMP_RNDN);
+	    mpfr_set_ui(imag, 0, GMP_RNDN);
+	    break;
+	  }
+
+	mpfr_t rra;
+	mpfr_t ria;
+	mpfr_init(rra);
+	mpfr_init(ria);
+	mpfr_abs(rra, right_real, GMP_RNDN);
+	mpfr_abs(ria, right_imag, GMP_RNDN);
+	mpfr_t t;
+	mpfr_init(t);
+	mpfr_max(t, rra, ria, GMP_RNDN);
+
+	mpfr_t rr;
+	mpfr_t ri;
+	mpfr_init_set(rr, right_real, GMP_RNDN);
+	mpfr_init_set(ri, right_imag, GMP_RNDN);
+	long ilogbw = 0;
+	if (!mpfr_inf_p(t) && !mpfr_nan_p(t) && !mpfr_zero_p(t))
+	  {
+	    ilogbw = mpfr_get_exp(t);
+	    mpfr_mul_2si(rr, rr, - ilogbw, GMP_RNDN);
+	    mpfr_mul_2si(ri, ri, - ilogbw, GMP_RNDN);
+	  }
+
+	mpfr_t denom;
+	mpfr_init(denom);
+	mpfr_mul(denom, rr, rr, GMP_RNDN);
+	mpfr_mul(t, ri, ri, GMP_RNDN);
+	mpfr_add(denom, denom, t, GMP_RNDN);
+
+	mpfr_mul(real, left_real, rr, GMP_RNDN);
+	mpfr_mul(t, left_imag, ri, GMP_RNDN);
+	mpfr_add(real, real, t, GMP_RNDN);
+	mpfr_div(real, real, denom, GMP_RNDN);
+	mpfr_mul_2si(real, real, - ilogbw, GMP_RNDN);
+
+	mpfr_mul(imag, left_imag, rr, GMP_RNDN);
+	mpfr_mul(t, left_real, ri, GMP_RNDN);
+	mpfr_sub(imag, imag, t, GMP_RNDN);
+	mpfr_div(imag, imag, denom, GMP_RNDN);
+	mpfr_mul_2si(imag, imag, - ilogbw, GMP_RNDN);
+
+	// If we wind up with NaN on both sides, check whether we
+	// should really have infinity.  The rule is that if either
+	// side of the complex number is infinity, then the whole
+	// value is infinity, even if the other side is NaN.  So the
+	// only case we have to fix is the one in which both sides are
+	// NaN.
+	if (mpfr_nan_p(real) && mpfr_nan_p(imag)
+	    && (!mpfr_nan_p(left_real) || !mpfr_nan_p(left_imag))
+	    && (!mpfr_nan_p(right_real) || !mpfr_nan_p(right_imag)))
+	  {
+	    if (mpfr_zero_p(denom))
+	      {
+		mpfr_set_inf(real, mpfr_sgn(rr));
+		mpfr_mul(real, real, left_real, GMP_RNDN);
+		mpfr_set_inf(imag, mpfr_sgn(rr));
+		mpfr_mul(imag, imag, left_imag, GMP_RNDN);
+	      }
+	    else if ((mpfr_inf_p(left_real) || mpfr_inf_p(left_imag))
+		     && mpfr_number_p(rr) && mpfr_number_p(ri))
+	      {
+		mpfr_set_ui(t, mpfr_inf_p(left_real) ? 1 : 0, GMP_RNDN);
+		mpfr_copysign(t, t, left_real, GMP_RNDN);
+
+		mpfr_t t2;
+		mpfr_init_set_ui(t2, mpfr_inf_p(left_imag) ? 1 : 0, GMP_RNDN);
+		mpfr_copysign(t2, t2, left_imag, GMP_RNDN);
+
+		mpfr_t t3;
+		mpfr_init(t3);
+		mpfr_mul(t3, t, rr, GMP_RNDN);
+
+		mpfr_t t4;
+		mpfr_init(t4);
+		mpfr_mul(t4, t2, ri, GMP_RNDN);
+
+		mpfr_add(t3, t3, t4, GMP_RNDN);
+		mpfr_set_inf(real, mpfr_sgn(t3));
+
+		mpfr_mul(t3, t2, rr, GMP_RNDN);
+		mpfr_mul(t4, t, ri, GMP_RNDN);
+		mpfr_sub(t3, t3, t4, GMP_RNDN);
+		mpfr_set_inf(imag, mpfr_sgn(t3));
+
+		mpfr_clear(t2);
+		mpfr_clear(t3);
+		mpfr_clear(t4);
+	      }
+	    else if ((mpfr_inf_p(right_real) || mpfr_inf_p(right_imag))
+		     && mpfr_number_p(left_real) && mpfr_number_p(left_imag))
+	      {
+		mpfr_set_ui(t, mpfr_inf_p(rr) ? 1 : 0, GMP_RNDN);
+		mpfr_copysign(t, t, rr, GMP_RNDN);
+
+		mpfr_t t2;
+		mpfr_init_set_ui(t2, mpfr_inf_p(ri) ? 1 : 0, GMP_RNDN);
+		mpfr_copysign(t2, t2, ri, GMP_RNDN);
+
+		mpfr_t t3;
+		mpfr_init(t3);
+		mpfr_mul(t3, left_real, t, GMP_RNDN);
+
+		mpfr_t t4;
+		mpfr_init(t4);
+		mpfr_mul(t4, left_imag, t2, GMP_RNDN);
+
+		mpfr_add(t3, t3, t4, GMP_RNDN);
+		mpfr_set_ui(real, 0, GMP_RNDN);
+		mpfr_mul(real, real, t3, GMP_RNDN);
+
+		mpfr_mul(t3, left_imag, t, GMP_RNDN);
+		mpfr_mul(t4, left_real, t2, GMP_RNDN);
+		mpfr_sub(t3, t3, t4, GMP_RNDN);
+		mpfr_set_ui(imag, 0, GMP_RNDN);
+		mpfr_mul(imag, imag, t3, GMP_RNDN);
+
+		mpfr_clear(t2);
+		mpfr_clear(t3);
+		mpfr_clear(t4);
+	      }
+	  }
+
+	mpfr_clear(denom);
+	mpfr_clear(rr);
+	mpfr_clear(ri);
+	mpfr_clear(t);
+	mpfr_clear(rra);
+	mpfr_clear(ria);
+      }
       break;
     default:
       go_unreachable();
     }
 
-  mpc_clear(left_val);
-  mpc_clear(right_val);
+  mpfr_clear(left_real);
+  mpfr_clear(left_imag);
+  mpfr_clear(right_real);
+  mpfr_clear(right_imag);
 
-  nc->set_complex(NULL, val);
-  mpc_clear(val);
+  nc->set_complex(NULL, real, imag);
+  mpfr_clear(real);
+  mpfr_clear(imag);
 
   return ret;
 }
@@ -5125,12 +5546,17 @@ Binary_expression::lower_compare_to_memcmp(Gogo*, Statement_inserter* inserter)
 					       TYPE_INFO_SIZE);
 
   Expression* call = Runtime::make_call(Runtime::MEMCMP, loc, 3, a1, a2, len);
-  Expression* zero = Expression::make_integer_ul(0, NULL, loc);
+
+  mpz_t zval;
+  mpz_init_set_ui(zval, 0);
+  Expression* zero = Expression::make_integer(&zval, NULL, loc);
+  mpz_clear(zval);
+
   return Expression::make_binary(this->op_, call, zero, loc);
 }
 
 Expression*
-Binary_expression::do_flatten(Gogo* gogo, Named_object*,
+Binary_expression::do_flatten(Gogo*, Named_object*,
                               Statement_inserter* inserter)
 {
   Location loc = this->location();
@@ -5160,9 +5586,11 @@ Binary_expression::do_flatten(Gogo* gogo, Named_object*,
                       left_type->integer_type() != NULL)
                      || this->op_ == OPERATOR_MOD);
 
+  // FIXME: go_check_divide_zero and go_check_divide_overflow are globals
+  // defined in gcc/go/lang.opt.  These should be defined in go_create_gogo
+  // and accessed from the Gogo* passed to do_flatten.
   if (is_shift_op
-      || (is_idiv_op
-	  && (gogo->check_divide_by_zero() || gogo->check_divide_overflow())))
+      || (is_idiv_op && (go_check_divide_zero || go_check_divide_overflow)))
     {
       if (!this->left_->is_variable())
         {
@@ -5311,6 +5739,15 @@ Binary_expression::do_determine_type(const Type_context* context)
     {
       // In a comparison, the context does not determine the types of
       // the operands.
+      subcontext.type = NULL;
+    }
+
+  if (this->op_ == OPERATOR_ANDAND || this->op_ == OPERATOR_OROR)
+    {
+      // For a logical operation, the context does not determine the
+      // types of the operands.  The operands must be some boolean
+      // type but if the context has a boolean type they do not
+      // inherit it.  See http://golang.org/issue/3924.
       subcontext.type = NULL;
     }
 
@@ -5575,9 +6012,10 @@ Binary_expression::do_check_types(Gogo*)
 		  if (mpz_sgn(val) < 0)
 		    {
 		      this->report_error(_("negative shift count"));
+		      mpz_set_ui(val, 0);
 		      Location rloc = this->right_->location();
-		      this->right_ = Expression::make_integer_ul(0, right_type,
-								 rloc);
+		      this->right_ = Expression::make_integer(&val, right_type,
+							      rloc);
 		    }
 		  mpz_clear(val);
 		}
@@ -5586,10 +6024,10 @@ Binary_expression::do_check_types(Gogo*)
     }
 }
 
-// Get the backend representation for a binary expression.
+// Get a tree for a binary expression.
 
-Bexpression*
-Binary_expression::do_get_backend(Translate_context* context)
+tree
+Binary_expression::do_get_tree(Translate_context* context)
 {
   Gogo* gogo = context->gogo();
   Location loc = this->location();
@@ -5607,8 +6045,12 @@ Binary_expression::do_get_backend(Translate_context* context)
     case OPERATOR_LE:
     case OPERATOR_GT:
     case OPERATOR_GE:
-      return Expression::comparison(context, this->type_, this->op_,
-				    this->left_, this->right_, loc);
+      {
+        Bexpression* ret =
+            Expression::comparison(context, this->type_, this->op_,
+                                   this->left_, this->right_, loc);
+        return expr_to_tree(ret);
+      }
 
     case OPERATOR_OROR:
     case OPERATOR_ANDAND:
@@ -5644,7 +6086,7 @@ Binary_expression::do_get_backend(Translate_context* context)
       Expression* string_plus =
           Runtime::make_call(Runtime::STRING_PLUS, loc, 2,
                              this->left_, this->right_);
-      return string_plus->get_backend(context);
+      return string_plus->get_tree(context);
     }
 
   // For complex division Go might want slightly different results than the
@@ -5665,11 +6107,11 @@ Binary_expression::do_get_backend(Translate_context* context)
 	}
       Expression* complex_div =
           Runtime::make_call(complex_code, loc, 2, this->left_, this->right_);
-      return complex_div->get_backend(context);
+      return complex_div->get_tree(context);
     }
 
-  Bexpression* left = this->left_->get_backend(context);
-  Bexpression* right = this->right_->get_backend(context);
+  Bexpression* left = tree_to_expr(this->left_->get_tree(context));
+  Bexpression* right = tree_to_expr(this->right_->get_tree(context));
 
   Type* type = use_left_type ? left_type : right_type;
   Btype* btype = type->get_backend(gogo);
@@ -5728,7 +6170,7 @@ Binary_expression::do_get_backend(Translate_context* context)
   // Add checks for division by zero and division overflow as needed.
   if (is_idiv_op)
     {
-      if (gogo->check_divide_by_zero())
+      if (go_check_divide_zero)
 	{
 	  // right == 0
           Bexpression* zero_expr =
@@ -5739,15 +6181,15 @@ Binary_expression::do_get_backend(Translate_context* context)
 
 	  // __go_runtime_error(RUNTIME_ERROR_DIVISION_BY_ZERO)
 	  int errcode = RUNTIME_ERROR_DIVISION_BY_ZERO;
-	  Bexpression* crash = gogo->runtime_error(errcode,
-						   loc)->get_backend(context);
+	  Expression* crash = gogo->runtime_error(errcode, loc);
+          Bexpression* crash_expr = tree_to_expr(crash->get_tree(context));
 
 	  // right == 0 ? (__go_runtime_error(...), 0) : ret
-          ret = gogo->backend()->conditional_expression(btype, check, crash,
-							ret, loc);
+          ret = gogo->backend()->conditional_expression(btype, check,
+                                                        crash_expr, ret, loc);
 	}
 
-      if (gogo->check_divide_overflow())
+      if (go_check_divide_overflow)
 	{
 	  // right == -1
 	  // FIXME: It would be nice to say that this test is expected
@@ -5791,7 +6233,7 @@ Binary_expression::do_get_backend(Translate_context* context)
                 {
                   Expression* negate_expr =
                       Expression::make_unary(OPERATOR_MINUS, this->left_, loc);
-                  overflow = negate_expr->get_backend(context);
+                  overflow = tree_to_expr(negate_expr->get_tree(context));
                 }
 	      else
                 overflow = zero_expr;
@@ -5807,7 +6249,7 @@ Binary_expression::do_get_backend(Translate_context* context)
   mpz_clear(zero);
   mpz_clear(one);
   mpz_clear(neg_one);
-  return ret;
+  return expr_to_tree(ret);
 }
 
 // Export a binary expression.
@@ -6034,7 +6476,10 @@ Expression::comparison(Translate_context* context, Type* result_type,
   Type* left_type = left->type();
   Type* right_type = right->type();
 
-  Expression* zexpr = Expression::make_integer_ul(0, NULL, location);
+  mpz_t zval;
+  mpz_init_set_ui(zval, 0UL);
+  Expression* zexpr = Expression::make_integer(&zval, NULL, location);
+  mpz_clear(zval);
 
   if (left_type->is_string_type() && right_type->is_string_type())
     {
@@ -6128,8 +6573,8 @@ Expression::comparison(Translate_context* context, Type* result_type,
 	}
     }
 
-  Bexpression* left_bexpr = left->get_backend(context);
-  Bexpression* right_bexpr = right->get_backend(context);
+  Bexpression* left_bexpr = tree_to_expr(left->get_tree(context));
+  Bexpression* right_bexpr = tree_to_expr(right->get_tree(context));
 
   Gogo* gogo = context->gogo();
   Bexpression* ret = gogo->backend()->binary_expression(op, left_bexpr,
@@ -6389,10 +6834,10 @@ bme_check_nil(const Method::Field_indexes* field_indexes, Location loc,
   return cond;
 }
 
-// Get the backend representation for a method value.
+// Get the tree for a method value.
 
-Bexpression*
-Bound_method_expression::do_get_backend(Translate_context* context)
+tree
+Bound_method_expression::do_get_tree(Translate_context* context)
 {
   Named_object* thunk = Bound_method_expression::create_thunk(context->gogo(),
 							      this->method_,
@@ -6400,7 +6845,7 @@ Bound_method_expression::do_get_backend(Translate_context* context)
   if (thunk->is_erroneous())
     {
       go_assert(saw_errors());
-      return context->backend()->error_expression();
+      return error_mark_node;
     }
 
   // FIXME: We should lower this earlier, but we can't lower it in the
@@ -6446,11 +6891,14 @@ Bound_method_expression::do_get_backend(Translate_context* context)
   vals->push_back(val);
 
   Expression* ret = Expression::make_struct_composite_literal(st, vals, loc);
-  ret = Expression::make_heap_expression(ret, loc);
+  ret = Expression::make_heap_composite(ret, loc);
+
+  tree ret_tree = ret->get_tree(context);
+
+  Expression* nil_check = NULL;
 
   // See whether the expression or any embedded pointers are nil.
 
-  Expression* nil_check = NULL;
   Expression* expr = this->expr_;
   if (this->method_->field_indexes() != NULL)
     {
@@ -6473,19 +6921,26 @@ Bound_method_expression::do_get_backend(Translate_context* context)
 	nil_check = Expression::make_binary(OPERATOR_OROR, nil_check, n, loc);
     }
 
-  Bexpression* bme = ret->get_backend(context);
   if (nil_check != NULL)
     {
-      Gogo* gogo = context->gogo();
-      Bexpression* crash =
-	gogo->runtime_error(RUNTIME_ERROR_NIL_DEREFERENCE,
-			    loc)->get_backend(context);
-      Btype* btype = ret->type()->get_backend(gogo);
-      Bexpression* bcheck = nil_check->get_backend(context);
-      bme = gogo->backend()->conditional_expression(btype, bcheck, crash,
-						    bme, loc);
+      tree nil_check_tree = nil_check->get_tree(context);
+      Expression* crash_expr =
+	context->gogo()->runtime_error(RUNTIME_ERROR_NIL_DEREFERENCE, loc);
+      tree crash = crash_expr->get_tree(context);
+      if (ret_tree == error_mark_node
+	  || nil_check_tree == error_mark_node
+	  || crash == error_mark_node)
+	return error_mark_node;
+
+      ret_tree = fold_build2_loc(loc.gcc_location(), COMPOUND_EXPR,
+				 TREE_TYPE(ret_tree),
+				 build3_loc(loc.gcc_location(), COND_EXPR,
+					    void_type_node, nil_check_tree,
+					    crash, NULL_TREE),
+				 ret_tree);
     }
-  return bme;
+
+  return ret_tree;
 }
 
 // Dump ast representation of a bound method expression.
@@ -6560,8 +7015,8 @@ class Builtin_call_expression : public Call_expression
 				       this->location());
   }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   void
   do_export(Export*) const;
@@ -6948,7 +7403,11 @@ Builtin_call_expression::lower_make()
 	  this->report_error(_("length required when allocating a slice"));
 	  return Expression::make_error(this->location());
 	}
-      len_arg = Expression::make_integer_ul(0, NULL, loc);
+
+      mpz_t zval;
+      mpz_init_set_ui(zval, 0);
+      len_arg = Expression::make_integer(&zval, NULL, loc);
+      mpz_clear(zval);
     }
   else
     {
@@ -7089,9 +7548,9 @@ Builtin_call_expression::check_int_value(Expression* e, bool is_length)
 }
 
 // Return the type of the real or imag functions, given the type of
-// the argument.  We need to map complex64 to float32 and complex128
-// to float64, so it has to be done by name.  This returns NULL if it
-// can't figure out the type.
+// the argument.  We need to map complex to float, complex64 to
+// float32, and complex128 to float64, so it has to be done by name.
+// This returns NULL if it can't figure out the type.
 
 Type*
 Builtin_call_expression::real_imag_type(Type* arg_type)
@@ -7320,38 +7779,33 @@ Builtin_call_expression::do_numeric_constant_value(Numeric_constant* nc) const
 	return false;
       if (arg_type->is_abstract())
 	return false;
-      if (this->seen_)
-        return false;
 
-      unsigned long ret;
+      unsigned int ret;
       if (this->code_ == BUILTIN_SIZEOF)
 	{
-          this->seen_ = true;
-	  bool ok = arg_type->backend_type_size(this->gogo_, &ret);
-          this->seen_ = false;
-	  if (!ok)
+	  if (!arg_type->backend_type_size(this->gogo_, &ret))
 	    return false;
 	}
       else if (this->code_ == BUILTIN_ALIGNOF)
 	{
-	  bool ok;
-          this->seen_ = true;
 	  if (arg->field_reference_expression() == NULL)
-	    ok = arg_type->backend_type_align(this->gogo_, &ret);
+	    {
+	      if (!arg_type->backend_type_align(this->gogo_, &ret))
+		return false;
+	    }
 	  else
 	    {
 	      // Calling unsafe.Alignof(s.f) returns the alignment of
 	      // the type of f when it is used as a field in a struct.
-	      ok = arg_type->backend_type_field_align(this->gogo_, &ret);
+	      if (!arg_type->backend_type_field_align(this->gogo_, &ret))
+		return false;
 	    }
-          this->seen_ = false;
-	  if (!ok)
-	    return false;
 	}
       else
 	go_unreachable();
 
-      nc->set_unsigned_long(Type::lookup_integer_type("uintptr"), ret);
+      nc->set_unsigned_long(Type::lookup_integer_type("uintptr"),
+			    static_cast<unsigned long>(ret));
       return true;
     }
   else if (this->code_ == BUILTIN_OFFSETOF)
@@ -7362,9 +7816,6 @@ Builtin_call_expression::do_numeric_constant_value(Numeric_constant* nc) const
       Field_reference_expression* farg = arg->field_reference_expression();
       if (farg == NULL)
 	return false;
-      if (this->seen_)
-        return false;
-
       unsigned int total_offset = 0;
       while (true)
         {
@@ -7375,13 +7826,10 @@ Builtin_call_expression::do_numeric_constant_value(Numeric_constant* nc) const
           if (st->named_type() != NULL)
             st->named_type()->convert(this->gogo_);
           unsigned int offset;
-          this->seen_ = true;
-          bool ok = st->struct_type()->backend_field_offset(this->gogo_,
-							    farg->field_index(),
-							    &offset);
-          this->seen_ = false;
-	  if (!ok)
-	    return false;
+          if (!st->struct_type()->backend_field_offset(this->gogo_,
+						       farg->field_index(),
+						       &offset))
+            return false;
           total_offset += offset;
           if (farg->implicit() && struct_expr->field_reference_expression() != NULL)
             {
@@ -7405,16 +7853,16 @@ Builtin_call_expression::do_numeric_constant_value(Numeric_constant* nc) const
       if (!arg->numeric_constant_value(&argnc))
 	return false;
 
-      mpc_t val;
-      if (!argnc.to_complex(&val))
+      mpfr_t real;
+      mpfr_t imag;
+      if (!argnc.to_complex(&real, &imag))
 	return false;
 
       Type* type = Builtin_call_expression::real_imag_type(argnc.type());
       if (this->code_ == BUILTIN_REAL)
-	nc->set_float(type, mpc_realref(val));
+	nc->set_float(type, real);
       else
-	nc->set_float(type, mpc_imagref(val));
-      mpc_clear(val);
+	nc->set_float(type, imag);
       return true;
     }
   else if (this->code_ == BUILTIN_COMPLEX)
@@ -7451,16 +7899,11 @@ Builtin_call_expression::do_numeric_constant_value(Numeric_constant* nc) const
       if (arg_type == NULL || arg_type->is_abstract())
 	arg_type = inc.type();
 
-      mpc_t val;
-      mpc_init2(val, mpc_precision);
-      mpc_set_fr_fr(val, r, i, MPC_RNDNN);
+      Type* type = Builtin_call_expression::complex_type(arg_type);
+      nc->set_complex(type, r, i);
+
       mpfr_clear(r);
       mpfr_clear(i);
-
-      Type* type = Builtin_call_expression::complex_type(arg_type);
-      nc->set_complex(type, val);
-
-      mpc_clear(val);
 
       return true;
     }
@@ -7980,10 +8423,10 @@ Builtin_call_expression::do_check_types(Gogo*)
     }
 }
 
-// Return the backend representation for a builtin function.
+// Return the tree for a builtin function.
 
-Bexpression*
-Builtin_call_expression::do_get_backend(Translate_context* context)
+tree
+Builtin_call_expression::do_get_tree(Translate_context* context)
 {
   Gogo* gogo = context->gogo();
   Location location = this->location();
@@ -7999,46 +8442,76 @@ Builtin_call_expression::do_get_backend(Translate_context* context)
       {
 	const Expression_list* args = this->args();
 	go_assert(args != NULL && args->size() == 1);
-	Expression* arg = args->front();
+	Expression* arg = *args->begin();
 	Type* arg_type = arg->type();
 
 	if (this->seen_)
 	  {
 	    go_assert(saw_errors());
-	    return context->backend()->error_expression();
+	    return error_mark_node;
 	  }
 	this->seen_ = true;
+
+	tree arg_tree = arg->get_tree(context);
+
 	this->seen_ = false;
+
+	if (arg_tree == error_mark_node)
+	  return error_mark_node;
+
 	if (arg_type->points_to() != NULL)
 	  {
 	    arg_type = arg_type->points_to();
 	    go_assert(arg_type->array_type() != NULL
 		       && !arg_type->is_slice_type());
-            arg = Expression::make_unary(OPERATOR_MULT, arg, location);
+	    go_assert(POINTER_TYPE_P(TREE_TYPE(arg_tree)));
+	    arg_tree = build_fold_indirect_ref(arg_tree);
 	  }
 
 	Type* int_type = Type::lookup_integer_type("int");
-        Expression* val;
+	tree int_type_tree = type_to_tree(int_type->get_backend(gogo));
+
+	tree val_tree;
 	if (this->code_ == BUILTIN_LEN)
 	  {
 	    if (arg_type->is_string_type())
-	      val = Expression::make_string_info(arg, STRING_INFO_LENGTH,
-						 location);
+	      val_tree = String_type::length_tree(gogo, arg_tree);
 	    else if (arg_type->array_type() != NULL)
 	      {
 		if (this->seen_)
 		  {
 		    go_assert(saw_errors());
-		    return context->backend()->error_expression();
+		    return error_mark_node;
 		  }
 		this->seen_ = true;
-	        val = arg_type->array_type()->get_length(gogo, arg);
+		Expression* len = arg_type->array_type()->get_length(gogo, arg);
+		val_tree = len->get_tree(context);
 		this->seen_ = false;
 	      }
 	    else if (arg_type->map_type() != NULL)
-              val = Runtime::make_call(Runtime::MAP_LEN, location, 1, arg);
+	      {
+		tree arg_type_tree = type_to_tree(arg_type->get_backend(gogo));
+		static tree map_len_fndecl;
+		val_tree = Gogo::call_builtin(&map_len_fndecl,
+					      location,
+					      "__go_map_len",
+					      1,
+					      int_type_tree,
+					      arg_type_tree,
+					      arg_tree);
+	      }
 	    else if (arg_type->channel_type() != NULL)
-              val = Runtime::make_call(Runtime::CHAN_LEN, location, 1, arg);
+	      {
+		tree arg_type_tree = type_to_tree(arg_type->get_backend(gogo));
+		static tree chan_len_fndecl;
+		val_tree = Gogo::call_builtin(&chan_len_fndecl,
+					      location,
+					      "__go_chan_len",
+					      1,
+					      int_type_tree,
+					      arg_type_tree,
+					      arg_tree);
+	      }
 	    else
 	      go_unreachable();
 	  }
@@ -8049,27 +8522,39 @@ Builtin_call_expression::do_get_backend(Translate_context* context)
 		if (this->seen_)
 		  {
 		    go_assert(saw_errors());
-		    return context->backend()->error_expression();
+		    return error_mark_node;
 		  }
 		this->seen_ = true;
-                val = arg_type->array_type()->get_capacity(gogo, arg);
+		Expression* cap =
+		    arg_type->array_type()->get_capacity(gogo, arg);
+		val_tree = cap->get_tree(context);
 		this->seen_ = false;
 	      }
 	    else if (arg_type->channel_type() != NULL)
-              val = Runtime::make_call(Runtime::CHAN_CAP, location, 1, arg);
+	      {
+		tree arg_type_tree = type_to_tree(arg_type->get_backend(gogo));
+		static tree chan_cap_fndecl;
+		val_tree = Gogo::call_builtin(&chan_cap_fndecl,
+					      location,
+					      "__go_chan_cap",
+					      1,
+					      int_type_tree,
+					      arg_type_tree,
+					      arg_tree);
+	      }
 	    else
 	      go_unreachable();
 	  }
 
-	return Expression::make_cast(int_type, val,
-				     location)->get_backend(context);
+	return fold_convert_loc(location.gcc_location(), int_type_tree,
+				val_tree);
       }
 
     case BUILTIN_PRINT:
     case BUILTIN_PRINTLN:
       {
 	const bool is_ln = this->code_ == BUILTIN_PRINTLN;
-        Expression* print_stmts = NULL;
+	tree stmt_list = NULL_TREE;
 
 	const Expression_list* call_args = this->args();
 	if (call_args != NULL)
@@ -8080,91 +8565,139 @@ Builtin_call_expression::do_get_backend(Translate_context* context)
 	      {
 		if (is_ln && p != call_args->begin())
 		  {
-                    Expression* print_space =
-                        Runtime::make_call(Runtime::PRINT_SPACE,
-                                           this->location(), 0);
-
-                    print_stmts =
-                        Expression::make_compound(print_stmts, print_space,
-                                                  location);
+		    static tree print_space_fndecl;
+		    tree call = Gogo::call_builtin(&print_space_fndecl,
+						   location,
+						   "__go_print_space",
+						   0,
+						   void_type_node);
+		    if (call == error_mark_node)
+		      return error_mark_node;
+		    append_to_statement_list(call, &stmt_list);
 		  }
 
-                Expression* arg = *p;
-		Type* type = arg->type();
-                Runtime::Function code;
+		Type* type = (*p)->type();
+
+		tree arg = (*p)->get_tree(context);
+		if (arg == error_mark_node)
+		  return error_mark_node;
+
+		tree* pfndecl;
+		const char* fnname;
 		if (type->is_string_type())
-                  code = Runtime::PRINT_STRING;
+		  {
+		    static tree print_string_fndecl;
+		    pfndecl = &print_string_fndecl;
+		    fnname = "__go_print_string";
+		  }
 		else if (type->integer_type() != NULL
 			 && type->integer_type()->is_unsigned())
 		  {
+		    static tree print_uint64_fndecl;
+		    pfndecl = &print_uint64_fndecl;
+		    fnname = "__go_print_uint64";
 		    Type* itype = Type::lookup_integer_type("uint64");
-		    arg = Expression::make_cast(itype, arg, location);
-                    code = Runtime::PRINT_UINT64;
+		    Btype* bitype = itype->get_backend(gogo);
+		    arg = fold_convert_loc(location.gcc_location(),
+                                           type_to_tree(bitype), arg);
 		  }
 		else if (type->integer_type() != NULL)
 		  {
+		    static tree print_int64_fndecl;
+		    pfndecl = &print_int64_fndecl;
+		    fnname = "__go_print_int64";
 		    Type* itype = Type::lookup_integer_type("int64");
-		    arg = Expression::make_cast(itype, arg, location);
-                    code = Runtime::PRINT_INT64;
+		    Btype* bitype = itype->get_backend(gogo);
+		    arg = fold_convert_loc(location.gcc_location(),
+                                           type_to_tree(bitype), arg);
 		  }
 		else if (type->float_type() != NULL)
 		  {
-                    Type* dtype = Type::lookup_float_type("float64");
-                    arg = Expression::make_cast(dtype, arg, location);
-                    code = Runtime::PRINT_DOUBLE;
+		    static tree print_double_fndecl;
+		    pfndecl = &print_double_fndecl;
+		    fnname = "__go_print_double";
+		    arg = fold_convert_loc(location.gcc_location(),
+                                           double_type_node, arg);
 		  }
 		else if (type->complex_type() != NULL)
 		  {
-                    Type* ctype = Type::lookup_complex_type("complex128");
-                    arg = Expression::make_cast(ctype, arg, location);
-                    code = Runtime::PRINT_COMPLEX;
+		    static tree print_complex_fndecl;
+		    pfndecl = &print_complex_fndecl;
+		    fnname = "__go_print_complex";
+		    arg = fold_convert_loc(location.gcc_location(),
+                                           complex_double_type_node, arg);
 		  }
 		else if (type->is_boolean_type())
-                  code = Runtime::PRINT_BOOL;
+		  {
+		    static tree print_bool_fndecl;
+		    pfndecl = &print_bool_fndecl;
+		    fnname = "__go_print_bool";
+		  }
 		else if (type->points_to() != NULL
 			 || type->channel_type() != NULL
 			 || type->map_type() != NULL
 			 || type->function_type() != NULL)
 		  {
-                    arg = Expression::make_cast(type, arg, location);
-                    code = Runtime::PRINT_POINTER;
+		    static tree print_pointer_fndecl;
+		    pfndecl = &print_pointer_fndecl;
+		    fnname = "__go_print_pointer";
+		    arg = fold_convert_loc(location.gcc_location(),
+                                           ptr_type_node, arg);
 		  }
 		else if (type->interface_type() != NULL)
 		  {
 		    if (type->interface_type()->is_empty())
-                      code = Runtime::PRINT_EMPTY_INTERFACE;
+		      {
+			static tree print_empty_interface_fndecl;
+			pfndecl = &print_empty_interface_fndecl;
+			fnname = "__go_print_empty_interface";
+		      }
 		    else
-                      code = Runtime::PRINT_INTERFACE;
+		      {
+			static tree print_interface_fndecl;
+			pfndecl = &print_interface_fndecl;
+			fnname = "__go_print_interface";
+		      }
 		  }
 		else if (type->is_slice_type())
-                  code = Runtime::PRINT_SLICE;
+		  {
+		    static tree print_slice_fndecl;
+		    pfndecl = &print_slice_fndecl;
+		    fnname = "__go_print_slice";
+		  }
 		else
 		  {
 		    go_assert(saw_errors());
-		    return context->backend()->error_expression();
+		    return error_mark_node;
 		  }
 
-                Expression* call = Runtime::make_call(code, location, 1, arg);
-                if (print_stmts == NULL)
-                  print_stmts = call;
-                else
-                  print_stmts = Expression::make_compound(print_stmts, call,
-                                                          location);
+		tree call = Gogo::call_builtin(pfndecl,
+					       location,
+					       fnname,
+					       1,
+					       void_type_node,
+					       TREE_TYPE(arg),
+					       arg);
+		if (call == error_mark_node)
+		  return error_mark_node;
+		append_to_statement_list(call, &stmt_list);
 	      }
 	  }
 
 	if (is_ln)
 	  {
-            Expression* print_nl =
-                Runtime::make_call(Runtime::PRINT_NL, location, 0);
-            if (print_stmts == NULL)
-              print_stmts = print_nl;
-            else
-              print_stmts = Expression::make_compound(print_stmts, print_nl,
-                                                      location);
+	    static tree print_nl_fndecl;
+	    tree call = Gogo::call_builtin(&print_nl_fndecl,
+					   location,
+					   "__go_print_nl",
+					   0,
+					   void_type_node);
+	    if (call == error_mark_node)
+	      return error_mark_node;
+	    append_to_statement_list(call, &stmt_list);
 	  }
 
-        return print_stmts->get_backend(context);
+	return stmt_list;
       }
 
     case BUILTIN_PANIC:
@@ -8172,13 +8705,29 @@ Builtin_call_expression::do_get_backend(Translate_context* context)
 	const Expression_list* args = this->args();
 	go_assert(args != NULL && args->size() == 1);
 	Expression* arg = args->front();
+	tree arg_tree = arg->get_tree(context);
+	if (arg_tree == error_mark_node)
+	  return error_mark_node;
 	Type *empty =
 	  Type::make_empty_interface_type(Linemap::predeclared_location());
-        arg = Expression::convert_for_assignment(gogo, empty, arg, location);
-
-        Expression* panic =
-            Runtime::make_call(Runtime::PANIC, location, 1, arg);
-        return panic->get_backend(context);
+	arg_tree = Expression::convert_for_assignment(context, empty,
+						      arg->type(),
+						      arg_tree, location);
+	static tree panic_fndecl;
+	tree call = Gogo::call_builtin(&panic_fndecl,
+				       location,
+				       "__go_panic",
+				       1,
+				       void_type_node,
+				       TREE_TYPE(arg_tree),
+				       arg_tree);
+	if (call == error_mark_node)
+	  return error_mark_node;
+	// This function will throw an exception.
+	TREE_NOTHROW(panic_fndecl) = 0;
+	// This function will not return.
+	TREE_THIS_VOLATILE(panic_fndecl) = 1;
+	return call;
       }
 
     case BUILTIN_RECOVER:
@@ -8188,22 +8737,49 @@ Builtin_call_expression::do_get_backend(Translate_context* context)
 	const Expression_list* args = this->args();
 	go_assert(args != NULL && args->size() == 1);
 	Expression* arg = args->front();
+	tree arg_tree = arg->get_tree(context);
+	if (arg_tree == error_mark_node)
+	  return error_mark_node;
+
 	Type *empty =
 	  Type::make_empty_interface_type(Linemap::predeclared_location());
+	tree empty_tree = type_to_tree(empty->get_backend(context->gogo()));
 
+	Type* nil_type = Type::make_nil_type();
 	Expression* nil = Expression::make_nil(location);
-	nil = Expression::convert_for_assignment(gogo, empty, nil, location);
+	tree nil_tree = nil->get_tree(context);
+	tree empty_nil_tree = Expression::convert_for_assignment(context,
+								 empty,
+								 nil_type,
+								 nil_tree,
+								 location);
 
 	// We need to handle a deferred call to recover specially,
 	// because it changes whether it can recover a panic or not.
 	// See test7 in test/recover1.go.
-        Expression* recover = Runtime::make_call((this->is_deferred()
-                                                  ? Runtime::DEFERRED_RECOVER
-                                                  : Runtime::RECOVER),
-                                                 location, 0);
-        Expression* cond =
-            Expression::make_conditional(arg, recover, nil, location);
-        return cond->get_backend(context);
+	tree call;
+	if (this->is_deferred())
+	  {
+	    static tree deferred_recover_fndecl;
+	    call = Gogo::call_builtin(&deferred_recover_fndecl,
+				      location,
+				      "__go_deferred_recover",
+				      0,
+				      empty_tree);
+	  }
+	else
+	  {
+	    static tree recover_fndecl;
+	    call = Gogo::call_builtin(&recover_fndecl,
+				      location,
+				      "__go_recover",
+				      0,
+				      empty_tree);
+	  }
+	if (call == error_mark_node)
+	  return error_mark_node;
+	return fold_build3_loc(location.gcc_location(), COND_EXPR, empty_tree,
+                               arg_tree, call, empty_nil_tree);
       }
 
     case BUILTIN_CLOSE:
@@ -8211,9 +8787,17 @@ Builtin_call_expression::do_get_backend(Translate_context* context)
 	const Expression_list* args = this->args();
 	go_assert(args != NULL && args->size() == 1);
 	Expression* arg = args->front();
-        Expression* close = Runtime::make_call(Runtime::CLOSE, location,
-					       1, arg);
-        return close->get_backend(context);
+	tree arg_tree = arg->get_tree(context);
+	if (arg_tree == error_mark_node)
+	  return error_mark_node;
+	static tree close_fndecl;
+	return Gogo::call_builtin(&close_fndecl,
+				  location,
+				  "__go_builtin_close",
+				  1,
+				  void_type_node,
+				  TREE_TYPE(arg_tree),
+				  arg_tree);
       }
 
     case BUILTIN_SIZEOF:
@@ -8226,15 +8810,11 @@ Builtin_call_expression::do_get_backend(Translate_context* context)
 	    || nc.to_unsigned_long(&val) != Numeric_constant::NC_UL_VALID)
 	  {
 	    go_assert(saw_errors());
-	    return context->backend()->error_expression();
+	    return error_mark_node;
 	  }
 	Type* uintptr_type = Type::lookup_integer_type("uintptr");
-        mpz_t ival;
-        nc.get_int(&ival);
-        Expression* int_cst =
-            Expression::make_integer_z(&ival, uintptr_type, location);
-        mpz_clear(ival);
-        return int_cst->get_backend(context);
+	tree type = type_to_tree(uintptr_type->get_backend(gogo));
+	return build_int_cst(type, val);
       }
 
     case BUILTIN_COPY:
@@ -8244,48 +8824,88 @@ Builtin_call_expression::do_get_backend(Translate_context* context)
 	Expression* arg1 = args->front();
 	Expression* arg2 = args->back();
 
+	tree arg1_tree = arg1->get_tree(context);
+	tree arg2_tree = arg2->get_tree(context);
+	if (arg1_tree == error_mark_node || arg2_tree == error_mark_node)
+	  return error_mark_node;
+
 	Type* arg1_type = arg1->type();
 	Array_type* at = arg1_type->array_type();
 	go_assert(arg1->is_variable());
-	Expression* arg1_val = at->get_value_pointer(gogo, arg1);
-	Expression* arg1_len = at->get_length(gogo, arg1);
+	Expression* arg1_valptr = at->get_value_pointer(gogo, arg1);
+	Expression* arg1_len_expr = at->get_length(gogo, arg1);
+	tree arg1_val = arg1_valptr->get_tree(context);
+	tree arg1_len = arg1_len_expr->get_tree(context);
+	if (arg1_val == error_mark_node || arg1_len == error_mark_node)
+	  return error_mark_node;
 
 	Type* arg2_type = arg2->type();
-        go_assert(arg2->is_variable());
-	Expression* arg2_val;
-	Expression* arg2_len;
+	tree arg2_val;
+	tree arg2_len;
 	if (arg2_type->is_slice_type())
 	  {
 	    at = arg2_type->array_type();
-	    arg2_val = at->get_value_pointer(gogo, arg2);
-	    arg2_len = at->get_length(gogo, arg2);
+	    go_assert(arg2->is_variable());
+	    Expression* arg2_valptr = at->get_value_pointer(gogo, arg2);
+	    Expression* arg2_len_expr = at->get_length(gogo, arg2);
+	    arg2_val = arg2_valptr->get_tree(context);
+	    arg2_len = arg2_len_expr->get_tree(context);
 	  }
 	else
 	  {
-	    go_assert(arg2->is_variable());
-            arg2_val = Expression::make_string_info(arg2, STRING_INFO_DATA,
-                                                    location);
-	    arg2_len = Expression::make_string_info(arg2, STRING_INFO_LENGTH,
-                                                    location);
+	    arg2_tree = save_expr(arg2_tree);
+	    arg2_val = String_type::bytes_tree(gogo, arg2_tree);
+	    arg2_len = String_type::length_tree(gogo, arg2_tree);
 	  }
-        Expression* cond =
-            Expression::make_binary(OPERATOR_LT, arg1_len, arg2_len, location);
-        Expression* length =
-            Expression::make_conditional(cond, arg1_len, arg2_len, location);
+	if (arg2_val == error_mark_node || arg2_len == error_mark_node)
+	  return error_mark_node;
+
+	arg1_len = save_expr(arg1_len);
+	arg2_len = save_expr(arg2_len);
+	tree len = fold_build3_loc(location.gcc_location(), COND_EXPR,
+                                   TREE_TYPE(arg1_len),
+				   fold_build2_loc(location.gcc_location(),
+                                                   LT_EXPR, boolean_type_node,
+						   arg1_len, arg2_len),
+				   arg1_len, arg2_len);
+	len = save_expr(len);
 
 	Type* element_type = at->element_type();
 	Btype* element_btype = element_type->get_backend(gogo);
-	size_t element_size = gogo->backend()->type_size(element_btype);
-	Expression* size_expr = Expression::make_integer_ul(element_size,
-							    length->type(),
-							    location);
-        Expression* bytecount =
-            Expression::make_binary(OPERATOR_MULT, size_expr, length, location);
-        Expression* copy = Runtime::make_call(Runtime::COPY, location, 3,
-                                              arg1_val, arg2_val, bytecount);
+	tree element_type_tree = type_to_tree(element_btype);
+	if (element_type_tree == error_mark_node)
+	  return error_mark_node;
+	tree element_size = TYPE_SIZE_UNIT(element_type_tree);
+	tree bytecount = fold_convert_loc(location.gcc_location(),
+                                          TREE_TYPE(element_size), len);
+	bytecount = fold_build2_loc(location.gcc_location(), MULT_EXPR,
+				    TREE_TYPE(element_size),
+				    bytecount, element_size);
+	bytecount = fold_convert_loc(location.gcc_location(), size_type_node,
+                                     bytecount);
 
-        Expression* compound = Expression::make_compound(copy, length, location);
-        return compound->get_backend(context);
+	arg1_val = fold_convert_loc(location.gcc_location(), ptr_type_node,
+                                    arg1_val);
+	arg2_val = fold_convert_loc(location.gcc_location(), ptr_type_node,
+                                    arg2_val);
+
+	static tree copy_fndecl;
+	tree call = Gogo::call_builtin(&copy_fndecl,
+				       location,
+				       "__go_copy",
+				       3,
+				       void_type_node,
+				       ptr_type_node,
+				       arg1_val,
+				       ptr_type_node,
+				       arg2_val,
+				       size_type_node,
+				       bytecount);
+	if (call == error_mark_node)
+	  return error_mark_node;
+
+	return fold_build2_loc(location.gcc_location(), COMPOUND_EXPR,
+                               TREE_TYPE(len), call, len);
       }
 
     case BUILTIN_APPEND:
@@ -8295,38 +8915,67 @@ Builtin_call_expression::do_get_backend(Translate_context* context)
 	Expression* arg1 = args->front();
 	Expression* arg2 = args->back();
 
+	tree arg1_tree = arg1->get_tree(context);
+	tree arg2_tree = arg2->get_tree(context);
+	if (arg1_tree == error_mark_node || arg2_tree == error_mark_node)
+	  return error_mark_node;
+
 	Array_type* at = arg1->type()->array_type();
 	Type* element_type = at->element_type()->forwarded();
 
-        go_assert(arg2->is_variable());
-	Expression* arg2_val;
-	Expression* arg2_len;
-	unsigned long size;
+	tree arg2_val;
+	tree arg2_len;
+	tree element_size;
 	if (arg2->type()->is_string_type()
 	    && element_type->integer_type() != NULL
 	    && element_type->integer_type()->is_byte())
 	  {
-	    arg2_val = Expression::make_string_info(arg2, STRING_INFO_DATA,
-						    location);
-	    arg2_len = Expression::make_string_info(arg2, STRING_INFO_LENGTH,
-						    location);
-	    size = 1;
+	    arg2_tree = save_expr(arg2_tree);
+	    arg2_val = String_type::bytes_tree(gogo, arg2_tree);
+	    arg2_len = String_type::length_tree(gogo, arg2_tree);
+	    element_size = size_int(1);
 	  }
 	else
 	  {
-	    arg2_val = at->get_value_pointer(gogo, arg2);
-	    arg2_len = at->get_length(gogo, arg2);
+	    go_assert(arg2->is_variable());
+	    arg2_val =
+		at->get_value_pointer(gogo, arg2)->get_tree(context);
+	    arg2_len = at->get_length(gogo, arg2)->get_tree(context);
 	    Btype* element_btype = element_type->get_backend(gogo);
-	    size = gogo->backend()->type_size(element_btype);
+	    tree element_type_tree = type_to_tree(element_btype);
+	    if (element_type_tree == error_mark_node)
+	      return error_mark_node;
+	    element_size = TYPE_SIZE_UNIT(element_type_tree);
 	  }
-        Expression* element_size =
-	  Expression::make_integer_ul(size, NULL, location);
 
-        Expression* append = Runtime::make_call(Runtime::APPEND, location, 4,
-                                                arg1, arg2_val, arg2_len,
-                                                element_size);
-        append = Expression::make_unsafe_cast(arg1->type(), append, location);
-        return append->get_backend(context);
+	arg2_val = fold_convert_loc(location.gcc_location(), ptr_type_node,
+                                    arg2_val);
+	arg2_len = fold_convert_loc(location.gcc_location(), size_type_node,
+                                    arg2_len);
+	element_size = fold_convert_loc(location.gcc_location(), size_type_node,
+					element_size);
+
+	if (arg2_val == error_mark_node
+	    || arg2_len == error_mark_node
+	    || element_size == error_mark_node)
+	  return error_mark_node;
+
+	// We rebuild the decl each time since the slice types may
+	// change.
+	tree append_fndecl = NULL_TREE;
+	return Gogo::call_builtin(&append_fndecl,
+				  location,
+				  "__go_append",
+				  4,
+				  TREE_TYPE(arg1_tree),
+				  TREE_TYPE(arg1_tree),
+				  arg1_tree,
+				  ptr_type_node,
+				  arg2_val,
+				  size_type_node,
+				  arg2_len,
+				  size_type_node,
+				  element_size);
       }
 
     case BUILTIN_REAL:
@@ -8334,23 +8983,35 @@ Builtin_call_expression::do_get_backend(Translate_context* context)
       {
 	const Expression_list* args = this->args();
 	go_assert(args != NULL && args->size() == 1);
-
-        Bexpression* ret;
-        Bexpression* bcomplex = args->front()->get_backend(context);
-        if (this->code_ == BUILTIN_REAL)
-          ret = gogo->backend()->real_part_expression(bcomplex, location);
-        else
-          ret = gogo->backend()->imag_part_expression(bcomplex, location);
-        return ret;
+	Expression* arg = args->front();
+	tree arg_tree = arg->get_tree(context);
+	if (arg_tree == error_mark_node)
+	  return error_mark_node;
+	go_assert(COMPLEX_FLOAT_TYPE_P(TREE_TYPE(arg_tree)));
+	if (this->code_ == BUILTIN_REAL)
+	  return fold_build1_loc(location.gcc_location(), REALPART_EXPR,
+				 TREE_TYPE(TREE_TYPE(arg_tree)),
+				 arg_tree);
+	else
+	  return fold_build1_loc(location.gcc_location(), IMAGPART_EXPR,
+				 TREE_TYPE(TREE_TYPE(arg_tree)),
+				 arg_tree);
       }
 
     case BUILTIN_COMPLEX:
       {
 	const Expression_list* args = this->args();
 	go_assert(args != NULL && args->size() == 2);
-	Bexpression* breal = args->front()->get_backend(context);
-	Bexpression* bimag = args->back()->get_backend(context);
-	return gogo->backend()->complex_expression(breal, bimag, location);
+	tree r = args->front()->get_tree(context);
+	tree i = args->back()->get_tree(context);
+	if (r == error_mark_node || i == error_mark_node)
+	  return error_mark_node;
+	go_assert(TYPE_MAIN_VARIANT(TREE_TYPE(r))
+		   == TYPE_MAIN_VARIANT(TREE_TYPE(i)));
+	go_assert(SCALAR_FLOAT_TYPE_P(TREE_TYPE(r)));
+	return fold_build2_loc(location.gcc_location(), COMPLEX_EXPR,
+			       build_complex_type(TREE_TYPE(r)),
+			       r, i);
       }
 
     default:
@@ -8387,10 +9048,11 @@ Builtin_call_expression::do_export(Export* exp) const
     }
   else if (nc.is_complex())
     {
-      mpc_t cval;
-      nc.get_complex(&cval);
-      Complex_expression::export_complex(exp, cval);
-      mpc_clear(cval);
+      mpfr_t real;
+      mpfr_t imag;
+      Complex_expression::export_complex(exp, real, imag);
+      mpfr_clear(real);
+      mpfr_clear(imag);
     }
   else
     go_unreachable();
@@ -8723,80 +9385,6 @@ Call_expression::lower_varargs(Gogo* gogo, Named_object* function,
   this->varargs_are_lowered_ = true;
 }
 
-// Flatten a call with multiple results into a temporary.
-
-Expression*
-Call_expression::do_flatten(Gogo* gogo, Named_object*,
-			    Statement_inserter* inserter)
-{
-  if (this->classification() == EXPRESSION_ERROR)
-    return this;
-
-  // Add temporary variables for all arguments that require type
-  // conversion.
-  Function_type* fntype = this->get_function_type();
-  go_assert(fntype != NULL);
-  if (this->args_ != NULL && !this->args_->empty()
-      && fntype->parameters() != NULL && !fntype->parameters()->empty())
-    {
-      bool is_interface_method =
-	this->fn_->interface_field_reference_expression() != NULL;
-
-      Expression_list *args = new Expression_list();
-      Typed_identifier_list::const_iterator pp = fntype->parameters()->begin();
-      Expression_list::const_iterator pa = this->args_->begin();
-      if (!is_interface_method && fntype->is_method())
-	{
-	  // The receiver argument.
-	  args->push_back(*pa);
-	  ++pa;
-	}
-      for (; pa != this->args_->end(); ++pa, ++pp)
-	{
-	  go_assert(pp != fntype->parameters()->end());
-	  if (Type::are_identical(pp->type(), (*pa)->type(), true, NULL))
-	    args->push_back(*pa);
-	  else
-	    {
-	      Location loc = (*pa)->location();
-	      Expression* arg =
-		Expression::convert_for_assignment(gogo, pp->type(), *pa, loc);
-	      Temporary_statement* temp =
-		Statement::make_temporary(pp->type(), arg, loc);
-	      inserter->insert(temp);
-	      args->push_back(Expression::make_temporary_reference(temp, loc));
-	    }
-	}
-      delete this->args_;
-      this->args_ = args;
-    }
-
-  size_t rc = this->result_count();
-  if (rc > 1 && this->call_temp_ == NULL)
-    {
-      Struct_field_list* sfl = new Struct_field_list();
-      Function_type* fntype = this->get_function_type();
-      const Typed_identifier_list* results = fntype->results();
-      Location loc = this->location();
-
-      int i = 0;
-      char buf[10];
-      for (Typed_identifier_list::const_iterator p = results->begin();
-           p != results->end();
-           ++p, ++i)
-        {
-          snprintf(buf, sizeof buf, "res%d", i);
-          sfl->push_back(Struct_field(Typed_identifier(buf, p->type(), loc)));
-        }
-
-      Struct_type* st = Type::make_struct_type(sfl, loc);
-      this->call_temp_ = Statement::make_temporary(st, NULL, loc);
-      inserter->insert(this->call_temp_);
-    }
-
-  return this;
-}
-
 // Get the function type.  This can return NULL in error cases.
 
 Function_type*
@@ -8829,15 +9417,6 @@ Call_expression::result(size_t i) const
       return NULL;
     }
   return (*this->results_)[i];
-}
-
-// Set the number of results expected from a call expression.
-
-void
-Call_expression::set_expected_result_count(size_t count)
-{
-  go_assert(this->expected_result_count_ == 0);
-  this->expected_result_count_ = count;
 }
 
 // Return whether this is a call to the predeclared function recover.
@@ -8988,7 +9567,13 @@ Call_expression::check_argument_type(int i, const Type* parameter_type,
 				     bool issued_error)
 {
   std::string reason;
-  if (!Type::are_assignable(parameter_type, argument_type, &reason))
+  bool ok;
+  if (this->are_hidden_fields_ok_)
+    ok = Type::are_assignable_hidden_ok(parameter_type, argument_type,
+					&reason);
+  else
+    ok = Type::are_assignable(parameter_type, argument_type, &reason);
+  if (!ok)
     {
       if (!issued_error)
 	{
@@ -9021,26 +9606,19 @@ Call_expression::do_check_types(Gogo*)
       return;
     }
 
-  if (this->expected_result_count_ != 0
-      && this->expected_result_count_ != this->result_count())
-    {
-      if (this->issue_error())
-	this->report_error(_("function result count mismatch"));
-      this->set_is_error();
-      return;
-    }
-
   bool is_method = fntype->is_method();
   if (is_method)
     {
       go_assert(this->args_ != NULL && !this->args_->empty());
       Type* rtype = fntype->receiver()->type();
       Expression* first_arg = this->args_->front();
-      // We dereference the values since receivers are always passed
-      // as pointers.
+      // The language permits copying hidden fields for a method
+      // receiver.  We dereference the values since receivers are
+      // always passed as pointers.
       std::string reason;
-      if (!Type::are_assignable(rtype->deref(), first_arg->type()->deref(),
-				&reason))
+      if (!Type::are_assignable_hidden_ok(rtype->deref(),
+					  first_arg->type()->deref(),
+					  &reason))
 	{
 	  if (reason.empty())
 	    this->report_error(_("incompatible type for receiver"));
@@ -9076,20 +9654,6 @@ Call_expression::do_check_types(Gogo*)
   else if (parameters == NULL)
     {
       if (!is_method || this->args_->size() > 1)
-	this->report_error(_("too many arguments"));
-    }
-  else if (this->args_->size() == 1
-	   && this->args_->front()->call_expression() != NULL
-	   && this->args_->front()->call_expression()->result_count() > 1)
-    {
-      // This is F(G()) when G returns more than one result.  If the
-      // results can be matched to parameters, it would have been
-      // lowered in do_lower.  If we get here we know there is a
-      // mismatch.
-      if (this->args_->front()->call_expression()->result_count()
-	  < parameters->size())
-	this->report_error(_("not enough arguments"));
-      else
 	this->report_error(_("too many arguments"));
     }
   else
@@ -9139,18 +9703,18 @@ Call_expression::interface_method_function(
 
 // Build the call expression.
 
-Bexpression*
-Call_expression::do_get_backend(Translate_context* context)
+tree
+Call_expression::do_get_tree(Translate_context* context)
 {
-  if (this->call_ != NULL)
-    return this->call_;
+  if (this->tree_ != NULL_TREE)
+    return this->tree_;
 
   Function_type* fntype = this->get_function_type();
   if (fntype == NULL)
-    return context->backend()->error_expression();
+    return error_mark_node;
 
   if (this->fn_->is_error_expression())
-    return context->backend()->error_expression();
+    return error_mark_node;
 
   Gogo* gogo = context->gogo();
   Location location = this->location();
@@ -9172,12 +9736,11 @@ Call_expression::do_get_backend(Translate_context* context)
     has_closure_arg = true;
 
   int nargs;
-  std::vector<Bexpression*> fn_args;
+  tree* args;
   if (this->args_ == NULL || this->args_->empty())
     {
       nargs = is_interface_method ? 1 : 0;
-      if (nargs > 0)
-        fn_args.resize(1);
+      args = nargs == 0 ? NULL : new tree[nargs];
     }
   else if (fntype->parameters() == NULL || fntype->parameters()->empty())
     {
@@ -9186,8 +9749,8 @@ Call_expression::do_get_backend(Translate_context* context)
 		&& fntype->is_method()
 		&& this->args_->size() == 1);
       nargs = 1;
-      fn_args.resize(1);
-      fn_args[0] = this->args_->front()->get_backend(context);
+      args = new tree[nargs];
+      args[0] = this->args_->front()->get_tree(context);
     }
   else
     {
@@ -9196,149 +9759,239 @@ Call_expression::do_get_backend(Translate_context* context)
       nargs = this->args_->size();
       int i = is_interface_method ? 1 : 0;
       nargs += i;
-      fn_args.resize(nargs);
+      args = new tree[nargs];
 
       Typed_identifier_list::const_iterator pp = params->begin();
       Expression_list::const_iterator pe = this->args_->begin();
       if (!is_interface_method && fntype->is_method())
 	{
-          fn_args[i] = (*pe)->get_backend(context);
+	  args[i] = (*pe)->get_tree(context);
 	  ++pe;
 	  ++i;
 	}
       for (; pe != this->args_->end(); ++pe, ++pp, ++i)
 	{
 	  go_assert(pp != params->end());
-          Expression* arg =
-              Expression::convert_for_assignment(gogo, pp->type(), *pe,
-                                                 location);
-          fn_args[i] = arg->get_backend(context);
+	  tree arg_val = (*pe)->get_tree(context);
+	  args[i] = Expression::convert_for_assignment(context,
+						       pp->type(),
+						       (*pe)->type(),
+						       arg_val,
+						       location);
+	  if (args[i] == error_mark_node)
+	    return error_mark_node;
 	}
       go_assert(pp == params->end());
       go_assert(i == nargs);
     }
 
-  Expression* fn;
-  Expression* closure = NULL;
+  tree fntype_tree = type_to_tree(fntype->get_backend(gogo));
+  tree fnfield_type = type_to_tree(fntype->get_backend_fntype(gogo));
+  if (fntype_tree == error_mark_node || fnfield_type == error_mark_node)
+    return error_mark_node;
+  go_assert(FUNCTION_POINTER_TYPE_P(fnfield_type));
+  tree rettype = TREE_TYPE(TREE_TYPE(fnfield_type));
+  if (rettype == error_mark_node)
+    return error_mark_node;
+
+  tree fn;
+  tree closure_tree;
   if (func != NULL)
     {
       Named_object* no = func->named_object();
-      fn = Expression::make_func_code_reference(no, location);
-      if (has_closure)
-        closure = func->closure();
+      fn = expr_to_tree(Func_expression::get_code_pointer(gogo, no, location));
+      if (!has_closure)
+	closure_tree = NULL_TREE;
+      else
+	{
+	  closure_tree = func->closure()->get_tree(context);
+	  if (closure_tree == error_mark_node)
+	    return error_mark_node;
+	}
     }
   else if (!is_interface_method)
     {
-      closure = this->fn_;
-
-      // The backend representation of this function type is a pointer
-      // to a struct whose first field is the actual function to call.
-      Type* pfntype =
-          Type::make_pointer_type(
-              Type::make_pointer_type(Type::make_void_type()));
-      fn = Expression::make_unsafe_cast(pfntype, this->fn_, location);
-      fn = Expression::make_unary(OPERATOR_MULT, fn, location);
-    }
+      closure_tree = this->fn_->get_tree(context);
+      if (closure_tree == error_mark_node)
+	return error_mark_node;
+      tree fnc = fold_convert_loc(location.gcc_location(), fntype_tree,
+				  closure_tree);
+      go_assert(POINTER_TYPE_P(TREE_TYPE(fnc))
+		&& (TREE_CODE(TREE_TYPE(TREE_TYPE(fnc)))
+		    == RECORD_TYPE));
+      tree field = TYPE_FIELDS(TREE_TYPE(TREE_TYPE(fnc)));
+      fn = fold_build3_loc(location.gcc_location(), COMPONENT_REF,
+			   TREE_TYPE(field),
+			   build_fold_indirect_ref_loc(location.gcc_location(),
+						       fnc),
+			   field, NULL_TREE);
+    }      
   else
     {
       Expression* first_arg;
-      fn = this->interface_method_function(interface_method, &first_arg);
-      fn_args[0] = first_arg->get_backend(context);
+      Expression* fn_expr =
+          this->interface_method_function(interface_method, &first_arg);
+      args[0] = first_arg->get_tree(context);
+      fn = fn_expr->get_tree(context);
+
+      if (fn == error_mark_node)
+	return error_mark_node;
+      closure_tree = NULL_TREE;
     }
 
+  if (fn == error_mark_node || TREE_TYPE(fn) == error_mark_node)
+    return error_mark_node;
+
+  tree fndecl = fn;
+  if (TREE_CODE(fndecl) == ADDR_EXPR)
+    fndecl = TREE_OPERAND(fndecl, 0);
+
+  // Add a type cast in case the type of the function is a recursive
+  // type which refers to itself.  We don't do this for an interface
+  // method because 1) an interface method never refers to itself, so
+  // we always have a function type here; 2) we pass an extra first
+  // argument to an interface method, so fnfield_type is not correct.
+  if ((!DECL_P(fndecl) || !DECL_IS_BUILTIN(fndecl)) && !is_interface_method)
+    fn = fold_convert_loc(location.gcc_location(), fnfield_type, fn);
+
+  // This is to support builtin math functions when using 80387 math.
+  tree excess_type = NULL_TREE;
+  if (optimize
+      && TREE_CODE(fndecl) == FUNCTION_DECL
+      && DECL_IS_BUILTIN(fndecl)
+      && DECL_BUILT_IN_CLASS(fndecl) == BUILT_IN_NORMAL
+      && nargs > 0
+      && ((SCALAR_FLOAT_TYPE_P(rettype)
+	   && SCALAR_FLOAT_TYPE_P(TREE_TYPE(args[0])))
+	  || (COMPLEX_FLOAT_TYPE_P(rettype)
+	      && COMPLEX_FLOAT_TYPE_P(TREE_TYPE(args[0])))))
+    {
+      excess_type = excess_precision_type(TREE_TYPE(args[0]));
+      if (excess_type != NULL_TREE)
+	{
+	  tree excess_fndecl = mathfn_built_in(excess_type,
+					       DECL_FUNCTION_CODE(fndecl));
+	  if (excess_fndecl == NULL_TREE)
+	    excess_type = NULL_TREE;
+	  else
+	    {
+	      fn = build_fold_addr_expr_loc(location.gcc_location(),
+                                            excess_fndecl);
+	      for (int i = 0; i < nargs; ++i)
+		{
+		  if (SCALAR_FLOAT_TYPE_P(TREE_TYPE(args[i]))
+		      || COMPLEX_FLOAT_TYPE_P(TREE_TYPE(args[i])))
+		    args[i] = ::convert(excess_type, args[i]);
+		}
+	    }
+	}
+    }
+
+  if (func == NULL)
+    fn = save_expr(fn);
+
   if (!has_closure_arg)
-    go_assert(closure == NULL);
+    go_assert(closure_tree == NULL_TREE);
   else
     {
       // Pass the closure argument by calling the function function
       // __go_set_closure.  In the order_evaluations pass we have
       // ensured that if any parameters contain call expressions, they
       // will have been moved out to temporary variables.
-      go_assert(closure != NULL);
-      Expression* set_closure =
-          Runtime::make_call(Runtime::SET_CLOSURE, location, 1, closure);
-      fn = Expression::make_compound(set_closure, fn, location);
+
+      go_assert(closure_tree != NULL_TREE);
+      closure_tree = fold_convert_loc(location.gcc_location(), ptr_type_node,
+				      closure_tree);
+      static tree set_closure_fndecl;
+      tree set_closure = Gogo::call_builtin(&set_closure_fndecl,
+					    location,
+					    "__go_set_closure",
+					    1,
+					    void_type_node,
+					    ptr_type_node,
+					    closure_tree);
+      if (set_closure == error_mark_node)
+	return error_mark_node;
+      fn = build2_loc(location.gcc_location(), COMPOUND_EXPR,
+		      TREE_TYPE(fn), set_closure, fn);
     }
 
-  Bexpression* bfn = fn->get_backend(context);
+  tree ret = build_call_array(excess_type != NULL_TREE ? excess_type : rettype,
+			      fn, nargs, args);
+  delete[] args;
 
-  // When not calling a named function directly, use a type conversion
-  // in case the type of the function is a recursive type which refers
-  // to itself.  We don't do this for an interface method because 1)
-  // an interface method never refers to itself, so we always have a
-  // function type here; 2) we pass an extra first argument to an
-  // interface method, so fntype is not correct.
-  if (func == NULL && !is_interface_method)
+  SET_EXPR_LOCATION(ret, location.gcc_location());
+
+  // If this is a recursive function type which returns itself, as in
+  //   type F func() F
+  // we have used ptr_type_node for the return type.  Add a cast here
+  // to the correct type.
+  if (TREE_TYPE(ret) == ptr_type_node)
     {
-      Btype* bft = fntype->get_backend_fntype(gogo);
-      bfn = gogo->backend()->convert_expression(bft, bfn, location);
+      tree t = type_to_tree(this->type()->base()->get_backend(gogo));
+      ret = fold_convert_loc(location.gcc_location(), t, ret);
     }
 
-  Bexpression* call = gogo->backend()->call_expression(bfn, fn_args, location);
+  if (excess_type != NULL_TREE)
+    {
+      // Calling convert here can undo our excess precision change.
+      // That may or may not be a bug in convert_to_real.
+      ret = build1(NOP_EXPR, rettype, ret);
+    }
 
   if (this->results_ != NULL)
-    {
-      go_assert(this->call_temp_ != NULL);
-      Expression* call_ref =
-          Expression::make_temporary_reference(this->call_temp_, location);
-      Bexpression* bcall_ref = call_ref->get_backend(context);
-      Bstatement* assn_stmt =
-          gogo->backend()->assignment_statement(bcall_ref, call, location);
+    ret = this->set_results(context, ret);
 
-      this->call_ = this->set_results(context, bcall_ref);
+  this->tree_ = ret;
 
-      Bexpression* set_and_call =
-          gogo->backend()->compound_expression(assn_stmt, this->call_,
-                                               location);
-      return set_and_call;
-    }
-
-  this->call_ = call;
-  return this->call_;
+  return ret;
 }
 
 // Set the result variables if this call returns multiple results.
 
-Bexpression*
-Call_expression::set_results(Translate_context* context, Bexpression* call)
+tree
+Call_expression::set_results(Translate_context* context, tree call_tree)
 {
-  Gogo* gogo = context->gogo();
+  tree stmt_list = NULL_TREE;
 
-  Bexpression* results = NULL;
-  Location loc = this->location();
+  call_tree = save_expr(call_tree);
 
-  size_t rc = this->result_count();
-  for (size_t i = 0; i < rc; ++i)
+  if (TREE_CODE(TREE_TYPE(call_tree)) != RECORD_TYPE)
     {
+      go_assert(saw_errors());
+      return call_tree;
+    }
+
+  Location loc = this->location();
+  tree field = TYPE_FIELDS(TREE_TYPE(call_tree));
+  size_t rc = this->result_count();
+  for (size_t i = 0; i < rc; ++i, field = DECL_CHAIN(field))
+    {
+      go_assert(field != NULL_TREE);
+
       Temporary_statement* temp = this->result(i);
       if (temp == NULL)
 	{
 	  go_assert(saw_errors());
-	  return gogo->backend()->error_expression();
+	  return error_mark_node;
 	}
       Temporary_reference_expression* ref =
 	Expression::make_temporary_reference(temp, loc);
       ref->set_is_lvalue();
+      tree temp_tree = ref->get_tree(context);
+      if (temp_tree == error_mark_node)
+	return error_mark_node;
 
-      Bexpression* result_ref = ref->get_backend(context);
-      Bexpression* call_result =
-          gogo->backend()->struct_field_expression(call, i, loc);
-      Bstatement* assn_stmt =
-           gogo->backend()->assignment_statement(result_ref, call_result, loc);
+      tree val_tree = build3_loc(loc.gcc_location(), COMPONENT_REF,
+                                 TREE_TYPE(field), call_tree, field, NULL_TREE);
+      tree set_tree = build2_loc(loc.gcc_location(), MODIFY_EXPR,
+                                 void_type_node, temp_tree, val_tree);
 
-      Bexpression* result =
-          gogo->backend()->compound_expression(assn_stmt, call_result, loc);
-
-      if (results == NULL)
-        results = result;
-      else
-        {
-          Bstatement* expr_stmt = gogo->backend()->expression_statement(result);
-          results =
-              gogo->backend()->compound_expression(expr_stmt, results, loc);
-        }
+      append_to_statement_list(set_tree, &stmt_list);
     }
-  return results;
+  go_assert(field == NULL_TREE);
+
+  return save_expr(stmt_list);
 }
 
 // Dump ast representation for a call expressin.
@@ -9397,8 +10050,8 @@ class Call_result_expression : public Expression
   do_must_eval_in_order() const
   { return true; }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   void
   do_dump_expression(Ast_dump_context*) const;
@@ -9493,27 +10146,27 @@ Call_result_expression::do_determine_type(const Type_context*)
   this->call_->determine_type_no_context();
 }
 
-// Return the backend representation.  We just refer to the temporary set by the
-// call expression.  We don't do this at lowering time because it makes it
+// Return the tree.  We just refer to the temporary set by the call
+// expression.  We don't do this at lowering time because it makes it
 // hard to evaluate the call at the right time.
 
-Bexpression*
-Call_result_expression::do_get_backend(Translate_context* context)
+tree
+Call_result_expression::do_get_tree(Translate_context* context)
 {
   Call_expression* ce = this->call_->call_expression();
   if (ce == NULL)
     {
       go_assert(this->call_->is_error_expression());
-      return context->backend()->error_expression();
+      return error_mark_node;
     }
   Temporary_statement* ts = ce->result(this->index_);
   if (ts == NULL)
     {
       go_assert(saw_errors());
-      return context->backend()->error_expression();
+      return error_mark_node;
     }
   Expression* ref = Expression::make_temporary_reference(ts, this->location());
-  return ref->get_backend(context);
+  return ref->get_tree(context);
 }
 
 // Dump ast representation for a call result expression.
@@ -9569,10 +10222,7 @@ Index_expression::do_lower(Gogo*, Named_object*, Statement_inserter*, int)
 
   Type* type = left->type();
   if (type->is_error())
-    {
-      go_assert(saw_errors());
-      return Expression::make_error(location);
-    }
+    return Expression::make_error(location);
   else if (left->is_type_expression())
     {
       error_at(location, "attempt to index type expression");
@@ -9686,9 +10336,6 @@ class Array_index_expression : public Expression
   int
   do_traverse(Traverse*);
 
-  Expression*
-  do_flatten(Gogo*, Named_object*, Statement_inserter*);
-
   Type*
   do_type();
 
@@ -9697,6 +10344,9 @@ class Array_index_expression : public Expression
 
   void
   do_check_types(Gogo*);
+
+  Expression*
+  do_flatten(Gogo*, Named_object*, Statement_inserter*);
 
   Expression*
   do_copy()
@@ -9730,8 +10380,8 @@ class Array_index_expression : public Expression
   do_issue_nil_check()
   { this->array_->issue_nil_check(); }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   void
   do_dump_expression(Ast_dump_context*) const;
@@ -9939,41 +10589,19 @@ Array_index_expression::do_check_types(Gogo*)
     }
 }
 
-// Flatten array indexing by using temporary variables for slices and indexes.
+// Flatten array indexing by using a temporary variable for slices.
 
 Expression*
 Array_index_expression::do_flatten(Gogo*, Named_object*,
                                    Statement_inserter* inserter)
 {
   Location loc = this->location();
-  Temporary_statement* temp;
   if (this->array_->type()->is_slice_type() && !this->array_->is_variable())
     {
-      temp = Statement::make_temporary(NULL, this->array_, loc);
+      Temporary_statement* temp = Statement::make_temporary(NULL, this->array_, loc);
       inserter->insert(temp);
       this->array_ = Expression::make_temporary_reference(temp, loc);
     }
-  if (!this->start_->is_variable())
-    {
-      temp = Statement::make_temporary(NULL, this->start_, loc);
-      inserter->insert(temp);
-      this->start_ = Expression::make_temporary_reference(temp, loc);
-    }
-  if (this->end_ != NULL
-      && !this->end_->is_nil_expression()
-      && !this->end_->is_variable())
-    {
-      temp = Statement::make_temporary(NULL, this->end_, loc);
-      inserter->insert(temp);
-      this->end_ = Expression::make_temporary_reference(temp, loc);
-    }
-  if (this->cap_ != NULL && !this->cap_->is_variable())
-    {
-      temp = Statement::make_temporary(NULL, this->cap_, loc);
-      inserter->insert(temp);
-      this->cap_ = Expression::make_temporary_reference(temp, loc);
-    }
-
   return this;
 }
 
@@ -9995,54 +10623,82 @@ Array_index_expression::do_is_addressable() const
   return this->array_->is_addressable();
 }
 
-// Get the backend representation for an array index.
+// Get a tree for an array index.
 
-Bexpression*
-Array_index_expression::do_get_backend(Translate_context* context)
+tree
+Array_index_expression::do_get_tree(Translate_context* context)
 {
+  Gogo* gogo = context->gogo();
+  Location loc = this->location();
+
   Array_type* array_type = this->array_->type()->array_type();
   if (array_type == NULL)
     {
       go_assert(this->array_->type()->is_error());
-      return context->backend()->error_expression();
+      return error_mark_node;
     }
   go_assert(!array_type->is_slice_type() || this->array_->is_variable());
 
-  Location loc = this->location();
-  Gogo* gogo = context->gogo();
+  tree type_tree = type_to_tree(array_type->get_backend(gogo));
+  if (type_tree == error_mark_node)
+    return error_mark_node;
 
-  Type* int_type = Type::lookup_integer_type("int");
-  Btype* int_btype = int_type->get_backend(gogo);
-
-  // We need to convert the length and capacity to the Go "int" type here
-  // because the length of a fixed-length array could be of type "uintptr"
-  // and gimple disallows binary operations between "uintptr" and other
-  // integer types. FIXME.
-  Bexpression* length = NULL;
+  tree length_tree = NULL_TREE;
   if (this->end_ == NULL || this->end_->is_nil_expression())
     {
       Expression* len = array_type->get_length(gogo, this->array_);
-      length = len->get_backend(context);
-      length = gogo->backend()->convert_expression(int_btype, length, loc);
+      length_tree = len->get_tree(context);
+      if (length_tree == error_mark_node)
+	return error_mark_node;
+      length_tree = save_expr(length_tree);
     }
 
-  Bexpression* capacity = NULL;
+  tree capacity_tree = NULL_TREE;
   if (this->end_ != NULL)
     {
       Expression* cap = array_type->get_capacity(gogo, this->array_);
-      capacity = cap->get_backend(context);
-      capacity = gogo->backend()->convert_expression(int_btype, capacity, loc);
+      capacity_tree = cap->get_tree(context);
+      if (capacity_tree == error_mark_node)
+	return error_mark_node;
+      capacity_tree = save_expr(capacity_tree);
     }
 
-  Bexpression* cap_arg = capacity;
+  tree cap_arg = capacity_tree;
   if (this->cap_ != NULL)
     {
-      cap_arg = this->cap_->get_backend(context);
-      cap_arg = gogo->backend()->convert_expression(int_btype, cap_arg, loc);
+      cap_arg = this->cap_->get_tree(context);
+      if (cap_arg == error_mark_node)
+        return error_mark_node;
     }
 
-  if (length == NULL)
-    length = cap_arg;
+  tree length_type = (length_tree != NULL_TREE
+		      ? TREE_TYPE(length_tree)
+		      : TREE_TYPE(cap_arg));
+
+  tree bad_index = boolean_false_node;
+
+  tree start_tree = this->start_->get_tree(context);
+  if (start_tree == error_mark_node)
+    return error_mark_node;
+  if (!DECL_P(start_tree))
+    start_tree = save_expr(start_tree);
+  if (!INTEGRAL_TYPE_P(TREE_TYPE(start_tree)))
+    start_tree = convert_to_integer(length_type, start_tree);
+
+  bad_index = Expression::check_bounds(start_tree, length_type, bad_index,
+				       loc);
+
+  start_tree = fold_convert_loc(loc.gcc_location(), length_type, start_tree);
+  bad_index = fold_build2_loc(loc.gcc_location(), TRUTH_OR_EXPR,
+                              boolean_type_node, bad_index,
+			      fold_build2_loc(loc.gcc_location(),
+					      (this->end_ == NULL
+					       ? GE_EXPR
+					       : GT_EXPR),
+					      boolean_type_node, start_tree,
+					      (this->end_ == NULL
+					       ? length_tree
+					       : capacity_tree)));
 
   int code = (array_type->length() != NULL
 	      ? (this->end_ == NULL
@@ -10051,128 +10707,168 @@ Array_index_expression::do_get_backend(Translate_context* context)
 	      : (this->end_ == NULL
 		 ? RUNTIME_ERROR_SLICE_INDEX_OUT_OF_BOUNDS
 		 : RUNTIME_ERROR_SLICE_SLICE_OUT_OF_BOUNDS));
-  Bexpression* crash = gogo->runtime_error(code, loc)->get_backend(context);
-
-  if (this->start_->type()->integer_type() == NULL
-      && !Type::are_convertible(int_type, this->start_->type(), NULL))
-    {
-      go_assert(saw_errors());
-      return context->backend()->error_expression();
-    }
-
-  Bexpression* bad_index =
-    Expression::check_bounds(this->start_, loc)->get_backend(context);
-
-  Bexpression* start = this->start_->get_backend(context);
-  start = gogo->backend()->convert_expression(int_btype, start, loc);
-  Bexpression* start_too_large =
-    gogo->backend()->binary_expression((this->end_ == NULL
-					? OPERATOR_GE
-					: OPERATOR_GT),
-                                       start,
-				       (this->end_ == NULL
-					? length
-					: capacity),
-                                       loc);
-  bad_index = gogo->backend()->binary_expression(OPERATOR_OROR, start_too_large,
-						 bad_index, loc);
+  tree crash = gogo->runtime_error(code, loc)->get_tree(context);
 
   if (this->end_ == NULL)
     {
       // Simple array indexing.  This has to return an l-value, so
-      // wrap the index check into START.
-      start =
-	gogo->backend()->conditional_expression(int_btype, bad_index,
-						crash, start, loc);
+      // wrap the index check into START_TREE.
+      start_tree = build2(COMPOUND_EXPR, TREE_TYPE(start_tree),
+			  build3(COND_EXPR, void_type_node,
+				 bad_index, crash, NULL_TREE),
+			  start_tree);
+      start_tree = fold_convert_loc(loc.gcc_location(), sizetype, start_tree);
 
-      Bexpression* ret;
       if (array_type->length() != NULL)
 	{
-	  Bexpression* array = this->array_->get_backend(context);
-	  ret = gogo->backend()->array_index_expression(array, start, loc);
+	  // Fixed array.
+	  tree array_tree = this->array_->get_tree(context);
+	  if (array_tree == error_mark_node)
+	    return error_mark_node;
+	  return build4(ARRAY_REF, TREE_TYPE(type_tree), array_tree,
+			start_tree, NULL_TREE, NULL_TREE);
 	}
       else
 	{
-	  // Slice.
-	  Expression* valptr =
+	  // Open array.
+          Expression* valptr =
               array_type->get_value_pointer(gogo, this->array_);
-	  Bexpression* ptr = valptr->get_backend(context);
-          ptr = gogo->backend()->pointer_offset_expression(ptr, start, loc);
-
-	  Type* ele_type = this->array_->type()->array_type()->element_type();
-	  Btype* ele_btype = ele_type->get_backend(gogo);
-	  ret = gogo->backend()->indirect_expression(ele_btype, ptr, true, loc);
+	  tree values = valptr->get_tree(context);
+	  Type* element_type = array_type->element_type();
+	  Btype* belement_type = element_type->get_backend(gogo);
+	  tree element_type_tree = type_to_tree(belement_type);
+	  if (element_type_tree == error_mark_node)
+	    return error_mark_node;
+	  tree element_size = TYPE_SIZE_UNIT(element_type_tree);
+	  tree offset = fold_build2_loc(loc.gcc_location(), MULT_EXPR, sizetype,
+					start_tree, element_size);
+	  tree ptr = fold_build2_loc(loc.gcc_location(), POINTER_PLUS_EXPR,
+				     TREE_TYPE(values), values, offset);
+	  return build_fold_indirect_ref(ptr);
 	}
-      return ret;
     }
 
   // Array slice.
 
   if (this->cap_ != NULL)
     {
-      Bexpression* bounds_bcheck =
-	Expression::check_bounds(this->cap_, loc)->get_backend(context);
-      bad_index =
-	gogo->backend()->binary_expression(OPERATOR_OROR, bounds_bcheck,
-					   bad_index, loc);
-      cap_arg = gogo->backend()->convert_expression(int_btype, cap_arg, loc);
+      if (!DECL_P(cap_arg))
+        cap_arg = save_expr(cap_arg);
+      if (!INTEGRAL_TYPE_P(TREE_TYPE(cap_arg)))
+        cap_arg = convert_to_integer(length_type, cap_arg);
 
-      Bexpression* cap_too_small =
-	gogo->backend()->binary_expression(OPERATOR_LT, cap_arg, start, loc);
-      Bexpression* cap_too_large =
-	gogo->backend()->binary_expression(OPERATOR_GT, cap_arg, capacity, loc);
-      Bexpression* bad_cap =
-	gogo->backend()->binary_expression(OPERATOR_OROR, cap_too_small,
-					   cap_too_large, loc);
-      bad_index = gogo->backend()->binary_expression(OPERATOR_OROR, bad_cap,
-						     bad_index, loc);
+      bad_index = Expression::check_bounds(cap_arg, length_type, bad_index,
+                                           loc);
+      cap_arg = fold_convert_loc(loc.gcc_location(), length_type, cap_arg);
+
+      tree bad_cap = fold_build2_loc(loc.gcc_location(), TRUTH_OR_EXPR,
+                                     boolean_type_node,
+                                     fold_build2_loc(loc.gcc_location(),
+                                                     LT_EXPR, boolean_type_node,
+                                                     cap_arg, start_tree),
+                                     fold_build2_loc(loc.gcc_location(),
+                                                     GT_EXPR, boolean_type_node,
+                                                     cap_arg, capacity_tree));
+      bad_index = fold_build2_loc(loc.gcc_location(), TRUTH_OR_EXPR,
+                                  boolean_type_node, bad_index, bad_cap);
     }
 
-  Bexpression* end;
+  tree end_tree;
   if (this->end_->is_nil_expression())
-    end = length;
+    end_tree = length_tree;
   else
     {
-      Bexpression* bounds_bcheck =
-	Expression::check_bounds(this->end_, loc)->get_backend(context);
+      end_tree = this->end_->get_tree(context);
+      if (end_tree == error_mark_node)
+	return error_mark_node;
+      if (!DECL_P(end_tree))
+	end_tree = save_expr(end_tree);
+      if (!INTEGRAL_TYPE_P(TREE_TYPE(end_tree)))
+	end_tree = convert_to_integer(length_type, end_tree);
 
-      bad_index =
-	gogo->backend()->binary_expression(OPERATOR_OROR, bounds_bcheck,
-					   bad_index, loc);
+      bad_index = Expression::check_bounds(end_tree, length_type, bad_index,
+					   loc);
 
-      end = this->end_->get_backend(context);
-      end = gogo->backend()->convert_expression(int_btype, end, loc);
-      Bexpression* end_too_small =
-	gogo->backend()->binary_expression(OPERATOR_LT, end, start, loc);
-      Bexpression* end_too_large =
-	gogo->backend()->binary_expression(OPERATOR_GT, end, cap_arg, loc);
-      Bexpression* bad_end =
-	gogo->backend()->binary_expression(OPERATOR_OROR, end_too_small,
-					   end_too_large, loc);
-      bad_index = gogo->backend()->binary_expression(OPERATOR_OROR, bad_end,
-						     bad_index, loc);
+      end_tree = fold_convert_loc(loc.gcc_location(), length_type, end_tree);
+
+      tree bad_end = fold_build2_loc(loc.gcc_location(), TRUTH_OR_EXPR,
+                                     boolean_type_node,
+				     fold_build2_loc(loc.gcc_location(),
+                                                     LT_EXPR, boolean_type_node,
+						     end_tree, start_tree),
+				     fold_build2_loc(loc.gcc_location(),
+                                                     GT_EXPR, boolean_type_node,
+						     end_tree, cap_arg));
+      bad_index = fold_build2_loc(loc.gcc_location(), TRUTH_OR_EXPR,
+                                  boolean_type_node, bad_index, bad_end);
     }
 
+
+  Type* element_type = array_type->element_type();
+  tree element_type_tree = type_to_tree(element_type->get_backend(gogo));
+  if (element_type_tree == error_mark_node)
+    return error_mark_node;
+  tree element_size = TYPE_SIZE_UNIT(element_type_tree);
+
+  tree offset = fold_build2_loc(loc.gcc_location(), MULT_EXPR, sizetype,
+				fold_convert_loc(loc.gcc_location(), sizetype,
+                                                 start_tree),
+				element_size);
+
   Expression* valptr = array_type->get_value_pointer(gogo, this->array_);
-  Bexpression* val = valptr->get_backend(context);
-  val = gogo->backend()->pointer_offset_expression(val, start, loc);
+  tree value_pointer = valptr->get_tree(context);
+  if (value_pointer == error_mark_node)
+    return error_mark_node;
 
-  Bexpression* result_length =
-    gogo->backend()->binary_expression(OPERATOR_MINUS, end, start, loc);
+  value_pointer = fold_build2_loc(loc.gcc_location(), POINTER_PLUS_EXPR,
+				  TREE_TYPE(value_pointer),
+				  value_pointer, offset);
 
-  Bexpression* result_capacity =
-    gogo->backend()->binary_expression(OPERATOR_MINUS, cap_arg, start, loc);
+  tree result_length_tree = fold_build2_loc(loc.gcc_location(), MINUS_EXPR,
+                                            length_type, end_tree, start_tree);
 
-  Btype* struct_btype = this->type()->get_backend(gogo);
-  std::vector<Bexpression*> init;
-  init.push_back(val);
-  init.push_back(result_length);
-  init.push_back(result_capacity);
+  tree result_capacity_tree = fold_build2_loc(loc.gcc_location(), MINUS_EXPR,
+                                              length_type, cap_arg, start_tree);
 
-  Bexpression* ctor =
-    gogo->backend()->constructor_expression(struct_btype, init, loc);
-  return gogo->backend()->conditional_expression(struct_btype, bad_index,
-						 crash, ctor, loc);
+  tree struct_tree = type_to_tree(this->type()->get_backend(gogo));
+  go_assert(TREE_CODE(struct_tree) == RECORD_TYPE);
+
+  vec<constructor_elt, va_gc> *init;
+  vec_alloc (init, 3);
+
+  constructor_elt empty = {NULL, NULL};
+  constructor_elt* elt = init->quick_push(empty);
+  tree field = TYPE_FIELDS(struct_tree);
+  go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__values") == 0);
+  elt->index = field;
+  elt->value = value_pointer;
+
+  elt = init->quick_push(empty);
+  field = DECL_CHAIN(field);
+  go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__count") == 0);
+  elt->index = field;
+  elt->value = fold_convert_loc(loc.gcc_location(), TREE_TYPE(field),
+                                result_length_tree);
+
+  elt = init->quick_push(empty);
+  field = DECL_CHAIN(field);
+  go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__capacity") == 0);
+  elt->index = field;
+  elt->value = fold_convert_loc(loc.gcc_location(), TREE_TYPE(field),
+                                result_capacity_tree);
+
+  tree constructor = build_constructor(struct_tree, init);
+
+  if (TREE_CONSTANT(value_pointer)
+      && TREE_CONSTANT(result_length_tree)
+      && TREE_CONSTANT(result_capacity_tree))
+    TREE_CONSTANT(constructor) = 1;
+
+  return fold_build2_loc(loc.gcc_location(), COMPOUND_EXPR,
+                         TREE_TYPE(constructor),
+			 build3(COND_EXPR, void_type_node,
+				bad_index, crash, NULL_TREE),
+			 constructor);
 }
 
 // Dump ast representation for an array index expression.
@@ -10210,9 +10906,6 @@ class String_index_expression : public Expression
   int
   do_traverse(Traverse*);
 
-  Expression*
-  do_flatten(Gogo*, Named_object*, Statement_inserter*);
-
   Type*
   do_type();
 
@@ -10240,8 +10933,8 @@ class String_index_expression : public Expression
     return true;
   }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   void
   do_dump_expression(Ast_dump_context*) const;
@@ -10271,36 +10964,6 @@ String_index_expression::do_traverse(Traverse* traverse)
 	return TRAVERSE_EXIT;
     }
   return TRAVERSE_CONTINUE;
-}
-
-Expression*
-String_index_expression::do_flatten(Gogo*, Named_object*,
-                                    Statement_inserter* inserter)
-{
-  Temporary_statement* temp;
-  Location loc = this->location();
-  if (!this->string_->is_variable())
-    {
-      temp = Statement::make_temporary(NULL, this->string_, loc);
-      inserter->insert(temp);
-      this->string_ = Expression::make_temporary_reference(temp, loc);
-    }
-  if (!this->start_->is_variable())
-    {
-      temp = Statement::make_temporary(NULL, this->start_, loc);
-      inserter->insert(temp);
-      this->start_ = Expression::make_temporary_reference(temp, loc);
-    }
-  if (this->end_ != NULL
-      && !this->end_->is_nil_expression()
-      && !this->end_->is_variable())
-    {
-      temp = Statement::make_temporary(NULL, this->end_, loc);
-      inserter->insert(temp);
-      this->end_ = Expression::make_temporary_reference(temp, loc);
-    }
-
-  return this;
 }
 
 // Return the type of a string index.
@@ -10383,85 +11046,118 @@ String_index_expression::do_check_types(Gogo*)
     mpz_clear(ival);
 }
 
-// Get the backend representation for a string index.
+// Get a tree for a string index.
 
-Bexpression*
-String_index_expression::do_get_backend(Translate_context* context)
+tree
+String_index_expression::do_get_tree(Translate_context* context)
 {
   Location loc = this->location();
-  Expression* string_arg = this->string_;
-  if (this->string_->type()->points_to() != NULL)
-    string_arg = Expression::make_unary(OPERATOR_MULT, this->string_, loc);
 
-  Expression* bad_index = Expression::check_bounds(this->start_, loc);
+  tree string_tree = this->string_->get_tree(context);
+  if (string_tree == error_mark_node)
+    return error_mark_node;
+
+  if (this->string_->type()->points_to() != NULL)
+    string_tree = build_fold_indirect_ref(string_tree);
+  if (!DECL_P(string_tree))
+    string_tree = save_expr(string_tree);
+  tree string_type = TREE_TYPE(string_tree);
+
+  tree length_tree = String_type::length_tree(context->gogo(), string_tree);
+  length_tree = save_expr(length_tree);
+
+  Type* int_type = Type::lookup_integer_type("int");
+  tree length_type = type_to_tree(int_type->get_backend(context->gogo()));
+
+  tree bad_index = boolean_false_node;
+
+  tree start_tree = this->start_->get_tree(context);
+  if (start_tree == error_mark_node)
+    return error_mark_node;
+  if (!DECL_P(start_tree))
+    start_tree = save_expr(start_tree);
+  if (!INTEGRAL_TYPE_P(TREE_TYPE(start_tree)))
+    start_tree = convert_to_integer(length_type, start_tree);
+
+  bad_index = Expression::check_bounds(start_tree, length_type, bad_index,
+				       loc);
+
+  start_tree = fold_convert_loc(loc.gcc_location(), length_type, start_tree);
 
   int code = (this->end_ == NULL
 	      ? RUNTIME_ERROR_STRING_INDEX_OUT_OF_BOUNDS
 	      : RUNTIME_ERROR_STRING_SLICE_OUT_OF_BOUNDS);
-
-  Gogo* gogo = context->gogo();
-  Bexpression* crash = gogo->runtime_error(code, loc)->get_backend(context);
-
-  Type* int_type = Type::lookup_integer_type("int");
-
-  // It is possible that an error occurred earlier because the start index
-  // cannot be represented as an integer type.  In this case, we shouldn't
-  // try casting the starting index into an integer since
-  // Type_conversion_expression will fail to get the backend representation.
-  // FIXME.
-  if (this->start_->type()->integer_type() == NULL
-      && !Type::are_convertible(int_type, this->start_->type(), NULL))
-    {
-      go_assert(saw_errors());
-      return context->backend()->error_expression();
-    }
-
-  Expression* start = Expression::make_cast(int_type, this->start_, loc);
+  tree crash = context->gogo()->runtime_error(code, loc)->get_tree(context);
 
   if (this->end_ == NULL)
     {
-      Expression* length =
-          Expression::make_string_info(this->string_, STRING_INFO_LENGTH, loc);
+      bad_index = fold_build2_loc(loc.gcc_location(), TRUTH_OR_EXPR,
+                                  boolean_type_node, bad_index,
+				  fold_build2_loc(loc.gcc_location(), GE_EXPR,
+						  boolean_type_node,
+						  start_tree, length_tree));
 
-      Expression* start_too_large =
-          Expression::make_binary(OPERATOR_GE, start, length, loc);
-      bad_index = Expression::make_binary(OPERATOR_OROR, start_too_large,
-                                          bad_index, loc);
-      Expression* bytes =
-	Expression::make_string_info(this->string_, STRING_INFO_DATA, loc);
+      tree bytes_tree = String_type::bytes_tree(context->gogo(), string_tree);
+      tree ptr = fold_build2_loc(loc.gcc_location(), POINTER_PLUS_EXPR,
+                                 TREE_TYPE(bytes_tree),
+				 bytes_tree,
+				 fold_convert_loc(loc.gcc_location(), sizetype,
+                                                  start_tree));
+      tree index = build_fold_indirect_ref_loc(loc.gcc_location(), ptr);
 
-      Bexpression* bstart = start->get_backend(context);
-      Bexpression* ptr = bytes->get_backend(context);
-      ptr = gogo->backend()->pointer_offset_expression(ptr, bstart, loc);
-      Btype* ubtype = Type::lookup_integer_type("uint8")->get_backend(gogo);
-      Bexpression* index = 
-	gogo->backend()->indirect_expression(ubtype, ptr, true, loc);
-
-      Btype* byte_btype = bytes->type()->points_to()->get_backend(gogo);
-      Bexpression* index_error = bad_index->get_backend(context);
-      return gogo->backend()->conditional_expression(byte_btype, index_error,
-						     crash, index, loc);
+      return build2(COMPOUND_EXPR, TREE_TYPE(index),
+		    build3(COND_EXPR, void_type_node,
+			   bad_index, crash, NULL_TREE),
+		    index);
     }
-
-  Expression* end = NULL;
-  if (this->end_->is_nil_expression())
-    end = Expression::make_integer_sl(-1, int_type, loc);
   else
     {
-      Expression* bounds_check = Expression::check_bounds(this->end_, loc);
-      bad_index =
-          Expression::make_binary(OPERATOR_OROR, bounds_check, bad_index, loc);
-      end = Expression::make_cast(int_type, this->end_, loc);
+      tree end_tree;
+      if (this->end_->is_nil_expression())
+	end_tree = build_int_cst(length_type, -1);
+      else
+	{
+	  end_tree = this->end_->get_tree(context);
+	  if (end_tree == error_mark_node)
+	    return error_mark_node;
+	  if (!DECL_P(end_tree))
+	    end_tree = save_expr(end_tree);
+	  if (!INTEGRAL_TYPE_P(TREE_TYPE(end_tree)))
+	    end_tree = convert_to_integer(length_type, end_tree);
+
+	  bad_index = Expression::check_bounds(end_tree, length_type,
+					       bad_index, loc);
+
+	  end_tree = fold_convert_loc(loc.gcc_location(), length_type,
+                                      end_tree);
+	}
+
+      static tree strslice_fndecl;
+      tree ret = Gogo::call_builtin(&strslice_fndecl,
+				    loc,
+				    "__go_string_slice",
+				    3,
+				    string_type,
+				    string_type,
+				    string_tree,
+				    length_type,
+				    start_tree,
+				    length_type,
+				    end_tree);
+      if (ret == error_mark_node)
+	return error_mark_node;
+      // This will panic if the bounds are out of range for the
+      // string.
+      TREE_NOTHROW(strslice_fndecl) = 0;
+
+      if (bad_index == boolean_false_node)
+	return ret;
+      else
+	return build2(COMPOUND_EXPR, TREE_TYPE(ret),
+		      build3(COND_EXPR, void_type_node,
+			     bad_index, crash, NULL_TREE),
+		      ret);
     }
-
-  Expression* strslice = Runtime::make_call(Runtime::STRING_SLICE, loc, 3,
-                                            string_arg, start, end);
-  Bexpression* bstrslice = strslice->get_backend(context);
-
-  Btype* str_btype = strslice->type()->get_backend(gogo);
-  Bexpression* index_error = bad_index->get_backend(context);
-  return gogo->backend()->conditional_expression(str_btype, index_error,
-						 crash, bstrslice, loc);
 }
 
 // Dump ast representation for a string index expression.
@@ -10504,44 +11200,6 @@ Map_index_expression::do_traverse(Traverse* traverse)
   if (Expression::traverse(&this->map_, traverse) == TRAVERSE_EXIT)
     return TRAVERSE_EXIT;
   return Expression::traverse(&this->index_, traverse);
-}
-
-// We need to pass in a pointer to the key, so flatten the index into a
-// temporary variable if it isn't already.  The value pointer will be
-// dereferenced and checked for nil, so flatten into a temporary to avoid
-// recomputation.
-
-Expression*
-Map_index_expression::do_flatten(Gogo*, Named_object*,
-				 Statement_inserter* inserter)
-{
-  Map_type* mt = this->get_map_type();
-  if (this->index_->type() != mt->key_type())
-    this->index_ = Expression::make_cast(mt->key_type(), this->index_,
-                                         this->location());
-
-  if (!this->index_->is_variable())
-    {
-      Temporary_statement* temp = Statement::make_temporary(NULL, this->index_,
-                                                            this->location());
-      inserter->insert(temp);
-      this->index_ = Expression::make_temporary_reference(temp,
-                                                          this->location());
-    }
-
-  if (this->value_pointer_ == NULL)
-    this->get_value_pointer(this->is_lvalue_);
-  if (!this->value_pointer_->is_variable())
-    {
-      Temporary_statement* temp =
-          Statement::make_temporary(NULL, this->value_pointer_,
-                                    this->location());
-      inserter->insert(temp);
-      this->value_pointer_ =
-          Expression::make_temporary_reference(temp, this->location());
-    }
-
-  return this;
 }
 
 // Return the type of a map index.
@@ -10596,90 +11254,138 @@ Map_index_expression::do_check_types(Gogo*)
     }
 }
 
-// Get the backend representation for a map index.
+// Get a tree for a map index.
 
-Bexpression*
-Map_index_expression::do_get_backend(Translate_context* context)
+tree
+Map_index_expression::do_get_tree(Translate_context* context)
 {
   Map_type* type = this->get_map_type();
   if (type == NULL)
-    {
-      go_assert(saw_errors());
-      return context->backend()->error_expression();
-    }
+    return error_mark_node;
 
-  go_assert(this->value_pointer_ != NULL
-            && this->value_pointer_->is_variable());
+  tree valptr = this->get_value_pointer(context, this->is_lvalue_);
+  if (valptr == error_mark_node)
+    return error_mark_node;
+  valptr = save_expr(valptr);
 
-  Bexpression* ret;
+  tree val_type_tree = TREE_TYPE(TREE_TYPE(valptr));
+
   if (this->is_lvalue_)
-    {
-      Expression* val =
-          Expression::make_unary(OPERATOR_MULT, this->value_pointer_,
-                                 this->location());
-      ret = val->get_backend(context);
-    }
+    return build_fold_indirect_ref(valptr);
   else if (this->is_in_tuple_assignment_)
     {
       // Tuple_map_assignment_statement is responsible for using this
       // appropriately.
-      ret = this->value_pointer_->get_backend(context);
+      return valptr;
     }
   else
     {
-      Location loc = this->location();
-
-      Expression* nil_check =
-          Expression::make_binary(OPERATOR_EQEQ, this->value_pointer_,
-                                  Expression::make_nil(loc), loc);
-      Bexpression* bnil_check = nil_check->get_backend(context);
-      Expression* val =
-          Expression::make_unary(OPERATOR_MULT, this->value_pointer_, loc);
-      Bexpression* bval = val->get_backend(context);
-
       Gogo* gogo = context->gogo();
       Btype* val_btype = type->val_type()->get_backend(gogo);
       Bexpression* val_zero = gogo->backend()->zero_expression(val_btype);
-      ret = gogo->backend()->conditional_expression(val_btype, bnil_check,
-                                                    val_zero, bval, loc);
+      return fold_build3(COND_EXPR, val_type_tree,
+			 fold_build2(EQ_EXPR, boolean_type_node, valptr,
+				     fold_convert(TREE_TYPE(valptr),
+						  null_pointer_node)),
+			 expr_to_tree(val_zero),
+			 build_fold_indirect_ref(valptr));
     }
-  return ret;
 }
 
-// Get an expression for the map index.  This returns an expression which
-// evaluates to a pointer to a value.  The pointer will be NULL if the key is
+// Get a tree for the map index.  This returns a tree which evaluates
+// to a pointer to a value.  The pointer will be NULL if the key is
 // not in the map.
 
-Expression*
-Map_index_expression::get_value_pointer(bool insert)
+tree
+Map_index_expression::get_value_pointer(Translate_context* context,
+					bool insert)
 {
-  if (this->value_pointer_ == NULL)
+  Map_type* type = this->get_map_type();
+  if (type == NULL)
+    return error_mark_node;
+
+  tree map_tree = this->map_->get_tree(context);
+  tree index_tree = this->index_->get_tree(context);
+  index_tree = Expression::convert_for_assignment(context, type->key_type(),
+						  this->index_->type(),
+						  index_tree,
+						  this->location());
+  if (map_tree == error_mark_node || index_tree == error_mark_node)
+    return error_mark_node;
+
+  if (this->map_->type()->points_to() != NULL)
+    map_tree = build_fold_indirect_ref(map_tree);
+
+  // We need to pass in a pointer to the key, so stuff it into a
+  // variable.
+  tree tmp;
+  tree make_tmp;
+  if (current_function_decl != NULL)
     {
-      Map_type* type = this->get_map_type();
-      if (type == NULL)
-	{
-	  go_assert(saw_errors());
-	  return Expression::make_error(this->location());
-	}
-
-      Location loc = this->location();
-      Expression* map_ref = this->map_;
-      if (this->map_->type()->points_to() != NULL)
-        map_ref = Expression::make_unary(OPERATOR_MULT, map_ref, loc);
-
-      Expression* index_ptr = Expression::make_unary(OPERATOR_AND, this->index_,
-                                                     loc);
-      Expression* map_index =
-          Runtime::make_call(Runtime::MAP_INDEX, loc, 3,
-                             map_ref, index_ptr,
-                             Expression::make_boolean(insert, loc));
-
-      Type* val_type = type->val_type();
-      this->value_pointer_ =
-          Expression::make_unsafe_cast(Type::make_pointer_type(val_type),
-                                       map_index, this->location());
+      tmp = create_tmp_var(TREE_TYPE(index_tree), get_name(index_tree));
+      DECL_IGNORED_P(tmp) = 0;
+      DECL_INITIAL(tmp) = index_tree;
+      make_tmp = build1(DECL_EXPR, void_type_node, tmp);
+      TREE_ADDRESSABLE(tmp) = 1;
     }
-  return this->value_pointer_;
+  else
+    {
+      tmp = build_decl(this->location().gcc_location(), VAR_DECL,
+                       create_tmp_var_name("M"),
+		       TREE_TYPE(index_tree));
+      DECL_EXTERNAL(tmp) = 0;
+      TREE_PUBLIC(tmp) = 0;
+      TREE_STATIC(tmp) = 1;
+      DECL_ARTIFICIAL(tmp) = 1;
+      if (!TREE_CONSTANT(index_tree))
+	make_tmp = fold_build2_loc(this->location().gcc_location(),
+                                   INIT_EXPR, void_type_node,
+				   tmp, index_tree);
+      else
+	{
+	  TREE_READONLY(tmp) = 1;
+	  TREE_CONSTANT(tmp) = 1;
+	  DECL_INITIAL(tmp) = index_tree;
+	  make_tmp = NULL_TREE;
+	}
+      rest_of_decl_compilation(tmp, 1, 0);
+    }
+  tree tmpref =
+    fold_convert_loc(this->location().gcc_location(), const_ptr_type_node,
+                     build_fold_addr_expr_loc(this->location().gcc_location(),
+                                              tmp));
+
+  static tree map_index_fndecl;
+  tree call = Gogo::call_builtin(&map_index_fndecl,
+				 this->location(),
+				 "__go_map_index",
+				 3,
+				 const_ptr_type_node,
+				 TREE_TYPE(map_tree),
+				 map_tree,
+				 const_ptr_type_node,
+				 tmpref,
+				 boolean_type_node,
+				 (insert
+				  ? boolean_true_node
+				  : boolean_false_node));
+  if (call == error_mark_node)
+    return error_mark_node;
+  // This can panic on a map of interface type if the interface holds
+  // an uncomparable or unhashable type.
+  TREE_NOTHROW(map_index_fndecl) = 0;
+
+  Type* val_type = type->val_type();
+  tree val_type_tree = type_to_tree(val_type->get_backend(context->gogo()));
+  if (val_type_tree == error_mark_node)
+    return error_mark_node;
+  tree ptr_val_type_tree = build_pointer_type(val_type_tree);
+
+  tree ret = fold_convert_loc(this->location().gcc_location(),
+                              ptr_val_type_tree, call);
+  if (make_tmp != NULL_TREE)
+    ret = build2(COMPOUND_EXPR, ptr_val_type_tree, make_tmp, ret);
+  return ret;
 }
 
 // Dump ast representation for a map index expression
@@ -10754,7 +11460,10 @@ Field_reference_expression::do_lower(Gogo* gogo, Named_object* function,
   // string, it won't garbage collect the bytes.  So we use a
   // [...]byte.
 
-  Expression* length_expr = Expression::make_integer_ul(s.length(), NULL, loc);
+  mpz_t val;
+  mpz_init_set_ui(val, s.length());
+  Expression* length_expr = Expression::make_integer(&val, NULL, loc);
+  mpz_clear(val);
 
   Type* byte_type = gogo->lookup_global("byte")->type_value();
   Type* array_type = Type::make_array_type(byte_type, length_expr);
@@ -10762,8 +11471,10 @@ Field_reference_expression::do_lower(Gogo* gogo, Named_object* function,
   Expression_list* bytes = new Expression_list();
   for (std::string::const_iterator p = s.begin(); p != s.end(); p++)
     {
-      unsigned char c = static_cast<unsigned char>(*p);
-      bytes->push_back(Expression::make_integer_ul(c, NULL, loc));
+      mpz_init_set_ui(val, *p);
+      Expression* byte = Expression::make_integer(&val, NULL, loc);
+      mpz_clear(val);
+      bytes->push_back(byte);
     }
 
   Expression* e = Expression::make_composite_literal(array_type, 0, false,
@@ -10821,15 +11532,17 @@ Field_reference_expression::do_check_types(Gogo*)
   go_assert(struct_type->field(this->field_index_) != NULL);
 }
 
-// Get the backend representation for a field reference.
+// Get a tree for a field reference.
 
-Bexpression*
-Field_reference_expression::do_get_backend(Translate_context* context)
+tree
+Field_reference_expression::do_get_tree(Translate_context* context)
 {
-  Bexpression* bstruct = this->expr_->get_backend(context);
-  return context->gogo()->backend()->struct_field_expression(bstruct,
-							     this->field_index_,
-							     this->location());
+  Bexpression* bstruct = tree_to_expr(this->expr_->get_tree(context));
+  Bexpression* ret =
+      context->gogo()->backend()->struct_field_expression(bstruct,
+                                                          this->field_index_,
+                                                          this->location());
+  return expr_to_tree(ret);
 }
 
 // Dump ast representation for a field reference expression.
@@ -11089,16 +11802,16 @@ Interface_field_reference_expression::create_thunk(Gogo* gogo,
   return new_no;
 }
 
-// Get the backend representation for a method value.
+// Get a tree for a method value.
 
-Bexpression*
-Interface_field_reference_expression::do_get_backend(Translate_context* context)
+tree
+Interface_field_reference_expression::do_get_tree(Translate_context* context)
 {
   Interface_type* type = this->expr_->type()->interface_type();
   if (type == NULL)
     {
       go_assert(saw_errors());
-      return context->backend()->error_expression();
+      return error_mark_node;
     }
 
   Named_object* thunk =
@@ -11107,7 +11820,7 @@ Interface_field_reference_expression::do_get_backend(Translate_context* context)
   if (thunk->is_erroneous())
     {
       go_assert(saw_errors());
-      return context->backend()->error_expression();
+      return error_mark_node;
     }
 
   // FIXME: We should lower this earlier, but we can't it lower it in
@@ -11131,22 +11844,24 @@ Interface_field_reference_expression::do_get_backend(Translate_context* context)
   vals->push_back(this->expr_);
 
   Expression* expr = Expression::make_struct_composite_literal(st, vals, loc);
-  Bexpression* bclosure =
-    Expression::make_heap_expression(expr, loc)->get_backend(context);
+  expr = Expression::make_heap_composite(expr, loc);
 
+  Bexpression* bclosure = tree_to_expr(expr->get_tree(context));
   Expression* nil_check =
       Expression::make_binary(OPERATOR_EQEQ, this->expr_,
                               Expression::make_nil(loc), loc);
-  Bexpression* bnil_check = nil_check->get_backend(context);
+  Bexpression* bnil_check = tree_to_expr(nil_check->get_tree(context));
 
   Gogo* gogo = context->gogo();
-  Bexpression* bcrash = gogo->runtime_error(RUNTIME_ERROR_NIL_DEREFERENCE,
-					    loc)->get_backend(context);
+  Expression* crash = gogo->runtime_error(RUNTIME_ERROR_NIL_DEREFERENCE, loc);
+  Bexpression* bcrash = tree_to_expr(crash->get_tree(context));
 
   Bexpression* bcond =
       gogo->backend()->conditional_expression(NULL, bnil_check, bcrash, NULL, loc);
   Bstatement* cond_statement = gogo->backend()->expression_statement(bcond);
-  return gogo->backend()->compound_expression(cond_statement, bclosure, loc);
+  Bexpression* ret =
+      gogo->backend()->compound_expression(cond_statement, bclosure, loc);
+  return expr_to_tree(ret);
 }
 
 // Dump ast representation for an interface field reference.
@@ -11465,8 +12180,8 @@ class Allocation_expression : public Expression
   do_copy()
   { return new Allocation_expression(this->type_, this->location()); }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   void
   do_dump_expression(Ast_dump_context*) const;
@@ -11476,17 +12191,20 @@ class Allocation_expression : public Expression
   Type* type_;
 };
 
-// Return the backend representation for an allocation expression.
+// Return a tree for an allocation expression.
 
-Bexpression*
-Allocation_expression::do_get_backend(Translate_context* context)
+tree
+Allocation_expression::do_get_tree(Translate_context* context)
 {
-  Gogo* gogo = context->gogo();
-  Location loc = this->location();
-  Bexpression* space = 
-    gogo->allocate_memory(this->type_, loc)->get_backend(context);
-  Btype* pbtype = gogo->backend()->pointer_type(this->type_->get_backend(gogo));
-  return gogo->backend()->convert_expression(pbtype, space, loc);
+  tree type_tree = type_to_tree(this->type_->get_backend(context->gogo()));
+  if (type_tree == error_mark_node)
+    return error_mark_node;
+  tree size_tree = TYPE_SIZE_UNIT(type_tree);
+  tree space = context->gogo()->allocate_memory(this->type_, size_tree,
+						this->location());
+  if (space == error_mark_node)
+    return error_mark_node;
+  return fold_convert(build_pointer_type(type_tree), space);
 }
 
 // Dump ast representation for an allocation expression.
@@ -11557,8 +12275,8 @@ class Struct_construction_expression : public Expression
     return ret;
   }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   void
   do_export(Export*) const;
@@ -11731,42 +12449,71 @@ Struct_construction_expression::do_check_types(Gogo*)
   go_assert(pv == this->vals_->end());
 }
 
-// Return the backend representation for constructing a struct.
+// Return a tree for constructing a struct.
 
-Bexpression*
-Struct_construction_expression::do_get_backend(Translate_context* context)
+tree
+Struct_construction_expression::do_get_tree(Translate_context* context)
 {
   Gogo* gogo = context->gogo();
 
-  Btype* btype = this->type_->get_backend(gogo);
   if (this->vals_ == NULL)
-    return gogo->backend()->zero_expression(btype);
-
-  const Struct_field_list* fields = this->type_->struct_type()->fields();
-  Expression_list::const_iterator pv = this->vals_->begin();
-  std::vector<Bexpression*> init;
-  for (Struct_field_list::const_iterator pf = fields->begin();
-       pf != fields->end();
-       ++pf)
     {
+      Btype* btype = this->type_->get_backend(gogo);
+      return expr_to_tree(gogo->backend()->zero_expression(btype));
+    }
+
+  tree type_tree = type_to_tree(this->type_->get_backend(gogo));
+  if (type_tree == error_mark_node)
+    return error_mark_node;
+  go_assert(TREE_CODE(type_tree) == RECORD_TYPE);
+
+  bool is_constant = true;
+  const Struct_field_list* fields = this->type_->struct_type()->fields();
+  vec<constructor_elt, va_gc> *elts;
+  vec_alloc (elts, fields->size());
+  Struct_field_list::const_iterator pf = fields->begin();
+  Expression_list::const_iterator pv = this->vals_->begin();
+  for (tree field = TYPE_FIELDS(type_tree);
+       field != NULL_TREE;
+       field = DECL_CHAIN(field), ++pf)
+    {
+      go_assert(pf != fields->end());
+
       Btype* fbtype = pf->type()->get_backend(gogo);
+
+      tree val;
       if (pv == this->vals_->end())
-        init.push_back(gogo->backend()->zero_expression(fbtype));
+	val = expr_to_tree(gogo->backend()->zero_expression(fbtype));
       else if (*pv == NULL)
 	{
-          init.push_back(gogo->backend()->zero_expression(fbtype));
+	  val = expr_to_tree(gogo->backend()->zero_expression(fbtype));
 	  ++pv;
 	}
       else
 	{
-          Expression* val =
-              Expression::convert_for_assignment(gogo, pf->type(),
-                                                 *pv, this->location());
-          init.push_back(val->get_backend(context));
+	  val = Expression::convert_for_assignment(context, pf->type(),
+						   (*pv)->type(),
+						   (*pv)->get_tree(context),
+						   this->location());
 	  ++pv;
 	}
+
+      if (val == error_mark_node || TREE_TYPE(val) == error_mark_node)
+	return error_mark_node;
+
+      constructor_elt empty = {NULL, NULL};
+      constructor_elt* elt = elts->quick_push(empty);
+      elt->index = field;
+      elt->value = val;
+      if (!TREE_CONSTANT(val))
+	is_constant = false;
     }
-  return gogo->backend()->constructor_expression(btype, init, this->location());
+  go_assert(pf == fields->end());
+
+  tree ret = build_constructor(type_tree, elts);
+  if (is_constant)
+    TREE_CONSTANT(ret) = 1;
+  return ret;
 }
 
 // Export a struct construction.
@@ -11811,7 +12558,7 @@ Expression::make_struct_composite_literal(Type* type, Expression_list* vals,
 
 // Construct an array.  This class is not used directly; instead we
 // use the child classes, Fixed_array_construction_expression and
-// Slice_construction_expression.
+// Open_array_construction_expression.
 
 class Array_construction_expression : public Expression
 {
@@ -11835,7 +12582,7 @@ class Array_construction_expression : public Expression
   { return this->vals_ == NULL ? 0 : this->vals_->size(); }
 
 protected:
-  virtual int
+  int
   do_traverse(Traverse* traverse);
 
   bool
@@ -11864,9 +12611,9 @@ protected:
   vals()
   { return this->vals_; }
 
-  // Get the backend constructor for the array values.
-  Bexpression*
-  get_constructor(Translate_context* context, Btype* btype);
+  // Get a constructor tree for the array values.
+  tree
+  get_constructor_tree(Translate_context* context, tree type_tree);
 
   void
   do_dump_expression(Ast_dump_context*) const;
@@ -11979,17 +12726,16 @@ Array_construction_expression::do_check_types(Gogo*)
     }
 }
 
-// Get a constructor expression for the array values.
+// Get a constructor tree for the array values.
 
-Bexpression*
-Array_construction_expression::get_constructor(Translate_context* context,
-                                               Btype* array_btype)
+tree
+Array_construction_expression::get_constructor_tree(Translate_context* context,
+						    tree type_tree)
 {
+  vec<constructor_elt, va_gc> *values;
+  vec_alloc (values, (this->vals_ == NULL ? 0 : this->vals_->size()));
   Type* element_type = this->type_->array_type()->element_type();
-
-  std::vector<unsigned long> indexes;
-  std::vector<Bexpression*> vals;
-  Gogo* gogo = context->gogo();
+  bool is_constant = true;
   if (this->vals_ != NULL)
     {
       size_t i = 0;
@@ -12002,32 +12748,45 @@ Array_construction_expression::get_constructor(Translate_context* context,
 	{
 	  if (this->indexes_ != NULL)
 	    go_assert(pi != this->indexes_->end());
+	  constructor_elt empty = {NULL, NULL};
+	  constructor_elt* elt = values->quick_push(empty);
 
 	  if (this->indexes_ == NULL)
-	    indexes.push_back(i);
+	    elt->index = size_int(i);
 	  else
-	    indexes.push_back(*pi);
+	    elt->index = size_int(*pi);
+
 	  if (*pv == NULL)
 	    {
+	      Gogo* gogo = context->gogo();
 	      Btype* ebtype = element_type->get_backend(gogo);
 	      Bexpression *zv = gogo->backend()->zero_expression(ebtype);
-	      vals.push_back(zv);
+	      elt->value = expr_to_tree(zv);
 	    }
 	  else
 	    {
-              Expression* val_expr =
-                  Expression::convert_for_assignment(gogo, element_type, *pv,
-                                                     this->location());
-	      vals.push_back(val_expr->get_backend(context));
+	      tree value_tree = (*pv)->get_tree(context);
+	      elt->value = Expression::convert_for_assignment(context,
+							      element_type,
+							      (*pv)->type(),
+							      value_tree,
+							      this->location());
 	    }
+	  if (elt->value == error_mark_node)
+	    return error_mark_node;
+	  if (!TREE_CONSTANT(elt->value))
+	    is_constant = false;
 	  if (this->indexes_ != NULL)
 	    ++pi;
 	}
       if (this->indexes_ != NULL)
 	go_assert(pi == this->indexes_->end());
     }
-  return gogo->backend()->array_constructor_expression(array_btype, indexes,
-                                                       vals, this->location());
+
+  tree ret = build_constructor(type_tree, values);
+  if (is_constant)
+    TREE_CONSTANT(ret) = 1;
+  return ret;
 }
 
 // Export an array construction.
@@ -12127,124 +12886,111 @@ class Fixed_array_construction_expression :
 						   this->location());
   }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 };
 
-// Return the backend representation for constructing a fixed array.
+// Return a tree for constructing a fixed array.
 
-Bexpression*
-Fixed_array_construction_expression::do_get_backend(Translate_context* context)
+tree
+Fixed_array_construction_expression::do_get_tree(Translate_context* context)
 {
   Type* type = this->type();
   Btype* btype = type->get_backend(context->gogo());
-  return this->get_constructor(context, btype);
+  return this->get_constructor_tree(context, type_to_tree(btype));
 }
 
-Expression*
-Expression::make_array_composite_literal(Type* type, Expression_list* vals,
-                                         Location location)
-{
-  go_assert(type->array_type() != NULL && !type->is_slice_type());
-  return new Fixed_array_construction_expression(type, NULL, vals, location);
-}
+// Construct an open array.
 
-// Construct a slice.
-
-class Slice_construction_expression : public Array_construction_expression
+class Open_array_construction_expression : public Array_construction_expression
 {
  public:
-  Slice_construction_expression(Type* type,
-				const std::vector<unsigned long>* indexes,
-				Expression_list* vals, Location location)
-    : Array_construction_expression(EXPRESSION_SLICE_CONSTRUCTION,
-				    type, indexes, vals, location),
-      valtype_(NULL)
-  {
-    go_assert(type->is_slice_type());
-
-    unsigned long lenval;
-    Expression* length;
-    if (vals == NULL || vals->empty())
-      lenval = 0;
-    else
-      {
-	if (this->indexes() == NULL)
-	  lenval = vals->size();
-	else
-	  lenval = indexes->back() + 1;
-      }
-    Type* int_type = Type::lookup_integer_type("int");
-    length = Expression::make_integer_ul(lenval, int_type, location);
-    Type* element_type = type->array_type()->element_type();
-    this->valtype_ = Type::make_array_type(element_type, length);
-  }
+  Open_array_construction_expression(Type* type,
+				     const std::vector<unsigned long>* indexes,
+				     Expression_list* vals, Location location)
+    : Array_construction_expression(EXPRESSION_OPEN_ARRAY_CONSTRUCTION,
+				    type, indexes, vals, location)
+  { go_assert(type->is_slice_type()); }
 
  protected:
-  // Note that taking the address of a slice literal is invalid.
-
-  int
-  do_traverse(Traverse* traverse);
+  // Note that taking the address of an open array literal is invalid.
 
   Expression*
   do_copy()
   {
-    return new Slice_construction_expression(this->type(), this->indexes(),
-					     (this->vals() == NULL
-					      ? NULL
-					      : this->vals()->copy()),
-					     this->location());
+    return new Open_array_construction_expression(this->type(),
+						  this->indexes(),
+						  (this->vals() == NULL
+						   ? NULL
+						   : this->vals()->copy()),
+						  this->location());
   }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
-
- private:
-  // The type of the values in this slice.
-  Type* valtype_;
+  tree
+  do_get_tree(Translate_context*);
 };
 
-// Traversal.
+// Return a tree for constructing an open array.
 
-int
-Slice_construction_expression::do_traverse(Traverse* traverse)
-{
-  if (this->Array_construction_expression::do_traverse(traverse)
-      == TRAVERSE_EXIT)
-    return TRAVERSE_EXIT;
-  if (Type::traverse(this->valtype_, traverse) == TRAVERSE_EXIT)
-    return TRAVERSE_EXIT;
-  return TRAVERSE_CONTINUE;
-}
-
-// Return the backend representation for constructing a slice.
-
-Bexpression*
-Slice_construction_expression::do_get_backend(Translate_context* context)
+tree
+Open_array_construction_expression::do_get_tree(Translate_context* context)
 {
   Array_type* array_type = this->type()->array_type();
   if (array_type == NULL)
     {
       go_assert(this->type()->is_error());
-      return context->backend()->error_expression();
+      return error_mark_node;
     }
 
-  Location loc = this->location();
   Type* element_type = array_type->element_type();
-  go_assert(this->valtype_ != NULL);
+  Btype* belement_type = element_type->get_backend(context->gogo());
+  tree element_type_tree = type_to_tree(belement_type);
+  if (element_type_tree == error_mark_node)
+    return error_mark_node;
 
-  Expression_list* vals = this->vals();
+  tree values;
+  tree length_tree;
   if (this->vals() == NULL || this->vals()->empty())
     {
-      // We need to create a unique value for the empty array literal.
-      vals = new Expression_list;
-      vals->push_back(NULL);
+      // We need to create a unique value.
+      tree max = size_int(0);
+      tree constructor_type = build_array_type(element_type_tree,
+					       build_index_type(max));
+      if (constructor_type == error_mark_node)
+	return error_mark_node;
+      vec<constructor_elt, va_gc> *vec;
+      vec_alloc(vec, 1);
+      constructor_elt empty = {NULL, NULL};
+      constructor_elt* elt = vec->quick_push(empty);
+      elt->index = size_int(0);
+      Gogo* gogo = context->gogo();
+      Btype* btype = element_type->get_backend(gogo);
+      elt->value = expr_to_tree(gogo->backend()->zero_expression(btype));
+      values = build_constructor(constructor_type, vec);
+      if (TREE_CONSTANT(elt->value))
+	TREE_CONSTANT(values) = 1;
+      length_tree = size_int(0);
     }
-  Expression* array_val =
-    new Fixed_array_construction_expression(this->valtype_, this->indexes(),
-					    vals, loc);
+  else
+    {
+      unsigned long max_index;
+      if (this->indexes() == NULL)
+	max_index = this->vals()->size() - 1;
+      else
+	max_index = this->indexes()->back();
+      tree max_tree = size_int(max_index);
+      tree constructor_type = build_array_type(element_type_tree,
+					       build_index_type(max_tree));
+      if (constructor_type == error_mark_node)
+	return error_mark_node;
+      values = this->get_constructor_tree(context, constructor_type);
+      length_tree = size_int(max_index + 1);
+    }
 
-  bool is_constant_initializer = array_val->is_immutable();
+  if (values == error_mark_node)
+    return error_mark_node;
+
+  bool is_constant_initializer = TREE_CONSTANT(values);
 
   // We have to copy the initial values into heap memory if we are in
   // a function or if the values are not constants.  We also have to
@@ -12255,22 +13001,89 @@ Slice_construction_expression::do_get_backend(Translate_context* context)
 		       || (element_type->has_pointer()
 			   && !context->is_const()));
 
-  Expression* space;
+  if (is_constant_initializer)
+    {
+      tree tmp = build_decl(this->location().gcc_location(), VAR_DECL,
+			    create_tmp_var_name("C"), TREE_TYPE(values));
+      DECL_EXTERNAL(tmp) = 0;
+      TREE_PUBLIC(tmp) = 0;
+      TREE_STATIC(tmp) = 1;
+      DECL_ARTIFICIAL(tmp) = 1;
+      if (copy_to_heap)
+	{
+	  // If we are not copying the value to the heap, we will only
+	  // initialize the value once, so we can use this directly
+	  // rather than copying it.  In that case we can't make it
+	  // read-only, because the program is permitted to change it.
+	  TREE_READONLY(tmp) = 1;
+	  TREE_CONSTANT(tmp) = 1;
+	}
+      DECL_INITIAL(tmp) = values;
+      rest_of_decl_compilation(tmp, 1, 0);
+      values = tmp;
+    }
+
+  tree space;
+  tree set;
   if (!copy_to_heap)
     {
-      // The initializer will only run once.
-      space = Expression::make_unary(OPERATOR_AND, array_val, loc);
-      space->unary_expression()->set_is_slice_init();
+      // the initializer will only run once.
+      space = build_fold_addr_expr(values);
+      set = NULL_TREE;
     }
   else
-    space = Expression::make_heap_expression(array_val, loc);
+    {
+      tree memsize = TYPE_SIZE_UNIT(TREE_TYPE(values));
+      space = context->gogo()->allocate_memory(element_type, memsize,
+					       this->location());
+      space = save_expr(space);
 
-  // Build a constructor for the slice.
+      tree s = fold_convert(build_pointer_type(TREE_TYPE(values)), space);
+      tree ref = build_fold_indirect_ref_loc(this->location().gcc_location(),
+                                             s);
+      TREE_THIS_NOTRAP(ref) = 1;
+      set = build2(MODIFY_EXPR, void_type_node, ref, values);
+    }
 
-  Expression* len = this->valtype_->array_type()->length();
-  Expression* slice_val =
-    Expression::make_slice_value(this->type(), space, len, len, loc);
-  return slice_val->get_backend(context);
+  // Build a constructor for the open array.
+
+  tree type_tree = type_to_tree(this->type()->get_backend(context->gogo()));
+  if (type_tree == error_mark_node)
+    return error_mark_node;
+  go_assert(TREE_CODE(type_tree) == RECORD_TYPE);
+
+  vec<constructor_elt, va_gc> *init;
+  vec_alloc(init, 3);
+
+  constructor_elt empty = {NULL, NULL};
+  constructor_elt* elt = init->quick_push(empty);
+  tree field = TYPE_FIELDS(type_tree);
+  go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__values") == 0);
+  elt->index = field;
+  elt->value = fold_convert(TREE_TYPE(field), space);
+
+  elt = init->quick_push(empty);
+  field = DECL_CHAIN(field);
+  go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__count") == 0);
+  elt->index = field;
+  elt->value = fold_convert(TREE_TYPE(field), length_tree);
+
+  elt = init->quick_push(empty);
+  field = DECL_CHAIN(field);
+  go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)),"__capacity") == 0);
+  elt->index = field;
+  elt->value = fold_convert(TREE_TYPE(field), length_tree);
+
+  tree constructor = build_constructor(type_tree, init);
+  if (constructor == error_mark_node)
+    return error_mark_node;
+  if (!copy_to_heap)
+    TREE_CONSTANT(constructor) = 1;
+
+  if (set == NULL_TREE)
+    return constructor;
+  else
+    return build2(COMPOUND_EXPR, type_tree, set, constructor);
 }
 
 // Make a slice composite literal.  This is used by the type
@@ -12281,7 +13094,7 @@ Expression::make_slice_composite_literal(Type* type, Expression_list* vals,
 					 Location location)
 {
   go_assert(type->is_slice_type());
-  return new Slice_construction_expression(type, NULL, vals, location);
+  return new Open_array_construction_expression(type, NULL, vals, location);
 }
 
 // Construct a map.
@@ -12292,15 +13105,12 @@ class Map_construction_expression : public Expression
   Map_construction_expression(Type* type, Expression_list* vals,
 			      Location location)
     : Expression(EXPRESSION_MAP_CONSTRUCTION, location),
-      type_(type), vals_(vals), element_type_(NULL), constructor_temp_(NULL)
+      type_(type), vals_(vals)
   { go_assert(vals == NULL || vals->size() % 2 == 0); }
 
  protected:
   int
   do_traverse(Traverse* traverse);
-
-  Expression*
-  do_flatten(Gogo*, Named_object*, Statement_inserter*);
 
   Type*
   do_type()
@@ -12319,8 +13129,8 @@ class Map_construction_expression : public Expression
 					   this->location());
   }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   void
   do_export(Export*) const;
@@ -12333,10 +13143,6 @@ class Map_construction_expression : public Expression
   Type* type_;
   // The list of values.
   Expression_list* vals_;
-  // The type of the key-value pair struct for each map element.
-  Struct_type* element_type_;
-  // A temporary reference to the variable storing the constructor initializer.
-  Temporary_statement* constructor_temp_;
 };
 
 // Traversal.
@@ -12350,65 +13156,6 @@ Map_construction_expression::do_traverse(Traverse* traverse)
   if (Type::traverse(this->type_, traverse) == TRAVERSE_EXIT)
     return TRAVERSE_EXIT;
   return TRAVERSE_CONTINUE;
-}
-
-// Flatten constructor initializer into a temporary variable since
-// we need to take its address for __go_construct_map.
-
-Expression*
-Map_construction_expression::do_flatten(Gogo* gogo, Named_object*,
-                                        Statement_inserter* inserter)
-{
-  if (!this->is_error_expression()
-      && this->vals_ != NULL
-      && !this->vals_->empty()
-      && this->constructor_temp_ == NULL)
-    {
-      Map_type* mt = this->type_->map_type();
-      Type* key_type = mt->key_type();
-      Type* val_type = mt->val_type();
-      this->element_type_ = Type::make_builtin_struct_type(2,
-                                                           "__key", key_type,
-                                                           "__val", val_type);
-
-      Expression_list* value_pairs = new Expression_list();
-      Location loc = this->location();
-
-      size_t i = 0;
-      for (Expression_list::const_iterator pv = this->vals_->begin();
-           pv != this->vals_->end();
-           ++pv, ++i)
-        {
-          Expression_list* key_value_pair = new Expression_list();
-          Expression* key =
-              Expression::convert_for_assignment(gogo, key_type, *pv, loc);
-
-          ++pv;
-          Expression* val =
-              Expression::convert_for_assignment(gogo, val_type, *pv, loc);
-
-          key_value_pair->push_back(key);
-          key_value_pair->push_back(val);
-          value_pairs->push_back(
-              Expression::make_struct_composite_literal(this->element_type_,
-                                                        key_value_pair, loc));
-        }
-
-      Expression* element_count = Expression::make_integer_ul(i, NULL, loc);
-      Type* ctor_type =
-          Type::make_array_type(this->element_type_, element_count);
-      Expression* constructor =
-          new Fixed_array_construction_expression(ctor_type, NULL,
-                                                  value_pairs, loc);
-
-      this->constructor_temp_ =
-          Statement::make_temporary(NULL, constructor, loc);
-      constructor->issue_nil_check();
-      this->constructor_temp_->set_is_address_taken();
-      inserter->insert(this->constructor_temp_);
-    }
-
-  return this;
 }
 
 // Final type determination.
@@ -12467,55 +13214,172 @@ Map_construction_expression::do_check_types(Gogo*)
     }
 }
 
-// Return the backend representation for constructing a map.
+// Return a tree for constructing a map.
 
-Bexpression*
-Map_construction_expression::do_get_backend(Translate_context* context)
+tree
+Map_construction_expression::do_get_tree(Translate_context* context)
 {
-  if (this->is_error_expression())
-    return context->backend()->error_expression();
+  Gogo* gogo = context->gogo();
   Location loc = this->location();
 
+  Map_type* mt = this->type_->map_type();
+
+  // Build a struct to hold the key and value.
+  tree struct_type = make_node(RECORD_TYPE);
+
+  Type* key_type = mt->key_type();
+  tree id = get_identifier("__key");
+  tree key_type_tree = type_to_tree(key_type->get_backend(gogo));
+  if (key_type_tree == error_mark_node)
+    return error_mark_node;
+  tree key_field = build_decl(loc.gcc_location(), FIELD_DECL, id,
+                              key_type_tree);
+  DECL_CONTEXT(key_field) = struct_type;
+  TYPE_FIELDS(struct_type) = key_field;
+
+  Type* val_type = mt->val_type();
+  id = get_identifier("__val");
+  tree val_type_tree = type_to_tree(val_type->get_backend(gogo));
+  if (val_type_tree == error_mark_node)
+    return error_mark_node;
+  tree val_field = build_decl(loc.gcc_location(), FIELD_DECL, id,
+                              val_type_tree);
+  DECL_CONTEXT(val_field) = struct_type;
+  DECL_CHAIN(key_field) = val_field;
+
+  layout_type(struct_type);
+
+  bool is_constant = true;
   size_t i = 0;
-  Expression* ventries;
+  tree valaddr;
+  tree make_tmp;
+
   if (this->vals_ == NULL || this->vals_->empty())
-    ventries = Expression::make_nil(loc);
+    {
+      valaddr = null_pointer_node;
+      make_tmp = NULL_TREE;
+    }
   else
     {
-      go_assert(this->constructor_temp_ != NULL);
-      i = this->vals_->size() / 2;
+      vec<constructor_elt, va_gc> *values;
+      vec_alloc(values, this->vals_->size() / 2);
 
-      Expression* ctor_ref =
-          Expression::make_temporary_reference(this->constructor_temp_, loc);
-      ventries = Expression::make_unary(OPERATOR_AND, ctor_ref, loc);
+      for (Expression_list::const_iterator pv = this->vals_->begin();
+	   pv != this->vals_->end();
+	   ++pv, ++i)
+	{
+	  bool one_is_constant = true;
+
+	  vec<constructor_elt, va_gc> *one;
+	  vec_alloc(one, 2);
+
+	  constructor_elt empty = {NULL, NULL};
+	  constructor_elt* elt = one->quick_push(empty);
+	  elt->index = key_field;
+	  tree val_tree = (*pv)->get_tree(context);
+	  elt->value = Expression::convert_for_assignment(context, key_type,
+							  (*pv)->type(),
+							  val_tree, loc);
+	  if (elt->value == error_mark_node)
+	    return error_mark_node;
+	  if (!TREE_CONSTANT(elt->value))
+	    one_is_constant = false;
+
+	  ++pv;
+
+	  elt = one->quick_push(empty);
+	  elt->index = val_field;
+	  val_tree = (*pv)->get_tree(context);
+	  elt->value = Expression::convert_for_assignment(context, val_type,
+							  (*pv)->type(),
+							  val_tree, loc);
+	  if (elt->value == error_mark_node)
+	    return error_mark_node;
+	  if (!TREE_CONSTANT(elt->value))
+	    one_is_constant = false;
+
+	  elt = values->quick_push(empty);
+	  elt->index = size_int(i);
+	  elt->value = build_constructor(struct_type, one);
+	  if (one_is_constant)
+	    TREE_CONSTANT(elt->value) = 1;
+	  else
+	    is_constant = false;
+	}
+
+      tree index_type = build_index_type(size_int(i - 1));
+      tree array_type = build_array_type(struct_type, index_type);
+      tree init = build_constructor(array_type, values);
+      if (is_constant)
+	TREE_CONSTANT(init) = 1;
+      tree tmp;
+      if (current_function_decl != NULL)
+	{
+	  tmp = create_tmp_var(array_type, get_name(array_type));
+	  DECL_INITIAL(tmp) = init;
+	  make_tmp = fold_build1_loc(loc.gcc_location(), DECL_EXPR,
+                                     void_type_node, tmp);
+	  TREE_ADDRESSABLE(tmp) = 1;
+	}
+      else
+	{
+	  tmp = build_decl(loc.gcc_location(), VAR_DECL,
+                           create_tmp_var_name("M"), array_type);
+	  DECL_EXTERNAL(tmp) = 0;
+	  TREE_PUBLIC(tmp) = 0;
+	  TREE_STATIC(tmp) = 1;
+	  DECL_ARTIFICIAL(tmp) = 1;
+	  if (!TREE_CONSTANT(init))
+	    make_tmp = fold_build2_loc(loc.gcc_location(), INIT_EXPR,
+                                       void_type_node, tmp, init);
+	  else
+	    {
+	      TREE_READONLY(tmp) = 1;
+	      TREE_CONSTANT(tmp) = 1;
+	      DECL_INITIAL(tmp) = init;
+	      make_tmp = NULL_TREE;
+	    }
+	  rest_of_decl_compilation(tmp, 1, 0);
+	}
+
+      valaddr = build_fold_addr_expr(tmp);
     }
 
-  Map_type* mt = this->type_->map_type();
-  if (this->element_type_ == NULL)
-      this->element_type_ =
-          Type::make_builtin_struct_type(2,
-                                         "__key", mt->key_type(),
-                                         "__val", mt->val_type());
-  Expression* descriptor = Expression::make_map_descriptor(mt, loc);
+  Bexpression* bdescriptor = mt->map_descriptor_pointer(gogo, loc);
+  tree descriptor = expr_to_tree(bdescriptor);
 
-  Type* uintptr_t = Type::lookup_integer_type("uintptr");
-  Expression* count = Expression::make_integer_ul(i, uintptr_t, loc);
+  tree type_tree = type_to_tree(this->type_->get_backend(gogo));
+  if (type_tree == error_mark_node)
+    return error_mark_node;
 
-  Expression* entry_size =
-      Expression::make_type_info(this->element_type_, TYPE_INFO_SIZE);
+  static tree construct_map_fndecl;
+  tree call = Gogo::call_builtin(&construct_map_fndecl,
+				 loc,
+				 "__go_construct_map",
+				 6,
+				 type_tree,
+				 TREE_TYPE(descriptor),
+				 descriptor,
+				 sizetype,
+				 size_int(i),
+				 sizetype,
+				 TYPE_SIZE_UNIT(struct_type),
+				 sizetype,
+				 byte_position(val_field),
+				 sizetype,
+				 TYPE_SIZE_UNIT(TREE_TYPE(val_field)),
+				 const_ptr_type_node,
+				 fold_convert(const_ptr_type_node, valaddr));
+  if (call == error_mark_node)
+    return error_mark_node;
 
-  unsigned int field_index;
-  const Struct_field* valfield =
-      this->element_type_->find_local_field("__val", &field_index);
-  Expression* val_offset =
-      Expression::make_struct_field_offset(this->element_type_, valfield);
-  Expression* val_size =
-      Expression::make_type_info(mt->val_type(), TYPE_INFO_SIZE);
-
-  Expression* map_ctor =
-      Runtime::make_call(Runtime::CONSTRUCT_MAP, loc, 6, descriptor, count,
-                         entry_size, val_offset, val_size, ventries);
-  return map_ctor->get_backend(context);
+  tree ret;
+  if (make_tmp == NULL)
+    ret = call;
+  else
+    ret = fold_build2_loc(loc.gcc_location(), COMPOUND_EXPR, type_tree,
+                          make_tmp, call);
+  return ret;
 }
 
 // Export an array construction.
@@ -12728,7 +13592,7 @@ Composite_literal_expression::do_lower(Gogo* gogo, Named_object* function,
     }
 
   if (is_pointer)
-    ret = Expression::make_heap_expression(ret, this->location());
+    ret = Expression::make_heap_composite(ret, this->location());
 
   return ret;
 }
@@ -13128,7 +13992,10 @@ Composite_literal_expression::make_array(
 	    }
 	}
 
-      Expression* elen = Expression::make_integer_ul(size, NULL, location);
+      mpz_t vlen;
+      mpz_init_set_ui(vlen, size);
+      Expression* elen = Expression::make_integer(&vlen, NULL, location);
+      mpz_clear(vlen);
       at = Type::make_array_type(at->element_type(), elen);
       type = at;
     }
@@ -13167,7 +14034,8 @@ Composite_literal_expression::make_array(
     return new Fixed_array_construction_expression(type, indexes, vals,
 						   location);
   else
-    return new Slice_construction_expression(type, indexes, vals, location);
+    return new Open_array_construction_expression(type, indexes, vals,
+						  location);
 }
 
 // Lower a map composite literal.
@@ -13247,7 +14115,7 @@ Expression::is_composite_literal() const
     case EXPRESSION_COMPOSITE_LITERAL:
     case EXPRESSION_STRUCT_CONSTRUCTION:
     case EXPRESSION_FIXED_ARRAY_CONSTRUCTION:
-    case EXPRESSION_SLICE_CONSTRUCTION:
+    case EXPRESSION_OPEN_ARRAY_CONSTRUCTION:
     case EXPRESSION_MAP_CONSTRUCTION:
       return true;
     default:
@@ -13275,10 +14143,10 @@ Expression::is_nonconstant_composite_literal() const
 	  static_cast<const Fixed_array_construction_expression*>(this);
 	return !pace->is_constant_array();
       }
-    case EXPRESSION_SLICE_CONSTRUCTION:
+    case EXPRESSION_OPEN_ARRAY_CONSTRUCTION:
       {
-	const Slice_construction_expression *pace =
-	  static_cast<const Slice_construction_expression*>(this);
+	const Open_array_construction_expression *pace =
+	  static_cast<const Open_array_construction_expression*>(this);
 	return !pace->is_constant_array();
       }
     case EXPRESSION_MAP_CONSTRUCTION:
@@ -13330,21 +14198,6 @@ Type_guard_expression::do_traverse(Traverse* traverse)
   return TRAVERSE_CONTINUE;
 }
 
-Expression*
-Type_guard_expression::do_flatten(Gogo*, Named_object*,
-                                  Statement_inserter* inserter)
-{
-  if (!this->expr_->is_variable())
-    {
-      Temporary_statement* temp = Statement::make_temporary(NULL, this->expr_,
-                                                            this->location());
-      inserter->insert(temp);
-      this->expr_ =
-          Expression::make_temporary_reference(temp, this->location());
-    }
-  return this;
-}
-
 // Check types of a type guard expression.  The expression must have
 // an interface type, but the actual type conversion is checked at run
 // time.
@@ -13381,28 +14234,29 @@ Type_guard_expression::do_check_types(Gogo*)
     }
 }
 
-// Return the backend representation for a type guard expression.
+// Return a tree for a type guard expression.
 
-Bexpression*
-Type_guard_expression::do_get_backend(Translate_context* context)
+tree
+Type_guard_expression::do_get_tree(Translate_context* context)
 {
-  Expression* conversion;
+  tree expr_tree = this->expr_->get_tree(context);
+  if (expr_tree == error_mark_node)
+    return error_mark_node;
   if (this->type_->interface_type() != NULL)
-    conversion =
-        Expression::convert_interface_to_interface(this->type_, this->expr_,
-                                                   true, this->location());
+    return Expression::convert_interface_to_interface(context, this->type_,
+						      this->expr_->type(),
+						      expr_tree, true,
+						      this->location());
   else
-    conversion =
-        Expression::convert_for_assignment(context->gogo(), this->type_,
-                                           this->expr_, this->location());
-
-  return conversion->get_backend(context);
+    return Expression::convert_for_assignment(context, this->type_,
+					      this->expr_->type(), expr_tree,
+					      this->location());
 }
 
 // Dump ast representation for a type guard expression.
 
 void
-Type_guard_expression::do_dump_expression(Ast_dump_context* ast_dump_context)
+Type_guard_expression::do_dump_expression(Ast_dump_context* ast_dump_context) 
     const
 {
   this->expr_->dump_expression(ast_dump_context);
@@ -13419,16 +14273,16 @@ Expression::make_type_guard(Expression* expr, Type* type,
   return new Type_guard_expression(expr, type, location);
 }
 
-// Class Heap_expression.
+// Class Heap_composite_expression.
 
-// When you take the address of an escaping expression, it is allocated
+// When you take the address of a composite literal, it is allocated
 // on the heap.  This class implements that.
 
-class Heap_expression : public Expression
+class Heap_composite_expression : public Expression
 {
  public:
-  Heap_expression(Expression* expr, Location location)
-    : Expression(EXPRESSION_HEAP, location),
+  Heap_composite_expression(Expression* expr, Location location)
+    : Expression(EXPRESSION_HEAP_COMPOSITE, location),
       expr_(expr)
   { }
 
@@ -13448,12 +14302,12 @@ class Heap_expression : public Expression
   Expression*
   do_copy()
   {
-    return Expression::make_heap_expression(this->expr_->copy(),
-                                            this->location());
+    return Expression::make_heap_composite(this->expr_->copy(),
+					   this->location());
   }
 
-  Bexpression*
-  do_get_backend(Translate_context*);
+  tree
+  do_get_tree(Translate_context*);
 
   // We only export global objects, and the parser does not generate
   // this in global scope.
@@ -13465,47 +14319,38 @@ class Heap_expression : public Expression
   do_dump_expression(Ast_dump_context*) const;
 
  private:
-  // The expression which is being put on the heap.
+  // The composite literal which is being put on the heap.
   Expression* expr_;
 };
 
-// Return the backend representation for allocating an expression on the heap.
+// Return a tree which allocates a composite literal on the heap.
 
-Bexpression*
-Heap_expression::do_get_backend(Translate_context* context)
+tree
+Heap_composite_expression::do_get_tree(Translate_context* context)
 {
-  if (this->expr_->is_error_expression() || this->expr_->type()->is_error())
-    return context->backend()->error_expression();
-
-  Location loc = this->location();
-  Gogo* gogo = context->gogo();
-  Btype* btype = this->type()->get_backend(gogo);
-  Bexpression* space = Expression::make_allocation(this->expr_->type(),
-						   loc)->get_backend(context);
-
-  Bstatement* decl;
-  Named_object* fn = context->function();
-  go_assert(fn != NULL);
-  Bfunction* fndecl = fn->func_value()->get_or_make_decl(gogo, fn);
-  Bvariable* space_temp =
-    gogo->backend()->temporary_variable(fndecl, context->bblock(), btype,
-					space, true, loc, &decl);
-  space = gogo->backend()->var_expression(space_temp, loc);
-  Btype* expr_btype = this->expr_->type()->get_backend(gogo);
-  Bexpression* ref =
-    gogo->backend()->indirect_expression(expr_btype, space, true, loc);
-
-  Bexpression* bexpr = this->expr_->get_backend(context);
-  Bstatement* assn = gogo->backend()->assignment_statement(ref, bexpr, loc);
-  decl = gogo->backend()->compound_statement(decl, assn);
-  space = gogo->backend()->var_expression(space_temp, loc);
-  return gogo->backend()->compound_expression(decl, space, loc);
+  tree expr_tree = this->expr_->get_tree(context);
+  if (expr_tree == error_mark_node || TREE_TYPE(expr_tree) == error_mark_node)
+    return error_mark_node;
+  tree expr_size = TYPE_SIZE_UNIT(TREE_TYPE(expr_tree));
+  go_assert(TREE_CODE(expr_size) == INTEGER_CST);
+  tree space = context->gogo()->allocate_memory(this->expr_->type(),
+						expr_size, this->location());
+  space = fold_convert(build_pointer_type(TREE_TYPE(expr_tree)), space);
+  space = save_expr(space);
+  tree ref = build_fold_indirect_ref_loc(this->location().gcc_location(),
+                                         space);
+  TREE_THIS_NOTRAP(ref) = 1;
+  tree ret = build2(COMPOUND_EXPR, TREE_TYPE(space),
+		    build2(MODIFY_EXPR, void_type_node, ref, expr_tree),
+		    space);
+  SET_EXPR_LOCATION(ret, this->location().gcc_location());
+  return ret;
 }
 
-// Dump ast representation for a heap expression.
+// Dump ast representation for a heap composite expression.
 
 void
-Heap_expression::do_dump_expression(
+Heap_composite_expression::do_dump_expression(
     Ast_dump_context* ast_dump_context) const
 {
   ast_dump_context->ostream() << "&(";
@@ -13513,12 +14358,12 @@ Heap_expression::do_dump_expression(
   ast_dump_context->ostream() << ")";
 }
 
-// Allocate an expression on the heap.
+// Allocate a composite literal on the heap.
 
 Expression*
-Expression::make_heap_expression(Expression* expr, Location location)
+Expression::make_heap_composite(Expression* expr, Location location)
 {
-  return new Heap_expression(expr, location);
+  return new Heap_composite_expression(expr, location);
 }
 
 // Class Receive_expression.
@@ -13557,36 +14402,10 @@ Receive_expression::do_check_types(Gogo*)
     }
 }
 
-// Flattening for receive expressions creates a temporary variable to store
-// received data in for receives.
+// Get a tree for a receive expression.
 
-Expression*
-Receive_expression::do_flatten(Gogo*, Named_object*,
-                               Statement_inserter* inserter)
-{
-  Channel_type* channel_type = this->channel_->type()->channel_type();
-  if (channel_type == NULL)
-    {
-      go_assert(saw_errors());
-      return this;
-    }
-
-  Type* element_type = channel_type->element_type();
-  if (this->temp_receiver_ == NULL)
-    {
-      this->temp_receiver_ = Statement::make_temporary(element_type, NULL,
-						       this->location());
-      this->temp_receiver_->set_is_address_taken();
-      inserter->insert(this->temp_receiver_);
-    }
-
-  return this;
-}
-
-// Get the backend representation for a receive expression.
-
-Bexpression*
-Receive_expression::do_get_backend(Translate_context* context)
+tree
+Receive_expression::do_get_tree(Translate_context* context)
 {
   Location loc = this->location();
 
@@ -13594,19 +14413,21 @@ Receive_expression::do_get_backend(Translate_context* context)
   if (channel_type == NULL)
     {
       go_assert(this->channel_->type()->is_error());
-      return context->backend()->error_expression();
+      return error_mark_node;
     }
-  Expression* td = Expression::make_type_descriptor(channel_type, loc);
 
-  Expression* recv_ref =
-    Expression::make_temporary_reference(this->temp_receiver_, loc);
-  Expression* recv_addr =
-    Expression::make_temporary_reference(this->temp_receiver_, loc);
-  recv_addr = Expression::make_unary(OPERATOR_AND, recv_addr, loc);
-  Expression* recv =
-    Runtime::make_call(Runtime::RECEIVE, loc, 3,
-		       td, this->channel_, recv_addr);
-  return Expression::make_compound(recv, recv_ref, loc)->get_backend(context);
+  Expression* td = Expression::make_type_descriptor(channel_type, loc);
+  tree td_tree = td->get_tree(context);
+
+  Type* element_type = channel_type->element_type();
+  Btype* element_type_btype = element_type->get_backend(context->gogo());
+  tree element_type_tree = type_to_tree(element_type_btype);
+
+  tree channel = this->channel_->get_tree(context);
+  if (element_type_tree == error_mark_node || channel == error_mark_node)
+    return error_mark_node;
+
+  return Gogo::receive_from_channel(element_type_tree, td_tree, channel, loc);
 }
 
 // Dump ast representation for a receive expression.
@@ -13654,11 +14475,12 @@ class Type_descriptor_expression : public Expression
   do_copy()
   { return this; }
 
-  Bexpression*
-  do_get_backend(Translate_context* context)
+  tree
+  do_get_tree(Translate_context* context)
   {
-    return this->type_->type_descriptor_pointer(context->gogo(),
-						this->location());
+    Bexpression* ret = this->type_->type_descriptor_pointer(context->gogo(),
+                                                            this->location());
+    return expr_to_tree(ret);
   }
 
   void
@@ -13686,65 +14508,6 @@ Expression::make_type_descriptor(Type* type, Location location)
   return new Type_descriptor_expression(type, location);
 }
 
-// An expression which evaluates to a pointer to the Garbage Collection symbol
-// of a type.
-
-class GC_symbol_expression : public Expression
-{
- public:
-  GC_symbol_expression(Type* type)
-    : Expression(EXPRESSION_GC_SYMBOL, Linemap::predeclared_location()),
-      type_(type)
-  {}
-
- protected:
-  Type*
-  do_type()
-  { return Type::lookup_integer_type("uintptr"); }
-
-  bool
-  do_is_immutable() const
-  { return true; }
-
-  void
-  do_determine_type(const Type_context*)
-  { }
-
-  Expression*
-  do_copy()
-  { return this; }
-
-  Bexpression*
-  do_get_backend(Translate_context* context)
-  { return this->type_->gc_symbol_pointer(context->gogo()); }
-
-  void
-  do_dump_expression(Ast_dump_context*) const;
-
- private:
-  // The type which this gc symbol describes.
-  Type* type_;
-};
-
-// Dump ast representation for a gc symbol expression.
-
-void
-GC_symbol_expression::do_dump_expression(
-    Ast_dump_context* ast_dump_context) const
-{
-  ast_dump_context->ostream() << "gcdata(";
-  ast_dump_context->dump_type(this->type_);
-  ast_dump_context->ostream() << ")";
-}
-
-// Make a gc symbol expression.
-
-Expression*
-Expression::make_gc_symbol(Type* type)
-{
-  return new GC_symbol_expression(type);
-}
-
 // An expression which evaluates to some characteristic of a type.
 // This is only used to initialize fields of a type descriptor.  Using
 // a new expression class is slightly inefficient but gives us a good
@@ -13760,10 +14523,6 @@ class Type_info_expression : public Expression
   { }
 
  protected:
-  bool
-  do_is_immutable() const
-  { return true; }
-
   Type*
   do_type();
 
@@ -13775,8 +14534,8 @@ class Type_info_expression : public Expression
   do_copy()
   { return this; }
 
-  Bexpression*
-  do_get_backend(Translate_context* context);
+  tree
+  do_get_tree(Translate_context* context);
 
   void
   do_dump_expression(Ast_dump_context*) const;
@@ -13806,10 +14565,10 @@ Type_info_expression::do_type()
     }
 }
 
-// Return the backend representation for type information.
+// Return type information in GENERIC.
 
-Bexpression*
-Type_info_expression::do_get_backend(Translate_context* context)
+tree
+Type_info_expression::do_get_tree(Translate_context* context)
 {
   Btype* btype = this->type_->get_backend(context->gogo());
   Gogo* gogo = context->gogo();
@@ -13828,13 +14587,9 @@ Type_info_expression::do_get_backend(Translate_context* context)
     default:
       go_unreachable();
     }
-  mpz_t cst;
-  mpz_init_set_ui(cst, val);
-  Btype* int_btype = this->type()->get_backend(gogo);
-  Bexpression* ret =
-    gogo->backend()->integer_constant_expression(int_btype, cst);
-  mpz_clear(cst);
-  return ret;
+  tree val_type_tree = type_to_tree(this->type()->get_backend(gogo));
+  go_assert(val_type_tree != error_mark_node);
+  return build_int_cstu(val_type_tree, val);
 }
 
 // Dump ast representation for a type info expression.
@@ -13889,8 +14644,8 @@ class Slice_info_expression : public Expression
                                      this->location());
   }
 
-  Bexpression*
-  do_get_backend(Translate_context* context);
+  tree
+  do_get_tree(Translate_context* context);
 
   void
   do_dump_expression(Ast_dump_context*) const;
@@ -13924,24 +14679,27 @@ Slice_info_expression::do_type()
     }
 }
 
-// Return the backend information for slice information.
+// Return slice information in GENERIC.
 
-Bexpression*
-Slice_info_expression::do_get_backend(Translate_context* context)
+tree
+Slice_info_expression::do_get_tree(Translate_context* context)
 {
   Gogo* gogo = context->gogo();
-  Bexpression* bslice = this->slice_->get_backend(context);
+
+  Bexpression* bslice = tree_to_expr(this->slice_->get_tree(context));
+  Bexpression* ret;
   switch (this->slice_info_)
     {
     case SLICE_INFO_VALUE_POINTER:
     case SLICE_INFO_LENGTH:
     case SLICE_INFO_CAPACITY:
-      return gogo->backend()->struct_field_expression(bslice, this->slice_info_,
-						      this->location());
+      ret = gogo->backend()->struct_field_expression(bslice, this->slice_info_,
+                                                     this->location());
       break;
     default:
       go_unreachable();
     }
+  return expr_to_tree(ret);
 }
 
 // Dump ast representation for a type info expression.
@@ -13970,99 +14728,6 @@ Expression::make_slice_info(Expression* slice, Slice_info slice_info,
   return new Slice_info_expression(slice, slice_info, location);
 }
 
-// An expression that represents a slice value: a struct with value pointer,
-// length, and capacity fields.
-
-class Slice_value_expression : public Expression
-{
- public:
-  Slice_value_expression(Type* type, Expression* valptr, Expression* len,
-                         Expression* cap, Location location)
-      : Expression(EXPRESSION_SLICE_VALUE, location),
-        type_(type), valptr_(valptr), len_(len), cap_(cap)
-  { }
-
- protected:
-  int
-  do_traverse(Traverse*);
-
-  Type*
-  do_type()
-  { return this->type_; }
-
-  void
-  do_determine_type(const Type_context*)
-  { go_unreachable(); }
-
-  Expression*
-  do_copy()
-  {
-    return new Slice_value_expression(this->type_, this->valptr_->copy(),
-                                      this->len_->copy(), this->cap_->copy(),
-                                      this->location());
-  }
-
-  Bexpression*
-  do_get_backend(Translate_context* context);
-
-  void
-  do_dump_expression(Ast_dump_context*) const;
-
- private:
-  // The type of the slice value.
-  Type* type_;
-  // The pointer to the values in the slice.
-  Expression* valptr_;
-  // The length of the slice.
-  Expression* len_;
-  // The capacity of the slice.
-  Expression* cap_;
-};
-
-int
-Slice_value_expression::do_traverse(Traverse* traverse)
-{
-  if (Expression::traverse(&this->valptr_, traverse) == TRAVERSE_EXIT
-      || Expression::traverse(&this->len_, traverse) == TRAVERSE_EXIT
-      || Expression::traverse(&this->cap_, traverse) == TRAVERSE_EXIT)
-    return TRAVERSE_EXIT;
-  return TRAVERSE_CONTINUE;
-}
-
-Bexpression*
-Slice_value_expression::do_get_backend(Translate_context* context)
-{
-  std::vector<Bexpression*> vals(3);
-  vals[0] = this->valptr_->get_backend(context);
-  vals[1] = this->len_->get_backend(context);
-  vals[2] = this->cap_->get_backend(context);
-
-  Gogo* gogo = context->gogo();
-  Btype* btype = this->type_->get_backend(gogo);
-  return gogo->backend()->constructor_expression(btype, vals, this->location());
-}
-
-void
-Slice_value_expression::do_dump_expression(
-    Ast_dump_context* ast_dump_context) const
-{
-  ast_dump_context->ostream() << "slicevalue(";
-  ast_dump_context->ostream() << "values: ";
-  this->valptr_->dump_expression(ast_dump_context);
-  ast_dump_context->ostream() << ", length: ";
-  this->len_->dump_expression(ast_dump_context);
-  ast_dump_context->ostream() << ", capacity: ";
-  this->cap_->dump_expression(ast_dump_context);
-  ast_dump_context->ostream() << ")";
-}
-
-Expression*
-Expression::make_slice_value(Type* at, Expression* valptr, Expression* len,
-                             Expression* cap, Location location)
-{
-  go_assert(at->is_slice_type());
-  return new Slice_value_expression(at, valptr, len, cap, location);
-}
 
 // An expression that evaluates to some characteristic of a non-empty interface.
 // This is used to access the method table or underlying object of an interface.
@@ -14071,7 +14736,7 @@ class Interface_info_expression : public Expression
 {
  public:
   Interface_info_expression(Expression* iface, Interface_info iface_info,
-                            Location location)
+                        Location location)
     : Expression(EXPRESSION_INTERFACE_INFO, location),
       iface_(iface), iface_info_(iface_info)
   { }
@@ -14091,8 +14756,8 @@ class Interface_info_expression : public Expression
                                          this->iface_info_, this->location());
   }
 
-  Bexpression*
-  do_get_backend(Translate_context* context);
+  tree
+  do_get_tree(Translate_context* context);
 
   void
   do_dump_expression(Ast_dump_context*) const;
@@ -14117,12 +14782,9 @@ Interface_info_expression::do_type()
     {
     case INTERFACE_INFO_METHODS:
       {
-        Type* pdt = Type::make_type_descriptor_ptr_type();
-        if (this->iface_->type()->interface_type()->is_empty())
-          return pdt;
-
         Location loc = this->location();
         Struct_field_list* sfl = new Struct_field_list();
+        Type* pdt = Type::make_type_descriptor_ptr_type();
         sfl->push_back(
             Struct_field(Typed_identifier("__type_descriptor", pdt, loc)));
 
@@ -14168,23 +14830,26 @@ Interface_info_expression::do_type()
     }
 }
 
-// Return the backend representation for interface information.
+// Return interface information in GENERIC.
 
-Bexpression*
-Interface_info_expression::do_get_backend(Translate_context* context)
+tree
+Interface_info_expression::do_get_tree(Translate_context* context)
 {
   Gogo* gogo = context->gogo();
-  Bexpression* biface = this->iface_->get_backend(context);
+
+  Bexpression* biface = tree_to_expr(this->iface_->get_tree(context));
+  Bexpression* ret;
   switch (this->iface_info_)
     {
     case INTERFACE_INFO_METHODS:
     case INTERFACE_INFO_OBJECT:
-      return gogo->backend()->struct_field_expression(biface, this->iface_info_,
-						      this->location());
+      ret = gogo->backend()->struct_field_expression(biface, this->iface_info_,
+                                                     this->location());
       break;
     default:
       go_unreachable();
     }
+  return expr_to_tree(ret);
 }
 
 // Dump ast representation for an interface info expression.
@@ -14193,13 +14858,11 @@ void
 Interface_info_expression::do_dump_expression(
     Ast_dump_context* ast_dump_context) const
 {
-  bool is_empty = this->iface_->type()->interface_type()->is_empty();
   ast_dump_context->ostream() << "interfaceinfo(";
   this->iface_->dump_expression(ast_dump_context);
   ast_dump_context->ostream() << ",";
   ast_dump_context->ostream() <<
-      (this->iface_info_ == INTERFACE_INFO_METHODS && !is_empty ? "methods"
-    : this->iface_info_ == INTERFACE_INFO_TYPE_DESCRIPTOR ? "type_descriptor"
+      (this->iface_info_ == INTERFACE_INFO_METHODS ? "methods"
     : this->iface_info_ == INTERFACE_INFO_OBJECT ? "object"
     : "unknown");
   ast_dump_context->ostream() << ")";
@@ -14212,295 +14875,6 @@ Expression::make_interface_info(Expression* iface, Interface_info iface_info,
                                 Location location)
 {
   return new Interface_info_expression(iface, iface_info, location);
-}
-
-// An expression that represents an interface value.  The first field is either
-// a type descriptor for an empty interface or a pointer to the interface method
-// table for a non-empty interface.  The second field is always the object.
-
-class Interface_value_expression : public Expression
-{
- public:
-  Interface_value_expression(Type* type, Expression* first_field,
-                             Expression* obj, Location location)
-      : Expression(EXPRESSION_INTERFACE_VALUE, location),
-        type_(type), first_field_(first_field), obj_(obj)
-  { }
-
- protected:
-  int
-  do_traverse(Traverse*);
-
-  Type*
-  do_type()
-  { return this->type_; }
-
-  void
-  do_determine_type(const Type_context*)
-  { go_unreachable(); }
-
-  Expression*
-  do_copy()
-  {
-    return new Interface_value_expression(this->type_,
-                                          this->first_field_->copy(),
-                                          this->obj_->copy(), this->location());
-  }
-
-  Bexpression*
-  do_get_backend(Translate_context* context);
-
-  void
-  do_dump_expression(Ast_dump_context*) const;
-
- private:
-  // The type of the interface value.
-  Type* type_;
-  // The first field of the interface (either a type descriptor or a pointer
-  // to the method table.
-  Expression* first_field_;
-  // The underlying object of the interface.
-  Expression* obj_;
-};
-
-int
-Interface_value_expression::do_traverse(Traverse* traverse)
-{
-  if (Expression::traverse(&this->first_field_, traverse) == TRAVERSE_EXIT
-      || Expression::traverse(&this->obj_, traverse) == TRAVERSE_EXIT)
-    return TRAVERSE_EXIT;
-  return TRAVERSE_CONTINUE;
-}
-
-Bexpression*
-Interface_value_expression::do_get_backend(Translate_context* context)
-{
-  std::vector<Bexpression*> vals(2);
-  vals[0] = this->first_field_->get_backend(context);
-  vals[1] = this->obj_->get_backend(context);
-
-  Gogo* gogo = context->gogo();
-  Btype* btype = this->type_->get_backend(gogo);
-  return gogo->backend()->constructor_expression(btype, vals, this->location());
-}
-
-void
-Interface_value_expression::do_dump_expression(
-    Ast_dump_context* ast_dump_context) const
-{
-  ast_dump_context->ostream() << "interfacevalue(";
-  ast_dump_context->ostream() <<
-      (this->type_->interface_type()->is_empty()
-       ? "type_descriptor: "
-       : "methods: ");
-  this->first_field_->dump_expression(ast_dump_context);
-  ast_dump_context->ostream() << ", object: ";
-  this->obj_->dump_expression(ast_dump_context);
-  ast_dump_context->ostream() << ")";
-}
-
-Expression*
-Expression::make_interface_value(Type* type, Expression* first_value,
-                                 Expression* object, Location location)
-{
-  return new Interface_value_expression(type, first_value, object, location);
-}
-
-// An interface method table for a pair of types: an interface type and a type
-// that implements that interface.
-
-class Interface_mtable_expression : public Expression
-{
- public:
-  Interface_mtable_expression(Interface_type* itype, Type* type,
-                              bool is_pointer, Location location)
-      : Expression(EXPRESSION_INTERFACE_MTABLE, location),
-        itype_(itype), type_(type), is_pointer_(is_pointer),
-	method_table_type_(NULL), bvar_(NULL)
-  { }
-
- protected:
-  int
-  do_traverse(Traverse*);
-
-  Type*
-  do_type();
-
-  bool
-  is_immutable() const
-  { return true; }
-
-  void
-  do_determine_type(const Type_context*)
-  { go_unreachable(); }
-
-  Expression*
-  do_copy()
-  {
-    return new Interface_mtable_expression(this->itype_, this->type_,
-                                           this->is_pointer_, this->location());
-  }
-
-  bool
-  do_is_addressable() const
-  { return true; }
-
-  Bexpression*
-  do_get_backend(Translate_context* context);
-
-  void
-  do_dump_expression(Ast_dump_context*) const;
-
- private:
-  // The interface type for which the methods are defined.
-  Interface_type* itype_;
-  // The type to construct the interface method table for.
-  Type* type_;
-  // Whether this table contains the method set for the receiver type or the
-  // pointer receiver type.
-  bool is_pointer_;
-  // The type of the method table.
-  Type* method_table_type_;
-  // The backend variable that refers to the interface method table.
-  Bvariable* bvar_;
-};
-
-int
-Interface_mtable_expression::do_traverse(Traverse* traverse)
-{
-  if (Type::traverse(this->itype_, traverse) == TRAVERSE_EXIT
-      || Type::traverse(this->type_, traverse) == TRAVERSE_EXIT)
-    return TRAVERSE_EXIT;
-  return TRAVERSE_CONTINUE;
-}
-
-Type*
-Interface_mtable_expression::do_type()
-{
-  if (this->method_table_type_ != NULL)
-    return this->method_table_type_;
-
-  const Typed_identifier_list* interface_methods = this->itype_->methods();
-  go_assert(!interface_methods->empty());
-
-  Struct_field_list* sfl = new Struct_field_list;
-  Typed_identifier tid("__type_descriptor", Type::make_type_descriptor_ptr_type(),
-                       this->location());
-  sfl->push_back(Struct_field(tid));
-  for (Typed_identifier_list::const_iterator p = interface_methods->begin();
-       p != interface_methods->end();
-       ++p)
-    sfl->push_back(Struct_field(*p));
-  this->method_table_type_ = Type::make_struct_type(sfl, this->location());
-  return this->method_table_type_;
-}
-
-Bexpression*
-Interface_mtable_expression::do_get_backend(Translate_context* context)
-{
-  Gogo* gogo = context->gogo();
-  Location loc = Linemap::predeclared_location();
-  if (this->bvar_ != NULL)
-    return gogo->backend()->var_expression(this->bvar_, this->location());
-
-  const Typed_identifier_list* interface_methods = this->itype_->methods();
-  go_assert(!interface_methods->empty());
-
-  std::string mangled_name = ((this->is_pointer_ ? "__go_pimt__" : "__go_imt_")
-			      + this->itype_->mangled_name(gogo)
-			      + "__"
-			      + this->type_->mangled_name(gogo));
-
-  // See whether this interface has any hidden methods.
-  bool has_hidden_methods = false;
-  for (Typed_identifier_list::const_iterator p = interface_methods->begin();
-       p != interface_methods->end();
-       ++p)
-    {
-      if (Gogo::is_hidden_name(p->name()))
-	{
-	  has_hidden_methods = true;
-	  break;
-	}
-    }
-
-  // We already know that the named type is convertible to the
-  // interface.  If the interface has hidden methods, and the named
-  // type is defined in a different package, then the interface
-  // conversion table will be defined by that other package.
-  if (has_hidden_methods
-      && this->type_->named_type() != NULL
-      && this->type_->named_type()->named_object()->package() != NULL)
-    {
-      Btype* btype = this->type()->get_backend(gogo);
-      this->bvar_ =
-          gogo->backend()->immutable_struct_reference(mangled_name, btype, loc);
-      return gogo->backend()->var_expression(this->bvar_, this->location());
-    }
-
-  // The first element is the type descriptor.
-  Type* td_type;
-  if (!this->is_pointer_)
-    td_type = this->type_;
-  else
-    td_type = Type::make_pointer_type(this->type_);
-
-  // Build an interface method table for a type: a type descriptor followed by a
-  // list of function pointers, one for each interface method.  This is used for
-  // interfaces.
-  Expression_list* svals = new Expression_list();
-  svals->push_back(Expression::make_type_descriptor(td_type, loc));
-
-  Named_type* nt = this->type_->named_type();
-  Struct_type* st = this->type_->struct_type();
-  go_assert(nt != NULL || st != NULL);
-
-  for (Typed_identifier_list::const_iterator p = interface_methods->begin();
-       p != interface_methods->end();
-       ++p)
-    {
-      bool is_ambiguous;
-      Method* m;
-      if (nt != NULL)
-	m = nt->method_function(p->name(), &is_ambiguous);
-      else
-	m = st->method_function(p->name(), &is_ambiguous);
-      go_assert(m != NULL);
-      Named_object* no = m->named_object();
-
-      go_assert(no->is_function() || no->is_function_declaration());
-      svals->push_back(Expression::make_func_code_reference(no, loc));
-    }
-
-  Btype* btype = this->type()->get_backend(gogo);
-  Expression* mtable = Expression::make_struct_composite_literal(this->type(),
-                                                                 svals, loc);
-  Bexpression* ctor = mtable->get_backend(context);
-
-  bool is_public = has_hidden_methods && this->type_->named_type() != NULL;
-  this->bvar_ = gogo->backend()->immutable_struct(mangled_name, false,
-						  !is_public, btype, loc);
-  gogo->backend()->immutable_struct_set_init(this->bvar_, mangled_name, false,
-                                             !is_public, btype, loc, ctor);
-  return gogo->backend()->var_expression(this->bvar_, loc);
-}
-
-void
-Interface_mtable_expression::do_dump_expression(
-    Ast_dump_context* ast_dump_context) const
-{
-  ast_dump_context->ostream() << "__go_"
-                              << (this->is_pointer_ ? "pimt__" : "imt_");
-  ast_dump_context->dump_type(this->itype_);
-  ast_dump_context->ostream() << "__";
-  ast_dump_context->dump_type(this->type_);
-}
-
-Expression*
-Expression::make_interface_mtable_ref(Interface_type* itype, Type* type,
-                                      bool is_pointer, Location location)
-{
-  return new Interface_mtable_expression(itype, type, is_pointer, location);
 }
 
 // An expression which evaluates to the offset of a field within a
@@ -14517,10 +14891,6 @@ class Struct_field_offset_expression : public Expression
   { }
 
  protected:
-  bool
-  do_is_immutable() const
-  { return true; }
-
   Type*
   do_type()
   { return Type::lookup_integer_type("uintptr"); }
@@ -14533,8 +14903,8 @@ class Struct_field_offset_expression : public Expression
   do_copy()
   { return this; }
 
-  Bexpression*
-  do_get_backend(Translate_context* context);
+  tree
+  do_get_tree(Translate_context* context);
 
   void
   do_dump_expression(Ast_dump_context*) const;
@@ -14546,30 +14916,33 @@ class Struct_field_offset_expression : public Expression
   const Struct_field* field_;
 };
 
-// Return the backend representation for a struct field offset.
+// Return a struct field offset in GENERIC.
 
-Bexpression*
-Struct_field_offset_expression::do_get_backend(Translate_context* context)
+tree
+Struct_field_offset_expression::do_get_tree(Translate_context* context)
 {
+  tree type_tree = type_to_tree(this->type_->get_backend(context->gogo()));
+  if (type_tree == error_mark_node)
+    return error_mark_node;
+
+  tree val_type_tree = type_to_tree(this->type()->get_backend(context->gogo()));
+  go_assert(val_type_tree != error_mark_node);
+
   const Struct_field_list* fields = this->type_->fields();
+  tree struct_field_tree = TYPE_FIELDS(type_tree);
   Struct_field_list::const_iterator p;
-  unsigned i = 0;
   for (p = fields->begin();
        p != fields->end();
-       ++p, ++i)
-    if (&*p == this->field_)
-      break;
+       ++p, struct_field_tree = DECL_CHAIN(struct_field_tree))
+    {
+      go_assert(struct_field_tree != NULL_TREE);
+      if (&*p == this->field_)
+	break;
+    }
   go_assert(&*p == this->field_);
 
-  Gogo* gogo = context->gogo();
-  Btype* btype = this->type_->get_backend(gogo);
-
-  size_t offset = gogo->backend()->type_field_offset(btype, i);
-  Type* uptr_type = Type::lookup_integer_type("uintptr");
-  Expression* ret =
-    Expression::make_integer_ul(offset, uptr_type,
-				Linemap::predeclared_location());
-  return ret->get_backend(context);
+  return fold_convert_loc(BUILTINS_LOCATION, val_type_tree,
+			  byte_position(struct_field_tree));
 }
 
 // Dump ast representation for a struct field offset expression.
@@ -14619,11 +14992,12 @@ class Map_descriptor_expression : public Expression
   do_copy()
   { return this; }
 
-  Bexpression*
-  do_get_backend(Translate_context* context)
+  tree
+  do_get_tree(Translate_context* context)
   {
-    return this->type_->map_descriptor_pointer(context->gogo(),
-					       this->location());
+    Bexpression* ret = this->type_->map_descriptor_pointer(context->gogo(),
+                                                           this->location());
+    return expr_to_tree(ret);
   }
 
   void
@@ -14676,9 +15050,11 @@ class Label_addr_expression : public Expression
   do_copy()
   { return new Label_addr_expression(this->label_, this->location()); }
 
-  Bexpression*
-  do_get_backend(Translate_context* context)
-  { return this->label_->get_addr(context, this->location()); }
+  tree
+  do_get_tree(Translate_context* context)
+  {
+    return expr_to_tree(this->label_->get_addr(context, this->location()));
+  }
 
   void
   do_dump_expression(Ast_dump_context* ast_dump_context) const
@@ -14709,14 +15085,12 @@ class Conditional_expression : public Expression
   {}
 
  protected:
-  int
-  do_traverse(Traverse*);
-
   Type*
   do_type();
 
   void
-  do_determine_type(const Type_context*);
+  do_determine_type(const Type_context*)
+  { }
 
   Expression*
   do_copy()
@@ -14725,8 +15099,8 @@ class Conditional_expression : public Expression
                                       this->else_->copy(), this->location());
   }
 
-  Bexpression*
-  do_get_backend(Translate_context* context);
+  tree
+  do_get_tree(Translate_context* context);
 
   void
   do_dump_expression(Ast_dump_context*) const;
@@ -14740,26 +15114,13 @@ class Conditional_expression : public Expression
   Expression* else_;
 };
 
-// Traversal.
-
-int
-Conditional_expression::do_traverse(Traverse* traverse)
-{
-  if (Expression::traverse(&this->cond_, traverse) == TRAVERSE_EXIT
-      || Expression::traverse(&this->then_, traverse) == TRAVERSE_EXIT
-      || Expression::traverse(&this->else_, traverse) == TRAVERSE_EXIT)
-    return TRAVERSE_EXIT;
-  return TRAVERSE_CONTINUE;
-}
-
 // Return the type of the conditional expression.
 
 Type*
 Conditional_expression::do_type()
 {
   Type* result_type = Type::make_void_type();
-  if (Type::are_identical(this->then_->type(), this->else_->type(), false,
-                          NULL))
+  if (this->then_->type() == this->else_->type())
     result_type = this->then_->type();
   else if (this->then_->is_nil_expression()
            || this->else_->is_nil_expression())
@@ -14769,28 +15130,20 @@ Conditional_expression::do_type()
   return result_type;
 }
 
-// Determine type for a conditional expression.
-
-void
-Conditional_expression::do_determine_type(const Type_context* context)
-{
-  this->cond_->determine_type_no_context();
-  this->then_->determine_type(context);
-  this->else_->determine_type(context);
-}
-
 // Get the backend representation of a conditional expression.
 
-Bexpression*
-Conditional_expression::do_get_backend(Translate_context* context)
+tree
+Conditional_expression::do_get_tree(Translate_context* context)
 {
   Gogo* gogo = context->gogo();
   Btype* result_btype = this->type()->get_backend(gogo);
-  Bexpression* cond = this->cond_->get_backend(context);
-  Bexpression* then = this->then_->get_backend(context);
-  Bexpression* belse = this->else_->get_backend(context);
-  return gogo->backend()->conditional_expression(result_btype, cond, then,
-						 belse, this->location());
+  Bexpression* cond = tree_to_expr(this->cond_->get_tree(context));
+  Bexpression* then = tree_to_expr(this->then_->get_tree(context));
+  Bexpression* belse = tree_to_expr(this->else_->get_tree(context));
+  Bexpression* ret =
+      gogo->backend()->conditional_expression(result_btype, cond, then, belse,
+                                              this->location());
+  return expr_to_tree(ret);
 }
 
 // Dump ast representation of a conditional expression.
@@ -14815,107 +15168,6 @@ Expression::make_conditional(Expression* cond, Expression* then,
                              Expression* else_expr, Location location)
 {
   return new Conditional_expression(cond, then, else_expr, location);
-}
-
-// Compound expressions.
-
-class Compound_expression : public Expression
-{
- public:
-  Compound_expression(Expression* init, Expression* expr, Location location)
-      : Expression(EXPRESSION_COMPOUND, location), init_(init), expr_(expr)
-  {}
-
- protected:
-  int
-  do_traverse(Traverse*);
-
-  Type*
-  do_type();
-
-  void
-  do_determine_type(const Type_context*);
-
-  Expression*
-  do_copy()
-  {
-    return new Compound_expression(this->init_->copy(), this->expr_->copy(),
-                                   this->location());
-  }
-
-  Bexpression*
-  do_get_backend(Translate_context* context);
-
-  void
-  do_dump_expression(Ast_dump_context*) const;
-
- private:
-  // The expression that is evaluated first and discarded.
-  Expression* init_;
-  // The expression that is evaluated and returned.
-  Expression* expr_;
-};
-
-// Traversal.
-
-int
-Compound_expression::do_traverse(Traverse* traverse)
-{
-  if (Expression::traverse(&this->init_, traverse) == TRAVERSE_EXIT
-      || Expression::traverse(&this->expr_, traverse) == TRAVERSE_EXIT)
-    return TRAVERSE_EXIT;
-  return TRAVERSE_CONTINUE;
-}
-
-// Return the type of the compound expression.
-
-Type*
-Compound_expression::do_type()
-{
-  return this->expr_->type();
-}
-
-// Determine type for a compound expression.
-
-void
-Compound_expression::do_determine_type(const Type_context* context)
-{
-  this->init_->determine_type_no_context();
-  this->expr_->determine_type(context);
-}
-
-// Get the backend representation of a compound expression.
-
-Bexpression*
-Compound_expression::do_get_backend(Translate_context* context)
-{
-  Gogo* gogo = context->gogo();
-  Bexpression* binit = this->init_->get_backend(context);
-  Bstatement* init_stmt = gogo->backend()->expression_statement(binit);
-  Bexpression* bexpr = this->expr_->get_backend(context);
-  return gogo->backend()->compound_expression(init_stmt, bexpr,
-					      this->location());
-}
-
-// Dump ast representation of a conditional expression.
-
-void
-Compound_expression::do_dump_expression(
-    Ast_dump_context* ast_dump_context) const
-{
-  ast_dump_context->ostream() << "(";
-  ast_dump_context->dump_expression(this->init_);
-  ast_dump_context->ostream() << ",";
-  ast_dump_context->dump_expression(this->expr_);
-  ast_dump_context->ostream() << ") ";
-}
-
-// Make a compound expression.
-
-Expression*
-Expression::make_compound(Expression* init, Expression* expr, Location location)
-{
-  return new Compound_expression(init, expr, location);
 }
 
 // Import an expression.  This comes at the end in order to see the
@@ -15029,8 +15281,10 @@ Numeric_constant::Numeric_constant(const Numeric_constant& a)
       mpfr_init_set(this->u_.float_val, a.u_.float_val, GMP_RNDN);
       break;
     case NC_COMPLEX:
-      mpc_init2(this->u_.complex_val, mpc_precision);
-      mpc_set(this->u_.complex_val, a.u_.complex_val, MPC_RNDNN);
+      mpfr_init_set(this->u_.complex_val.real, a.u_.complex_val.real,
+		    GMP_RNDN);
+      mpfr_init_set(this->u_.complex_val.imag, a.u_.complex_val.imag,
+		    GMP_RNDN);
       break;
     default:
       go_unreachable();
@@ -15057,8 +15311,10 @@ Numeric_constant::operator=(const Numeric_constant& a)
       mpfr_init_set(this->u_.float_val, a.u_.float_val, GMP_RNDN);
       break;
     case NC_COMPLEX:
-      mpc_init2(this->u_.complex_val, mpc_precision);
-      mpc_set(this->u_.complex_val, a.u_.complex_val, MPC_RNDNN);
+      mpfr_init_set(this->u_.complex_val.real, a.u_.complex_val.real,
+		    GMP_RNDN);
+      mpfr_init_set(this->u_.complex_val.imag, a.u_.complex_val.imag,
+		    GMP_RNDN);
       break;
     default:
       go_unreachable();
@@ -15083,7 +15339,8 @@ Numeric_constant::clear()
       mpfr_clear(this->u_.float_val);
       break;
     case NC_COMPLEX:
-      mpc_clear(this->u_.complex_val);
+      mpfr_clear(this->u_.complex_val.real);
+      mpfr_clear(this->u_.complex_val.imag);
       break;
     default:
       go_unreachable();
@@ -15144,13 +15401,13 @@ Numeric_constant::set_float(Type* type, const mpfr_t val)
 // Set to a complex value.
 
 void
-Numeric_constant::set_complex(Type* type, const mpc_t val)
+Numeric_constant::set_complex(Type* type, const mpfr_t real, const mpfr_t imag)
 {
   this->clear();
   this->classification_ = NC_COMPLEX;
   this->type_ = type;
-  mpc_init2(this->u_.complex_val, mpc_precision);
-  mpc_set(this->u_.complex_val, val, MPC_RNDNN);
+  mpfr_init_set(this->u_.complex_val.real, real, GMP_RNDN);
+  mpfr_init_set(this->u_.complex_val.imag, imag, GMP_RNDN);
 }
 
 // Get an int value.
@@ -15183,11 +15440,11 @@ Numeric_constant::get_float(mpfr_t* val) const
 // Get a complex value.
 
 void
-Numeric_constant::get_complex(mpc_t* val) const
+Numeric_constant::get_complex(mpfr_t* real, mpfr_t* imag) const
 {
   go_assert(this->is_complex());
-  mpc_init2(*val, mpc_precision);
-  mpc_set(*val, this->u_.complex_val, MPC_RNDNN);
+  mpfr_init_set(*real, this->u_.complex_val.real, GMP_RNDN);
+  mpfr_init_set(*imag, this->u_.complex_val.imag, GMP_RNDN);
 }
 
 // Express value as unsigned long if possible.
@@ -15203,10 +15460,9 @@ Numeric_constant::to_unsigned_long(unsigned long* val) const
     case NC_FLOAT:
       return this->mpfr_to_unsigned_long(this->u_.float_val, val);
     case NC_COMPLEX:
-      if (!mpfr_zero_p(mpc_imagref(this->u_.complex_val)))
+      if (!mpfr_zero_p(this->u_.complex_val.imag))
 	return NC_UL_NOTINT;
-      return this->mpfr_to_unsigned_long(mpc_realref(this->u_.complex_val),
-					 val);
+      return this->mpfr_to_unsigned_long(this->u_.complex_val.real, val);
     default:
       go_unreachable();
     }
@@ -15261,11 +15517,11 @@ Numeric_constant::to_int(mpz_t* val) const
       mpfr_get_z(*val, this->u_.float_val, GMP_RNDN);
       return true;
     case NC_COMPLEX:
-      if (!mpfr_zero_p(mpc_imagref(this->u_.complex_val))
-	  || !mpfr_integer_p(mpc_realref(this->u_.complex_val)))
+      if (!mpfr_zero_p(this->u_.complex_val.imag)
+	  || !mpfr_integer_p(this->u_.complex_val.real))
 	return false;
       mpz_init(*val);
-      mpfr_get_z(*val, mpc_realref(this->u_.complex_val), GMP_RNDN);
+      mpfr_get_z(*val, this->u_.complex_val.real, GMP_RNDN);
       return true;
     default:
       go_unreachable();
@@ -15287,9 +15543,9 @@ Numeric_constant::to_float(mpfr_t* val) const
       mpfr_init_set(*val, this->u_.float_val, GMP_RNDN);
       return true;
     case NC_COMPLEX:
-      if (!mpfr_zero_p(mpc_imagref(this->u_.complex_val)))
+      if (!mpfr_zero_p(this->u_.complex_val.imag))
 	return false;
-      mpfr_init_set(*val, mpc_realref(this->u_.complex_val), GMP_RNDN);
+      mpfr_init_set(*val, this->u_.complex_val.real, GMP_RNDN);
       return true;
     default:
       go_unreachable();
@@ -15299,20 +15555,22 @@ Numeric_constant::to_float(mpfr_t* val) const
 // Convert value to complex.
 
 bool
-Numeric_constant::to_complex(mpc_t* val) const
+Numeric_constant::to_complex(mpfr_t* vr, mpfr_t* vi) const
 {
-  mpc_init2(*val, mpc_precision);
   switch (this->classification_)
     {
     case NC_INT:
     case NC_RUNE:
-      mpc_set_z(*val, this->u_.int_val, MPC_RNDNN);
+      mpfr_init_set_z(*vr, this->u_.int_val, GMP_RNDN);
+      mpfr_init_set_ui(*vi, 0, GMP_RNDN);
       return true;
     case NC_FLOAT:
-      mpc_set_fr(*val, this->u_.float_val, MPC_RNDNN);
+      mpfr_init_set(*vr, this->u_.float_val, GMP_RNDN);
+      mpfr_init_set_ui(*vi, 0, GMP_RNDN);
       return true;
     case NC_COMPLEX:
-      mpc_set(*val, this->u_.complex_val, MPC_RNDNN);
+      mpfr_init_set(*vr, this->u_.complex_val.real, GMP_RNDN);
+      mpfr_init_set(*vi, this->u_.complex_val.imag, GMP_RNDN);
       return true;
     default:
       go_unreachable();
@@ -15390,15 +15648,15 @@ Numeric_constant::check_int_type(Integer_type* type, bool issue_error,
       break;
 
     case NC_COMPLEX:
-      if (!mpfr_integer_p(mpc_realref(this->u_.complex_val))
-	  || !mpfr_zero_p(mpc_imagref(this->u_.complex_val)))
+      if (!mpfr_integer_p(this->u_.complex_val.real)
+	  || !mpfr_zero_p(this->u_.complex_val.imag))
 	{
 	  if (issue_error)
 	    error_at(location, "complex constant truncated to integer");
 	  return false;
 	}
       mpz_init(val);
-      mpfr_get_z(val, mpc_realref(this->u_.complex_val), GMP_RNDN);
+      mpfr_get_z(val, this->u_.complex_val.real, GMP_RNDN);
       break;
 
     default:
@@ -15457,13 +15715,13 @@ Numeric_constant::check_float_type(Float_type* type, bool issue_error,
       break;
 
     case NC_COMPLEX:
-      if (!mpfr_zero_p(mpc_imagref(this->u_.complex_val)))
+      if (!mpfr_zero_p(this->u_.complex_val.imag))
 	{
 	  if (issue_error)
 	    error_at(location, "complex constant truncated to float");
 	  return false;
 	}
-      mpfr_init_set(val, mpc_realref(this->u_.complex_val), GMP_RNDN);
+      mpfr_init_set(val, this->u_.complex_val.real, GMP_RNDN);
       break;
 
     default:
@@ -15550,21 +15808,24 @@ Numeric_constant::check_complex_type(Complex_type* type, bool issue_error,
       go_unreachable();
     }
 
-  mpc_t val;
-  mpc_init2(val, mpc_precision);
+  mpfr_t real;
+  mpfr_t imag;
   switch (this->classification_)
     {
     case NC_INT:
     case NC_RUNE:
-      mpc_set_z(val, this->u_.int_val, MPC_RNDNN);
+      mpfr_init_set_z(real, this->u_.int_val, GMP_RNDN);
+      mpfr_init_set_ui(imag, 0, GMP_RNDN);
       break;
 
     case NC_FLOAT:
-      mpc_set_fr(val, this->u_.float_val, MPC_RNDNN);
+      mpfr_init_set(real, this->u_.float_val, GMP_RNDN);
+      mpfr_init_set_ui(imag, 0, GMP_RNDN);
       break;
 
     case NC_COMPLEX:
-      mpc_set(val, this->u_.complex_val, MPC_RNDNN);
+      mpfr_init_set(real, this->u_.complex_val.real, GMP_RNDN);
+      mpfr_init_set(imag, this->u_.complex_val.imag, GMP_RNDN);
       break;
 
     default:
@@ -15572,20 +15833,20 @@ Numeric_constant::check_complex_type(Complex_type* type, bool issue_error,
     }
 
   bool ret = true;
-  if (!mpfr_nan_p(mpc_realref(val))
-      && !mpfr_inf_p(mpc_realref(val))
-      && !mpfr_zero_p(mpc_realref(val))
-      && mpfr_get_exp(mpc_realref(val)) > max_exp)
+  if (!mpfr_nan_p(real)
+      && !mpfr_inf_p(real)
+      && !mpfr_zero_p(real)
+      && mpfr_get_exp(real) > max_exp)
     {
       if (issue_error)
 	error_at(location, "complex real part overflow");
       ret = false;
     }
 
-  if (!mpfr_nan_p(mpc_imagref(val))
-      && !mpfr_inf_p(mpc_imagref(val))
-      && !mpfr_zero_p(mpc_imagref(val))
-      && mpfr_get_exp(mpc_imagref(val)) > max_exp)
+  if (!mpfr_nan_p(imag)
+      && !mpfr_inf_p(imag)
+      && !mpfr_zero_p(imag)
+      && mpfr_get_exp(imag) > max_exp)
     {
       if (issue_error)
 	error_at(location, "complex imaginary part overflow");
@@ -15595,26 +15856,30 @@ Numeric_constant::check_complex_type(Complex_type* type, bool issue_error,
   if (ret)
     {
       // Round the constant to the desired type.
-      mpc_t t;
+      mpfr_t t;
+      mpfr_init(t);
       switch (type->bits())
 	{
 	case 64:
-	  mpc_init2(t, 24);
+	  mpfr_set_prec(t, 24);
 	  break;
 	case 128:
-	  mpc_init2(t, 53);
+	  mpfr_set_prec(t, 53);
 	  break;
 	default:
 	  go_unreachable();
 	}
-      mpc_set(t, val, MPC_RNDNN);
-      mpc_set(val, t, MPC_RNDNN);
-      mpc_clear(t);
+      mpfr_set(t, real, GMP_RNDN);
+      mpfr_set(real, t, GMP_RNDN);
+      mpfr_set(t, imag, GMP_RNDN);
+      mpfr_set(imag, t, GMP_RNDN);
+      mpfr_clear(t);
 
-      this->set_complex(type, val);
+      this->set_complex(type, real, imag);
     }
 
-  mpc_clear(val);
+  mpfr_clear(real);
+  mpfr_clear(imag);
 
   return ret;
 }
@@ -15627,13 +15892,15 @@ Numeric_constant::expression(Location loc) const
   switch (this->classification_)
     {
     case NC_INT:
-      return Expression::make_integer_z(&this->u_.int_val, this->type_, loc);
+      return Expression::make_integer(&this->u_.int_val, this->type_, loc);
     case NC_RUNE:
       return Expression::make_character(&this->u_.int_val, this->type_, loc);
     case NC_FLOAT:
       return Expression::make_float(&this->u_.float_val, this->type_, loc);
     case NC_COMPLEX:
-      return Expression::make_complex(&this->u_.complex_val, this->type_, loc);
+      return Expression::make_complex(&this->u_.complex_val.real,
+				      &this->u_.complex_val.imag,
+				      this->type_, loc);
     default:
       go_unreachable();
     }

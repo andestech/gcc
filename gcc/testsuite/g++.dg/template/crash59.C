@@ -1,6 +1,6 @@
 //PR c++/27329
 
-template<int> struct A                          // { dg-message "forward declaration" }
+template<int> struct A                          // { dg-error "forward declaration" }
 !                                               // { dg-error "expected unqualified-id" }
   ;
 

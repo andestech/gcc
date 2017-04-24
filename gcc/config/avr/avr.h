@@ -63,7 +63,6 @@ enum
 #define AVR_HAVE_JMP_CALL (avr_current_arch->have_jmp_call)
 #define AVR_HAVE_MUL (avr_current_arch->have_mul)
 #define AVR_HAVE_MOVW (avr_current_arch->have_movw_lpmx)
-#define AVR_HAVE_LPM (!AVR_TINY)
 #define AVR_HAVE_LPMX (avr_current_arch->have_movw_lpmx)
 #define AVR_HAVE_ELPM (avr_current_arch->have_elpm)
 #define AVR_HAVE_ELPMX (avr_current_arch->have_elpmx)
@@ -76,7 +75,6 @@ enum
 
 /* Handling of 8-bit SP versus 16-bit SP is as follows:
 
-FIXME: DRIVER_SELF_SPECS has changed.
    -msp8 is used internally to select the right multilib for targets with
    8-bit SP.  -msp8 is set automatically by DRIVER_SELF_SPECS for devices
    with 8-bit SP or by multilib generation machinery.  If a frame pointer is
@@ -91,8 +89,8 @@ FIXME: DRIVER_SELF_SPECS has changed.
    there is always __AVR_SP8__ == __AVR_HAVE_8BIT_SP__.  */
 
 #define AVR_HAVE_8BIT_SP                                 \
-  ((avr_current_device->dev_attribute & AVR_SHORT_SP)    \
-   || TARGET_TINY_STACK || avr_sp8)
+  ((avr_current_device->dev_attribute & AVR_SHORT_SP) || \
+   TARGET_TINY_STACK || avr_sp8)
 
 #define AVR_HAVE_SPH (!avr_sp8)
 
@@ -100,7 +98,6 @@ FIXME: DRIVER_SELF_SPECS has changed.
 #define AVR_3_BYTE_PC (AVR_HAVE_EIJMP_EICALL)
 
 #define AVR_XMEGA (avr_current_arch->xmega_p)
-#define AVR_TINY  (avr_current_arch->tiny_p)
 
 #define BITS_BIG_ENDIAN 0
 #define BYTES_BIG_ENDIAN 0
@@ -307,13 +304,13 @@ enum reg_class {
 
 #define ARG_POINTER_REGNUM 34
 
-#define STATIC_CHAIN_REGNUM ((AVR_TINY) ? 18 :2)
+#define STATIC_CHAIN_REGNUM 2
 
 #define ELIMINABLE_REGS {					\
-    { ARG_POINTER_REGNUM, STACK_POINTER_REGNUM },               \
-    { ARG_POINTER_REGNUM, FRAME_POINTER_REGNUM },               \
-    { FRAME_POINTER_REGNUM, STACK_POINTER_REGNUM },             \
-    { FRAME_POINTER_REGNUM + 1, STACK_POINTER_REGNUM + 1 } }
+      {ARG_POINTER_REGNUM, STACK_POINTER_REGNUM},		\
+      {ARG_POINTER_REGNUM, FRAME_POINTER_REGNUM},		\
+	{FRAME_POINTER_REGNUM, STACK_POINTER_REGNUM}		\
+       ,{FRAME_POINTER_REGNUM+1,STACK_POINTER_REGNUM+1}}
 
 #define INITIAL_ELIMINATION_OFFSET(FROM, TO, OFFSET)			\
   OFFSET = avr_initial_elimination_offset (FROM, TO)
@@ -406,8 +403,7 @@ typedef struct avr_args
   avr_asm_output_aligned_decl_common (STREAM, DECL, NAME, SIZE, ALIGN, false)
 
 #define ASM_OUTPUT_ALIGNED_BSS(FILE, DECL, NAME, SIZE, ALIGN) \
-  avr_asm_asm_output_aligned_bss (FILE, DECL, NAME, SIZE, ALIGN, \
-				  asm_output_aligned_bss)
+  asm_output_aligned_bss (FILE, DECL, NAME, SIZE, ALIGN)
 
 #define ASM_OUTPUT_ALIGNED_DECL_LOCAL(STREAM, DECL, NAME, SIZE, ALIGN)  \
   avr_asm_output_aligned_decl_common (STREAM, DECL, NAME, SIZE, ALIGN, true)
@@ -492,7 +488,22 @@ typedef struct avr_args
 #define ADJUST_INSN_LENGTH(INSN, LENGTH)                \
     (LENGTH = avr_adjust_insn_length (INSN, LENGTH))
 
-#define DRIVER_SELF_SPECS " %{mmcu=*:-specs=device-specs/specs-%*%s %<mmcu=*} "
+extern const char *avr_device_to_as (int argc, const char **argv);
+extern const char *avr_device_to_ld (int argc, const char **argv);
+extern const char *avr_device_to_data_start (int argc, const char **argv);
+extern const char *avr_device_to_startfiles (int argc, const char **argv);
+extern const char *avr_device_to_devicelib (int argc, const char **argv);
+extern const char *avr_device_to_sp8 (int argc, const char **argv);
+
+#define EXTRA_SPEC_FUNCTIONS                            \
+  { "device_to_as", avr_device_to_as },                 \
+  { "device_to_ld", avr_device_to_ld },                 \
+  { "device_to_data_start", avr_device_to_data_start }, \
+  { "device_to_startfile", avr_device_to_startfiles },  \
+  { "device_to_devicelib", avr_device_to_devicelib },   \
+  { "device_to_sp8", avr_device_to_sp8 },
+
+#define DRIVER_SELF_SPECS " %:device_to_sp8(%{mmcu=*:%*}) "
 #define CPP_SPEC ""
 
 #define CC1_SPEC ""
@@ -501,7 +512,7 @@ typedef struct avr_args
     %{!fenforce-eh-specs:-fno-enforce-eh-specs} \
     %{!fexceptions:-fno-exceptions}"
 
-#define ASM_SPEC "%{march=*:-mmcu=%*}%{mrelax: --mlink-relax}"
+#define ASM_SPEC "%:device_to_as(%{mmcu=*:%*}) "
   
 #define LINK_SPEC "\
 %{mrelax:--relax\
@@ -512,7 +523,8 @@ typedef struct avr_args
                              %{mmcu=atmega64*|\
                                mmcu=at90can64*|\
                                mmcu=at90usb64*:--pmem-wrap-around=64k}}}\
-%{march=*:-m%*}\
+%:device_to_ld(%{mmcu=*:%*})\
+%:device_to_data_start(%{mmcu=*:%*})\
 %{shared:%eshared is not supported}"
 
 #define LIB_SPEC \
@@ -524,8 +536,7 @@ typedef struct avr_args
 #define LIBGCC_SPEC \
   "%{!mmcu=at90s1*:%{!mmcu=attiny11:%{!mmcu=attiny12:%{!mmcu=attiny15:%{!mmcu=attiny28: -lgcc }}}}}"
 
-/* The actual definition will come from the device-specific spec file.  */
-#define STARTFILE_SPEC ""
+#define STARTFILE_SPEC "%:device_to_startfile(%{mmcu=*:%*})"
 
 #define ENDFILE_SPEC ""
 
@@ -594,8 +605,3 @@ extern int avr_accumulate_outgoing_args (void);
 #define ACCUMULATE_OUTGOING_ARGS avr_accumulate_outgoing_args()
 
 #define INIT_EXPANDERS avr_init_expanders()
-
-/* Flags used for io and address attributes.  */
-#define SYMBOL_FLAG_IO_LOW	(SYMBOL_FLAG_MACH_DEP << 4)
-#define SYMBOL_FLAG_IO		(SYMBOL_FLAG_MACH_DEP << 5)
-#define SYMBOL_FLAG_ADDRESS	(SYMBOL_FLAG_MACH_DEP << 6)

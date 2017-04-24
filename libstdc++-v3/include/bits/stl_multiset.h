@@ -263,9 +263,28 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       }
 
 #if __cplusplus >= 201103L
-      /// Move assignment operator.
+      /**
+       *  @brief  %Multiset move assignment operator.
+       *  @param  __x  A %multiset of identical element and allocator types.
+       *
+       *  The contents of @a __x are moved into this %multiset (without
+       *  copying if the allocators compare equal or get moved on assignment).
+       *  Afterwards @a __x is in a valid, but unspecified state.
+       */
       multiset&
-      operator=(multiset&&) = default;
+      operator=(multiset&& __x) noexcept(_Alloc_traits::_S_nothrow_move())
+      {
+	if (!_M_t._M_move_assign(__x._M_t))
+	  {
+	    // The rvalue's allocator cannot be moved and is not equal,
+	    // so we need to individually move each element.
+	    clear();
+	    insert(std::__make_move_if_noexcept_iterator(__x._M_t.begin()),
+		   std::__make_move_if_noexcept_iterator(__x._M_t.end()));
+	    __x.clear();
+	  }
+	return *this;
+      }
 
       /**
        *  @brief  %Multiset list assignment operator.
@@ -281,7 +300,8 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       multiset&
       operator=(initializer_list<value_type> __l)
       {
-	_M_t._M_assign_equal(__l.begin(), __l.end());
+	this->clear();
+	this->insert(__l.begin(), __l.end());
 	return *this;
       }
 #endif
@@ -443,7 +463,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
        *  improve the performance of the insertion process.  A bad hint would
        *  cause no gains in efficiency.
        *
-       *  See https://gcc.gnu.org/onlinedocs/libstdc++/manual/associative.html#containers.associative.insert_hints
+       *  See http://gcc.gnu.org/onlinedocs/libstdc++/manual/bk01pt07ch17.html
        *  for more on @a hinting.
        *
        *  Insertion requires logarithmic time (if the hint is not taken).
@@ -493,7 +513,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
        *  improve the performance of the insertion process.  A bad hint would
        *  cause no gains in efficiency.
        *
-       *  See https://gcc.gnu.org/onlinedocs/libstdc++/manual/associative.html#containers.associative.insert_hints
+       *  See http://gcc.gnu.org/onlinedocs/libstdc++/manual/bk01pt07ch17.html
        *  for more on @a hinting.
        *
        *  Insertion requires logarithmic time (if the hint is not taken).

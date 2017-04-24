@@ -29,14 +29,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm.h"
 #include "tree.h"
 #include "c-common.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -51,12 +43,8 @@ along with GCC; see the file COPYING3.  If not see
 #include "flags.h"
 #include "dumpfile.h"
 #include "c-pretty-print.h"
-#include "hash-map.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
 #include "cilk.h"
-#include "c-ubsan.h"
 
 /*  The gimplification pass converts the language-dependent trees
     (ld-trees) emitted by the parser into language-independent trees
@@ -79,52 +67,6 @@ along with GCC; see the file COPYING3.  If not see
     walk back up, we check that they fit our constraints, and copy them
     into temporaries if not.  */
 
-/* Callback for c_genericize.  */
-
-static tree
-ubsan_walk_array_refs_r (tree *tp, int *walk_subtrees, void *data)
-{
-  hash_set<tree> *pset = (hash_set<tree> *) data;
-
-  /* Since walk_tree doesn't call the callback function on the decls
-     in BIND_EXPR_VARS, we have to walk them manually.  */
-  if (TREE_CODE (*tp) == BIND_EXPR)
-    {
-      for (tree decl = BIND_EXPR_VARS (*tp); decl; decl = DECL_CHAIN (decl))
-	{
-	  if (TREE_STATIC (decl))
-	    {
-	      *walk_subtrees = 0;
-	      continue;
-	    }
-	  walk_tree (&DECL_INITIAL (decl), ubsan_walk_array_refs_r, pset,
-		     pset);
-	  walk_tree (&DECL_SIZE (decl), ubsan_walk_array_refs_r, pset, pset);
-	  walk_tree (&DECL_SIZE_UNIT (decl), ubsan_walk_array_refs_r, pset,
-		     pset);
-	}
-    }
-  else if (TREE_CODE (*tp) == ADDR_EXPR
-	   && TREE_CODE (TREE_OPERAND (*tp, 0)) == ARRAY_REF)
-    {
-      ubsan_maybe_instrument_array_ref (&TREE_OPERAND (*tp, 0), true);
-      /* Make sure ubsan_maybe_instrument_array_ref is not called again
-	 on the ARRAY_REF, the above call might not instrument anything
-	 as the index might be constant or masked, so ensure it is not
-	 walked again and walk its subtrees manually.  */
-      tree aref = TREE_OPERAND (*tp, 0);
-      pset->add (aref);
-      *walk_subtrees = 0;
-      walk_tree (&TREE_OPERAND (aref, 0), ubsan_walk_array_refs_r, pset, pset);
-      walk_tree (&TREE_OPERAND (aref, 1), ubsan_walk_array_refs_r, pset, pset);
-      walk_tree (&TREE_OPERAND (aref, 2), ubsan_walk_array_refs_r, pset, pset);
-      walk_tree (&TREE_OPERAND (aref, 3), ubsan_walk_array_refs_r, pset, pset);
-    }
-  else if (TREE_CODE (*tp) == ARRAY_REF)
-    ubsan_maybe_instrument_array_ref (tp, false);
-  return NULL_TREE;
-}
-
 /* Gimplification of statement trees.  */
 
 /* Convert the tree representation of FNDECL from C frontend trees to
@@ -137,15 +79,8 @@ c_genericize (tree fndecl)
   int local_dump_flags;
   struct cgraph_node *cgn;
 
-  if (flag_sanitize & SANITIZE_BOUNDS)
-    {
-      hash_set<tree> pset;
-      walk_tree (&DECL_SAVED_TREE (fndecl), ubsan_walk_array_refs_r, &pset,
-		 &pset);
-    }
-
   /* Dump the C-specific tree IR.  */
-  dump_orig = get_dump_info (TDI_original, &local_dump_flags);
+  dump_orig = dump_begin (TDI_original, &local_dump_flags);
   if (dump_orig)
     {
       fprintf (dump_orig, "\n;; Function %s",
@@ -162,10 +97,12 @@ c_genericize (tree fndecl)
       else
 	print_c_tree (dump_orig, DECL_SAVED_TREE (fndecl));
       fprintf (dump_orig, "\n");
+
+      dump_end (TDI_original, dump_orig);
     }
 
   /* Dump all nested functions now.  */
-  cgn = cgraph_node::get_create (fndecl);
+  cgn = cgraph_get_create_node (fndecl);
   for (cgn = cgn->nested; cgn ; cgn = cgn->next_nested)
     c_genericize (cgn->decl);
 }
@@ -268,16 +205,16 @@ c_gimplify_expr (tree *expr_p, gimple_seq *pre_p ATTRIBUTE_UNUSED,
 	  }
 	break;
       }
-
+      
     case CILK_SPAWN_STMT:
-      gcc_assert
-	(fn_contains_cilk_spawn_p (cfun)
+      gcc_assert 
+	(fn_contains_cilk_spawn_p (cfun) 
 	 && cilk_detect_spawn_and_unwrap (expr_p));
-
+      
       /* If errors are seen, then just process it as a CALL_EXPR.  */
       if (!seen_error ())
 	return (enum gimplify_status) gimplify_cilk_spawn (expr_p);
-
+      
     case MODIFY_EXPR:
     case INIT_EXPR:
     case CALL_EXPR:

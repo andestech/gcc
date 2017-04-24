@@ -4,17 +4,15 @@
 /*  In unit-at-time the functions should be assembled in order
     e q t main, so we realize that they are pure.  */
  
-void link_error (void);
 static int mem;
 static int e(void) __attribute__ ((noinline));
 static int q(void) __attribute__ ((noinline));
 static int t(void) __attribute__ ((noinline));
-int
 main()
 {
 	return t();
 }
-static int t()
+static t()
 {
 	int r,e;
 	if (mem)

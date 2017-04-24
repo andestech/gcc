@@ -24,17 +24,8 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "stor-layout.h"
 #include "tm_p.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
+#include "function.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
 #include "gimple-expr.h"
@@ -59,10 +50,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "target.h"
 #include "cfgloop.h"
 #include "common/common-target.h"
-#include "hash-map.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
-#include "cgraph.h"
 #include "ipa-utils.h"
 
 /* The file implements the tail recursion elimination.  It is also used to
@@ -1072,7 +1059,8 @@ tree_optimize_tail_calls_1 (bool opt_tailcalls)
   if (changed)
     {
       /* We may have created new loops.  Make them magically appear.  */
-      loops_state_set (LOOPS_NEED_FIXUP);
+      if (current_loops)
+	loops_state_set (LOOPS_NEED_FIXUP);
       free_dominance_info (CDI_DOMINATORS);
     }
 
@@ -1085,6 +1073,12 @@ tree_optimize_tail_calls_1 (bool opt_tailcalls)
   if (changed)
     return TODO_cleanup_cfg | TODO_update_ssa_only_virtuals;
   return 0;
+}
+
+static unsigned int
+execute_tail_recursion (void)
+{
+  return tree_optimize_tail_calls_1 (false);
 }
 
 static bool
@@ -1106,12 +1100,14 @@ const pass_data pass_data_tail_recursion =
   GIMPLE_PASS, /* type */
   "tailr", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_NONE, /* tv_id */
   ( PROP_cfg | PROP_ssa ), /* properties_required */
   0, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  0, /* todo_flags_finish */
+  TODO_verify_ssa, /* todo_flags_finish */
 };
 
 class pass_tail_recursion : public gimple_opt_pass
@@ -1123,11 +1119,8 @@ public:
 
   /* opt_pass methods: */
   opt_pass * clone () { return new pass_tail_recursion (m_ctxt); }
-  virtual bool gate (function *) { return gate_tail_calls (); }
-  virtual unsigned int execute (function *)
-    {
-      return tree_optimize_tail_calls_1 (false);
-    }
+  bool gate () { return gate_tail_calls (); }
+  unsigned int execute () { return execute_tail_recursion (); }
 
 }; // class pass_tail_recursion
 
@@ -1146,12 +1139,14 @@ const pass_data pass_data_tail_calls =
   GIMPLE_PASS, /* type */
   "tailc", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_NONE, /* tv_id */
   ( PROP_cfg | PROP_ssa ), /* properties_required */
   0, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  0, /* todo_flags_finish */
+  TODO_verify_ssa, /* todo_flags_finish */
 };
 
 class pass_tail_calls : public gimple_opt_pass
@@ -1162,8 +1157,8 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *) { return gate_tail_calls (); }
-  virtual unsigned int execute (function *) { return execute_tail_calls (); }
+  bool gate () { return gate_tail_calls (); }
+  unsigned int execute () { return execute_tail_calls (); }
 
 }; // class pass_tail_calls
 

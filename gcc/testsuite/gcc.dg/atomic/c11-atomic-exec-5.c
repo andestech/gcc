@@ -4,9 +4,7 @@
    get properly cleared).  */
 /* { dg-do run } */
 /* { dg-options "-std=c11 -pedantic-errors -pthread -U_POSIX_C_SOURCE -D_POSIX_C_SOURCE=200809L" } */
-/* { dg-add-options ieee } */
-/* { dg-additional-options "-mfp-trap-mode=sui" { target alpha*-*-* } } */
-/* { dg-additional-options "-D_XOPEN_SOURCE=600" { target *-*-solaris2.1[0-9]* } } */
+/* { dg-additional-options "-D_XOPEN_SOURCE=600" { target *-*-solaris2.1[0-9]* } }
 /* { dg-require-effective-target fenv_exceptions } */
 /* { dg-require-effective-target pthread } */
 
@@ -23,11 +21,7 @@
 			 | FE_OVERFLOW		\
 			 | FE_UNDERFLOW)
 
-#if defined __alpha__
-  #define ITER_COUNT 100
-#else
-  #define ITER_COUNT 10000
-#endif
+#define ITER_COUNT 10000
 
 static volatile _Atomic bool thread_ready, thread_stop;
 
@@ -507,23 +501,23 @@ main (void)
   ret |= test_main_int_div_double_inexact ();
   ret |= test_main_complex_double_div_overflow ();
   ret |= test_main_long_double_add_invalid ();
-#if LDBL_MANT_DIG != 106
   ret |= test_main_long_double_add_overflow ();
+#if LDBL_MANT_DIG != 106
   ret |= test_main_long_double_add_inexact ();
   ret |= test_main_long_double_add_inexact_int ();
   ret |= test_main_long_double_preinc_inexact ();
   ret |= test_main_long_double_postinc_inexact ();
-  ret |= test_main_complex_long_double_add_overflow ();
 #endif
+  ret |= test_main_complex_long_double_add_overflow ();
   ret |= test_main_long_double_sub_invalid ();
-#if LDBL_MANT_DIG != 106
   ret |= test_main_long_double_sub_overflow ();
+#if LDBL_MANT_DIG != 106
   ret |= test_main_long_double_sub_inexact ();
   ret |= test_main_long_double_sub_inexact_int ();
   ret |= test_main_long_double_predec_inexact ();
   ret |= test_main_long_double_postdec_inexact ();
-  ret |= test_main_complex_long_double_sub_overflow ();
 #endif
+  ret |= test_main_complex_long_double_sub_overflow ();
   ret |= test_main_long_double_mul_invalid ();
   ret |= test_main_long_double_mul_overflow ();
   ret |= test_main_long_double_mul_overflow_float ();

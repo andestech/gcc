@@ -54,17 +54,12 @@ proc ${tool}_check_compile {testcase option objname gcc_output} {
     if { [info proc ${tool}-dg-prune] != "" } {
 	global target_triplet
 	set gcc_output [${tool}-dg-prune $target_triplet $gcc_output]
-	if [string match "*::unsupported::*" $gcc_output] then {
-	    regsub -- "::unsupported::" $gcc_output "" gcc_output
-	    unsupported "$testcase: $gcc_output"
-	    return 0
-	}
-    } else {
-	set unsupported_message [${tool}_check_unsupported_p $gcc_output]
-	if { $unsupported_message != "" } {
-	    unsupported "$testcase: $unsupported_message"
-	    return 0
-	}
+    }
+
+    set unsupported_message [${tool}_check_unsupported_p $gcc_output]
+    if { $unsupported_message != "" } {
+	unsupported "$testcase: $unsupported_message"
+	return 0
     }
 
     # remove any leftover LF/CR to make sure any output is legit
@@ -162,11 +157,6 @@ proc ${tool}_check_unsupported_p { output } {
     if [regexp "(^|\n)\[^\n\]*: region \[^\n\]* is full" $output] {
 	return "memory full"
     }
-    if { [regexp "(^|\n)\[^\n\]*: relocation truncated to fit" $output]
-          && [check_effective_target_tiny] } {
-        return "memory full"
-     }
-
     if { [istarget spu-*-*] && \
 	     [string match "*exceeds local store*" $output] } {
 	return "memory full"
@@ -191,81 +181,6 @@ if { [info procs runtest_file_p] == "" } then {
 	}
 	return 1
     }
-}
-
-if { [info exists env(GCC_RUNTEST_PARALLELIZE_DIR)] \
-     && [info procs runtest_file_p] != [list] \
-     && [info procs gcc_parallelize_saved_runtest_file_p] == [list] } then {
-    global gcc_runtest_parallelize_counter
-    global gcc_runtest_parallelize_counter_minor
-    global gcc_runtest_parallelize_enable
-    global gcc_runtest_parallelize_dir
-    global gcc_runtest_parallelize_last
-
-    set gcc_runtest_parallelize_counter 0
-    set gcc_runtest_parallelize_counter_minor 0
-    set gcc_runtest_parallelize_enable 1
-    set gcc_runtest_parallelize_dir [getenv GCC_RUNTEST_PARALLELIZE_DIR]
-    set gcc_runtest_parallelize_last 0
-
-    proc gcc_parallel_test_run_p { testcase } {
-	global gcc_runtest_parallelize_counter
-	global gcc_runtest_parallelize_counter_minor
-	global gcc_runtest_parallelize_enable
-	global gcc_runtest_parallelize_dir
-	global gcc_runtest_parallelize_last
-
-	if { $gcc_runtest_parallelize_enable == 0 } {
-	    return 1
-	}
-
-	# Only test the filesystem every 10th iteration
-	incr gcc_runtest_parallelize_counter_minor
-	if { $gcc_runtest_parallelize_counter_minor == 10 } {
-	    set gcc_runtest_parallelize_counter_minor 0
-	}
-	if { $gcc_runtest_parallelize_counter_minor != 1 } {
-	    #verbose -log "gcc_parallel_test_run_p $testcase $gcc_runtest_parallelize_counter $gcc_runtest_parallelize_last"
-	    return $gcc_runtest_parallelize_last
-	}
-
-	set path $gcc_runtest_parallelize_dir/$gcc_runtest_parallelize_counter
-
-	if {![catch {open $path {RDWR CREAT EXCL} 0600} fd]} {
-	    close $fd
-	    set gcc_runtest_parallelize_last 1
-	    #verbose -log "gcc_parallel_test_run_p $testcase $gcc_runtest_parallelize_counter 1"
-	    incr gcc_runtest_parallelize_counter
-	    return 1
-	}
-	set gcc_runtest_parallelize_last 0
-	#verbose -log "gcc_parallel_test_run_p $testcase $gcc_runtest_parallelize_counter 0"
-	incr gcc_runtest_parallelize_counter
-	return 0
-    }
-
-    proc gcc_parallel_test_enable { val } {
-	global gcc_runtest_parallelize_enable
-	set gcc_runtest_parallelize_enable $val
-    }
-
-    rename runtest_file_p gcc_parallelize_saved_runtest_file_p
-    proc runtest_file_p { runtests testcase } {
-	if ![gcc_parallelize_saved_runtest_file_p $runtests $testcase] {
-	    return 0
-	}
-	return [gcc_parallel_test_run_p $testcase]
-    }
-
-} else {
-
-    proc gcc_parallel_test_run_p { testcase } {
-	return 1
-    }
-
-    proc gcc_parallel_test_enable { val } {
-    }
-
 }
 
 # Like dg-options, but adds to the default options rather than replacing them.

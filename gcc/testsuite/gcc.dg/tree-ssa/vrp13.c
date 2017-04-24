@@ -2,9 +2,7 @@
 /* { dg-options -O2 }  */
 
 extern void abort (void);
-extern void link_error (void);
 
-int
 foo_div (int i, int j)
 {
   int k;
@@ -113,7 +111,7 @@ foo_div (int i, int j)
   abort ();
 }
 
-int
+
 foo_mult (int i, int j)
 {
   int k;
@@ -211,7 +209,7 @@ foo_mult (int i, int j)
   abort ();
 }
 
-int
+
 main()
 {
   if (foo_div (-10, 5) != -2)

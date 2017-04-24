@@ -28,12 +28,12 @@
  *  Do not attempt to use it directly. @headername{regex}
  */
 
-// A non-standard switch to let the user pick the matching algorithm.
-// If _GLIBCXX_REGEX_USE_THOMPSON_NFA is defined, the thompson NFA
-// algorithm will be used. This algorithm is not enabled by default,
-// and cannot be used if the regex contains back-references, but has better
-// (polynomial instead of exponential) worst case performance.
-// See __regex_algo_impl below.
+// See below __regex_algo_impl to get what this is talking about. The default
+// value 1 indicated a conservative optimization without giving up worst case
+// performance.
+#ifndef _GLIBCXX_REGEX_DFS_QUANTIFIERS_LIMIT
+#define _GLIBCXX_REGEX_DFS_QUANTIFIERS_LIMIT 1
+#endif
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
@@ -62,20 +62,29 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	return false;
 
       typename match_results<_BiIter, _Alloc>::_Base_type& __res = __m;
+      __m._M_begin = __s;
       __res.resize(__re._M_automaton->_M_sub_count() + 2);
       for (auto& __it : __res)
 	__it.matched = false;
 
-      // __policy is used by testsuites so that they can use Thompson NFA
-      // without defining a macro. Users should define
-      // _GLIBCXX_REGEX_USE_THOMPSON_NFA if they need to use this approach.
+      // This function decide which executor to use under given circumstances.
+      // The _S_auto policy now is the following: if a NFA has no
+      // back-references and has more than _GLIBCXX_REGEX_DFS_QUANTIFIERS_LIMIT
+      // quantifiers (*, +, ?), the BFS executor will be used, other wise
+      // DFS executor. This is because DFS executor has a exponential upper
+      // bound, but better best-case performace. Meanwhile, BFS executor can
+      // effectively prevent from exponential-long time matching (which must
+      // contains many quantifiers), but it's slower in average.
+      //
+      // For simple regex, BFS executor could be 2 or more times slower than
+      // DFS executor.
+      //
+      // Of course, BFS executor cannot handle back-references.
       bool __ret;
       if (!__re._M_automaton->_M_has_backref
-	  && !(__re._M_flags & regex_constants::ECMAScript)
-#ifndef _GLIBCXX_REGEX_USE_THOMPSON_NFA
-	  && __policy == _RegexExecutorPolicy::_S_alternate
-#endif
-	  )
+	  && (__policy == _RegexExecutorPolicy::_S_alternate
+	      || __re._M_automaton->_M_quant_count
+		> _GLIBCXX_REGEX_DFS_QUANTIFIERS_LIMIT))
 	{
 	  _Executor<_BiIter, _Alloc, _TraitsT, false>
 	    __executor(__s, __e, __m, __re, __flags);
@@ -266,53 +275,20 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	  "right-curly-bracket",
 	  "tilde",
 	  "DEL",
-	  ""
 	};
 
-      // same as boost
-      //static const char* __digraphs[] =
-      //  {
-      //    "ae",
-      //    "Ae",
-      //    "AE",
-      //    "ch",
-      //    "Ch",
-      //    "CH",
-      //    "ll",
-      //    "Ll",
-      //    "LL",
-      //    "ss",
-      //    "Ss",
-      //    "SS",
-      //    "nj",
-      //    "Nj",
-      //    "NJ",
-      //    "dz",
-      //    "Dz",
-      //    "DZ",
-      //    "lj",
-      //    "Lj",
-      //    "LJ",
-      //    ""
-      //  };
+      string __s;
+      for (; __first != __last; ++__first)
+	__s += __fctyp.narrow(*__first, 0);
 
-      std::string __s(__last - __first, '?');
-      __fctyp.narrow(__first, __last, '?', &*__s.begin());
+      for (const auto& __it : __collatenames)
+	if (__s == __it)
+	  return string_type(1, __fctyp.widen(
+	    static_cast<char>(&__it - __collatenames)));
 
-      for (unsigned int __i = 0; *__collatenames[__i]; __i++)
-	if (__s == __collatenames[__i])
-	  return string_type(1, __fctyp.widen(static_cast<char>(__i)));
+      // TODO Add digraph support:
+      // http://boost.sourceforge.net/libs/regex/doc/collating_names.html
 
-      //for (unsigned int __i = 0; *__digraphs[__i]; __i++)
-      //  {
-      //    const char* __now = __digraphs[__i];
-      //    if (__s == __now)
-      //      {
-      //	string_type ret(__s.size(), __fctyp.widen('?'));
-      //	__fctyp.widen(__now, __now + 2/* ouch */, &*ret.begin());
-      //	return ret;
-      //      }
-      //  }
       return string_type();
     }
 
@@ -323,19 +299,17 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     lookup_classname(_Fwd_iter __first, _Fwd_iter __last, bool __icase) const
     {
       typedef std::ctype<char_type> __ctype_type;
-      typedef std::ctype<char> __cctype_type;
-      typedef const pair<const char*, char_class_type> _ClassnameEntry;
       const __ctype_type& __fctyp(use_facet<__ctype_type>(_M_locale));
-      const __cctype_type& __cctyp(use_facet<__cctype_type>(_M_locale));
 
-      static _ClassnameEntry __classnames[] =
+      // Mappings from class name to class mask.
+      static const pair<const char*, char_class_type> __classnames[] =
       {
 	{"d", ctype_base::digit},
 	{"w", {ctype_base::alnum, _RegexMask::_S_under}},
 	{"s", ctype_base::space},
 	{"alnum", ctype_base::alnum},
 	{"alpha", ctype_base::alpha},
-	{"blank", ctype_base::blank},
+	{"blank", {0, _RegexMask::_S_blank}},
 	{"cntrl", ctype_base::cntrl},
 	{"digit", ctype_base::digit},
 	{"graph", ctype_base::graph},
@@ -347,22 +321,19 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	{"xdigit", ctype_base::xdigit},
       };
 
-      std::string __s(__last - __first, '?');
-      __fctyp.narrow(__first, __last, '?', &__s[0]);
-      __cctyp.tolower(&*__s.begin(), &*__s.begin() + __s.size());
-      for (_ClassnameEntry* __it = __classnames;
-	   __it < *(&__classnames + 1);
-	   ++__it)
-	{
-	  if (__s == __it->first)
-	    {
-	      if (__icase
-		  && ((__it->second
-		       & (ctype_base::lower | ctype_base::upper)) != 0))
-		return ctype_base::alpha;
-	      return __it->second;
-	    }
-	}
+      string __s;
+      for (; __first != __last; ++__first)
+	__s += __fctyp.narrow(__fctyp.tolower(*__first), 0);
+
+      for (const auto& __it : __classnames)
+	if (__s == __it.first)
+	  {
+	    if (__icase
+		&& ((__it.second
+		     & (ctype_base::lower | ctype_base::upper)) != 0))
+	      return ctype_base::alpha;
+	    return __it.second;
+	  }
       return 0;
     }
 
@@ -377,7 +348,11 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       return __fctyp.is(__f._M_base, __c)
 	// [[:w:]]
 	|| ((__f._M_extended & _RegexMask::_S_under)
-	    && __c == __fctyp.widen('_'));
+	    && __c == __fctyp.widen('_'))
+	// [[:blank:]]
+	|| ((__f._M_extended & _RegexMask::_S_blank)
+	    && (__c == __fctyp.widen(' ')
+		|| __c == __fctyp.widen('\t')));
     }
 
   template<typename _Ch_type>
@@ -569,8 +544,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 				   | regex_constants::match_continuous))
 		    {
 		      _GLIBCXX_DEBUG_ASSERT(_M_match[0].matched);
-		      _M_match.at(_M_match.size()).first = __prefix_first;
-		      _M_match._M_in_iterator = true;
+		      auto& __prefix = _M_match.at(_M_match.size());
+		      __prefix.first = __prefix_first;
+		      __prefix.matched = __prefix.first != __prefix.second;
+		      // [28.12.1.4.5]
 		      _M_match._M_begin = _M_begin;
 		      return *this;
 		    }
@@ -582,8 +559,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	  if (regex_search(__start, _M_end, _M_match, *_M_pregex, _M_flags))
 	    {
 	      _GLIBCXX_DEBUG_ASSERT(_M_match[0].matched);
-	      _M_match.at(_M_match.size()).first = __prefix_first;
-	      _M_match._M_in_iterator = true;
+	      auto& __prefix = _M_match.at(_M_match.size());
+	      __prefix.first = __prefix_first;
+	      __prefix.matched = __prefix.first != __prefix.second;
+	      // [28.12.1.4.5]
 	      _M_match._M_begin = _M_begin;
 	    }
 	  else
@@ -602,11 +581,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       _M_position = __rhs._M_position;
       _M_subs = __rhs._M_subs;
       _M_n = __rhs._M_n;
-      _M_result = __rhs._M_result;
       _M_suffix = __rhs._M_suffix;
       _M_has_m1 = __rhs._M_has_m1;
-      if (__rhs._M_result == &__rhs._M_suffix)
-	_M_result = &_M_suffix;
+      _M_normalize_result();
       return *this;
     }
 

@@ -20,23 +20,11 @@ along with GCC; see the file COPYING3.  If not see
 #include "config.h"
 #include "system.h"
 #include "coretypes.h"
-#include "tree.h"
 #include "internal-fn.h"
+#include "tree.h"
 #include "stor-layout.h"
 #include "expr.h"
-#include "insn-codes.h"
 #include "optabs.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "tm.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -45,6 +33,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "gimple.h"
 #include "ubsan.h"
 #include "target.h"
+#include "predict.h"
 #include "stringpool.h"
 #include "tree-ssanames.h"
 #include "diagnostic-core.h"
@@ -86,8 +75,8 @@ static enum insn_code
 get_multi_vector_move (tree array_type, convert_optab optab)
 {
   enum insn_code icode;
-  machine_mode imode;
-  machine_mode vmode;
+  enum machine_mode imode;
+  enum machine_mode vmode;
 
   gcc_assert (TREE_CODE (array_type) == ARRAY_TYPE);
   imode = TYPE_MODE (array_type);
@@ -187,22 +176,6 @@ expand_UBSAN_NULL (gimple stmt ATTRIBUTE_UNUSED)
 /* This should get expanded in the sanopt pass.  */
 
 static void
-expand_UBSAN_BOUNDS (gimple stmt ATTRIBUTE_UNUSED)
-{
-  gcc_unreachable ();
-}
-
-/* This should get expanded in the sanopt pass.  */
-
-static void
-expand_UBSAN_OBJECT_SIZE (gimple stmt ATTRIBUTE_UNUSED)
-{
-  gcc_unreachable ();
-}
-
-/* This should get expanded in the sanopt pass.  */
-
-static void
 expand_ASAN_CHECK (gimple stmt ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
@@ -216,8 +189,7 @@ ubsan_expand_si_overflow_addsub_check (tree_code code, gimple stmt)
 {
   rtx res, op0, op1;
   tree lhs, fn, arg0, arg1;
-  rtx_code_label *done_label, *do_error;
-  rtx target = NULL_RTX;
+  rtx done_label, do_error, target = NULL_RTX;
 
   lhs = gimple_call_lhs (stmt);
   arg0 = gimple_call_arg (stmt, 0);
@@ -228,7 +200,7 @@ ubsan_expand_si_overflow_addsub_check (tree_code code, gimple stmt)
   op0 = expand_normal (arg0);
   op1 = expand_normal (arg1);
 
-  machine_mode mode = TYPE_MODE (TREE_TYPE (arg0));
+  enum machine_mode mode = TYPE_MODE (TREE_TYPE (arg0));
   if (lhs)
     target = expand_expr (lhs, NULL_RTX, VOIDmode, EXPAND_WRITE);
 
@@ -237,7 +209,7 @@ ubsan_expand_si_overflow_addsub_check (tree_code code, gimple stmt)
   if (icode != CODE_FOR_nothing)
     {
       struct expand_operand ops[4];
-      rtx_insn *last = get_last_insn ();
+      rtx last = get_last_insn ();
 
       res = gen_reg_rtx (mode);
       create_output_operand (&ops[0], res, mode);
@@ -263,7 +235,7 @@ ubsan_expand_si_overflow_addsub_check (tree_code code, gimple stmt)
 
   if (icode == CODE_FOR_nothing)
     {
-      rtx_code_label *sub_check = gen_label_rtx ();
+      rtx sub_check = gen_label_rtx ();
       int pos_neg = 3;
 
       /* Compute the operation.  On RTL level, the addition is always
@@ -289,12 +261,12 @@ ubsan_expand_si_overflow_addsub_check (tree_code code, gimple stmt)
 	;
       else if (code == PLUS_EXPR && TREE_CODE (arg0) == SSA_NAME)
 	{
-	  wide_int arg0_min, arg0_max;
+	  double_int arg0_min, arg0_max;
 	  if (get_range_info (arg0, &arg0_min, &arg0_max) == VR_RANGE)
 	    {
-	      if (!wi::neg_p (arg0_min, TYPE_SIGN (TREE_TYPE (arg0))))
+	      if (!arg0_min.is_negative ())
 		pos_neg = 1;
-	      else if (wi::neg_p (arg0_max, TYPE_SIGN (TREE_TYPE (arg0))))
+	      else if (arg0_max.is_negative ())
 		pos_neg = 2;
 	    }
 	  if (pos_neg != 3)
@@ -306,12 +278,12 @@ ubsan_expand_si_overflow_addsub_check (tree_code code, gimple stmt)
 	}
       if (pos_neg == 3 && !CONST_INT_P (op1) && TREE_CODE (arg1) == SSA_NAME)
 	{
-	  wide_int arg1_min, arg1_max;
+	  double_int arg1_min, arg1_max;
 	  if (get_range_info (arg1, &arg1_min, &arg1_max) == VR_RANGE)
 	    {
-	      if (!wi::neg_p (arg1_min, TYPE_SIGN (TREE_TYPE (arg1))))
+	      if (!arg1_min.is_negative ())
 		pos_neg = 1;
-	      else if (wi::neg_p (arg1_max, TYPE_SIGN (TREE_TYPE (arg1))))
+	      else if (arg1_max.is_negative ())
 		pos_neg = 2;
 	    }
 	}
@@ -365,8 +337,7 @@ ubsan_expand_si_overflow_neg_check (gimple stmt)
 {
   rtx res, op1;
   tree lhs, fn, arg1;
-  rtx_code_label *done_label, *do_error;
-  rtx target = NULL_RTX;
+  rtx done_label, do_error, target = NULL_RTX;
 
   lhs = gimple_call_lhs (stmt);
   arg1 = gimple_call_arg (stmt, 1);
@@ -376,7 +347,7 @@ ubsan_expand_si_overflow_neg_check (gimple stmt)
   do_pending_stack_adjust ();
   op1 = expand_normal (arg1);
 
-  machine_mode mode = TYPE_MODE (TREE_TYPE (arg1));
+  enum machine_mode mode = TYPE_MODE (TREE_TYPE (arg1));
   if (lhs)
     target = expand_expr (lhs, NULL_RTX, VOIDmode, EXPAND_WRITE);
 
@@ -384,7 +355,7 @@ ubsan_expand_si_overflow_neg_check (gimple stmt)
   if (icode != CODE_FOR_nothing)
     {
       struct expand_operand ops[3];
-      rtx_insn *last = get_last_insn ();
+      rtx last = get_last_insn ();
 
       res = gen_reg_rtx (mode);
       create_output_operand (&ops[0], res, mode);
@@ -442,8 +413,7 @@ ubsan_expand_si_overflow_mul_check (gimple stmt)
 {
   rtx res, op0, op1;
   tree lhs, fn, arg0, arg1;
-  rtx_code_label *done_label, *do_error;
-  rtx target = NULL_RTX;
+  rtx done_label, do_error, target = NULL_RTX;
 
   lhs = gimple_call_lhs (stmt);
   arg0 = gimple_call_arg (stmt, 0);
@@ -455,7 +425,7 @@ ubsan_expand_si_overflow_mul_check (gimple stmt)
   op0 = expand_normal (arg0);
   op1 = expand_normal (arg1);
 
-  machine_mode mode = TYPE_MODE (TREE_TYPE (arg0));
+  enum machine_mode mode = TYPE_MODE (TREE_TYPE (arg0));
   if (lhs)
     target = expand_expr (lhs, NULL_RTX, VOIDmode, EXPAND_WRITE);
 
@@ -463,7 +433,7 @@ ubsan_expand_si_overflow_mul_check (gimple stmt)
   if (icode != CODE_FOR_nothing)
     {
       struct expand_operand ops[4];
-      rtx_insn *last = get_last_insn ();
+      rtx last = get_last_insn ();
 
       res = gen_reg_rtx (mode);
       create_output_operand (&ops[0], res, mode);
@@ -490,7 +460,7 @@ ubsan_expand_si_overflow_mul_check (gimple stmt)
   if (icode == CODE_FOR_nothing)
     {
       struct separate_ops ops;
-      machine_mode hmode
+      enum machine_mode hmode
 	= mode_for_size (GET_MODE_PRECISION (mode) / 2, MODE_INT, 1);
       ops.op0 = arg0;
       ops.op1 = arg1;
@@ -499,7 +469,7 @@ ubsan_expand_si_overflow_mul_check (gimple stmt)
       if (GET_MODE_2XWIDER_MODE (mode) != VOIDmode
 	  && targetm.scalar_mode_supported_p (GET_MODE_2XWIDER_MODE (mode)))
 	{
-	  machine_mode wmode = GET_MODE_2XWIDER_MODE (mode);
+	  enum machine_mode wmode = GET_MODE_2XWIDER_MODE (mode);
 	  ops.code = WIDEN_MULT_EXPR;
 	  ops.type
 	    = build_nonstandard_integer_type (GET_MODE_PRECISION (wmode), 0);
@@ -521,16 +491,16 @@ ubsan_expand_si_overflow_mul_check (gimple stmt)
       else if (hmode != BLKmode
 	       && 2 * GET_MODE_PRECISION (hmode) == GET_MODE_PRECISION (mode))
 	{
-	  rtx_code_label *large_op0 = gen_label_rtx ();
-	  rtx_code_label *small_op0_large_op1 = gen_label_rtx ();
-	  rtx_code_label *one_small_one_large = gen_label_rtx ();
-	  rtx_code_label *both_ops_large = gen_label_rtx ();
-	  rtx_code_label *after_hipart_neg = gen_label_rtx ();
-	  rtx_code_label *after_lopart_neg = gen_label_rtx ();
-	  rtx_code_label *do_overflow = gen_label_rtx ();
-	  rtx_code_label *hipart_different = gen_label_rtx ();
+	  rtx large_op0 = gen_label_rtx ();
+	  rtx small_op0_large_op1 = gen_label_rtx ();
+	  rtx one_small_one_large = gen_label_rtx ();
+	  rtx both_ops_large = gen_label_rtx ();
+	  rtx after_hipart_neg = gen_label_rtx ();
+	  rtx after_lopart_neg = gen_label_rtx ();
+	  rtx do_overflow = gen_label_rtx ();
+	  rtx hipart_different = gen_label_rtx ();
 
-	  unsigned int hprec = GET_MODE_PRECISION (hmode);
+	  int hprec = GET_MODE_PRECISION (hmode);
 	  rtx hipart0 = expand_shift (RSHIFT_EXPR, mode, op0, hprec,
 				      NULL_RTX, 0);
 	  hipart0 = gen_lowpart (hmode, hipart0);
@@ -562,35 +532,37 @@ ubsan_expand_si_overflow_mul_check (gimple stmt)
 
 	  if (TREE_CODE (arg0) == SSA_NAME)
 	    {
-	      wide_int arg0_min, arg0_max;
+	      double_int arg0_min, arg0_max;
 	      if (get_range_info (arg0, &arg0_min, &arg0_max) == VR_RANGE)
 		{
-		  unsigned int mprec0 = wi::min_precision (arg0_min, SIGNED);
-		  unsigned int mprec1 = wi::min_precision (arg0_max, SIGNED);
-		  if (mprec0 <= hprec && mprec1 <= hprec)
+		  if (arg0_max.sle (double_int::max_value (hprec, false))
+		      && double_int::min_value (hprec, false).sle (arg0_min))
 		    op0_small_p = true;
-		  else if (mprec0 <= hprec + 1 && mprec1 <= hprec + 1)
+		  else if (arg0_max.sle (double_int::max_value (hprec, true))
+			   && (~double_int::max_value (hprec,
+						       true)).sle (arg0_min))
 		    op0_medium_p = true;
-		  if (!wi::neg_p (arg0_min, TYPE_SIGN (TREE_TYPE (arg0))))
+		  if (!arg0_min.is_negative ())
 		    op0_sign = 0;
-		  else if (wi::neg_p (arg0_max, TYPE_SIGN (TREE_TYPE (arg0))))
+		  else if (arg0_max.is_negative ())
 		    op0_sign = -1;
 		}
 	    }
 	  if (TREE_CODE (arg1) == SSA_NAME)
 	    {
-	      wide_int arg1_min, arg1_max;
+	      double_int arg1_min, arg1_max;
 	      if (get_range_info (arg1, &arg1_min, &arg1_max) == VR_RANGE)
 		{
-		  unsigned int mprec0 = wi::min_precision (arg1_min, SIGNED);
-		  unsigned int mprec1 = wi::min_precision (arg1_max, SIGNED);
-		  if (mprec0 <= hprec && mprec1 <= hprec)
+		  if (arg1_max.sle (double_int::max_value (hprec, false))
+		      && double_int::min_value (hprec, false).sle (arg1_min))
 		    op1_small_p = true;
-		  else if (mprec0 <= hprec + 1 && mprec1 <= hprec + 1)
+		  else if (arg1_max.sle (double_int::max_value (hprec, true))
+			   && (~double_int::max_value (hprec,
+						       true)).sle (arg1_min))
 		    op1_medium_p = true;
-		  if (!wi::neg_p (arg1_min, TYPE_SIGN (TREE_TYPE (arg1))))
+		  if (!arg1_min.is_negative ())
 		    op1_sign = 0;
-		  else if (wi::neg_p (arg1_max, TYPE_SIGN (TREE_TYPE (arg1))))
+		  else if (arg1_max.is_negative ())
 		    op1_sign = -1;
 		}
 	    }
@@ -628,12 +600,12 @@ ubsan_expand_si_overflow_mul_check (gimple stmt)
 	  if (GET_CODE (lopart0) == SUBREG)
 	    {
 	      SUBREG_PROMOTED_VAR_P (lopart0) = 1;
-	      SUBREG_PROMOTED_SET (lopart0, 0);
+	      SUBREG_PROMOTED_UNSIGNED_SET (lopart0, 0);
 	    }
 	  if (GET_CODE (lopart1) == SUBREG)
 	    {
 	      SUBREG_PROMOTED_VAR_P (lopart1) = 1;
-	      SUBREG_PROMOTED_SET (lopart1, 0);
+	      SUBREG_PROMOTED_UNSIGNED_SET (lopart1, 0);
 	    }
 	  tree halfstype = build_nonstandard_integer_type (hprec, 0);
 	  ops.op0 = make_tree (halfstype, lopart0);

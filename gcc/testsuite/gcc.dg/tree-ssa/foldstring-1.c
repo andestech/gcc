@@ -1,8 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O1 -fdump-tree-gimple" } */
 
-void blah (void);
-
 void
 arf ()
 {

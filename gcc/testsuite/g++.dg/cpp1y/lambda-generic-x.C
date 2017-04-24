@@ -1,5 +1,5 @@
 // Explicit generic lambda test from N3690 5.1.2.5
-// { dg-do compile { target c++14 } }
+// { dg-do compile { target c++1y } }
 
 #include <iostream>
 

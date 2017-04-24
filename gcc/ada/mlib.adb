@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---                     Copyright (C) 1999-2014, AdaCore                     --
+--                     Copyright (C) 1999-2009, AdaCore                     --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -27,6 +27,7 @@ with Ada.Characters.Handling; use Ada.Characters.Handling;
 with Interfaces.C.Strings;
 with System;
 
+with Hostparm;
 with Opt;
 with Output; use Output;
 
@@ -205,11 +206,8 @@ package body MLib is
 
                         S := new String (1 .. Len + 3);
 
-                        --  Read the file. This loop is probably not necessary
-                        --  since on most (all?) targets, the whole file is
-                        --  read in at once, but we have encountered systems
-                        --  in the past where this was not true, and we retain
-                        --  this loop in case we encounter that in the future.
+                        --  Read the file. Note that the loop is not necessary
+                        --  since the whole file is read at once except on VMS.
 
                         Curr := S'First;
                         while Curr <= Len loop
@@ -461,4 +459,12 @@ package body MLib is
       return Separate_Paths;
    end Separate_Run_Path_Options;
 
+--  Package elaboration
+
+begin
+   --  Copy_Attributes always fails on VMS
+
+   if Hostparm.OpenVMS then
+      Preserve := None;
+   end if;
 end MLib;

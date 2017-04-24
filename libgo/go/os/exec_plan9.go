@@ -52,6 +52,10 @@ func (p *Process) signal(sig Signal) error {
 	if p.done() {
 		return errors.New("os: process already finished")
 	}
+	if sig == Kill {
+		// Special-case the kill signal since it doesn't use /proc/$pid/note.
+		return p.Kill()
+	}
 	if e := p.writeProcFile("note", sig.String()); e != nil {
 		return NewSyscallError("signal", e)
 	}
@@ -59,7 +63,10 @@ func (p *Process) signal(sig Signal) error {
 }
 
 func (p *Process) kill() error {
-	return p.signal(Kill)
+	if e := p.writeProcFile("ctl", "kill"); e != nil {
+		return NewSyscallError("kill", e)
+	}
+	return nil
 }
 
 func (p *Process) wait() (ps *ProcessState, err error) {

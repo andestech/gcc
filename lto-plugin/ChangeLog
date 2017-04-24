@@ -1,21 +1,14 @@
-2014-08-26  H.J. Lu  <hongjiu.lu@intel.com>
+2015-06-26  Release Manager
 
-	PR bootstrap/62260
-	* Makefile.am (gcc_build_dir): Set to @gcc_build_dir@.
-	* configure.ac (gcc_build_dir): Set and AC_SUBST according to
-	$host_subdir.
-	* Makefile.in: Regenerated.
-	* configure: Likewise.
+	* GCC 4.9.3 released.
 
-2014-06-13  Thomas Schwinge  <thomas@codesourcery.com>
+2014-10-30  Release Manager
 
-	* configure.ac (--with-libiberty): New configure option.
-	* configure: Regenerate.
-	* Makefile.am (libiberty, libiberty_noasan, libiberty_pic): New
-	variables.
-	(liblto_plugin_la_LIBADD, liblto_plugin_la_LDFLAGS)
-	(liblto_plugin_la_DEPENDENCIES): Use them.
-	* Makefile.in: Regenerate.
+	* GCC 4.9.2 released.
+
+2014-07-16  Release Manager
+
+	* GCC 4.9.1 released.
 
 2014-05-15  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
 
@@ -23,18 +16,9 @@
 	* configure.ac: Check for -static-libgcc.
 	* configure: Regenerate.
 
-2014-04-17  Jakub Jelinek  <jakub@redhat.com>
+2014-04-22  Release Manager
 
-	PR sanitizer/56781
-	* Makefile.am (CFLAGS, LDFLAGS): Filter out -fsanitize=address.
-	(liblto_plugin_la_LIBADD, liblto_plugin_la_LDFLAGS,
-	liblto_plugin_la_DEPENDENCIES): Prefer ../libiberty/noasan/libiberty.a
-	over ../libiberty/pic/libiberty.a if the former exists.
-	* Makefile.in: Regenerated.
-
-	PR sanitizer/56781
-	* Makefile.am (LTLDFLAGS, liblto_plugin_la_LINK): New variables.
-	* Makefile.in: Regenerated.
+	* GCC 4.9.0 released.
 
 2014-04-02  Richard Biener  <rguenther@suse.de>
 

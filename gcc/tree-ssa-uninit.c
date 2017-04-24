@@ -25,19 +25,11 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "flags.h"
 #include "tm_p.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
+#include "function.h"
 #include "gimple-pretty-print.h"
 #include "bitmap.h"
+#include "pointer-set.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
 #include "gimple-expr.h"
@@ -49,6 +41,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "ssa-iterators.h"
 #include "tree-ssa.h"
 #include "tree-inline.h"
+#include "hashtab.h"
 #include "tree-pass.h"
 #include "diagnostic-core.h"
 #include "params.h"
@@ -67,7 +60,7 @@ along with GCC; see the file COPYING3.  If not see
 /* Pointer set of potentially undefined ssa names, i.e.,
    ssa names that are defined by phi with operands that
    are not defined or potentially undefined.  */
-static hash_set<tree> *possibly_undefined_names = 0;
+static pointer_set_t *possibly_undefined_names = 0;
 
 /* Bit mask handling macros.  */
 #define MASK_SET_BIT(mask, pos) mask |= (1 << pos)
@@ -96,7 +89,7 @@ has_undefined_value_p (tree t)
 {
   return (ssa_undefined_value_p (t)
           || (possibly_undefined_names
-              && possibly_undefined_names->contains (t)));
+              && pointer_set_contains (possibly_undefined_names, t)));
 }
 
 
@@ -130,25 +123,17 @@ uninit_undefined_value_p (tree t) {
 
 /* Emit a warning for EXPR based on variable VAR at the point in the
    program T, an SSA_NAME, is used being uninitialized.  The exact
-   warning text is in MSGID and DATA is the gimple stmt with info about
-   the location in source code. When DATA is a GIMPLE_PHI, PHIARG_IDX
-   gives which argument of the phi node to take the location from.  WC
-   is the warning code.  */
+   warning text is in MSGID and LOCUS may contain a location or be null.
+   WC is the warning code.  */
 
 static void
-warn_uninit (enum opt_code wc, tree t, tree expr, tree var,
-	     const char *gmsgid, void *data, location_t phiarg_loc)
+warn_uninit (enum opt_code wc, tree t,
+	     tree expr, tree var, const char *gmsgid, void *data)
 {
   gimple context = (gimple) data;
   location_t location, cfun_loc;
   expanded_location xloc, floc;
 
-  /* Ignore COMPLEX_EXPR as initializing only a part of a complex
-     turns in a COMPLEX_EXPR with the not initialized part being
-     set to its previous (undefined) value.  */
-  if (is_gimple_assign (context)
-      && gimple_assign_rhs_code (context) == COMPLEX_EXPR)
-    return;
   if (!has_undefined_value_p (t))
     return;
 
@@ -161,12 +146,9 @@ warn_uninit (enum opt_code wc, tree t, tree expr, tree var,
       || TREE_NO_WARNING (expr))
     return;
 
-  if (context != NULL && gimple_has_location (context))
-    location = gimple_location (context);
-  else if (phiarg_loc != UNKNOWN_LOCATION)
-    location = phiarg_loc;
-  else
-    location = DECL_SOURCE_LOCATION (var);
+  location = (context != NULL && gimple_has_location (context))
+	     ? gimple_location (context)
+	     : DECL_SOURCE_LOCATION (var);
   location = linemap_resolve_location (line_table, location,
 				       LRK_SPELLING_LOCATION,
 				       NULL);
@@ -218,16 +200,17 @@ warn_uninitialized_vars (bool warn_possibly_uninitialized)
 		warn_uninit (OPT_Wuninitialized, use,
 			     SSA_NAME_VAR (use), SSA_NAME_VAR (use),
 			     "%qD is used uninitialized in this function",
-			     stmt, UNKNOWN_LOCATION);
+			     stmt);
 	      else if (warn_possibly_uninitialized)
 		warn_uninit (OPT_Wmaybe_uninitialized, use,
 			     SSA_NAME_VAR (use), SSA_NAME_VAR (use),
 			     "%qD may be used uninitialized in this function",
-			     stmt, UNKNOWN_LOCATION);
+			     stmt);
 	    }
 
 	  /* For memory the only cheap thing we can do is see if we
 	     have a use of the default def of the virtual operand.
+	     ???  Note that at -O0 we do not have virtual operands.
 	     ???  Not so cheap would be to use the alias oracle via
 	     walk_aliased_vdefs, if we don't find any aliasing vdef
 	     warn as is-used-uninitialized, if we don't find an aliasing
@@ -254,12 +237,12 @@ warn_uninitialized_vars (bool warn_possibly_uninitialized)
 		warn_uninit (OPT_Wuninitialized, use,
 			     gimple_assign_rhs1 (stmt), base,
 			     "%qE is used uninitialized in this function",
-			     stmt, UNKNOWN_LOCATION);
+			     stmt);
 	      else if (warn_possibly_uninitialized)
 		warn_uninit (OPT_Wmaybe_uninitialized, use,
 			     gimple_assign_rhs1 (stmt), base,
 			     "%qE may be used uninitialized in this function",
-			     stmt, UNKNOWN_LOCATION);
+			     stmt);
 	    }
 	}
     }
@@ -655,13 +638,13 @@ find_predicates (pred_chain_union *preds,
 static void
 collect_phi_def_edges (gimple phi, basic_block cd_root,
                        vec<edge> *edges,
-                       hash_set<gimple> *visited_phis)
+                       pointer_set_t *visited_phis)
 {
   size_t i, n;
   edge opnd_edge;
   tree opnd;
 
-  if (visited_phis->add (phi))
+  if (pointer_set_insert (visited_phis, phi))
     return;
 
   n = gimple_phi_num_args (phi);
@@ -714,6 +697,7 @@ find_def_preds (pred_chain_union *preds, gimple phi)
   vec<edge> def_edges = vNULL;
   bool has_valid_pred = false;
   basic_block phi_bb, cd_root = 0;
+  pointer_set_t *visited_phis;
 
   phi_bb = gimple_bb (phi);
   /* First find the closest dominating bb to be
@@ -722,8 +706,9 @@ find_def_preds (pred_chain_union *preds, gimple phi)
   if (!cd_root)
     return false;
 
-  hash_set<gimple> visited_phis;
-  collect_phi_def_edges (phi, cd_root, &def_edges, &visited_phis);
+  visited_phis = pointer_set_create ();
+  collect_phi_def_edges (phi, cd_root, &def_edges, visited_phis);
+  pointer_set_destroy (visited_phis);
 
   n = def_edges.length ();
   if (n == 0)
@@ -870,11 +855,12 @@ is_value_included_in (tree val, tree boundary, enum tree_code cmpc)
       if (cmpc == EQ_EXPR)
         result = tree_int_cst_equal (val, boundary);
       else if (cmpc == LT_EXPR)
-        result = tree_int_cst_lt (val, boundary);
+        result = INT_CST_LT_UNSIGNED (val, boundary);
       else
         {
           gcc_assert (cmpc == LE_EXPR);
-          result = tree_int_cst_le (val, boundary);
+          result = (tree_int_cst_equal (val, boundary)
+                    || INT_CST_LT_UNSIGNED (val, boundary));
         }
     }
   else
@@ -882,12 +868,12 @@ is_value_included_in (tree val, tree boundary, enum tree_code cmpc)
       if (cmpc == EQ_EXPR)
         result = tree_int_cst_equal (val, boundary);
       else if (cmpc == LT_EXPR)
-        result = tree_int_cst_lt (val, boundary);
+        result = INT_CST_LT (val, boundary);
       else
         {
           gcc_assert (cmpc == LE_EXPR);
           result = (tree_int_cst_equal (val, boundary)
-                    || tree_int_cst_lt (val, boundary));
+                    || INT_CST_LT (val, boundary));
         }
     }
 
@@ -946,7 +932,7 @@ is_use_properly_guarded (gimple use_stmt,
                          basic_block use_bb,
                          gimple phi,
                          unsigned uninit_opnds,
-                         hash_set<gimple> *visited_phis);
+                         pointer_set_t *visited_phis);
 
 /* Returns true if all uninitialized opnds are pruned. Returns false
    otherwise. PHI is the phi node with uninitialized operands,
@@ -988,7 +974,7 @@ prune_uninit_phi_opnds_in_unrealizable_paths (gimple phi,
 					      gimple flag_def,
 					      tree boundary_cst,
 					      enum tree_code cmp_code,
-					      hash_set<gimple> *visited_phis,
+					      pointer_set_t *visited_phis,
 					      bitmap *visited_flag_phis)
 {
   unsigned i;
@@ -1158,7 +1144,7 @@ prune_uninit_phi_opnds_in_unrealizable_paths (gimple phi,
 static bool
 use_pred_not_overlap_with_undef_path_pred (pred_chain_union preds,
 				           gimple phi, unsigned uninit_opnds,
-					   hash_set<gimple> *visited_phis)
+					   pointer_set_t *visited_phis)
 {
   unsigned int i, n;
   gimple flag_def = 0;
@@ -1823,11 +1809,11 @@ push_pred (pred_chain_union *norm_preds, pred_info pred)
 
 inline static void
 push_to_worklist (tree op, vec<pred_info, va_heap, vl_ptr> *work_list,
-                  hash_set<tree> *mark_set)
+                  pointer_set_t *mark_set)
 {
-  if (mark_set->contains (op))
+  if (pointer_set_contains (mark_set, op))
     return;
-  mark_set->add (op);
+  pointer_set_insert (mark_set, op);
 
   pred_info arg_pred;
   arg_pred.pred_lhs = op;
@@ -1912,7 +1898,7 @@ normalize_one_pred_1 (pred_chain_union *norm_preds,
                       pred_info pred,
                       enum tree_code and_or_code,
                       vec<pred_info, va_heap, vl_ptr> *work_list,
-		      hash_set<tree> *mark_set)
+		      pointer_set_t *mark_set)
 {
   if (!is_neq_zero_form_p (pred))
     {
@@ -1992,6 +1978,7 @@ normalize_one_pred (pred_chain_union *norm_preds,
                     pred_info pred)
 {
   vec<pred_info, va_heap, vl_ptr> work_list = vNULL;
+  pointer_set_t *mark_set = NULL;
   enum tree_code and_or_code = ERROR_MARK;
   pred_chain norm_chain = vNULL;
 
@@ -2019,18 +2006,19 @@ normalize_one_pred (pred_chain_union *norm_preds,
     }
 
   work_list.safe_push (pred);
-  hash_set<tree> mark_set;
+  mark_set = pointer_set_create ();
 
   while (!work_list.is_empty ())
     {
       pred_info a_pred = work_list.pop ();
       normalize_one_pred_1 (norm_preds, &norm_chain, a_pred,
-                            and_or_code, &work_list, &mark_set);
+                            and_or_code, &work_list, mark_set);
     }
   if (and_or_code == BIT_AND_EXPR)
     norm_preds->safe_push (norm_chain);
 
   work_list.release ();
+  pointer_set_destroy (mark_set);
 }
 
 static void
@@ -2038,25 +2026,26 @@ normalize_one_pred_chain (pred_chain_union *norm_preds,
                           pred_chain one_chain)
 {
   vec<pred_info, va_heap, vl_ptr> work_list = vNULL;
-  hash_set<tree> mark_set;
+  pointer_set_t *mark_set = pointer_set_create ();
   pred_chain norm_chain = vNULL;
   size_t i;
 
   for (i = 0; i < one_chain.length (); i++)
     {
       work_list.safe_push (one_chain[i]);
-      mark_set.add (one_chain[i].pred_lhs);
+      pointer_set_insert (mark_set, one_chain[i].pred_lhs);
     }
 
   while (!work_list.is_empty ())
     {
       pred_info a_pred = work_list.pop ();
       normalize_one_pred_1 (0, &norm_chain, a_pred,
-                            BIT_AND_EXPR, &work_list, &mark_set);
+                            BIT_AND_EXPR, &work_list, mark_set);
     }
 
   norm_preds->safe_push (norm_chain);
   work_list.release ();
+  pointer_set_destroy (mark_set);
 }
 
 /* Normalize predicate chains PREDS and returns the normalized one.  */
@@ -2114,7 +2103,7 @@ is_use_properly_guarded (gimple use_stmt,
                          basic_block use_bb,
                          gimple phi,
                          unsigned uninit_opnds,
-                         hash_set<gimple> *visited_phis)
+                         pointer_set_t *visited_phis)
 {
   basic_block phi_bb;
   pred_chain_union preds = vNULL;
@@ -2122,7 +2111,7 @@ is_use_properly_guarded (gimple use_stmt,
   bool has_valid_preds = false;
   bool is_properly_guarded = false;
 
-  if (visited_phis->add (phi))
+  if (pointer_set_insert (visited_phis, phi))
     return false;
 
   phi_bb = gimple_bb (phi);
@@ -2183,7 +2172,7 @@ is_use_properly_guarded (gimple use_stmt,
 static gimple
 find_uninit_use (gimple phi, unsigned uninit_opnds,
                  vec<gimple> *worklist,
-		 hash_set<gimple> *added_to_worklist)
+		 pointer_set_t *added_to_worklist)
 {
   tree phi_result;
   use_operand_p use_p;
@@ -2194,11 +2183,14 @@ find_uninit_use (gimple phi, unsigned uninit_opnds,
 
   FOR_EACH_IMM_USE_FAST (use_p, iter, phi_result)
     {
+      pointer_set_t *visited_phis;
       basic_block use_bb;
 
       use_stmt = USE_STMT (use_p);
       if (is_gimple_debug (use_stmt))
 	continue;
+
+      visited_phis = pointer_set_create ();
 
       if (gimple_code (use_stmt) == GIMPLE_PHI)
 	use_bb = gimple_phi_arg_edge (use_stmt,
@@ -2206,10 +2198,13 @@ find_uninit_use (gimple phi, unsigned uninit_opnds,
       else
 	use_bb = gimple_bb (use_stmt);
 
-      hash_set<gimple> visited_phis;
       if (is_use_properly_guarded (use_stmt, use_bb, phi, uninit_opnds,
-                                   &visited_phis))
-	continue;
+                                   visited_phis))
+        {
+          pointer_set_destroy (visited_phis);
+          continue;
+        }
+      pointer_set_destroy (visited_phis);
 
       if (dump_file && (dump_flags & TDF_DETAILS))
         {
@@ -2222,7 +2217,7 @@ find_uninit_use (gimple phi, unsigned uninit_opnds,
 
       /* Found a phi use that is not guarded,
          add the phi to the worklist.  */
-      if (!added_to_worklist->add (use_stmt))
+      if (!pointer_set_insert (added_to_worklist, use_stmt))
         {
           if (dump_file && (dump_flags & TDF_DETAILS))
             {
@@ -2231,7 +2226,7 @@ find_uninit_use (gimple phi, unsigned uninit_opnds,
             }
 
           worklist->safe_push (use_stmt);
-          possibly_undefined_names->add (phi_result);
+          pointer_set_insert (possibly_undefined_names, phi_result);
         }
     }
 
@@ -2248,13 +2243,11 @@ find_uninit_use (gimple phi, unsigned uninit_opnds,
 
 static void
 warn_uninitialized_phi (gimple phi, vec<gimple> *worklist,
-                        hash_set<gimple> *added_to_worklist)
+                        pointer_set_t *added_to_worklist)
 {
   unsigned uninit_opnds;
   gimple uninit_use_stmt = 0;
   tree uninit_op;
-  int phiarg_index;
-  location_t loc;
 
   /* Don't look at virtual operands.  */
   if (virtual_operand_p (gimple_phi_result (phi)))
@@ -2279,19 +2272,84 @@ warn_uninitialized_phi (gimple phi, vec<gimple> *worklist,
   if (!uninit_use_stmt)
     return;
 
-  phiarg_index = MASK_FIRST_SET_BIT (uninit_opnds);
-  uninit_op = gimple_phi_arg_def (phi, phiarg_index);
+  uninit_op = gimple_phi_arg_def (phi, MASK_FIRST_SET_BIT (uninit_opnds));
   if (SSA_NAME_VAR (uninit_op) == NULL_TREE)
     return;
-  if (gimple_phi_arg_has_location (phi, phiarg_index))
-    loc = gimple_phi_arg_location (phi, phiarg_index);
-  else
-    loc = UNKNOWN_LOCATION;
   warn_uninit (OPT_Wmaybe_uninitialized, uninit_op, SSA_NAME_VAR (uninit_op),
 	       SSA_NAME_VAR (uninit_op),
                "%qD may be used uninitialized in this function",
-               uninit_use_stmt, loc);
+               uninit_use_stmt);
 
+}
+
+
+/* Entry point to the late uninitialized warning pass.  */
+
+static unsigned int
+execute_late_warn_uninitialized (void)
+{
+  basic_block bb;
+  gimple_stmt_iterator gsi;
+  vec<gimple> worklist = vNULL;
+  pointer_set_t *added_to_worklist;
+
+  calculate_dominance_info (CDI_DOMINATORS);
+  calculate_dominance_info (CDI_POST_DOMINATORS);
+  /* Re-do the plain uninitialized variable check, as optimization may have
+     straightened control flow.  Do this first so that we don't accidentally
+     get a "may be" warning when we'd have seen an "is" warning later.  */
+  warn_uninitialized_vars (/*warn_possibly_uninitialized=*/1);
+
+  timevar_push (TV_TREE_UNINIT);
+
+  possibly_undefined_names = pointer_set_create ();
+  added_to_worklist = pointer_set_create ();
+
+  /* Initialize worklist  */
+  FOR_EACH_BB_FN (bb, cfun)
+    for (gsi = gsi_start_phis (bb); !gsi_end_p (gsi); gsi_next (&gsi))
+      {
+        gimple phi = gsi_stmt (gsi);
+        size_t n, i;
+
+        n = gimple_phi_num_args (phi);
+
+        /* Don't look at virtual operands.  */
+        if (virtual_operand_p (gimple_phi_result (phi)))
+          continue;
+
+        for (i = 0; i < n; ++i)
+          {
+            tree op = gimple_phi_arg_def (phi, i);
+            if (TREE_CODE (op) == SSA_NAME
+                && uninit_undefined_value_p (op))
+              {
+                worklist.safe_push (phi);
+		pointer_set_insert (added_to_worklist, phi);
+                if (dump_file && (dump_flags & TDF_DETAILS))
+                  {
+                    fprintf (dump_file, "[WORKLIST]: add to initial list: ");
+                    print_gimple_stmt (dump_file, phi, 0, 0);
+                  }
+                break;
+              }
+          }
+      }
+
+  while (worklist.length () != 0)
+    {
+      gimple cur_phi = 0;
+      cur_phi = worklist.pop ();
+      warn_uninitialized_phi (cur_phi, &worklist, added_to_worklist);
+    }
+
+  worklist.release ();
+  pointer_set_destroy (added_to_worklist);
+  pointer_set_destroy (possibly_undefined_names);
+  possibly_undefined_names = NULL;
+  free_dominance_info (CDI_POST_DOMINATORS);
+  timevar_pop (TV_TREE_UNINIT);
+  return 0;
 }
 
 static bool
@@ -2307,6 +2365,8 @@ const pass_data pass_data_late_warn_uninitialized =
   GIMPLE_PASS, /* type */
   "uninit", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_NONE, /* tv_id */
   PROP_ssa, /* properties_required */
   0, /* properties_provided */
@@ -2324,75 +2384,10 @@ public:
 
   /* opt_pass methods: */
   opt_pass * clone () { return new pass_late_warn_uninitialized (m_ctxt); }
-  virtual bool gate (function *) { return gate_warn_uninitialized (); }
-  virtual unsigned int execute (function *);
+  bool gate () { return gate_warn_uninitialized (); }
+  unsigned int execute () { return execute_late_warn_uninitialized (); }
 
 }; // class pass_late_warn_uninitialized
-
-unsigned int
-pass_late_warn_uninitialized::execute (function *fun)
-{
-  basic_block bb;
-  gimple_stmt_iterator gsi;
-  vec<gimple> worklist = vNULL;
-
-  calculate_dominance_info (CDI_DOMINATORS);
-  calculate_dominance_info (CDI_POST_DOMINATORS);
-  /* Re-do the plain uninitialized variable check, as optimization may have
-     straightened control flow.  Do this first so that we don't accidentally
-     get a "may be" warning when we'd have seen an "is" warning later.  */
-  warn_uninitialized_vars (/*warn_possibly_uninitialized=*/1);
-
-  timevar_push (TV_TREE_UNINIT);
-
-  possibly_undefined_names = new hash_set<tree>;
-  hash_set<gimple> added_to_worklist;
-
-  /* Initialize worklist  */
-  FOR_EACH_BB_FN (bb, fun)
-    for (gsi = gsi_start_phis (bb); !gsi_end_p (gsi); gsi_next (&gsi))
-      {
-	gimple phi = gsi_stmt (gsi);
-	size_t n, i;
-
-	n = gimple_phi_num_args (phi);
-
-	/* Don't look at virtual operands.  */
-	if (virtual_operand_p (gimple_phi_result (phi)))
-	  continue;
-
-	for (i = 0; i < n; ++i)
-	  {
-	    tree op = gimple_phi_arg_def (phi, i);
-	    if (TREE_CODE (op) == SSA_NAME
-		&& uninit_undefined_value_p (op))
-	      {
-		worklist.safe_push (phi);
-		added_to_worklist.add (phi);
-		if (dump_file && (dump_flags & TDF_DETAILS))
-		  {
-		    fprintf (dump_file, "[WORKLIST]: add to initial list: ");
-		    print_gimple_stmt (dump_file, phi, 0, 0);
-		  }
-		break;
-	      }
-	  }
-      }
-
-  while (worklist.length () != 0)
-    {
-      gimple cur_phi = 0;
-      cur_phi = worklist.pop ();
-      warn_uninitialized_phi (cur_phi, &worklist, &added_to_worklist);
-    }
-
-  worklist.release ();
-  delete possibly_undefined_names;
-  possibly_undefined_names = NULL;
-  free_dominance_info (CDI_POST_DOMINATORS);
-  timevar_pop (TV_TREE_UNINIT);
-  return 0;
-}
 
 } // anon namespace
 
@@ -2430,6 +2425,8 @@ const pass_data pass_data_early_warn_uninitialized =
   GIMPLE_PASS, /* type */
   "*early_warn_uninitialized", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_TREE_UNINIT, /* tv_id */
   PROP_ssa, /* properties_required */
   0, /* properties_provided */
@@ -2446,11 +2443,8 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *) { return gate_warn_uninitialized (); }
-  virtual unsigned int execute (function *)
-    {
-      return execute_early_warn_uninitialized ();
-    }
+  bool gate () { return gate_warn_uninitialized (); }
+  unsigned int execute () { return execute_early_warn_uninitialized (); }
 
 }; // class pass_early_warn_uninitialized
 

@@ -22,6 +22,12 @@
    see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
    <http://www.gnu.org/licenses/>.  */
 
+/* A target can override (perhaps for backward compatibility) how
+   many dwarf2 columns are unwound.  */
+#ifndef DWARF_FRAME_REGISTERS
+#define DWARF_FRAME_REGISTERS FIRST_PSEUDO_REGISTER
+#endif
+
 /* Xtensa's variable-size register window save areas can be unwound without
    any unwind info.  This is a stripped down version of the standard DWARF
    _Unwind_FrameState.  */

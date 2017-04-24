@@ -1,10 +1,8 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -fdump-tree-cunrolli-details" } */
 void abort (void);
-int q (void);
 int a[10];
 int b[11];
-int
 t (int n)
 {
   int i;

@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 2004-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2004-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -982,6 +982,7 @@ package body Ada.Directories is
       Hour   : Hour_Type;
       Minute : Minute_Type;
       Second : Second_Type;
+      Result : Time;
 
    begin
       --  First, the invalid cases
@@ -998,11 +999,25 @@ package body Ada.Directories is
 
          GM_Split (Date, Year, Month, Day, Hour, Minute, Second);
 
-         --  The result must be in GMT. Ada.Calendar.
+         --  On OpenVMS, the resulting time value must be in the local time
+         --  zone. Ada.Calendar.Time_Of is exactly what we need. Note that
+         --  in both cases, the sub seconds are set to zero (0.0) because the
+         --  time stamp does not store them in its value.
+
+         if OpenVMS then
+            Result :=
+              Ada.Calendar.Time_Of
+                (Year, Month, Day, Seconds_Of (Hour, Minute, Second, 0.0));
+
+         --  On Unix and Windows, the result must be in GMT. Ada.Calendar.
          --  Formatting.Time_Of with default time zone of zero (0) is the
          --  routine of choice.
 
-         return Time_Of (Year, Month, Day, Hour, Minute, Second, 0.0);
+         else
+            Result := Time_Of (Year, Month, Day, Hour, Minute, Second, 0.0);
+         end if;
+
+         return Result;
       end if;
    end Modification_Time;
 
@@ -1235,7 +1250,7 @@ package body Ada.Directories is
    function Size (Name : String) return File_Size is
       C_Name : String (1 .. Name'Length + 1);
 
-      function C_Size (Name : Address) return int64;
+      function C_Size (Name : Address) return Long_Integer;
       pragma Import (C, C_Size, "__gnat_named_file_length");
 
    begin

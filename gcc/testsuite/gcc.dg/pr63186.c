@@ -25,8 +25,6 @@ foo ()
 {
   bar ();
 }
-
-int
 main()
 {
 }

@@ -11,7 +11,7 @@ void * a[255];
 
 __attribute__ ((noinline))
 void
-f (int m)
+f (m)
 {
   int i;
   int sh = 0x100;

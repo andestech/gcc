@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-O2 -fgnu89-inline" } */
+/* { dg-options "-O2" } */
 int do_something_evil (void);
 inline __attribute__ ((always_inline)) void
 q2(void) /* { dg-error "recursive inlining" } */

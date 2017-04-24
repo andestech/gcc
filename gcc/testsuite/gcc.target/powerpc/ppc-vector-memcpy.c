@@ -5,8 +5,6 @@
 
 #include <string.h>
 
-void bar (int *);
-
 void foo(void)
 {
   extern int x[8] __attribute__((aligned(128)));

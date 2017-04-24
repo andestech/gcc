@@ -26,16 +26,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "expr.h"
 #include "intl.h"
 #include "tm.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -44,10 +34,8 @@ along with GCC; see the file COPYING3.  If not see
 #include "gimple.h"
 #include "gimplify.h"
 #include "gimple-iterator.h"
+#include "function.h"
 #include "gimple-ssa.h"
-#include "hash-map.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
 #include "tree-cfg.h"
 #include "stringpool.h"
@@ -130,7 +118,7 @@ instrument_expr (gimple_stmt_iterator gsi, tree expr, bool is_write)
      TODO: handle bit-fields as if touching the whole field.  */
   HOST_WIDE_INT bitsize, bitpos;
   tree offset;
-  machine_mode mode;
+  enum machine_mode mode;
   int volatilep = 0, unsignedp = 0;
   base = get_inner_reference (expr, &bitsize, &bitpos, &offset,
 			      &mode, &unsignedp, &volatilep, false);
@@ -663,25 +651,24 @@ instrument_memory_accesses (void)
 static void
 instrument_func_entry (void)
 {
-  basic_block succ_bb;
-  gimple_stmt_iterator gsi;
   tree ret_addr, builtin_decl;
   gimple g;
-
-  succ_bb = single_succ (ENTRY_BLOCK_PTR_FOR_FN (cfun));
-  gsi = gsi_after_labels (succ_bb);
+  gimple_seq seq = NULL;
 
   builtin_decl = builtin_decl_implicit (BUILT_IN_RETURN_ADDRESS);
   g = gimple_build_call (builtin_decl, 1, integer_zero_node);
   ret_addr = make_ssa_name (ptr_type_node, NULL);
   gimple_call_set_lhs (g, ret_addr);
   gimple_set_location (g, cfun->function_start_locus);
-  gsi_insert_before (&gsi, g, GSI_SAME_STMT);
+  gimple_seq_add_stmt_without_update (&seq, g);
 
-  builtin_decl =  builtin_decl_implicit (BUILT_IN_TSAN_FUNC_ENTRY);
+  builtin_decl = builtin_decl_implicit (BUILT_IN_TSAN_FUNC_ENTRY);
   g = gimple_build_call (builtin_decl, 1, ret_addr);
   gimple_set_location (g, cfun->function_start_locus);
-  gsi_insert_before (&gsi, g, GSI_SAME_STMT);
+  gimple_seq_add_stmt_without_update (&seq, g);
+
+  edge e = single_succ_edge (ENTRY_BLOCK_PTR_FOR_FN (cfun));
+  gsi_insert_seq_on_edge_immediate (e, seq);
 }
 
 /* Instruments function exits.  */
@@ -727,6 +714,14 @@ tsan_pass (void)
   return 0;
 }
 
+/* The pass's gate.  */
+
+static bool
+tsan_gate (void)
+{
+  return (flag_sanitize & SANITIZE_THREAD) != 0;
+}
+
 /* Inserts __tsan_init () into the list of CTORs.  */
 
 void
@@ -751,12 +746,14 @@ const pass_data pass_data_tsan =
   GIMPLE_PASS, /* type */
   "tsan", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_NONE, /* tv_id */
   ( PROP_ssa | PROP_cfg ), /* properties_required */
   0, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  TODO_update_ssa, /* todo_flags_finish */
+  ( TODO_verify_all | TODO_update_ssa ), /* todo_flags_finish */
 };
 
 class pass_tsan : public gimple_opt_pass
@@ -768,12 +765,8 @@ public:
 
   /* opt_pass methods: */
   opt_pass * clone () { return new pass_tsan (m_ctxt); }
-  virtual bool gate (function *)
-{
-  return (flag_sanitize & SANITIZE_THREAD) != 0;
-}
-
-  virtual unsigned int execute (function *) { return tsan_pass (); }
+  bool gate () { return tsan_gate (); }
+  unsigned int execute () { return tsan_pass (); }
 
 }; // class pass_tsan
 
@@ -785,6 +778,12 @@ make_pass_tsan (gcc::context *ctxt)
   return new pass_tsan (ctxt);
 }
 
+static bool
+tsan_gate_O0 (void)
+{
+  return (flag_sanitize & SANITIZE_THREAD) != 0 && !optimize;
+}
+
 namespace {
 
 const pass_data pass_data_tsan_O0 =
@@ -792,12 +791,14 @@ const pass_data pass_data_tsan_O0 =
   GIMPLE_PASS, /* type */
   "tsan0", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_NONE, /* tv_id */
   ( PROP_ssa | PROP_cfg ), /* properties_required */
   0, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  TODO_update_ssa, /* todo_flags_finish */
+  ( TODO_verify_all | TODO_update_ssa ), /* todo_flags_finish */
 };
 
 class pass_tsan_O0 : public gimple_opt_pass
@@ -808,12 +809,8 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *)
-    {
-      return (flag_sanitize & SANITIZE_THREAD) != 0 && !optimize;
-    }
-
-  virtual unsigned int execute (function *) { return tsan_pass (); }
+  bool gate () { return tsan_gate_O0 (); }
+  unsigned int execute () { return tsan_pass (); }
 
 }; // class pass_tsan_O0
 

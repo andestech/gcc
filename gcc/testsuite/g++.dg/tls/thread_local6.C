@@ -1,7 +1,6 @@
 // Test for cleanups in the main thread without -pthread.
 
-/* wrapping doesn't reflect _exit value */
-// { dg-do run { target { c++11 && unwrapped } } }
+// { dg-do run { target c++11 } }
 // { dg-add-options tls }
 // { dg-require-effective-target tls_runtime }
 

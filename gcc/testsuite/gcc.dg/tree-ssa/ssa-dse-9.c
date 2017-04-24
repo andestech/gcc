@@ -2,7 +2,6 @@
 /* { dg-options "-O2 -fdump-tree-dse1-vops" } */
 
 struct { int a, b; } soup1, soup2;
-void
 foo ()
 {
   soup1 = soup2;

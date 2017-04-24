@@ -27,16 +27,11 @@ along with GCC; see the file COPYING3.  If not see
 #include "varasm.h"
 #include "expr.h"
 #include "tm_p.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
 #include "function.h"
 #include "alias.h"
 #include "emit-rtl.h"
 #include "regs.h"
+#include "hard-reg-set.h"
 #include "flags.h"
 #include "diagnostic-core.h"
 #include "cselib.h"
@@ -45,19 +40,14 @@ along with GCC; see the file COPYING3.  If not see
 #include "timevar.h"
 #include "dumpfile.h"
 #include "target.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfganal.h"
-#include "predict.h"
-#include "basic-block.h"
 #include "df.h"
 #include "tree-ssa-alias.h"
+#include "pointer-set.h"
 #include "internal-fn.h"
 #include "gimple-expr.h"
 #include "is-a.h"
 #include "gimple.h"
 #include "gimple-ssa.h"
-#include "rtl-iter.h"
 
 /* The aliasing API provided here solves related but different problems:
 
@@ -161,15 +151,16 @@ typedef struct alias_set_entry_d *alias_set_entry;
 static int rtx_equal_for_memref_p (const_rtx, const_rtx);
 static int memrefs_conflict_p (int, rtx, int, rtx, HOST_WIDE_INT);
 static void record_set (rtx, const_rtx, void *);
-static int base_alias_check (rtx, rtx, rtx, rtx, machine_mode,
-			     machine_mode);
+static int base_alias_check (rtx, rtx, rtx, rtx, enum machine_mode,
+			     enum machine_mode);
 static rtx find_base_value (rtx);
 static int mems_in_disjoint_alias_sets_p (const_rtx, const_rtx);
 static int insert_subset_children (splay_tree_node, void*);
 static alias_set_entry get_alias_set_entry (alias_set_type);
+static bool nonoverlapping_component_refs_p (const_rtx, const_rtx);
 static tree decl_for_component_ref (tree);
 static int write_dependence_p (const_rtx,
-			       const_rtx, machine_mode, rtx,
+			       const_rtx, enum machine_mode, rtx,
 			       bool, bool, bool);
 
 static void memory_modified_1 (rtx, const_rtx, void *);
@@ -312,9 +303,10 @@ ao_ref_from_mem (ao_ref *ref, const_rtx mem)
       && ! is_global_var (base)
       && cfun->gimple_df->decls_to_pointers != NULL)
     {
-      tree *namep = cfun->gimple_df->decls_to_pointers->get (base);
+      void *namep;
+      namep = pointer_map_contains (cfun->gimple_df->decls_to_pointers, base);
       if (namep)
-	ref->base = build_simple_mem_ref (*namep);
+	ref->base = build_simple_mem_ref (*(tree *)namep);
     }
 
   ref->ref_alias_set = MEM_ALIAS_SET (mem);
@@ -349,10 +341,9 @@ ao_ref_from_mem (ao_ref *ref, const_rtx mem)
   if (MEM_EXPR (mem) != get_spill_slot_decl (false)
       && (ref->offset < 0
 	  || (DECL_P (ref->base)
-	      && (DECL_SIZE (ref->base) == NULL_TREE
-		  || TREE_CODE (DECL_SIZE (ref->base)) != INTEGER_CST
-		  || wi::ltu_p (wi::to_offset (DECL_SIZE (ref->base)),
-				ref->offset + ref->size)))))
+	      && (!tree_fits_uhwi_p (DECL_SIZE (ref->base))
+		  || (tree_to_uhwi (DECL_SIZE (ref->base))
+		      < (unsigned HOST_WIDE_INT) (ref->offset + ref->size))))))
     return false;
 
   return true;
@@ -392,17 +383,9 @@ get_alias_set_entry (alias_set_type alias_set)
 static inline int
 mems_in_disjoint_alias_sets_p (const_rtx mem1, const_rtx mem2)
 {
-/* Perform a basic sanity check.  Namely, that there are no alias sets
-   if we're not using strict aliasing.  This helps to catch bugs
-   whereby someone uses PUT_CODE, but doesn't clear MEM_ALIAS_SET, or
-   where a MEM is allocated in some way other than by the use of
-   gen_rtx_MEM, and the MEM_ALIAS_SET is not cleared.  If we begin to
-   use alias sets to indicate that spilled registers cannot alias each
-   other, we might need to remove this check.  */
-  gcc_assert (flag_strict_aliasing
-	      || (!MEM_ALIAS_SET (mem1) && !MEM_ALIAS_SET (mem2)));
-
-  return ! alias_sets_conflict_p (MEM_ALIAS_SET (mem1), MEM_ALIAS_SET (mem2));
+  return (flag_strict_aliasing
+	  && ! alias_sets_conflict_p (MEM_ALIAS_SET (mem1),
+				      MEM_ALIAS_SET (mem2)));
 }
 
 /* Insert the NODE into the splay tree given by DATA.  Used by
@@ -953,7 +936,7 @@ record_alias_subset (alias_set_type superset, alias_set_type subset)
     {
       /* Create an entry for the SUPERSET, so that we have a place to
 	 attach the SUBSET.  */
-      superset_entry = ggc_cleared_alloc<alias_set_entry_d> ();
+      superset_entry = ggc_alloc_cleared_alias_set_entry_d ();
       superset_entry->alias_set = superset;
       superset_entry->children
 	= splay_tree_new_ggc (splay_tree_compare_ints,
@@ -1004,6 +987,17 @@ record_component_aliases (tree type)
     case RECORD_TYPE:
     case UNION_TYPE:
     case QUAL_UNION_TYPE:
+      /* Recursively record aliases for the base classes, if there are any.  */
+      if (TYPE_BINFO (type))
+	{
+	  int i;
+	  tree binfo, base_binfo;
+
+	  for (binfo = TYPE_BINFO (type), i = 0;
+	       BINFO_BASE_ITERATE (binfo, i, base_binfo); i++)
+	    record_alias_subset (superset,
+				 get_alias_set (BINFO_TYPE (base_binfo)));
+	}
       for (field = TYPE_FIELDS (type); field != 0; field = DECL_CHAIN (field))
 	if (TREE_CODE (field) == FIELD_DECL && !DECL_NONADDRESSABLE_P (field))
 	  record_alias_subset (superset, get_alias_set (TREE_TYPE (field)));
@@ -1531,7 +1525,7 @@ rtx_equal_for_memref_p (const_rtx x, const_rtx y)
       return REGNO (x) == REGNO (y);
 
     case LABEL_REF:
-      return LABEL_REF_LABEL (x) == LABEL_REF_LABEL (y);
+      return XEXP (x, 0) == XEXP (y, 0);
 
     case SYMBOL_REF:
       return XSTR (x, 0) == XSTR (y, 0);
@@ -1542,7 +1536,9 @@ rtx_equal_for_memref_p (const_rtx x, const_rtx y)
 
     case VALUE:
     CASE_CONST_UNIQUE:
-      /* Pointer equality guarantees equality for these nodes.  */
+      /* There's no need to compare the contents of CONST_DOUBLEs or
+	 CONST_INTs because pointer equality is a good enough
+	 comparison for these nodes.  */
       return 0;
 
     default:
@@ -1802,7 +1798,7 @@ may_be_sp_based_p (rtx x)
 
 static int
 base_alias_check (rtx x, rtx x_base, rtx y, rtx y_base,
-		  machine_mode x_mode, machine_mode y_mode)
+		  enum machine_mode x_mode, enum machine_mode y_mode)
 {
   /* If the address itself has no known base see if a known equivalent
      value has one.  If either address still has no known base, nothing
@@ -1862,18 +1858,27 @@ base_alias_check (rtx x, rtx x_base, rtx y, rtx y_base,
   return 1;
 }
 
+/* Callback for for_each_rtx, that returns 1 upon encountering a VALUE
+   whose UID is greater than the int uid that D points to.  */
+
+static int
+refs_newer_value_cb (rtx *x, void *d)
+{
+  if (GET_CODE (*x) == VALUE && CSELIB_VAL_PTR (*x)->uid > *(int *)d)
+    return 1;
+
+  return 0;
+}
+
 /* Return TRUE if EXPR refers to a VALUE whose uid is greater than
    that of V.  */
 
 static bool
-refs_newer_value_p (const_rtx expr, rtx v)
+refs_newer_value_p (rtx expr, rtx v)
 {
   int minuid = CSELIB_VAL_PTR (v)->uid;
-  subrtx_iterator::array_type array;
-  FOR_EACH_SUBRTX (iter, array, expr, NONCONST)
-    if (GET_CODE (*iter) == VALUE && CSELIB_VAL_PTR (*iter)->uid > minuid)
-      return true;
-  return false;
+
+  return for_each_rtx (&expr, refs_newer_value_cb, &minuid);
 }
 
 /* Convert the address X into something we can use.  This is done by returning
@@ -2246,6 +2251,68 @@ read_dependence (const_rtx mem, const_rtx x)
   return false;
 }
 
+/* Return true if we can determine that the fields referenced cannot
+   overlap for any pair of objects.  */
+
+static bool
+nonoverlapping_component_refs_p (const_rtx rtlx, const_rtx rtly)
+{
+  const_tree x = MEM_EXPR (rtlx), y = MEM_EXPR (rtly);
+  const_tree fieldx, fieldy, typex, typey, orig_y;
+
+  if (!flag_strict_aliasing
+      || !x || !y
+      || TREE_CODE (x) != COMPONENT_REF
+      || TREE_CODE (y) != COMPONENT_REF)
+    return false;
+
+  do
+    {
+      /* The comparison has to be done at a common type, since we don't
+	 know how the inheritance hierarchy works.  */
+      orig_y = y;
+      do
+	{
+	  fieldx = TREE_OPERAND (x, 1);
+	  typex = TYPE_MAIN_VARIANT (DECL_FIELD_CONTEXT (fieldx));
+
+	  y = orig_y;
+	  do
+	    {
+	      fieldy = TREE_OPERAND (y, 1);
+	      typey = TYPE_MAIN_VARIANT (DECL_FIELD_CONTEXT (fieldy));
+
+	      if (typex == typey)
+		goto found;
+
+	      y = TREE_OPERAND (y, 0);
+	    }
+	  while (y && TREE_CODE (y) == COMPONENT_REF);
+
+	  x = TREE_OPERAND (x, 0);
+	}
+      while (x && TREE_CODE (x) == COMPONENT_REF);
+      /* Never found a common type.  */
+      return false;
+
+    found:
+      /* If we're left with accessing different fields of a structure, then no
+	 possible overlap, unless they are both bitfields.  */
+      if (TREE_CODE (typex) == RECORD_TYPE && fieldx != fieldy)
+	return !(DECL_BIT_FIELD (fieldx) && DECL_BIT_FIELD (fieldy));
+
+      /* The comparison on the current field failed.  If we're accessing
+	 a very nested structure, look at the next outer level.  */
+      x = TREE_OPERAND (x, 0);
+      y = TREE_OPERAND (y, 0);
+    }
+  while (x && y
+	 && TREE_CODE (x) == COMPONENT_REF
+	 && TREE_CODE (y) == COMPONENT_REF);
+
+  return false;
+}
+
 /* Look at the bottom of the COMPONENT_REF list for a DECL, and return it.  */
 
 static tree
@@ -2274,22 +2341,15 @@ adjust_offset_for_component_ref (tree x, bool *known_p,
     {
       tree xoffset = component_ref_field_offset (x);
       tree field = TREE_OPERAND (x, 1);
-      if (TREE_CODE (xoffset) != INTEGER_CST)
-	{
-	  *known_p = false;
-	  return;
-	}
 
-      offset_int woffset
-	= (wi::to_offset (xoffset)
-	   + wi::lrshift (wi::to_offset (DECL_FIELD_BIT_OFFSET (field)),
-			  LOG2_BITS_PER_UNIT));
-      if (!wi::fits_uhwi_p (woffset))
+      if (! tree_fits_uhwi_p (xoffset))
 	{
 	  *known_p = false;
 	  return;
 	}
-      *offset += woffset.to_uhwi ();
+      *offset += (tree_to_uhwi (xoffset)
+		  + (tree_to_uhwi (DECL_FIELD_BIT_OFFSET (field))
+		     / BITS_PER_UNIT));
 
       x = TREE_OPERAND (x, 0);
     }
@@ -2446,7 +2506,7 @@ nonoverlapping_memrefs_p (const_rtx x, const_rtx y, bool loop_invariant)
    Returns 1 if there is a true dependence, 0 otherwise.  */
 
 static int
-true_dependence_1 (const_rtx mem, machine_mode mem_mode, rtx mem_addr,
+true_dependence_1 (const_rtx mem, enum machine_mode mem_mode, rtx mem_addr,
 		   const_rtx x, rtx x_addr, bool mem_canonicalized)
 {
   rtx true_mem_addr;
@@ -2522,13 +2582,16 @@ true_dependence_1 (const_rtx mem, machine_mode mem_mode, rtx mem_addr,
   if (nonoverlapping_memrefs_p (mem, x, false))
     return 0;
 
+  if (nonoverlapping_component_refs_p (mem, x))
+    return 0;
+
   return rtx_refs_may_alias_p (x, mem, true);
 }
 
 /* True dependence: X is read after store in MEM takes place.  */
 
 int
-true_dependence (const_rtx mem, machine_mode mem_mode, const_rtx x)
+true_dependence (const_rtx mem, enum machine_mode mem_mode, const_rtx x)
 {
   return true_dependence_1 (mem, mem_mode, NULL_RTX,
 			    x, NULL_RTX, /*mem_canonicalized=*/false);
@@ -2541,7 +2604,7 @@ true_dependence (const_rtx mem, machine_mode mem_mode, const_rtx x)
    this value prior to canonicalizing.  */
 
 int
-canon_true_dependence (const_rtx mem, machine_mode mem_mode, rtx mem_addr,
+canon_true_dependence (const_rtx mem, enum machine_mode mem_mode, rtx mem_addr,
 		       const_rtx x, rtx x_addr)
 {
   return true_dependence_1 (mem, mem_mode, mem_addr,
@@ -2556,7 +2619,7 @@ canon_true_dependence (const_rtx mem, machine_mode mem_mode, rtx mem_addr,
 
 static int
 write_dependence_p (const_rtx mem,
-		    const_rtx x, machine_mode x_mode, rtx x_addr,
+		    const_rtx x, enum machine_mode x_mode, rtx x_addr,
 		    bool mem_canonicalized, bool x_canonicalized, bool writep)
 {
   rtx mem_addr;
@@ -2651,7 +2714,7 @@ anti_dependence (const_rtx mem, const_rtx x)
 
 int
 canon_anti_dependence (const_rtx mem, bool mem_canonicalized,
-		       const_rtx x, machine_mode x_mode, rtx x_addr)
+		       const_rtx x, enum machine_mode x_mode, rtx x_addr)
 {
   return write_dependence_p (mem, x, x_mode, x_addr,
 			     mem_canonicalized, /*x_canonicalized=*/true,
@@ -2824,8 +2887,7 @@ init_alias_analysis (void)
   int changed, pass;
   int i;
   unsigned int ui;
-  rtx_insn *insn;
-  rtx val;
+  rtx insn, val;
   int rpo_cnt;
   int *rpo;
 

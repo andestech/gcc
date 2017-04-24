@@ -1,5 +1,5 @@
 /* { dg-do compile } */ 
-/* { dg-options "-O2 -fdump-tree-optimized -std=gnu89" } */
+/* { dg-options "-O2 -fdump-tree-optimized" } */
 
 extern void link_error (void);
 

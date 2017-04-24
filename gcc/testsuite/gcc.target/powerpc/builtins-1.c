@@ -1,5 +1,4 @@
 /* { dg-do compile { target { powerpc64le-*-* } } } */
-/* { dg-skip-if "do not override -mcpu" { powerpc*-*-* } { "-mcpu=*" } { "-mcpu=power8" } } */
 /* { dg-options "-mcpu=power8 -O0" } */
 
 /* Test that a number of newly added builtin overloads are accepted

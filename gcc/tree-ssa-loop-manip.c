@@ -23,17 +23,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm.h"
 #include "tree.h"
 #include "tm_p.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfganal.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -609,7 +598,7 @@ verify_loop_closed_ssa (bool verify_ssa_p)
     return;
 
   if (verify_ssa_p)
-    verify_ssa (false, true);
+    verify_ssa (false);
 
   timevar_push (TV_VERIFY_LOOP_CLOSED);
 
@@ -771,6 +760,17 @@ gimple_duplicate_loop_to_header_edge (struct loop *loop, edge e,
     return false;
   if (!loops_state_satisfies_p (LOOPS_HAVE_PREHEADERS))
     return false;
+
+#ifdef ENABLE_CHECKING
+  /* ???  This forces needless update_ssa calls after processing each
+     loop instead of just once after processing all loops.  We should
+     instead verify that loop-closed SSA form is up-to-date for LOOP
+     only (and possibly SSA form).  For now just skip verifying if
+     there are to-be renamed variables.  */
+  if (!need_ssa_update_p (cfun)
+      && loops_state_satisfies_p (LOOP_CLOSED_SSA))
+    verify_loop_closed_ssa (true);
+#endif
 
   first_new_block = last_basic_block_for_fn (cfun);
   if (!duplicate_loop_to_header_edge (loop, e, ndupl, wont_exit,
@@ -1339,7 +1339,7 @@ canonicalize_loop_ivs (struct loop *loop, tree *nit, bool bump_in_latch)
   gimple stmt;
   edge exit = single_dom_exit (loop);
   gimple_seq stmts;
-  machine_mode mode;
+  enum machine_mode mode;
   bool unsigned_p = false;
 
   for (psi = gsi_start_phis (loop->header);

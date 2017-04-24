@@ -1950,6 +1950,9 @@ accept_statement (gfc_statement st)
   switch (st)
     {
     case ST_IMPLICIT_NONE:
+      gfc_set_implicit_none ();
+      break;
+
     case ST_IMPLICIT:
       break;
 
@@ -2139,7 +2142,7 @@ verify_st_order (st_state *p, gfc_statement st, bool silent)
       break;
 
     case ST_IMPLICIT_NONE:
-      if (p->state > ORDER_IMPLICIT)
+      if (p->state > ORDER_IMPLICIT_NONE)
 	goto order;
 
       /* The '>' sign cannot be a '>=', because a FORMAT or ENTRY
@@ -3082,7 +3085,7 @@ declSt:
       break;
     }
 
-  /* If match_deferred_characteristics failed, then there is an error.  */
+  /* If match_deferred_characteristics failed, then there is an error. */
   if (bad_characteristic)
     {
       ts = &gfc_current_block ()->result->ts;
@@ -4866,7 +4869,7 @@ add_global_program (void)
 }
 
 
-/* Resolve all the program units.  */
+/* Resolve all the program units. */
 static void
 resolve_all_program_units (gfc_namespace *gfc_global_ns_list)
 {
@@ -4910,12 +4913,18 @@ clean_up_modules (gfc_gsymbol *gsym)
 /* Translate all the program units. This could be in a different order
    to resolution if there are forward references in the file.  */
 static void
-translate_all_program_units (gfc_namespace *gfc_global_ns_list)
+translate_all_program_units (gfc_namespace *gfc_global_ns_list,
+			     bool main_in_tu)
 {
   int errors;
 
   gfc_current_ns = gfc_global_ns_list;
   gfc_get_errors (NULL, &errors);
+
+  /* If the main program is in the translation unit and we have
+     -fcoarray=libs, generate the static variables.  */
+  if (gfc_option.coarray == GFC_FCOARRAY_LIB && main_in_tu)
+    gfc_init_coarray_decl (true);
 
   /* We first translate all modules to make sure that later parts
      of the program can use the decl. Then we translate the nonmodules.  */
@@ -5138,7 +5147,7 @@ prog_units:
       }
 
   /* Do the translation.  */
-  translate_all_program_units (gfc_global_ns_list);
+  translate_all_program_units (gfc_global_ns_list, seen_program);
 
   gfc_end_source_files ();
   return true;

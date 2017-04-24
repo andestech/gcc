@@ -1,5 +1,5 @@
-/* { dg-do compile } */
-/* { dg-options "--param asan-instrument-writes=0" } */
+/* { dg-do assemble } */
+/* { dg-options "--param asan-instrument-writes=0 -save-temps" } */
 
 volatile int ten = 10;
 
@@ -10,3 +10,4 @@ int main() {
 }
 
 /* { dg-final { scan-assembler-not "__asan_store" } } */
+/* { dg-final { cleanup-saved-temps } } */

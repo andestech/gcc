@@ -11,14 +11,14 @@ public:
   int bar;
 };
 
-void func(Base&);			// { dg-message "argument 1" }
+void func(Base&);			// { dg-message "passing argument 1" } 
 
 void func2(const Derived& d) {
-  func(d);				// { dg-error "" }
+  func(d);				// { dg-error "invalid initialization" }
 }
 
 void
-foo (int& a)				// { dg-message "argument 1" }
+foo (int& a)				// { dg-message "in passing argument 1" } 
 {
 }
 
@@ -27,6 +27,6 @@ int main ()
   int b;
   const int*const a = &b;
   *a = 10;				// { dg-error "read-only location" }
-  foo (*a);				// { dg-error "qualifiers" }
+  foo (*a);				// { dg-error "invalid initialization" }
   return 0;
 }

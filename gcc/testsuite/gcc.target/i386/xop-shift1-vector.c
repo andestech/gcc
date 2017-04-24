@@ -2,7 +2,7 @@
    psha/pshl on XOP systems.  */
 
 /* { dg-do compile { target { ! { ia32 } } } } */
-/* { dg-options "-O2 -mxop -mno-avx2 -ftree-vectorize" } */
+/* { dg-options "-O2 -mxop -ftree-vectorize" } */
 
 extern void exit (int);
 
@@ -27,7 +27,7 @@ left_shift32 (void)
 
 int main ()
 {
-  left_shift32 ();
+  left_shfit32 ();
   exit (0);
 }
 

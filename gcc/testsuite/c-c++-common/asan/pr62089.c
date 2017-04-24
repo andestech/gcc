@@ -1,6 +1,7 @@
 /* { dg-do run } */
 /* { dg-shouldfail "asan" } */
 
+#include <stdbool.h>
 #include <sanitizer/asan_interface.h>
 
 struct vfsmount {};

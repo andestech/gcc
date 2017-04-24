@@ -2,7 +2,7 @@
    Copyright (C) 2004-2014 Free Software Foundation, Inc.
    Contributed by Steven G. Kargl <kargls@comcast.net>.
 
-This file is part of the GNU Fortran runtime library (libgfortran).
+This file is part of the GNU Fortran 95 runtime library (libgfortran).
 
 Libgfortran is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public
@@ -25,7 +25,6 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 
 #include "libgfortran.h"
 
-#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
@@ -41,35 +40,20 @@ iexport_proto(getcwd_i4_sub);
 void
 getcwd_i4_sub (char *cwd, GFC_INTEGER_4 *status, gfc_charlen_type cwd_len)
 {
-  int err;
+  char str[cwd_len + 1];
+  GFC_INTEGER_4 stat;
 
-  if (getcwd (cwd, cwd_len))
-    {
-      size_t len = strlen (cwd);
-      memset (cwd + len, ' ', cwd_len - len);
-      err = 0;
-    }
-  else if (errno == ERANGE)
-    {
-      /* There is a possibility that the previous attempt failed due
-	 to not enough space for the terminating null byte. Try again
-	 with a buffer one char longer.  */
-      char *buf = xmalloc (cwd_len + 1);
-      if (getcwd (buf, cwd_len + 1))
-	{
-	  memcpy (cwd, buf, cwd_len);
-	  err = 0;
-	}
-      else
-	err = errno;
-      free (buf);
-    }
+  memset(cwd, ' ', (size_t) cwd_len);
+
+  if (!getcwd (str, (size_t) cwd_len + 1))
+    stat = errno;
   else
-    err = errno;
-  if (err)
-    memset (cwd, ' ', cwd_len);
+    {
+      stat = 0;
+      memcpy (cwd, str, strlen (str));
+    }
   if (status != NULL)
-    *status = err;
+    *status = stat;
 }
 iexport(getcwd_i4_sub);
 

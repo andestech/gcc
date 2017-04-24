@@ -473,11 +473,6 @@ func TestSplit(t *testing.T) {
 	}
 }
 
-// This ran out of stack before issue 7608 was fixed.
-func TestOnePassCutoff(t *testing.T) {
-	MustCompile(`^(?:x{1,1000}){1,1000}$`)
-}
-
 func BenchmarkLiteral(b *testing.B) {
 	x := strings.Repeat("x", 50) + "y"
 	b.StopTimer()
@@ -578,66 +573,6 @@ func BenchmarkAnchoredLongMatch(b *testing.B) {
 		x = append(x, x...)
 	}
 	re := MustCompile("^.bc(d|e)")
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		re.Match(x)
-	}
-}
-
-func BenchmarkOnePassShortA(b *testing.B) {
-	b.StopTimer()
-	x := []byte("abcddddddeeeededd")
-	re := MustCompile("^.bc(d|e)*$")
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		re.Match(x)
-	}
-}
-
-func BenchmarkNotOnePassShortA(b *testing.B) {
-	b.StopTimer()
-	x := []byte("abcddddddeeeededd")
-	re := MustCompile(".bc(d|e)*$")
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		re.Match(x)
-	}
-}
-
-func BenchmarkOnePassShortB(b *testing.B) {
-	b.StopTimer()
-	x := []byte("abcddddddeeeededd")
-	re := MustCompile("^.bc(?:d|e)*$")
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		re.Match(x)
-	}
-}
-
-func BenchmarkNotOnePassShortB(b *testing.B) {
-	b.StopTimer()
-	x := []byte("abcddddddeeeededd")
-	re := MustCompile(".bc(?:d|e)*$")
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		re.Match(x)
-	}
-}
-
-func BenchmarkOnePassLongPrefix(b *testing.B) {
-	b.StopTimer()
-	x := []byte("abcdefghijklmnopqrstuvwxyz")
-	re := MustCompile("^abcdefghijklmnopqrstuvwxyz.*$")
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		re.Match(x)
-	}
-}
-
-func BenchmarkOnePassLongNotPrefix(b *testing.B) {
-	b.StopTimer()
-	x := []byte("abcdefghijklmnopqrstuvwxyz")
-	re := MustCompile("^.bcdefghijklmnopqrstuvwxyz.*$")
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		re.Match(x)

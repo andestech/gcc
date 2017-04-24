@@ -1,9 +1,7 @@
 /* { dg-do compile } */
 /* { dg-options "-O -fdump-tree-fre1-details" } */
 
-_Complex float m;
-
-void
+_Complex float 
 foo (_Complex float x)
 {    
   float r = __real x;
@@ -11,10 +9,10 @@ foo (_Complex float x)
   _Complex float z;
   __real z = r;
   __imag z = i;
-  m = z;
+  return z;
 } 
 
-void
+_Complex float 
 bar (_Complex float x)
 {    
   float r = __real x;
@@ -22,9 +20,9 @@ bar (_Complex float x)
   _Complex float z = x;
   __real z = r;
   __imag z = i;
-  m = z;
+  return z;
 } 
 
-/* We should CSE all the way to replace the stored value with x.  */
-/* { dg-final { scan-tree-dump-times "m = x_\\d\+\\(D\\);" 2 "fre1" } } */
+/* We should CSE all the way to replace the final assignment to z with x.  */
+/* { dg-final { scan-tree-dump-times "with x_1\\\(D\\\) in z" 3 "fre1" } } */
 /* { dg-final { cleanup-tree-dump "fre1" } } */

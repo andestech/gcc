@@ -66,11 +66,11 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
     _M_clear() _GLIBCXX_NOEXCEPT
     {
       typedef _List_node<_Tp>  _Node;
-      __detail::_List_node_base* __cur = _M_impl._M_node._M_next;
+      _Node* __cur = static_cast<_Node*>(_M_impl._M_node._M_next);
       while (__cur != &_M_impl._M_node)
 	{
-	  _Node* __tmp = static_cast<_Node*>(__cur);
-	  __cur = __tmp->_M_next;
+	  _Node* __tmp = __cur;
+	  __cur = static_cast<_Node*>(__cur->_M_next);
 #if __cplusplus >= 201103L
 	  _M_get_Node_allocator().destroy(__tmp);
 #else
@@ -89,7 +89,6 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       {
 	_Node* __tmp = _M_create_node(std::forward<_Args>(__args)...);
 	__tmp->_M_hook(__position._M_const_cast()._M_node);
-	this->_M_inc_size(1);
 	return iterator(__tmp);
       }
 #endif
@@ -105,7 +104,6 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
     {
       _Node* __tmp = _M_create_node(__x);
       __tmp->_M_hook(__position._M_const_cast()._M_node);
-      this->_M_inc_size(1);
       return iterator(__tmp);
     }
 
@@ -355,9 +353,6 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 	      ++__first1;
 	  if (__first2 != __last2)
 	    _M_transfer(__last1, __first2, __last2);
-
-	  this->_M_inc_size(__x._M_get_size());
-	  __x._M_set_size(0);
 	}
     }
 
@@ -392,9 +387,6 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 		++__first1;
 	    if (__first2 != __last2)
 	      _M_transfer(__last1, __first2, __last2);
-
-	    this->_M_inc_size(__x._M_get_size());
-	    __x._M_set_size(0);
 	  }
       }
 

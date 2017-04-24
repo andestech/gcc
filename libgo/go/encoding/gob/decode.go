@@ -654,20 +654,21 @@ func (dec *Decoder) ignoreMap(state *decoderState, keyOp, elemOp decOp) {
 
 // decodeSlice decodes a slice and stores the slice header through p.
 // Slices are encoded as an unsigned length followed by the elements.
-func (dec *Decoder) decodeSlice(atyp reflect.Type, state *decoderState, p unsafe.Pointer, elemOp decOp, elemWid uintptr, indir, elemIndir int, ovfl error) {
+func (dec *Decoder) decodeSlice(atyp reflect.Type, state *decoderState, p uintptr, elemOp decOp, elemWid uintptr, indir, elemIndir int, ovfl error) {
 	nr := state.decodeUint()
 	n := int(nr)
 	if indir > 0 {
-		if *(*unsafe.Pointer)(p) == nil {
+		up := unsafe.Pointer(p)
+		if *(*unsafe.Pointer)(up) == nil {
 			// Allocate the slice header.
-			*(*unsafe.Pointer)(p) = unsafe.Pointer(new([]unsafe.Pointer))
+			*(*unsafe.Pointer)(up) = unsafe.Pointer(new([]unsafe.Pointer))
 		}
-		p = *(*unsafe.Pointer)(p)
+		p = *(*uintptr)(up)
 	}
 	// Allocate storage for the slice elements, that is, the underlying array,
 	// if the existing slice does not have the capacity.
 	// Always write a header at p.
-	hdrp := (*reflect.SliceHeader)(p)
+	hdrp := (*reflect.SliceHeader)(unsafe.Pointer(p))
 	if hdrp.Cap < n {
 		hdrp.Data = reflect.MakeSlice(atyp, n, n).Pointer()
 		hdrp.Cap = n
@@ -685,7 +686,7 @@ func (dec *Decoder) ignoreSlice(state *decoderState, elemOp decOp) {
 // but first it checks that the assignment will succeed.
 func setInterfaceValue(ivalue reflect.Value, value reflect.Value) {
 	if !value.Type().AssignableTo(ivalue.Type()) {
-		errorf("%s is not assignable to type %s", value.Type(), ivalue.Type())
+		errorf("cannot assign value of type %s to %s", value.Type(), ivalue.Type())
 	}
 	ivalue.Set(value)
 }
@@ -700,9 +701,6 @@ func (dec *Decoder) decodeInterface(ityp reflect.Type, state *decoderState, p un
 	nr := state.decodeUint()
 	if nr < 0 || nr > 1<<31 { // zero is permissible for anonymous types
 		errorf("invalid type name length %d", nr)
-	}
-	if nr > uint64(state.b.Len()) {
-		errorf("invalid type name length %d: exceeds input size", nr)
 	}
 	b := make([]byte, nr)
 	state.b.Read(b)
@@ -889,7 +887,7 @@ func (dec *Decoder) decOpFor(wireId typeId, rt reflect.Type, name string, inProg
 			elemOp, elemIndir := dec.decOpFor(elemId, t.Elem(), name, inProgress)
 			ovfl := overflow(name)
 			op = func(i *decInstr, state *decoderState, p unsafe.Pointer) {
-				state.dec.decodeSlice(t, state, p, *elemOp, t.Elem().Size(), i.indir, elemIndir, ovfl)
+				state.dec.decodeSlice(t, state, uintptr(p), *elemOp, t.Elem().Size(), i.indir, elemIndir, ovfl)
 			}
 
 		case reflect.Struct:
@@ -1240,8 +1238,7 @@ func (dec *Decoder) decodeValue(wireId typeId, val reflect.Value) {
 	}
 	engine := *enginePtr
 	if st := base; st.Kind() == reflect.Struct && ut.externalDec == 0 {
-		if engine.numInstr == 0 && st.NumField() > 0 &&
-			dec.wireType[wireId] != nil && len(dec.wireType[wireId].StructT.Field) > 0 {
+		if engine.numInstr == 0 && st.NumField() > 0 && len(dec.wireType[wireId].StructT.Field) > 0 {
 			name := base.Name()
 			errorf("type mismatch: no fields matched compiling decoder for %s", name)
 		}

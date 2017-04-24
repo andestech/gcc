@@ -70,6 +70,7 @@ extern bool msp430x;
 -lgcc							\
 -lcrt							\
 %{msim:-lsim}						\
+%{!msim:-lnosys}					\
 --end-group					   	\
 %{!T*:%{!msim:%{mmcu=*:--script=%*.ld}}}		\
 %{!T*:%{!msim:%{!mmcu=*:%Tmsp430.ld}}}			\
@@ -111,6 +112,9 @@ extern bool msp430x;
 #define DOUBLE_TYPE_SIZE 		64
 #define LONG_DOUBLE_TYPE_SIZE		64 /*DOUBLE_TYPE_SIZE*/
 
+#define LIBGCC2_HAS_DF_MODE		1
+#define LIBGCC2_LONG_DOUBLE_TYPE_SIZE   64
+
 #define DEFAULT_SIGNED_CHAR		0
 
 #define STRICT_ALIGNMENT 		1
@@ -127,9 +131,10 @@ extern bool msp430x;
 #define MAX_REGS_PER_ADDRESS 		1
 
 #define Pmode 				(TARGET_LARGE ? PSImode : HImode)
-#define POINTER_SIZE			(TARGET_LARGE ? 20 : 16)
-/* This is just for .eh_frame, to match bfd.  */
-#define PTR_SIZE			(TARGET_LARGE ? 4 : 2)
+/* Note: 32 is a lie.  Large pointers are actually 20-bits wide.  But gcc
+   thinks that any non-power-of-2 pointer size equates to BLKmode, which
+   causes all kinds of problems...  */
+#define POINTER_SIZE			(TARGET_LARGE ? 32 : 16)
 #define	POINTERS_EXTEND_UNSIGNED	1
 
 #define ADDR_SPACE_NEAR	1
@@ -153,9 +158,9 @@ extern bool msp430x;
 /* Layout of Source Language Data Types */
 
 #undef  SIZE_TYPE
-#define SIZE_TYPE			(TARGET_LARGE ? "__int20 unsigned" : "unsigned int")
+#define SIZE_TYPE			(TARGET_LARGE ? "long unsigned int" : "unsigned int")
 #undef  PTRDIFF_TYPE
-#define PTRDIFF_TYPE			(TARGET_LARGE ? "__int20" : "int")
+#define PTRDIFF_TYPE			(TARGET_LARGE ? "long int" : "int")
 #undef  WCHAR_TYPE
 #define WCHAR_TYPE			"long int"
 #undef  WCHAR_TYPE_SIZE
@@ -377,7 +382,7 @@ typedef struct
 #undef	DWARF2_ADDR_SIZE
 #define	DWARF2_ADDR_SIZE			4
 
-#define INCOMING_FRAME_SP_OFFSET		(TARGET_LARGE ? 4 : 2)
+#define INCOMING_FRAME_SP_OFFSET		(POINTER_SIZE / BITS_PER_UNIT)
 
 #undef  PREFERRED_DEBUGGING_TYPE
 #define PREFERRED_DEBUGGING_TYPE DWARF2_DEBUG

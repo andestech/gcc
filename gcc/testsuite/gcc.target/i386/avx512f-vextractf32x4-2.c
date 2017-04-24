@@ -10,14 +10,14 @@
 #include "avx512f-mask-type.h"
 #include "string.h"
 
-static void
+void
 CALC (UNION_TYPE (AVX512F_LEN,) s1, float *res_ref, int mask)
 {
   memset (res_ref, 0, 16);
   memcpy (res_ref, s1.a + mask * 4, 16);
 }
 
-void
+void static
 TEST (void)
 {
   UNION_TYPE (AVX512F_LEN,) s1;

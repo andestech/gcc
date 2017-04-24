@@ -1,5 +1,3 @@
-/* { dg-require-effective-target int32plus } */
-
 void *volatile p;
 
 int

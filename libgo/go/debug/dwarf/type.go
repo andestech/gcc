@@ -251,37 +251,23 @@ func (t *TypedefType) String() string { return t.Name }
 
 func (t *TypedefType) Size() int64 { return t.Type.Size() }
 
-// typeReader is used to read from either the info section or the
-// types section.
-type typeReader interface {
-	Seek(Offset)
-	Next() (*Entry, error)
-	clone() typeReader
-	offset() Offset
-}
-
-// Type reads the type at off in the DWARF ``info'' section.
 func (d *Data) Type(off Offset) (Type, error) {
-	return d.readType("info", d.Reader(), off, d.typeCache)
-}
-
-// readType reads a type from r at off of name using and updating a
-// type cache.
-func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Offset]Type) (Type, error) {
-	if t, ok := typeCache[off]; ok {
+	if t, ok := d.typeCache[off]; ok {
 		return t, nil
 	}
+
+	r := d.Reader()
 	r.Seek(off)
 	e, err := r.Next()
 	if err != nil {
 		return nil, err
 	}
 	if e == nil || e.Offset != off {
-		return nil, DecodeError{name, off, "no type at offset"}
+		return nil, DecodeError{"info", off, "no type at offset"}
 	}
 
 	// Parse type from Entry.
-	// Must always set typeCache[off] before calling
+	// Must always set d.typeCache[off] before calling
 	// d.Type recursively, to handle circular types correctly.
 	var typ Type
 
@@ -304,7 +290,7 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 				return nil
 			}
 			if kid == nil {
-				err = DecodeError{name, r.offset(), "unexpected end of DWARF entries"}
+				err = DecodeError{"info", r.b.off, "unexpected end of DWARF entries"}
 				return nil
 			}
 			if kid.Tag == 0 {
@@ -327,20 +313,14 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 	// Get Type referred to by Entry's AttrType field.
 	// Set err if error happens.  Not having a type is an error.
 	typeOf := func(e *Entry) Type {
-		tval := e.Val(AttrType)
-		var t Type
-		switch toff := tval.(type) {
-		case Offset:
-			if t, err = d.readType(name, r.clone(), toff, typeCache); err != nil {
-				return nil
-			}
-		case uint64:
-			if t, err = d.sigToType(toff); err != nil {
-				return nil
-			}
-		default:
+		toff, ok := e.Val(AttrType).(Offset)
+		if !ok {
 			// It appears that no Type means "void".
 			return new(VoidType)
+		}
+		var t Type
+		if t, err = d.Type(toff); err != nil {
+			return nil
 		}
 		return t
 	}
@@ -357,7 +337,7 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 		//	dimensions are in left to right order.
 		t := new(ArrayType)
 		typ = t
-		typeCache[off] = t
+		d.typeCache[off] = t
 		if t.Type = typeOf(e); err != nil {
 			goto Error
 		}
@@ -383,7 +363,7 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 				}
 				ndim++
 			case TagEnumerationType:
-				err = DecodeError{name, kid.Offset, "cannot handle enumeration type as array bound"}
+				err = DecodeError{"info", kid.Offset, "cannot handle enumeration type as array bound"}
 				goto Error
 			}
 		}
@@ -403,12 +383,12 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 		name, _ := e.Val(AttrName).(string)
 		enc, ok := e.Val(AttrEncoding).(int64)
 		if !ok {
-			err = DecodeError{name, e.Offset, "missing encoding attribute for " + name}
+			err = DecodeError{"info", e.Offset, "missing encoding attribute for " + name}
 			goto Error
 		}
 		switch enc {
 		default:
-			err = DecodeError{name, e.Offset, "unrecognized encoding attribute value"}
+			err = DecodeError{"info", e.Offset, "unrecognized encoding attribute value"}
 			goto Error
 
 		case encAddress:
@@ -428,7 +408,7 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 		case encUnsignedChar:
 			typ = new(UcharType)
 		}
-		typeCache[off] = typ
+		d.typeCache[off] = typ
 		t := typ.(interface {
 			Basic() *BasicType
 		}).Basic()
@@ -453,7 +433,7 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 		// There is much more to handle C++, all ignored for now.
 		t := new(StructType)
 		typ = t
-		typeCache[off] = t
+		d.typeCache[off] = t
 		switch e.Tag {
 		case TagClassType:
 			t.Kind = "class"
@@ -473,13 +453,12 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 				if f.Type = typeOf(kid); err != nil {
 					goto Error
 				}
-				switch loc := kid.Val(AttrDataMemberLoc).(type) {
-				case []byte:
+				if loc, ok := kid.Val(AttrDataMemberLoc).([]byte); ok {
 					// TODO: Should have original compilation
 					// unit here, not unknownFormat.
 					b := makeBuf(d, unknownFormat{}, "location", 0, loc)
 					if b.uint8() != opPlusUconst {
-						err = DecodeError{name, kid.Offset, "unexpected opcode"}
+						err = DecodeError{"info", kid.Offset, "unexpected opcode"}
 						goto Error
 					}
 					f.ByteOffset = int64(b.uint())
@@ -487,8 +466,6 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 						err = b.err
 						goto Error
 					}
-				case int64:
-					f.ByteOffset = loc
 				}
 
 				haveBitOffset := false
@@ -525,7 +502,7 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 		//	AttrType: subtype
 		t := new(QualType)
 		typ = t
-		typeCache[off] = t
+		d.typeCache[off] = t
 		if t.Type = typeOf(e); err != nil {
 			goto Error
 		}
@@ -549,7 +526,7 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 		//		AttrConstValue: value of constant
 		t := new(EnumType)
 		typ = t
-		typeCache[off] = t
+		d.typeCache[off] = t
 		t.EnumName, _ = e.Val(AttrName).(string)
 		t.Val = make([]*EnumValue, 0, 8)
 		for kid := next(); kid != nil; kid = next() {
@@ -575,7 +552,7 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 		//	AttrAddrClass: address class [ignored]
 		t := new(PtrType)
 		typ = t
-		typeCache[off] = t
+		d.typeCache[off] = t
 		if e.Val(AttrType) == nil {
 			t.Type = &VoidType{}
 			break
@@ -594,7 +571,7 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 		//	TagUnspecifiedParameter: final ...
 		t := new(FuncType)
 		typ = t
-		typeCache[off] = t
+		d.typeCache[off] = t
 		if t.ReturnType = typeOf(e); err != nil {
 			goto Error
 		}
@@ -621,7 +598,7 @@ func (d *Data) readType(name string, r typeReader, off Offset, typeCache map[Off
 		//	AttrType: type definition [required]
 		t := new(TypedefType)
 		typ = t
-		typeCache[off] = t
+		d.typeCache[off] = t
 		t.Name, _ = e.Val(AttrName).(string)
 		t.Type = typeOf(e)
 	}
@@ -643,7 +620,7 @@ Error:
 	// If the parse fails, take the type out of the cache
 	// so that the next call with this offset doesn't hit
 	// the cache and return success.
-	delete(typeCache, off)
+	delete(d.typeCache, off)
 	return nil, err
 }
 

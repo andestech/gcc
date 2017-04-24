@@ -585,7 +585,7 @@
 (define_special_predicate "cc_set_register"
   (match_code "reg")
 {
-  machine_mode rmode = GET_MODE (op);
+  enum machine_mode rmode = GET_MODE (op);
 
   if (mode == VOIDmode)
     {

@@ -30,6 +30,7 @@
 #endif
 #include "system.h"
 #include "errors.h"	/* For fatal.  */
+#include "double-int.h"
 #include "hashtab.h"
 #include "version.h"	/* For version_string & pkgversion_string.  */
 #include "obstack.h"
@@ -282,7 +283,7 @@ state_writer::state_writer ()
 
 
 /* Fatal message while reading state.  */
-static void 
+static inline void 
 fatal_reading_state (struct state_token_st* tok, const char*msg)
 {
   if (tok)

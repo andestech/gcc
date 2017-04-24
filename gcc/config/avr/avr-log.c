@@ -27,11 +27,6 @@
 #include "print-tree.h"
 #include "output.h"
 #include "input.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
 #include "function.h"
 #include "tm_p.h"
 #include "tree-pass.h"	/* for current_pass */
@@ -53,7 +48,7 @@
   t: tree
   T: tree (brief)
   C: enum rtx_code
-  m: machine_mode
+  m: enum machine_mode
   R: enum reg_class
   L: insn list
   H: location_t
@@ -214,7 +209,7 @@ avr_log_vadump (FILE *file, const char *fmt, va_list ap)
 
             case 'L':
               {
-                rtx_insn *insn = safe_as_a <rtx_insn *> (va_arg (ap, rtx));
+                rtx insn = va_arg (ap, rtx);
 
                 while (insn)
                   {
@@ -238,7 +233,7 @@ avr_log_vadump (FILE *file, const char *fmt, va_list ap)
               break;
 
             case 'm':
-              fputs (GET_MODE_NAME ((machine_mode) va_arg (ap, int)),
+              fputs (GET_MODE_NAME ((enum machine_mode) va_arg (ap, int)),
                      file);
               break;
 

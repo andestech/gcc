@@ -11,10 +11,11 @@ extern void exit (int);
 
 #if ! defined (NO_LABEL_VALUES) && !defined (NO_TRAMPOLINES)
 int
-x(int a)
+
+x(a)
 {
   __label__ xlab;
-  void y(int a)
+  void y(a)
     {
       if (a==0)
 	goto xlab;

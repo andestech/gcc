@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 2010-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2010-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -36,10 +36,9 @@ with Ada.Containers.Red_Black_Trees.Generic_Bounded_Set_Operations;
 pragma Elaborate_All
   (Ada.Containers.Red_Black_Trees.Generic_Bounded_Set_Operations);
 
-with System; use type System.Address;
+with System;  use type System.Address;
 
 package body Ada.Containers.Formal_Ordered_Sets is
-   pragma SPARK_Mode (Off);
 
    ------------------------------
    -- Access to Fields of Node --
@@ -1535,8 +1534,8 @@ package body Ada.Containers.Formal_Ordered_Sets is
       end if;
 
       return S : Set (Length (Left) + Length (Right)) do
-         Assign (S, Source => Left);
-         Union (S, Right);
+         S.Assign (Source => Left);
+         S.Union (Right);
       end return;
    end Union;
 

@@ -34,59 +34,66 @@ extern void __clear_cache (char *, char *);
 extern void __eprintf (const char *, const char *, unsigned int, const char *)
   __attribute__ ((__noreturn__));
 
-#ifdef __LIBGCC_HAS_SF_MODE__
-#define LIBGCC2_HAS_SF_MODE 1
-#else
-#define LIBGCC2_HAS_SF_MODE 0
+#ifndef LIBGCC2_LONG_DOUBLE_TYPE_SIZE
+#define LIBGCC2_LONG_DOUBLE_TYPE_SIZE LONG_DOUBLE_TYPE_SIZE
 #endif
 
-#ifdef __LIBGCC_HAS_DF_MODE__
-#define LIBGCC2_HAS_DF_MODE 1
-#else
-#define LIBGCC2_HAS_DF_MODE 0
+#ifndef LIBGCC2_HAS_SF_MODE
+#define LIBGCC2_HAS_SF_MODE (BITS_PER_UNIT == 8)
 #endif
 
-#ifdef __LIBGCC_HAS_XF_MODE__
-#define LIBGCC2_HAS_XF_MODE 1
-#else
-#define LIBGCC2_HAS_XF_MODE 0
+#ifndef LIBGCC2_HAS_DF_MODE
+#define LIBGCC2_HAS_DF_MODE \
+  (BITS_PER_UNIT == 8 \
+   && (__SIZEOF_DOUBLE__ * __CHAR_BIT__ == 64 \
+       || LIBGCC2_LONG_DOUBLE_TYPE_SIZE == 64))
 #endif
 
-#ifdef __LIBGCC_HAS_TF_MODE__
-#define LIBGCC2_HAS_TF_MODE 1
-#else
-#define LIBGCC2_HAS_TF_MODE 0
+#ifndef LIBGCC2_HAS_XF_MODE
+#define LIBGCC2_HAS_XF_MODE \
+  (BITS_PER_UNIT == 8 && LIBGCC2_LONG_DOUBLE_TYPE_SIZE == 80)
 #endif
 
-#ifndef __LIBGCC_SF_MANT_DIG__
+#ifndef LIBGCC2_HAS_TF_MODE
+#define LIBGCC2_HAS_TF_MODE \
+  (BITS_PER_UNIT == 8 && LIBGCC2_LONG_DOUBLE_TYPE_SIZE == 128)
+#endif
+
+#ifndef SF_SIZE
 #if LIBGCC2_HAS_SF_MODE
-#error __LIBGCC_SF_MANT_DIG__ not defined
+#define SF_SIZE FLT_MANT_DIG
 #else
-#define __LIBGCC_SF_MANT_DIG__ 0
+#define SF_SIZE 0
 #endif
 #endif
 
-#ifndef __LIBGCC_DF_MANT_DIG__
+#ifndef DF_SIZE
 #if LIBGCC2_HAS_DF_MODE
-#error __LIBGCC_DF_MANT_DIG__ not defined
+#if __SIZEOF_DOUBLE__ * __CHAR_BIT__ == 64
+#define DF_SIZE DBL_MANT_DIG
+#elif LIBGCC2_LONG_DOUBLE_TYPE_SIZE == 64
+#define DF_SIZE LDBL_MANT_DIG
 #else
-#define __LIBGCC_DF_MANT_DIG__ 0
+#define DF_SIZE 0
+#endif
+#else
+#define DF_SIZE 0
 #endif
 #endif
 
-#ifndef __LIBGCC_XF_MANT_DIG__
+#ifndef XF_SIZE
 #if LIBGCC2_HAS_XF_MODE
-#error __LIBGCC_XF_MANT_DIG__ not defined
+#define XF_SIZE LDBL_MANT_DIG
 #else
-#define __LIBGCC_XF_MANT_DIG__ 0
+#define XF_SIZE 0
 #endif
 #endif
 
-#ifndef __LIBGCC_TF_MANT_DIG__
+#ifndef TF_SIZE
 #if LIBGCC2_HAS_TF_MODE
-#error __LIBGCC_TF_MANT_DIG__ not defined
+#define TF_SIZE LDBL_MANT_DIG
 #else
-#define __LIBGCC_TF_MANT_DIG__ 0
+#define TF_SIZE 0
 #endif
 #endif
 

@@ -3,7 +3,7 @@
 /* { dg-skip-if "need fp instructions" { *-*-* } { "-mfloat-abi=soft" } { "" } } */
 /* { dg-options "-O2 -mfpu=vfp -mfloat-abi=softfp" } */
 
-extern void bar (float);
+extern void baz (float);
 
 void
 foo (float *p, float a, int n)
@@ -13,4 +13,4 @@ foo (float *p, float a, int n)
   while (n--);
 }
 
-/* { dg-final { scan-assembler "vldmdb.32" } } */
+/* { dg-final { scan-assembler "fldmdbs" } } */

@@ -15,7 +15,6 @@ test_reg_save_restore (int *p)
     setlocale (LC_ALL, "C");
     testreg = ext_func(p);
 }
-int
 main() {
   testreg = &x;
   test_reg_save_restore (&y);

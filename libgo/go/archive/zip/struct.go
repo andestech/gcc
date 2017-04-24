@@ -174,13 +174,13 @@ func timeToMsDosTime(t time.Time) (fDate uint16, fTime uint16) {
 	return
 }
 
-// ModTime returns the modification time in UTC.
+// ModTime returns the modification time.
 // The resolution is 2s.
 func (h *FileHeader) ModTime() time.Time {
 	return msDosTimeToTime(h.ModifiedDate, h.ModifiedTime)
 }
 
-// SetModTime sets the ModifiedTime and ModifiedDate fields to the given time in UTC.
+// SetModTime sets the ModifiedTime and ModifiedDate fields to the given time.
 // The resolution is 2s.
 func (h *FileHeader) SetModTime(t time.Time) {
 	h.ModifiedDate, h.ModifiedTime = timeToMsDosTime(t)

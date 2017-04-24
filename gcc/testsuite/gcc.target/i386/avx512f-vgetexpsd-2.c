@@ -6,6 +6,7 @@
 
 #include <math.h>
 #include "avx512f-check.h"
+#include "avx512f-helper.h"
 
 static void
 compute_vgetexpsd (double *s, double *r)

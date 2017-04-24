@@ -22,17 +22,28 @@
 # C torture test suite.
 #
 
-# Load support procs.
-load_lib gcc-dg.exp
+if $tracelevel then {
+    strace $tracelevel
+}
 
-# Initialize `dg'.
-dg-init
+# load support procs
+load_lib torture-options.exp
+load_lib c-torture.exp
 
-# Main loop.
-set saved-dg-do-what-default ${dg-do-what-default}
-set dg-do-what-default "run"
-gcc-dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/*.\[cS\]]] "" "-w"
-set dg-do-what-default ${saved-dg-do-what-default}
+torture-init
+set-torture-options $C_TORTURE_OPTIONS {{}} $LTO_TORTURE_OPTIONS
 
-# All done.
-dg-finish
+#
+# main test loop
+#
+
+foreach src [lsort [glob -nocomplain $srcdir/$subdir/*.c]] {
+    # If we're only testing specific files and this isn't one of them, skip it.
+    if ![runtest_file_p $runtests $src] then {
+	continue
+    }
+
+    c-torture-execute $src
+}
+
+torture-finish

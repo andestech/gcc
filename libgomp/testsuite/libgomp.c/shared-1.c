@@ -1,5 +1,4 @@
 extern void abort (void);
-extern int omp_get_num_threads (void);
 
 struct Y
 {
@@ -52,7 +51,6 @@ parallel (int a, int b)
     abort ();
 }
 
-int
 main()
 {
   parallel (1, 2);

@@ -23,31 +23,19 @@ along with GCC; see the file COPYING3.  If not see
 #include "system.h"
 #include "coretypes.h"
 #include "tree.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "tm.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
 #include "gimple-expr.h"
 #include "is-a.h"
 #include "gimple.h"
+#include "hashtab.h"
 #include "bitmap.h"
 #include "flags.h"
 #include "opts.h"
 #include "options.h"
 #include "common/common-target.h"
 #include "diagnostic.h"
-#include "hash-map.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
-#include "cgraph.h"
 #include "lto-streamer.h"
 #include "toplev.h"
 
@@ -79,6 +67,7 @@ append_to_collect_gcc_options (struct obstack *ob,
 void
 lto_write_options (void)
 {
+  struct lto_output_stream stream;
   char *section_name;
   struct obstack temporary_obstack;
   unsigned int i, j;
@@ -87,6 +76,7 @@ lto_write_options (void)
 
   section_name = lto_get_section_name (LTO_section_opts, NULL, NULL);
   lto_begin_section (section_name, false);
+  memset (&stream, 0, sizeof (stream));
 
   obstack_init (&temporary_obstack);
 
@@ -127,24 +117,6 @@ lto_write_options (void)
       default:
 	gcc_unreachable ();
       }
-  /* The default -fmath-errno, -fsigned-zeros and -ftrapping-math change
-     depending on the language (they can be disabled by the Ada and Java
-     front-ends).  Pass thru conservative standard settings.  */
-  if (!global_options_set.x_flag_errno_math)
-    append_to_collect_gcc_options (&temporary_obstack, &first_p,
-				   global_options.x_flag_errno_math
-				   ? "-fmath-errno"
-				   : "-fno-math-errno");
-  if (!global_options_set.x_flag_signed_zeros)
-    append_to_collect_gcc_options (&temporary_obstack, &first_p,
-				   global_options.x_flag_signed_zeros
-				   ? "-fsigned-zeros"
-				   : "-fno-signed-zeros");
-  if (!global_options_set.x_flag_trapping_math)
-    append_to_collect_gcc_options (&temporary_obstack, &first_p,
-				   global_options.x_flag_trapping_math
-				   ? "-ftrapping-math"
-				   : "-fno-trapping-math");
   /* We need to merge -f[no-]strict-overflow, -f[no-]wrapv and -f[no-]trapv
      conservatively, so stream out their defaults.  */
   if (!global_options_set.x_flag_wrapv
@@ -198,7 +170,9 @@ lto_write_options (void)
     }
   obstack_grow (&temporary_obstack, "\0", 1);
   args = XOBFINISH (&temporary_obstack, char *);
-  lto_write_data (args, strlen (args) + 1);
+  lto_output_data_stream (&stream, args, strlen (args) + 1);
+
+  lto_write_stream (&stream);
   lto_end_section ();
 
   obstack_free (&temporary_obstack, NULL);

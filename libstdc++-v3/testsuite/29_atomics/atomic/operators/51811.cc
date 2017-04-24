@@ -1,5 +1,5 @@
 // { dg-require-atomic-builtins "" }
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 
 // Copyright (C) 2012-2014 Free Software Foundation, Inc.
 //

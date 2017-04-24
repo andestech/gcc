@@ -1,5 +1,5 @@
 ! { dg-do compile }
-! { dg-options "-Wall -Wextra" }
+! { dg-options "-Wextra" }
       program main
       integer, parameter :: x=3 ! { dg-warning "Unused parameter" }
       real :: a

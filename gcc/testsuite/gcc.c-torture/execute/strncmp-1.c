@@ -1,4 +1,3 @@
-/* { dg-xfail-if "kernel strncmp does not perform unsigned comparisons" { vxworks_kernel } "*" "" } */
 /* Copyright (C) 2002  Free Software Foundation.
 
    Test strncmp with various combinations of pointer alignments and lengths to

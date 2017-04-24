@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 2001-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2001-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -24,6 +24,7 @@
 ------------------------------------------------------------------------------
 
 with Fmap;
+with Hostparm;
 with Makeutl;  use Makeutl;
 with Opt;
 with Osint;    use Osint;
@@ -130,6 +131,7 @@ package body Prj.Env is
          In_Tree : Project_Tree_Ref;
          Dummy   : in out Boolean)
       is
+         pragma Unreferenced (Dummy);
       begin
          Add_To_Path
            (Project.Source_Dirs, In_Tree.Shared, Buffer, Buffer_Last);
@@ -199,7 +201,7 @@ package body Prj.Env is
          In_Tree : Project_Tree_Ref;
          Dummy   : in out Boolean)
       is
-         pragma Unreferenced (In_Tree);
+         pragma Unreferenced (Dummy, In_Tree);
 
          Path : constant Path_Name_Type :=
                   Get_Object_Directory
@@ -1257,7 +1259,7 @@ package body Prj.Env is
          Tree  : Project_Tree_Ref;
          Dummy : in out Integer)
       is
-         pragma Unreferenced (Tree);
+         pragma Unreferenced (Dummy, Tree);
 
       begin
          --  ??? Set_Ada_Paths has a different behavior for library project
@@ -1302,6 +1304,8 @@ package body Prj.Env is
          In_Tree : Project_Tree_Ref;
          Dummy   : in out Integer)
       is
+         pragma Unreferenced (Dummy);
+
          Current    : String_List_Id := Prj.Source_Dirs;
          The_String : String_Element;
 
@@ -1425,10 +1429,35 @@ package body Prj.Env is
      (Self : Project_Search_Path;
       Name : String) return String_Access
    is
-      function Find_Rts_In_Path is
-        new Prj.Env.Find_Name_In_Path (Check_Filename => Is_Directory);
+      function Is_Base_Name (Path : String) return Boolean;
+      --  Returns True if Path has no directory separator
+
+      ------------------
+      -- Is_Base_Name --
+      ------------------
+
+      function Is_Base_Name (Path : String) return Boolean is
+      begin
+         for J in Path'Range loop
+            if Path (J) = Directory_Separator or else Path (J) = '/' then
+               return False;
+            end if;
+         end loop;
+
+         return True;
+      end Is_Base_Name;
+
+      function Find_Rts_In_Path is new Prj.Env.Find_Name_In_Path
+        (Check_Filename => Is_Directory);
+
+      --  Start of processing for Get_Runtime_Path
+
    begin
-      return Find_Rts_In_Path (Self, Name);
+      if not Is_Base_Name (Name) then
+         return Find_Rts_In_Path (Self, Name);
+      else
+         return null;
+      end if;
    end Get_Runtime_Path;
 
    ----------------
@@ -1647,7 +1676,7 @@ package body Prj.Env is
          In_Tree : Project_Tree_Ref;
          Dummy   : in out Boolean)
       is
-         pragma Unreferenced (In_Tree);
+         pragma Unreferenced (Dummy, In_Tree);
 
          Path : Path_Name_Type;
 
@@ -1876,9 +1905,11 @@ package body Prj.Env is
      (Self        : in out Project_Search_Path;
       Target_Name : String)
    is
-      Add_Default_Dir : Boolean := Target_Name /= "-";
+      Add_Default_Dir : Boolean := True;
       First           : Positive;
       Last            : Positive;
+      New_Len         : Positive;
+      New_Last        : Positive;
 
       Ada_Project_Path      : constant String := "ADA_PROJECT_PATH";
       Gpr_Project_Path      : constant String := "GPR_PROJECT_PATH";
@@ -2016,14 +2047,17 @@ package body Prj.Env is
 
             Last := Last - 1;
 
-         else
+         elsif not Hostparm.OpenVMS
+           or else not Is_Absolute_Path (Name_Buffer (First .. Last))
+         then
+            --  On VMS, only expand relative path names, as absolute paths
+            --  may correspond to multi-valued VMS logical names.
+
             declare
                New_Dir : constant String :=
                            Normalize_Pathname
                              (Name_Buffer (First .. Last),
                               Resolve_Links => Opt.Follow_Links_For_Dirs);
-               New_Len  : Positive;
-               New_Last : Positive;
 
             begin
                --  If the absolute path was resolved and is different from
@@ -2106,14 +2140,14 @@ package body Prj.Env is
                --  $prefix/share/gpr
 
                Add_Str_To_Name_Buffer
-                 (Path_Separator & Prefix.all & "share"
-                  & Directory_Separator & "gpr");
+                 (Path_Separator & Prefix.all &
+                  "share" & Directory_Separator & "gpr");
 
                --  $prefix/lib/gnat
 
                Add_Str_To_Name_Buffer
-                 (Path_Separator & Prefix.all & "lib"
-                  & Directory_Separator & "gnat");
+                 (Path_Separator & Prefix.all &
+                  "lib" & Directory_Separator & "gnat");
             end if;
 
             Free (Prefix);
@@ -2268,7 +2302,8 @@ package body Prj.Env is
             exit Check_Dot;
          end if;
 
-         exit Check_Dot when Is_Directory_Separator (File (K));
+         exit Check_Dot when File (K) = Directory_Separator
+           or else File (K) = '/';
       end loop Check_Dot;
 
       if not Is_Absolute_Path (File) then

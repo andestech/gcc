@@ -3,8 +3,6 @@
 int b;
 int c;
 int d;
-void long_function (int);
-void
 split_me(int a)
 {
   int t = 0;
@@ -31,7 +29,6 @@ split_me(int a)
     goto make_me_irregular;
 }
 
-int
 main()
 {
   split_me (1);

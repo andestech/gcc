@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1998-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 1998-2012, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -36,6 +36,7 @@ with GNAT.OS_Lib;                use GNAT.OS_Lib;
 with GNAT.Heap_Sort_G;
 with GNAT.Table;
 
+with Hostparm;
 with Switch;                     use Switch;
 with Types;
 
@@ -208,6 +209,10 @@ procedure Gnatchop is
    procedure Error_Msg (Message : String; Warning : Boolean := False);
    --  Produce an error message on standard error output
 
+   procedure File_Time_Stamp (Name : C_File_Name; Time : OS_Time);
+   --  Given the name of a file or directory, Name, set the
+   --  time stamp. This function must be used for an unopened file.
+
    function Files_Exist return Boolean;
    --  Check Unit.Table for possible file names that already exist
    --  in the file system. Returns true if files exist, False otherwise
@@ -255,23 +260,27 @@ procedure Gnatchop is
    procedure Parse_Offset_Info
      (Chop_File : File_Num;
       Source    : not null access String);
-   --  Parses the output of the compiler indicating the offsets and names of
-   --  the compilation units in Chop_File.
+   --  Parses the output of the compiler indicating the offsets
+   --  and names of the compilation units in Chop_File.
 
    procedure Parse_Token
      (Source    : not null access String;
       Ptr       : in out Positive;
       Token_Ptr : out Positive);
    --  Skips any separators and stores the start of the token in Token_Ptr.
-   --  Then stores the position of the next separator in Ptr. On return
-   --  Source (Token_Ptr .. Ptr - 1) is the token.
+   --  Then stores the position of the next separator in Ptr.
+   --  On return Source (Token_Ptr .. Ptr - 1) is the token.
 
    procedure Read_File
      (FD       : File_Descriptor;
       Contents : out String_Access;
       Success  : out Boolean);
-   --  Reads file associated with FS into the newly allocated string Contents.
-   --  Success is true iff the number of bytes read is equal to the file size.
+   --  Reads file associated with FS into the newly allocated
+   --  string Contents.
+   --  [VMS] Success is true iff the number of bytes read is less than or
+   --   equal to the file size.
+   --  [Other] Success is true iff the number of bytes read is equal to
+   --   the file size.
 
    function Report_Duplicate_Units return Boolean;
    --  Output messages about duplicate units in the input files in Unit.Table
@@ -292,17 +301,17 @@ procedure Gnatchop is
    --  Write all units that result from chopping the Input file
 
    procedure Write_Config_File (Input : File_Num; U : Unit_Num);
-   --  Call to write configuration pragmas (append them to gnat.adc). Input is
-   --  the file number for the chop file and U identifies the unit entry for
-   --  the configuration pragmas.
+   --  Call to write configuration pragmas (append them to gnat.adc)
+   --  Input is the file number for the chop file and U identifies the
+   --  unit entry for the configuration pragmas.
 
    function Get_Config_Pragmas
      (Input : File_Num;
       U     : Unit_Num) return String_Access;
-   --  Call to read configuration pragmas from given unit entry, and return a
-   --  buffer containing the pragmas to be appended to following units. Input
-   --  is the file number for the chop file and U identifies the unit entry for
-   --  the configuration pragmas.
+   --  Call to read configuration pragmas from given unit entry, and
+   --  return a buffer containing the pragmas to be appended to
+   --  following units. Input is the file number for the chop file and
+   --  U identifies the unit entry for the configuration pragmas.
 
    procedure Write_Source_Reference_Pragma
      (Info    : Unit_Info;
@@ -363,6 +372,18 @@ procedure Gnatchop is
       end if;
    end Error_Msg;
 
+   ---------------------
+   -- File_Time_Stamp --
+   ---------------------
+
+   procedure File_Time_Stamp (Name : C_File_Name; Time : OS_Time) is
+      procedure Set_File_Time (Name : C_File_Name; Time : OS_Time);
+      pragma Import (C, Set_File_Time, "__gnat_set_file_time_name");
+
+   begin
+      Set_File_Time (Name, Time);
+   end File_Time_Stamp;
+
    -----------------
    -- Files_Exist --
    -----------------
@@ -382,8 +403,15 @@ procedure Gnatchop is
 
             begin
                if Is_Writable_File (Info.File_Name.all) then
-                  Error_Msg (Info.File_Name.all
-                              & " already exists, use -w to overwrite");
+                  if Hostparm.OpenVMS then
+                     Error_Msg
+                       (Info.File_Name.all
+                        & " already exists, use /OVERWRITE to overwrite");
+                  else
+                     Error_Msg (Info.File_Name.all
+                                 & " already exists, use -w to overwrite");
+                  end if;
+
                   Exists := True;
                end if;
             end;
@@ -1006,7 +1034,15 @@ procedure Gnatchop is
          Free (Buffer);
       end if;
 
-      Success := Read_Ptr = Length + 1;
+      --  Things aren't simple on VMS due to the plethora of file types and
+      --  organizations. It seems clear that there shouldn't be more bytes
+      --  read than are contained in the file though.
+
+      if Hostparm.OpenVMS then
+         Success := Read_Ptr <= Length + 1;
+      else
+         Success := Read_Ptr = Length + 1;
+      end if;
    end Read_File;
 
    ----------------------------
@@ -1063,7 +1099,12 @@ procedure Gnatchop is
       end loop;
 
       if Duplicates and not Overwrite_Files then
-         Put_Line ("use -w to overwrite files and keep last version");
+         if Hostparm.OpenVMS then
+            Put_Line
+              ("use /OVERWRITE to overwrite files and keep last version");
+         else
+            Put_Line ("use -w to overwrite files and keep last version");
+         end if;
       end if;
 
       return Duplicates;
@@ -1111,13 +1152,23 @@ procedure Gnatchop is
                   if Param.all /= "" then
                      for J in Param'Range loop
                         if Param (J) not in '0' .. '9' then
-                           Error_Msg ("-k# requires numeric parameter");
+                           if Hostparm.OpenVMS then
+                              Error_Msg ("/FILE_NAME_MAX_LENGTH=nnn" &
+                                         " requires numeric parameter");
+                           else
+                              Error_Msg ("-k# requires numeric parameter");
+                           end if;
+
                            return False;
                         end if;
                      end loop;
 
                   else
-                     Param := new String'("8");
+                     if Hostparm.OpenVMS then
+                        Param := new String'("39");
+                     else
+                        Param := new String'("8");
+                     end if;
                   end if;
 
                   Gnat_Args :=
@@ -1197,12 +1248,7 @@ procedure Gnatchop is
       --  At least one filename must be given
 
       elsif File.Last = 0 then
-         if Argument_Count = 0 then
-            Usage;
-         else
-            Try_Help;
-         end if;
-
+         Usage;
          return False;
 
       --  No directory given, set directory to null, so that we can just
@@ -1238,7 +1284,13 @@ procedure Gnatchop is
          return False;
 
       when Invalid_Parameter =>
-         Error_Msg ("-k switch requires numeric parameter");
+         if Hostparm.OpenVMS then
+            Error_Msg ("/FILE_NAME_MAX_LENGTH=nnn qualifier" &
+                       " requires numeric parameter");
+         else
+            Error_Msg ("-k switch requires numeric parameter");
+         end if;
+
          return False;
    end Scan_Arguments;
 
@@ -1651,6 +1703,7 @@ procedure Gnatchop is
 
       declare
          E_Name      : constant String := OS_Name (1 .. O_Length);
+         C_Name      : aliased constant String := E_Name & ASCII.NUL;
          OS_Encoding : constant String := Encoding (1 .. E_Length);
          File        : Stream_IO.File_Type;
 
@@ -1718,7 +1771,7 @@ procedure Gnatchop is
          Stream_IO.Close (File);
 
          if Preserve_Mode then
-            Set_File_Last_Modify_Time_Stamp (E_Name, TS_Time);
+            File_Time_Stamp (C_Name'Address, TS_Time);
          end if;
       end;
    end Write_Unit;
@@ -1729,30 +1782,33 @@ procedure Gnatchop is
 
 begin
    --  Add the directory where gnatchop is invoked in front of the path, if
-   --  gnatchop is invoked with directory information.
+   --  gnatchop is invoked with directory information. Only do this if the
+   --  platform is not VMS, where the notion of path does not really exist.
 
-   declare
-      Command : constant String := Command_Name;
+   if not Hostparm.OpenVMS then
+      declare
+         Command : constant String := Command_Name;
 
-   begin
-      for Index in reverse Command'Range loop
-         if Command (Index) = Directory_Separator then
-            declare
-               Absolute_Dir : constant String :=
-                                Normalize_Pathname
-                                  (Command (Command'First .. Index));
-               PATH         : constant String :=
-                                Absolute_Dir
-                                & Path_Separator
-                                & Getenv ("PATH").all;
-            begin
-               Setenv ("PATH", PATH);
-            end;
+      begin
+         for Index in reverse Command'Range loop
+            if Command (Index) = Directory_Separator then
+               declare
+                  Absolute_Dir : constant String :=
+                                   Normalize_Pathname
+                                     (Command (Command'First .. Index));
+                  PATH         : constant String :=
+                                   Absolute_Dir
+                                   & Path_Separator
+                                   & Getenv ("PATH").all;
+               begin
+                  Setenv ("PATH", PATH);
+               end;
 
-            exit;
-         end if;
-      end loop;
-   end;
+               exit;
+            end if;
+         end loop;
+      end;
+   end if;
 
    --  Process command line options and initialize global variables
 

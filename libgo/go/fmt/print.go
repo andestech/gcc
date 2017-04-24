@@ -124,13 +124,45 @@ type pp struct {
 	fmt        fmt
 }
 
-var ppFree = sync.Pool{
-	New: func() interface{} { return new(pp) },
+// A cache holds a set of reusable objects.
+// The slice is a stack (LIFO).
+// If more are needed, the cache creates them by calling new.
+type cache struct {
+	mu    sync.Mutex
+	saved []interface{}
+	new   func() interface{}
 }
+
+func (c *cache) put(x interface{}) {
+	c.mu.Lock()
+	if len(c.saved) < cap(c.saved) {
+		c.saved = append(c.saved, x)
+	}
+	c.mu.Unlock()
+}
+
+func (c *cache) get() interface{} {
+	c.mu.Lock()
+	n := len(c.saved)
+	if n == 0 {
+		c.mu.Unlock()
+		return c.new()
+	}
+	x := c.saved[n-1]
+	c.saved = c.saved[0 : n-1]
+	c.mu.Unlock()
+	return x
+}
+
+func newCache(f func() interface{}) *cache {
+	return &cache{saved: make([]interface{}, 0, 100), new: f}
+}
+
+var ppFree = newCache(func() interface{} { return new(pp) })
 
 // newPrinter allocates a new pp struct or grab a cached one.
 func newPrinter() *pp {
-	p := ppFree.Get().(*pp)
+	p := ppFree.get().(*pp)
 	p.panicking = false
 	p.erroring = false
 	p.fmt.init(&p.buf)
@@ -146,7 +178,7 @@ func (p *pp) free() {
 	p.buf = p.buf[:0]
 	p.arg = nil
 	p.value = reflect.Value{}
-	ppFree.Put(p)
+	ppFree.put(p)
 }
 
 func (p *pp) Width() (wid int, ok bool) { return p.fmt.wid, p.fmt.widPresent }
@@ -447,7 +479,7 @@ func (p *pp) fmtFloat32(v float32, verb rune) {
 		p.fmt.fmt_e32(v)
 	case 'E':
 		p.fmt.fmt_E32(v)
-	case 'f', 'F':
+	case 'f':
 		p.fmt.fmt_f32(v)
 	case 'g', 'v':
 		p.fmt.fmt_g32(v)
@@ -466,7 +498,7 @@ func (p *pp) fmtFloat64(v float64, verb rune) {
 		p.fmt.fmt_e64(v)
 	case 'E':
 		p.fmt.fmt_E64(v)
-	case 'f', 'F':
+	case 'f':
 		p.fmt.fmt_f64(v)
 	case 'g', 'v':
 		p.fmt.fmt_g64(v)
@@ -523,15 +555,6 @@ func (p *pp) fmtString(v string, verb rune, goSyntax bool) {
 func (p *pp) fmtBytes(v []byte, verb rune, goSyntax bool, typ reflect.Type, depth int) {
 	if verb == 'v' || verb == 'd' {
 		if goSyntax {
-			if v == nil {
-				if typ == nil {
-					p.buf.WriteString("[]byte(nil)")
-				} else {
-					p.buf.WriteString(typ.String())
-					p.buf.Write(nilParenBytes)
-				}
-				return
-			}
 			if typ == nil {
 				p.buf.Write(bytesBytes)
 			} else {

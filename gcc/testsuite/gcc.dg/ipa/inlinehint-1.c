@@ -1,6 +1,4 @@
 /* { dg-options "-O3 -c -fdump-ipa-inline-details -fno-early-inlining -fno-ipa-cp"  } */
-void test2 (int);
-int
 test (int a)
 {
    int i;
@@ -10,7 +8,6 @@ test (int a)
      test2(a);
 }
 }
-int
 m()
 {
   test (10);

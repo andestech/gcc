@@ -5,7 +5,6 @@ extern void exit (int);
 
 int x;
 
-void
 foo()
 {
   static int count;

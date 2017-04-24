@@ -12,7 +12,6 @@ import (
 	"crypto/x509"
 	"encoding/asn1"
 	"errors"
-	"fmt"
 	"io"
 )
 
@@ -101,13 +100,11 @@ func (hs *serverHandshakeState) readClientHello() (isResume bool, err error) {
 	var ok bool
 	hs.clientHello, ok = msg.(*clientHelloMsg)
 	if !ok {
-		c.sendAlert(alertUnexpectedMessage)
-		return false, unexpectedMessageError(hs.clientHello, msg)
+		return false, c.sendAlert(alertUnexpectedMessage)
 	}
 	c.vers, ok = config.mutualVersion(hs.clientHello.vers)
 	if !ok {
-		c.sendAlert(alertProtocolVersion)
-		return false, fmt.Errorf("tls: client offered an unsupported, maximum protocol version of %x", hs.clientHello.vers)
+		return false, c.sendAlert(alertProtocolVersion)
 	}
 	c.haveVers = true
 
@@ -117,14 +114,12 @@ func (hs *serverHandshakeState) readClientHello() (isResume bool, err error) {
 	hs.hello = new(serverHelloMsg)
 
 	supportedCurve := false
-	preferredCurves := config.curvePreferences()
 Curves:
 	for _, curve := range hs.clientHello.supportedCurves {
-		for _, supported := range preferredCurves {
-			if supported == curve {
-				supportedCurve = true
-				break Curves
-			}
+		switch curve {
+		case curveP256, curveP384, curveP521:
+			supportedCurve = true
+			break Curves
 		}
 	}
 
@@ -147,18 +142,20 @@ Curves:
 	}
 
 	if !foundCompression {
-		c.sendAlert(alertHandshakeFailure)
-		return false, errors.New("tls: client does not support uncompressed connections")
+		return false, c.sendAlert(alertHandshakeFailure)
 	}
 
 	hs.hello.vers = c.vers
+	t := uint32(config.time().Unix())
 	hs.hello.random = make([]byte, 32)
-	_, err = io.ReadFull(config.rand(), hs.hello.random)
+	hs.hello.random[0] = byte(t >> 24)
+	hs.hello.random[1] = byte(t >> 16)
+	hs.hello.random[2] = byte(t >> 8)
+	hs.hello.random[3] = byte(t)
+	_, err = io.ReadFull(config.rand(), hs.hello.random[4:])
 	if err != nil {
-		c.sendAlert(alertInternalError)
-		return false, err
+		return false, c.sendAlert(alertInternalError)
 	}
-	hs.hello.secureRenegotiation = hs.clientHello.secureRenegotiation
 	hs.hello.compressionMethod = compressionNone
 	if len(hs.clientHello.serverName) > 0 {
 		c.serverName = hs.clientHello.serverName
@@ -173,8 +170,7 @@ Curves:
 	}
 
 	if len(config.Certificates) == 0 {
-		c.sendAlert(alertInternalError)
-		return false, errors.New("tls: no certificates configured")
+		return false, c.sendAlert(alertInternalError)
 	}
 	hs.cert = &config.Certificates[0]
 	if len(hs.clientHello.serverName) > 0 {
@@ -203,8 +199,7 @@ Curves:
 	}
 
 	if hs.suite == nil {
-		c.sendAlert(alertHandshakeFailure)
-		return false, errors.New("tls: no cipher suite supported by both client and server")
+		return false, c.sendAlert(alertHandshakeFailure)
 	}
 
 	return false, nil
@@ -213,10 +208,6 @@ Curves:
 // checkForResumption returns true if we should perform resumption on this connection.
 func (hs *serverHandshakeState) checkForResumption() bool {
 	c := hs.c
-
-	if c.config.SessionTicketsDisabled {
-		return false
-	}
 
 	var ok bool
 	if hs.sessionState, ok = c.decryptTicket(hs.clientHello.sessionTicket); !ok {
@@ -358,8 +349,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 	// certificate message, even if it's empty.
 	if config.ClientAuth >= RequestClientCert {
 		if certMsg, ok = msg.(*certificateMsg); !ok {
-			c.sendAlert(alertUnexpectedMessage)
-			return unexpectedMessageError(certMsg, msg)
+			return c.sendAlert(alertHandshakeFailure)
 		}
 		hs.finishedHash.Write(certMsg.marshal())
 
@@ -386,8 +376,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 	// Get client key exchange
 	ckx, ok := msg.(*clientKeyExchangeMsg)
 	if !ok {
-		c.sendAlert(alertUnexpectedMessage)
-		return unexpectedMessageError(ckx, msg)
+		return c.sendAlert(alertUnexpectedMessage)
 	}
 	hs.finishedHash.Write(ckx.marshal())
 
@@ -404,8 +393,7 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 		}
 		certVerify, ok := msg.(*certificateVerifyMsg)
 		if !ok {
-			c.sendAlert(alertUnexpectedMessage)
-			return unexpectedMessageError(certVerify, msg)
+			return c.sendAlert(alertUnexpectedMessage)
 		}
 
 		switch key := pub.(type) {
@@ -474,7 +462,7 @@ func (hs *serverHandshakeState) readFinished() error {
 	c := hs.c
 
 	c.readRecord(recordTypeChangeCipherSpec)
-	if err := c.in.error(); err != nil {
+	if err := c.error(); err != nil {
 		return err
 	}
 
@@ -485,8 +473,7 @@ func (hs *serverHandshakeState) readFinished() error {
 		}
 		nextProto, ok := msg.(*nextProtoMsg)
 		if !ok {
-			c.sendAlert(alertUnexpectedMessage)
-			return unexpectedMessageError(nextProto, msg)
+			return c.sendAlert(alertUnexpectedMessage)
 		}
 		hs.finishedHash.Write(nextProto.marshal())
 		c.clientProtocol = nextProto.proto
@@ -498,15 +485,13 @@ func (hs *serverHandshakeState) readFinished() error {
 	}
 	clientFinished, ok := msg.(*finishedMsg)
 	if !ok {
-		c.sendAlert(alertUnexpectedMessage)
-		return unexpectedMessageError(clientFinished, msg)
+		return c.sendAlert(alertUnexpectedMessage)
 	}
 
 	verify := hs.finishedHash.clientSum(hs.masterSecret)
 	if len(verify) != len(clientFinished.verifyData) ||
 		subtle.ConstantTimeCompare(verify, clientFinished.verifyData) != 1 {
-		c.sendAlert(alertHandshakeFailure)
-		return errors.New("tls: client's Finished message is incorrect")
+		return c.sendAlert(alertHandshakeFailure)
 	}
 
 	hs.finishedHash.Write(clientFinished.marshal())
@@ -609,8 +594,7 @@ func (hs *serverHandshakeState) processCertsFromClient(certificates [][]byte) (c
 		case *ecdsa.PublicKey, *rsa.PublicKey:
 			pub = key
 		default:
-			c.sendAlert(alertUnsupportedCertificate)
-			return nil, fmt.Errorf("tls: client's certificate contains an unsupported public key of type %T", certs[0].PublicKey)
+			return nil, c.sendAlert(alertUnsupportedCertificate)
 		}
 		c.peerCertificates = certs
 		return pub, nil

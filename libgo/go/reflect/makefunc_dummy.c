@@ -2,14 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#include "runtime.h"
+// +build !amd64
 
-/* Dummy function for processors that implement MakeFunc using FFI
-   rather than having builtin support.  */
+// Dummy function for processors without makefunc support.
 
-void makeFuncStub (void) __asm__ ("reflect.makeFuncStub");
-
-void makeFuncStub (void)
+void makeFuncStub () __asm__ ("reflect.makeFuncStub");
+void makeFuncStub ()
 {
-  runtime_throw ("impossible call to makeFuncStub");
 }

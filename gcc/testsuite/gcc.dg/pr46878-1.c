@@ -3,9 +3,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O2" } */
 
-int __foo (void);
-int __bar (void);
-
 struct baz
 {
   int *newp;

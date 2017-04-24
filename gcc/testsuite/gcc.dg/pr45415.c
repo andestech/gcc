@@ -53,7 +53,6 @@ df(f_be, t_be)
 
 void abort (void);
 void exit (int);
-int
 main ()
 {
   t_be x;

@@ -36,17 +36,8 @@ along with GCC; see the file COPYING3.	If not see
 #include "recog.h"
 #include "output.h"
 #include "regs.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "input.h"
 #include "function.h"
 #include "expr.h"
-#include "predict.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfganal.h"
 #include "basic-block.h"
 #include "except.h"
 #include "df.h"
@@ -321,7 +312,7 @@ mark_pseudo_dead (int regno, int point)
    Return TRUE if the liveness tracking sets were modified,
    or FALSE if nothing changed.  */
 static bool
-mark_regno_live (int regno, machine_mode mode, int point)
+mark_regno_live (int regno, enum machine_mode mode, int point)
 {
   int last;
   bool changed = false;
@@ -346,7 +337,7 @@ mark_regno_live (int regno, machine_mode mode, int point)
    Return TRUE if the liveness tracking sets were modified,
    or FALSE if nothing changed.  */
 static bool
-mark_regno_dead (int regno, machine_mode mode, int point)
+mark_regno_dead (int regno, enum machine_mode mode, int point)
 {
   int last;
   bool changed = false;
@@ -367,7 +358,7 @@ mark_regno_dead (int regno, machine_mode mode, int point)
 }
 
 /* Insn currently scanned.  */
-static rtx_insn *curr_insn;
+static rtx curr_insn;
 /* The insn data.  */
 static lra_insn_recog_data_t curr_id;
 /* The insn static data.  */
@@ -567,18 +558,22 @@ process_bb_lives (basic_block bb, int &curr_point)
 	      /* It might be 'inheritance pseudo <- reload pseudo'.  */
 	      || (src_regno >= lra_constraint_new_regno_start
 		  && ((int) REGNO (SET_DEST (set))
-		      >= lra_constraint_new_regno_start)
-		  /* Remember to skip special cases where src/dest regnos are
-		     the same, e.g. insn SET pattern has matching constraints
-		     like =r,0.  */
-		  && src_regno != (int) REGNO (SET_DEST (set)))))
+		      >= lra_constraint_new_regno_start))))
 	{
 	  int hard_regno = -1, regno = -1;
 
 	  dst_regno = REGNO (SET_DEST (set));
 	  if (dst_regno >= lra_constraint_new_regno_start
 	      && src_regno >= lra_constraint_new_regno_start)
-	    lra_create_copy (dst_regno, src_regno, freq);
+	    {
+	      /* It might be still an original (non-reload) insn with
+		 one unused output and a constraint requiring to use
+		 the same reg for input/output operands. In this case
+		 dst_regno and src_regno have the same value, we don't
+		 need a misleading copy for this case.  */
+	      if (dst_regno != src_regno)
+		lra_create_copy (dst_regno, src_regno, freq);
+	    }
 	  else if (dst_regno >= lra_constraint_new_regno_start)
 	    {
 	      if ((hard_regno = src_regno) >= FIRST_PSEUDO_REGISTER)
@@ -637,17 +632,6 @@ process_bb_lives (basic_block bb, int &curr_point)
 
       if (call_p)
 	{
-	  if (flag_use_caller_save)
-	    {
-	      HARD_REG_SET this_call_used_reg_set;
-	      get_call_reg_set_usage (curr_insn, &this_call_used_reg_set,
-				      call_used_reg_set);
-
-	      EXECUTE_IF_SET_IN_SPARSESET (pseudos_live, j)
-		IOR_HARD_REG_SET (lra_reg_info[j].actual_call_used_reg_set,
-				  this_call_used_reg_set);
-	    }
-
 	  sparseset_ior (pseudos_live_through_calls,
 			 pseudos_live_through_calls, pseudos_live);
 	  if (cfun->has_nonlocal_label
@@ -689,9 +673,9 @@ process_bb_lives (basic_block bb, int &curr_point)
       /* Mark early clobber outputs dead.  */
       for (reg = curr_id->regs; reg != NULL; reg = reg->next)
 	if (reg->type == OP_OUT && reg->early_clobber && ! reg->subreg_p)
-	  need_curr_point_incr |= mark_regno_dead (reg->regno,
-						   reg->biggest_mode,
-						   curr_point);
+	  need_curr_point_incr = mark_regno_dead (reg->regno,
+						  reg->biggest_mode,
+						  curr_point);
 
       for (reg = curr_static_id->hard_regs; reg != NULL; reg = reg->next)
 	if (reg->type == OP_OUT && reg->early_clobber && ! reg->subreg_p)

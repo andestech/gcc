@@ -352,9 +352,9 @@ argloop:
 			off = align(off, uintptr(typ.fieldAlign))
 			addr := unsafe.Pointer(uintptr(ptr) + off)
 			if v.flag&flagIndir == 0 && (v.kind() == Ptr || v.kind() == UnsafePointer) {
-				*(*unsafe.Pointer)(addr) = v.ptr
+				storeIword(addr, iword(v.val), typ.size)
 			} else {
-				memmove(addr, v.ptr, typ.size)
+				memmove(addr, v.val, typ.size)
 			}
 			off += typ.size
 		}
@@ -363,11 +363,9 @@ argloop:
 
 	if len(out) == 1 && ret2 == amd64NoClass {
 		v := out[0]
-		var w unsafe.Pointer
-		if v.Kind() == Ptr || v.Kind() == UnsafePointer {
-			w = v.pointer()
-		} else {
-			w = unsafe.Pointer(loadScalar(v.ptr, v.typ.size))
+		w := v.iword()
+		if v.Kind() != Ptr && v.Kind() != UnsafePointer {
+			w = loadIword(unsafe.Pointer(w), v.typ.size)
 		}
 		switch ret1 {
 		case amd64Integer:
@@ -389,9 +387,9 @@ argloop:
 		off = align(off, uintptr(typ.fieldAlign))
 		addr := unsafe.Pointer(uintptr(ptr) + off)
 		if v.flag&flagIndir == 0 && (v.kind() == Ptr || v.kind() == UnsafePointer) {
-			*(*unsafe.Pointer)(addr) = v.ptr
+			storeIword(addr, iword(v.val), typ.size)
 		} else {
-			memmove(addr, v.ptr, typ.size)
+			memmove(addr, v.val, typ.size)
 		}
 		off += uintptr(typ.size)
 	}

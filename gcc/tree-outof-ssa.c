@@ -24,18 +24,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm.h"
 #include "tree.h"
 #include "stor-layout.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfgrtl.h"
-#include "cfganal.h"
 #include "basic-block.h"
 #include "gimple-pretty-print.h"
 #include "bitmap.h"
@@ -272,8 +260,8 @@ insert_partition_copy_on_edge (edge e, int dest, int src, source_location locus)
     set_curr_insn_location (locus);
 
   var = partition_to_var (SA.map, src);
-  seq = emit_partition_copy (copy_rtx (SA.partition_to_pseudo[dest]),
-			     copy_rtx (SA.partition_to_pseudo[src]),
+  seq = emit_partition_copy (SA.partition_to_pseudo[dest],
+			     SA.partition_to_pseudo[src],
 			     TYPE_UNSIGNED (TREE_TYPE (var)),
 			     var);
 
@@ -286,8 +274,8 @@ insert_partition_copy_on_edge (edge e, int dest, int src, source_location locus)
 static void
 insert_value_copy_on_edge (edge e, int dest, tree src, source_location locus)
 {
-  rtx dest_rtx, seq, x;
-  machine_mode dest_mode, src_mode;
+  rtx seq, x;
+  enum machine_mode dest_mode, src_mode;
   int unsignedp;
   tree var;
 
@@ -301,8 +289,7 @@ insert_value_copy_on_edge (edge e, int dest, tree src, source_location locus)
       fprintf (dump_file, "\n");
     }
 
-  dest_rtx = copy_rtx (SA.partition_to_pseudo[dest]);
-  gcc_assert (dest_rtx);
+  gcc_assert (SA.partition_to_pseudo[dest]);
 
   set_location_for_edge (e);
   /* If a locus is provided, override the default.  */
@@ -313,9 +300,9 @@ insert_value_copy_on_edge (edge e, int dest, tree src, source_location locus)
 
   var = SSA_NAME_VAR (partition_to_var (SA.map, dest));
   src_mode = TYPE_MODE (TREE_TYPE (src));
-  dest_mode = GET_MODE (dest_rtx);
+  dest_mode = GET_MODE (SA.partition_to_pseudo[dest]);
   gcc_assert (src_mode == TYPE_MODE (TREE_TYPE (var)));
-  gcc_assert (!REG_P (dest_rtx)
+  gcc_assert (!REG_P (SA.partition_to_pseudo[dest])
 	      || dest_mode == promote_decl_mode (var, &unsignedp));
 
   if (src_mode != dest_mode)
@@ -325,14 +312,15 @@ insert_value_copy_on_edge (edge e, int dest, tree src, source_location locus)
     }
   else if (src_mode == BLKmode)
     {
-      x = dest_rtx;
+      x = SA.partition_to_pseudo[dest];
       store_expr (src, x, 0, false);
     }
   else
-    x = expand_expr (src, dest_rtx, dest_mode, EXPAND_NORMAL);
+    x = expand_expr (src, SA.partition_to_pseudo[dest],
+		     dest_mode, EXPAND_NORMAL);
 
-  if (x != dest_rtx)
-    emit_move_insn (dest_rtx, x);
+  if (x != SA.partition_to_pseudo[dest])
+    emit_move_insn (SA.partition_to_pseudo[dest], x);
   seq = get_insns ();
   end_sequence ();
 
@@ -368,7 +356,7 @@ insert_rtx_to_part_on_edge (edge e, int dest, rtx src, int unsignedsrcp,
      mems.  Usually we give the source.  As we result from SSA names
      the left and right size should be the same (and no WITH_SIZE_EXPR
      involved), so it doesn't matter.  */
-  seq = emit_partition_copy (copy_rtx (SA.partition_to_pseudo[dest]),
+  seq = emit_partition_copy (SA.partition_to_pseudo[dest],
 			     src, unsignedsrcp,
 			     partition_to_var (SA.map, dest));
 
@@ -402,7 +390,7 @@ insert_part_to_rtx_on_edge (edge e, rtx dest, int src, source_location locus)
 
   var = partition_to_var (SA.map, src);
   seq = emit_partition_copy (dest,
-			     copy_rtx (SA.partition_to_pseudo[src]),
+			     SA.partition_to_pseudo[src],
 			     TYPE_UNSIGNED (TREE_TYPE (var)),
 			     var);
 
@@ -697,7 +685,7 @@ get_temp_reg (tree name)
   tree var = TREE_CODE (name) == SSA_NAME ? SSA_NAME_VAR (name) : name;
   tree type = TREE_TYPE (var);
   int unsignedp;
-  machine_mode reg_mode = promote_decl_mode (var, &unsignedp);
+  enum machine_mode reg_mode = promote_decl_mode (var, &unsignedp);
   rtx x = gen_reg_rtx (reg_mode);
   if (POINTER_TYPE_P (type))
     mark_reg_pointer (x, TYPE_ALIGN (TREE_TYPE (TREE_TYPE (var))));
@@ -970,9 +958,9 @@ expand_phi_nodes (struct ssaexpand *sa)
 	    if (e->insns.r && (e->flags & EDGE_EH)
 		&& !single_pred_p (e->dest))
 	      {
-		rtx_insn *insns = e->insns.r;
+		rtx insns = e->insns.r;
 		basic_block bb;
-		e->insns.r = NULL;
+		e->insns.r = NULL_RTX;
 		bb = split_edge (e);
 		single_pred_edge (bb)->insns.r = insns;
 	      }

@@ -50,17 +50,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "calls.h"
 #include "gimple-pretty-print.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfganal.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -84,7 +73,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "flags.h"
 #include "cfgloop.h"
 #include "tree-scalar-evolution.h"
-#include "tree-chkp.h"
 
 static struct stmt_stats
 {
@@ -243,7 +231,6 @@ mark_stmt_if_obviously_necessary (gimple stmt, bool aggressive)
 	  switch (DECL_FUNCTION_CODE (callee))
 	    {
 	    case BUILT_IN_MALLOC:
-	    case BUILT_IN_ALIGNED_ALLOC:
 	    case BUILT_IN_CALLOC:
 	    case BUILT_IN_ALLOCA:
 	    case BUILT_IN_ALLOCA_WITH_ALIGN:
@@ -586,7 +573,6 @@ mark_all_reaching_defs_necessary_1 (ao_ref *ref ATTRIBUTE_UNUSED,
 	switch (DECL_FUNCTION_CODE (callee))
 	  {
 	  case BUILT_IN_MALLOC:
-	  case BUILT_IN_ALIGNED_ALLOC:
 	  case BUILT_IN_CALLOC:
 	  case BUILT_IN_ALLOCA:
 	  case BUILT_IN_ALLOCA_WITH_ALIGN:
@@ -790,24 +776,9 @@ propagate_necessity (bool aggressive)
 		  && is_gimple_call (def_stmt = SSA_NAME_DEF_STMT (ptr))
 		  && (def_callee = gimple_call_fndecl (def_stmt))
 		  && DECL_BUILT_IN_CLASS (def_callee) == BUILT_IN_NORMAL
-		  && (DECL_FUNCTION_CODE (def_callee) == BUILT_IN_ALIGNED_ALLOC
-		      || DECL_FUNCTION_CODE (def_callee) == BUILT_IN_MALLOC
+		  && (DECL_FUNCTION_CODE (def_callee) == BUILT_IN_MALLOC
 		      || DECL_FUNCTION_CODE (def_callee) == BUILT_IN_CALLOC))
-		{
-		  gimple bounds_def_stmt;
-		  tree bounds;
-
-		  /* For instrumented calls we should also check used
-		     bounds are returned by the same allocation call.  */
-		  if (!gimple_call_with_bounds_p (stmt)
-		      || ((bounds = gimple_call_arg (stmt, 1))
-			  && TREE_CODE (bounds) == SSA_NAME
-			  && (bounds_def_stmt = SSA_NAME_DEF_STMT (bounds))
-			  && chkp_gimple_call_builtin_p (bounds_def_stmt,
-							 BUILT_IN_CHKP_BNDRET)
-			  && gimple_call_arg (bounds_def_stmt, 0) == ptr))
-		    continue;
-		}
+		continue;
 	    }
 
 	  FOR_EACH_SSA_TREE_OPERAND (use, stmt, iter, SSA_OP_USE)
@@ -851,7 +822,6 @@ propagate_necessity (bool aggressive)
 		  && (DECL_FUNCTION_CODE (callee) == BUILT_IN_MEMSET
 		      || DECL_FUNCTION_CODE (callee) == BUILT_IN_MEMSET_CHK
 		      || DECL_FUNCTION_CODE (callee) == BUILT_IN_MALLOC
-		      || DECL_FUNCTION_CODE (callee) == BUILT_IN_ALIGNED_ALLOC
 		      || DECL_FUNCTION_CODE (callee) == BUILT_IN_CALLOC
 		      || DECL_FUNCTION_CODE (callee) == BUILT_IN_FREE
 		      || DECL_FUNCTION_CODE (callee) == BUILT_IN_VA_END
@@ -1234,23 +1204,6 @@ eliminate_unnecessary_stmts (void)
 		      && !gimple_plf (def_stmt, STMT_NECESSARY))
 		    gimple_set_plf (stmt, STMT_NECESSARY, false);
 		}
-	      /* We did not propagate necessity for free calls fed
-		 by allocation function to allow unnecessary
-		 alloc-free sequence elimination.  For instrumented
-		 calls it also means we did not mark bounds producer
-		 as necessary and it is time to do it in case free
-		 call is not removed.  */
-	      if (gimple_call_with_bounds_p (stmt))
-		{
-		  gimple bounds_def_stmt;
-		  tree bounds = gimple_call_arg (stmt, 1);
-		  gcc_assert (TREE_CODE (bounds) == SSA_NAME);
-		  bounds_def_stmt = SSA_NAME_DEF_STMT (bounds);
-		  if (bounds_def_stmt
-		      && !gimple_plf (bounds_def_stmt, STMT_NECESSARY))
-		    gimple_set_plf (bounds_def_stmt, STMT_NECESSARY,
-				    gimple_plf (stmt, STMT_NECESSARY));
-		}
 	    }
 
 	  /* If GSI is not necessary then remove it.  */
@@ -1276,14 +1229,11 @@ eliminate_unnecessary_stmts (void)
 		     special logic we apply to malloc/free pair removal.  */
 		  && (!(call = gimple_call_fndecl (stmt))
 		      || DECL_BUILT_IN_CLASS (call) != BUILT_IN_NORMAL
-		      || (DECL_FUNCTION_CODE (call) != BUILT_IN_ALIGNED_ALLOC
-			  && DECL_FUNCTION_CODE (call) != BUILT_IN_MALLOC
+		      || (DECL_FUNCTION_CODE (call) != BUILT_IN_MALLOC
 			  && DECL_FUNCTION_CODE (call) != BUILT_IN_CALLOC
 			  && DECL_FUNCTION_CODE (call) != BUILT_IN_ALLOCA
 			  && (DECL_FUNCTION_CODE (call)
-			      != BUILT_IN_ALLOCA_WITH_ALIGN)))
-		  /* Avoid doing so for bndret calls for the same reason.  */
-		  && !chkp_gimple_call_builtin_p (stmt, BUILT_IN_CHKP_BNDRET))
+			      != BUILT_IN_ALLOCA_WITH_ALIGN))))
 		{
 		  something_changed = true;
 		  if (dump_file && (dump_flags & TDF_DETAILS))
@@ -1524,12 +1474,7 @@ perform_tree_ssa_dce (bool aggressive)
   tree_dce_done (aggressive);
 
   if (something_changed)
-    {
-      free_numbers_of_iterations_estimates ();
-      if (scev_initialized_p ())
-	scev_reset ();
-      return TODO_update_ssa | TODO_cleanup_cfg;
-    }
+    return TODO_update_ssa | TODO_cleanup_cfg;
   return 0;
 }
 
@@ -1541,9 +1486,28 @@ tree_ssa_dce (void)
 }
 
 static unsigned int
+tree_ssa_dce_loop (void)
+{
+  unsigned int todo;
+  todo = perform_tree_ssa_dce (/*aggressive=*/false);
+  if (todo)
+    {
+      free_numbers_of_iterations_estimates ();
+      scev_reset ();
+    }
+  return todo;
+}
+
+static unsigned int
 tree_ssa_cd_dce (void)
 {
   return perform_tree_ssa_dce (/*aggressive=*/optimize >= 2);
+}
+
+static bool
+gate_dce (void)
+{
+  return flag_tree_dce != 0;
 }
 
 namespace {
@@ -1553,12 +1517,14 @@ const pass_data pass_data_dce =
   GIMPLE_PASS, /* type */
   "dce", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_TREE_DCE, /* tv_id */
   ( PROP_cfg | PROP_ssa ), /* properties_required */
   0, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  0, /* todo_flags_finish */
+  TODO_verify_ssa, /* todo_flags_finish */
 };
 
 class pass_dce : public gimple_opt_pass
@@ -1570,8 +1536,8 @@ public:
 
   /* opt_pass methods: */
   opt_pass * clone () { return new pass_dce (m_ctxt); }
-  virtual bool gate (function *) { return flag_tree_dce != 0; }
-  virtual unsigned int execute (function *) { return tree_ssa_dce (); }
+  bool gate () { return gate_dce (); }
+  unsigned int execute () { return tree_ssa_dce (); }
 
 }; // class pass_dce
 
@@ -1585,17 +1551,58 @@ make_pass_dce (gcc::context *ctxt)
 
 namespace {
 
+const pass_data pass_data_dce_loop =
+{
+  GIMPLE_PASS, /* type */
+  "dceloop", /* name */
+  OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
+  TV_TREE_DCE, /* tv_id */
+  ( PROP_cfg | PROP_ssa ), /* properties_required */
+  0, /* properties_provided */
+  0, /* properties_destroyed */
+  0, /* todo_flags_start */
+  TODO_verify_ssa, /* todo_flags_finish */
+};
+
+class pass_dce_loop : public gimple_opt_pass
+{
+public:
+  pass_dce_loop (gcc::context *ctxt)
+    : gimple_opt_pass (pass_data_dce_loop, ctxt)
+  {}
+
+  /* opt_pass methods: */
+  opt_pass * clone () { return new pass_dce_loop (m_ctxt); }
+  bool gate () { return gate_dce (); }
+  unsigned int execute () { return tree_ssa_dce_loop (); }
+
+}; // class pass_dce_loop
+
+} // anon namespace
+
+gimple_opt_pass *
+make_pass_dce_loop (gcc::context *ctxt)
+{
+  return new pass_dce_loop (ctxt);
+}
+
+namespace {
+
 const pass_data pass_data_cd_dce =
 {
   GIMPLE_PASS, /* type */
   "cddce", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_TREE_CD_DCE, /* tv_id */
   ( PROP_cfg | PROP_ssa ), /* properties_required */
   0, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  0, /* todo_flags_finish */
+  ( TODO_verify_ssa | TODO_verify_flow ), /* todo_flags_finish */
 };
 
 class pass_cd_dce : public gimple_opt_pass
@@ -1607,8 +1614,8 @@ public:
 
   /* opt_pass methods: */
   opt_pass * clone () { return new pass_cd_dce (m_ctxt); }
-  virtual bool gate (function *) { return flag_tree_dce != 0; }
-  virtual unsigned int execute (function *) { return tree_ssa_cd_dce (); }
+  bool gate () { return gate_dce (); }
+  unsigned int execute () { return tree_ssa_cd_dce (); }
 
 }; // class pass_cd_dce
 

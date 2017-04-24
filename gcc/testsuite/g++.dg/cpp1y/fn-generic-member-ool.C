@@ -1,5 +1,5 @@
 // Out-of-line generic member function definitions.
-// { dg-do compile { target c++14 } }
+// { dg-do compile { target c++1y } }
 // { dg-options "" }
 
 struct A {

@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 2009-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2009-2012, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -144,9 +144,6 @@ package GNAT.Secure_Hashes is
       --  Initial value of a Context object. May be used to reinitialize
       --  a Context value by simple assignment of this value to the object.
 
-      function HMAC_Initial_Context (Key : String) return Context;
-      --  Initial Context for HMAC computation with the given Key
-
       procedure Update      (C : in out Context; Input : String);
       procedure Wide_Update (C : in out Context; Input : Wide_String);
       procedure Update
@@ -166,7 +163,7 @@ package GNAT.Secure_Hashes is
       --  the hash in binary representation.
 
       function Digest (C : Context) return Binary_Message_Digest;
-      --  Return hash or HMAC for the data accumulated with C
+      --  Return hash for the data accumulated with C
 
       function Digest      (S : String)      return Binary_Message_Digest;
       function Wide_Digest (W : Wide_String) return Binary_Message_Digest;
@@ -181,7 +178,7 @@ package GNAT.Secure_Hashes is
       --  hexadecimal representation.
 
       function Digest (C : Context) return Message_Digest;
-      --  Return hash or HMAC for the data accumulated with C in hexadecimal
+      --  Return hash for the data accumulated with C in hexadecimal
       --  representation.
 
       function Digest      (S : String)               return Message_Digest;
@@ -196,15 +193,7 @@ package GNAT.Secure_Hashes is
       Block_Length : constant Natural := Block_Words * Word_Length;
       --  Length in bytes of a data block
 
-      subtype Key_Length is
-        Stream_Element_Offset range 0 .. Stream_Element_Offset (Block_Length);
-
-      --  KL is 0 for a normal hash context, > 0 for HMAC
-
-      type Context (KL : Key_Length := 0) is record
-         Key : Stream_Element_Array (1 .. KL);
-         --  HMAC key
-
+      type Context is record
          H_State : Hash_State.State (0 .. State_Words - 1) := Initial_State;
          --  Function-specific state
 
@@ -212,7 +201,7 @@ package GNAT.Secure_Hashes is
          --  Function-independent state (block buffer)
       end record;
 
-      Initial_Context : constant Context (KL => 0) := (others => <>);
+      Initial_Context : constant Context := (others => <>);
       --  Initial values are provided by default initialization of Context
 
    end H;

@@ -2590,11 +2590,10 @@ gfc_resolve_image_index (gfc_expr *f, gfc_expr *array ATTRIBUTE_UNUSED,
 
 
 void
-gfc_resolve_this_image (gfc_expr *f, gfc_expr *array, gfc_expr *dim,
-			gfc_expr *distance ATTRIBUTE_UNUSED)
+gfc_resolve_this_image (gfc_expr *f, gfc_expr *array, gfc_expr *dim)
 {
   static char this_image[] = "__this_image";
-  if (array && gfc_is_coarray (array))
+  if (array)
     resolve_bound (f, array, dim, NULL, "__this_image", true);
   else
     {
@@ -3293,14 +3292,13 @@ gfc_resolve_system_clock (gfc_code *c)
 {
   const char *name;
   int kind;
-  gfc_expr *count = c->ext.actual->expr;
-  gfc_expr *count_max = c->ext.actual->next->next->expr;
 
-  /* The INTEGER(8) version has higher precision, it is used if both COUNT
-     and COUNT_MAX can hold 64-bit values, or are absent.  */
-  if ((!count || count->ts.kind >= 8)
-      && (!count_max || count_max->ts.kind >= 8))
-    kind = 8;
+  if (c->ext.actual->expr != NULL)
+    kind = c->ext.actual->expr->ts.kind;
+  else if (c->ext.actual->next->expr != NULL)
+      kind = c->ext.actual->next->expr->ts.kind;
+  else if (c->ext.actual->next->next->expr != NULL)
+      kind = c->ext.actual->next->next->expr->ts.kind;
   else
     kind = gfc_default_integer_kind;
 

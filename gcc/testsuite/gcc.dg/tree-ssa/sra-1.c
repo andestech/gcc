@@ -3,8 +3,6 @@
 
 /* Tests for SRA. */
 
-void link_error (void);
-
 typedef struct teststruct
 {
   double d;

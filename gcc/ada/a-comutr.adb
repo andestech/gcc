@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 2004-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2004-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -272,8 +272,7 @@ package body Ada.Containers.Multiway_Trees is
       New_Item  : Element_Type;
       Count     : Count_Type := 1)
    is
-      First : Tree_Node_Access;
-      Last  : Tree_Node_Access;
+      First, Last : Tree_Node_Access;
 
    begin
       if Parent = No_Element then
@@ -298,6 +297,7 @@ package body Ada.Containers.Multiway_Trees is
                                    others  => <>);
 
       Last := First;
+
       for J in Count_Type'(2) .. Count loop
 
          --  Reclaim other nodes if Storage_Error.  ???
@@ -1171,8 +1171,7 @@ package body Ada.Containers.Multiway_Trees is
       Position  : out Cursor;
       Count     : Count_Type := 1)
    is
-      First : Tree_Node_Access;
-      Last  : Tree_Node_Access;
+      Last : Tree_Node_Access;
 
    begin
       if Parent = No_Element then
@@ -1203,11 +1202,13 @@ package body Ada.Containers.Multiway_Trees is
            with "attempt to tamper with cursors (tree is busy)";
       end if;
 
-      First := new Tree_Node_Type'(Parent  => Parent.Node,
-                                   Element => New_Item,
-                                   others  => <>);
+      Position.Container := Parent.Container;
+      Position.Node := new Tree_Node_Type'(Parent  => Parent.Node,
+                                           Element => New_Item,
+                                           others  => <>);
 
-      Last := First;
+      Last := Position.Node;
+
       for J in Count_Type'(2) .. Count loop
 
          --  Reclaim other nodes if Storage_Error.  ???
@@ -1221,7 +1222,7 @@ package body Ada.Containers.Multiway_Trees is
       end loop;
 
       Insert_Subtree_List
-        (First  => First,
+        (First  => Position.Node,
          Last   => Last,
          Parent => Parent.Node,
          Before => Before.Node);
@@ -1231,8 +1232,6 @@ package body Ada.Containers.Multiway_Trees is
       --  nodes we just inserted.
 
       Container.Count := Container.Count + Count;
-
-      Position := Cursor'(Parent.Container, First);
    end Insert_Child;
 
    procedure Insert_Child
@@ -1242,8 +1241,7 @@ package body Ada.Containers.Multiway_Trees is
       Position  : out Cursor;
       Count     : Count_Type := 1)
    is
-      First : Tree_Node_Access;
-      Last  : Tree_Node_Access;
+      Last : Tree_Node_Access;
 
    begin
       if Parent = No_Element then
@@ -1274,11 +1272,13 @@ package body Ada.Containers.Multiway_Trees is
            with "attempt to tamper with cursors (tree is busy)";
       end if;
 
-      First := new Tree_Node_Type'(Parent  => Parent.Node,
-                                   Element => <>,
-                                   others  => <>);
+      Position.Container := Parent.Container;
+      Position.Node := new Tree_Node_Type'(Parent  => Parent.Node,
+                                           Element => <>,
+                                           others  => <>);
 
-      Last := First;
+      Last := Position.Node;
+
       for J in Count_Type'(2) .. Count loop
 
          --  Reclaim other nodes if Storage_Error.  ???
@@ -1292,7 +1292,7 @@ package body Ada.Containers.Multiway_Trees is
       end loop;
 
       Insert_Subtree_List
-        (First  => First,
+        (First  => Position.Node,
          Last   => Last,
          Parent => Parent.Node,
          Before => Before.Node);
@@ -1302,8 +1302,6 @@ package body Ada.Containers.Multiway_Trees is
       --  nodes we just inserted.
 
       Container.Count := Container.Count + Count;
-
-      Position := Cursor'(Parent.Container, First);
    end Insert_Child;
 
    -------------------------

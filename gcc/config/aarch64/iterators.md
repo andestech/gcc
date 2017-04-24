@@ -95,9 +95,6 @@
 ;; Vector Float modes.
 (define_mode_iterator VDQF [V2SF V4SF V2DF])
 
-;; Vector Float modes, and DF.
-(define_mode_iterator VDQF_DF [V2SF V4SF V2DF DF])
-
 ;; Vector single Float modes.
 (define_mode_iterator VDQSF [V2SF V4SF])
 
@@ -147,8 +144,8 @@
 ;; Double vector modes for combines.
 (define_mode_iterator VDIC [V8QI V4HI V2SI])
 
-;; Double vector modes inc V1DF
-(define_mode_iterator VD1 [V8QI V4HI V2SI V2SF V1DF])
+;; Double vector modes.
+(define_mode_iterator VD_RE [V8QI V4HI V2SI DI DF V2SF])
 
 ;; Vector modes except double int.
 (define_mode_iterator VDQIF [V8QI V16QI V4HI V8HI V2SI V4SI V2SF V4SF V2DF])
@@ -158,9 +155,6 @@
 
 ;; Vector modes for H and S types.
 (define_mode_iterator VDQHS [V4HI V8HI V2SI V4SI])
-
-;; Vector modes for H, S and D types.
-(define_mode_iterator VDQHSD [V4HI V8HI V2SI V4SI V2DI])
 
 ;; Vector modes for Q, H and S types.
 (define_mode_iterator VDQQHS [V8QI V16QI V4HI V8HI V2SI V4SI])
@@ -213,7 +207,8 @@
     UNSPEC_FMINNMV	; Used in aarch64-simd.md.
     UNSPEC_FMINV	; Used in aarch64-simd.md.
     UNSPEC_FADDV	; Used in aarch64-simd.md.
-    UNSPEC_ADDV		; Used in aarch64-simd.md.
+    UNSPEC_SADDV	; Used in aarch64-simd.md.
+    UNSPEC_UADDV	; Used in aarch64-simd.md.
     UNSPEC_SMAXV	; Used in aarch64-simd.md.
     UNSPEC_SMINV	; Used in aarch64-simd.md.
     UNSPEC_UMAXV	; Used in aarch64-simd.md.
@@ -278,10 +273,6 @@
     UNSPEC_UZP2		; Used in vector permute patterns.
     UNSPEC_TRN1		; Used in vector permute patterns.
     UNSPEC_TRN2		; Used in vector permute patterns.
-    UNSPEC_EXT		; Used in aarch64-simd.md.
-    UNSPEC_REV64	; Used in vector reverse patterns (permute).
-    UNSPEC_REV32	; Used in vector reverse patterns (permute).
-    UNSPEC_REV16	; Used in vector reverse patterns (permute).
     UNSPEC_AESE		; Used in aarch64-simd.md.
     UNSPEC_AESD         ; Used in aarch64-simd.md.
     UNSPEC_AESMC        ; Used in aarch64-simd.md.
@@ -307,10 +298,6 @@
 ;; In GPI templates, a string like "%<w>0" will expand to "%w0" in the
 ;; 32-bit version and "%x0" in the 64-bit version.
 (define_mode_attr w [(QI "w") (HI "w") (SI "w") (DI "x") (SF "s") (DF "d")])
-
-;; For inequal width int to float conversion
-(define_mode_attr w1 [(SF "w") (DF "x")])
-(define_mode_attr w2 [(SF "x") (DF "w")])
 
 ;; For constraints used in scalar immediate vector moves
 (define_mode_attr hq [(HI "h") (QI "q")])
@@ -373,9 +360,6 @@
                          (DI   "1d") (DF    "1d")
                          (V2DI "2d") (V2SF "2s")
 			 (V4SF "4s") (V2DF "2d")])
-
-(define_mode_attr Vrevsuff [(V4HI "16") (V8HI "16") (V2SI "32")
-                            (V4SI "32") (V2DI "64")])
 
 (define_mode_attr Vmtype [(V8QI ".8b") (V16QI ".16b")
 			 (V4HI ".4h") (V8HI  ".8h")
@@ -540,14 +524,6 @@
 				(V2DF "v2di") (DF    "di")
 				(SF   "si")])
 
-;; Lower case element modes (as used in shift immediate patterns).
-(define_mode_attr ve_mode [(V8QI "qi") (V16QI "qi")
-			   (V4HI "hi") (V8HI  "hi")
-			   (V2SI "si") (V4SI  "si")
-			   (DI   "di") (V2DI  "di")
-			   (QI   "qi") (HI    "hi")
-			   (SI   "si")])
-
 ;; Vm for lane instructions is restricted to FP_LO_REGS.
 (define_mode_attr vwx [(V4HI "x") (V8HI "x") (HI "x")
 		       (V2SI "w") (V4SI "w") (SI "w")])
@@ -579,42 +555,12 @@
 
 (define_mode_attr VSTRUCT_DREG [(OI "TI") (CI "EI") (XI "OI")])
 
-;; Mode of pair of elements for each vector mode, to define transfer
-;; size for structure lane/dup loads and stores.
-(define_mode_attr V_TWO_ELEM [(V8QI "HI")   (V16QI "HI")
-                              (V4HI "SI")   (V8HI "SI")
-                              (V2SI "V2SI") (V4SI "V2SI")
-                              (DI "V2DI")   (V2DI "V2DI")
-                              (V2SF "V2SF") (V4SF "V2SF")
-                              (DF "V2DI")   (V2DF "V2DI")])
-
-;; Similar, for three elements.
-(define_mode_attr V_THREE_ELEM [(V8QI "BLK") (V16QI "BLK")
-                                (V4HI "BLK") (V8HI "BLK")
-                                (V2SI "BLK") (V4SI "BLK")
-                                (DI "EI")    (V2DI "EI")
-                                (V2SF "BLK") (V4SF "BLK")
-                                (DF "EI")    (V2DF "EI")])
-
-;; Similar, for four elements.
-(define_mode_attr V_FOUR_ELEM [(V8QI "SI")   (V16QI "SI")
-                               (V4HI "V4HI") (V8HI "V4HI")
-                               (V2SI "V4SI") (V4SI "V4SI")
-                               (DI "OI")     (V2DI "OI")
-                               (V2SF "V4SF") (V4SF "V4SF")
-                               (DF "OI")     (V2DF "OI")])
-
-
 ;; Mode for atomic operation suffixes
 (define_mode_attr atomic_sfx
   [(QI "b") (HI "h") (SI "") (DI "")])
 
-(define_mode_attr fcvt_target [(V2DF "v2di") (V4SF "v4si") (V2SF "v2si") (SF "si") (DF "di")])
-(define_mode_attr FCVT_TARGET [(V2DF "V2DI") (V4SF "V4SI") (V2SF "V2SI") (SF "SI") (DF "DI")])
-
-;; for the inequal width integer to fp conversions
-(define_mode_attr fcvt_iesize [(SF "di") (DF "si")])
-(define_mode_attr FCVT_IESIZE [(SF "DI") (DF "SI")])
+(define_mode_attr fcvt_target [(V2DF "v2di") (V4SF "v4si") (V2SF "v2si")])
+(define_mode_attr FCVT_TARGET [(V2DF "V2DI") (V4SF "V4SI") (V2SF "V2SI")])
 
 (define_mode_attr VSWAP_WIDTH [(V8QI "V16QI") (V16QI "V8QI")
 				(V4HI "V8HI") (V8HI  "V4HI")
@@ -861,6 +807,8 @@
 (define_int_iterator FMAXMINV [UNSPEC_FMAXV UNSPEC_FMINV
 			       UNSPEC_FMAXNMV UNSPEC_FMINNMV])
 
+(define_int_iterator SUADDV [UNSPEC_SADDV UNSPEC_UADDV])
+
 (define_int_iterator HADDSUB [UNSPEC_SHADD UNSPEC_UHADD
 			      UNSPEC_SRHADD UNSPEC_URHADD
 			      UNSPEC_SHSUB UNSPEC_UHSUB
@@ -908,8 +856,6 @@
 			      UNSPEC_TRN1 UNSPEC_TRN2
 			      UNSPEC_UZP1 UNSPEC_UZP2])
 
-(define_int_iterator REVERSE [UNSPEC_REV64 UNSPEC_REV32 UNSPEC_REV16])
-
 (define_int_iterator FRINT [UNSPEC_FRINTZ UNSPEC_FRINTP UNSPEC_FRINTM
 			     UNSPEC_FRINTN UNSPEC_FRINTI UNSPEC_FRINTX
 			     UNSPEC_FRINTA])
@@ -918,10 +864,6 @@
 			    UNSPEC_FRINTA UNSPEC_FRINTN])
 
 (define_int_iterator FRECP [UNSPEC_FRECPE UNSPEC_FRECPX])
-
-(define_int_iterator CRC [UNSPEC_CRC32B UNSPEC_CRC32H UNSPEC_CRC32W
-                          UNSPEC_CRC32X UNSPEC_CRC32CB UNSPEC_CRC32CH
-                          UNSPEC_CRC32CW UNSPEC_CRC32CX])
 
 (define_int_iterator CRYPTO_AES [UNSPEC_AESE UNSPEC_AESD])
 (define_int_iterator CRYPTO_AESMC [UNSPEC_AESMC UNSPEC_AESIMC])
@@ -965,6 +907,7 @@
 		      (UNSPEC_SUBHN2 "") (UNSPEC_RSUBHN2 "r")
 		      (UNSPEC_SQXTN "s") (UNSPEC_UQXTN "u")
 		      (UNSPEC_USQADD "us") (UNSPEC_SUQADD "su")
+		      (UNSPEC_SADDV "s") (UNSPEC_UADDV "u")
 		      (UNSPEC_SSLI  "s") (UNSPEC_USLI  "u")
 		      (UNSPEC_SSRI  "s") (UNSPEC_USRI  "u")
 		      (UNSPEC_USRA  "u") (UNSPEC_SSRA  "s")
@@ -1014,9 +957,8 @@
 			 (UNSPEC_RADDHN2 "add")
 			 (UNSPEC_RSUBHN2 "sub")])
 
-(define_int_attr offsetlr [(UNSPEC_SSLI "") (UNSPEC_USLI "")
-			   (UNSPEC_SSRI "offset_")
-			   (UNSPEC_USRI "offset_")])
+(define_int_attr offsetlr [(UNSPEC_SSLI	"1") (UNSPEC_USLI "1")
+			   (UNSPEC_SSRI	"0") (UNSPEC_USRI "0")])
 
 ;; Standard pattern names for floating-point rounding instructions.
 (define_int_attr frint_pattern [(UNSPEC_FRINTZ "btrunc")
@@ -1041,25 +983,11 @@
 			    (UNSPEC_TRN1 "trn") (UNSPEC_TRN2 "trn")
 			    (UNSPEC_UZP1 "uzp") (UNSPEC_UZP2 "uzp")])
 
-; op code for REV instructions (size within which elements are reversed).
-(define_int_attr rev_op [(UNSPEC_REV64 "64") (UNSPEC_REV32 "32")
-			 (UNSPEC_REV16 "16")])
-
 (define_int_attr perm_hilo [(UNSPEC_ZIP1 "1") (UNSPEC_ZIP2 "2")
 			    (UNSPEC_TRN1 "1") (UNSPEC_TRN2 "2")
 			    (UNSPEC_UZP1 "1") (UNSPEC_UZP2 "2")])
 
 (define_int_attr frecp_suffix  [(UNSPEC_FRECPE "e") (UNSPEC_FRECPX "x")])
-
-(define_int_attr crc_variant [(UNSPEC_CRC32B "crc32b") (UNSPEC_CRC32H "crc32h")
-                        (UNSPEC_CRC32W "crc32w") (UNSPEC_CRC32X "crc32x")
-                        (UNSPEC_CRC32CB "crc32cb") (UNSPEC_CRC32CH "crc32ch")
-                        (UNSPEC_CRC32CW "crc32cw") (UNSPEC_CRC32CX "crc32cx")])
-
-(define_int_attr crc_mode [(UNSPEC_CRC32B "QI") (UNSPEC_CRC32H "HI")
-                        (UNSPEC_CRC32W "SI") (UNSPEC_CRC32X "DI")
-                        (UNSPEC_CRC32CB "QI") (UNSPEC_CRC32CH "HI")
-                        (UNSPEC_CRC32CW "SI") (UNSPEC_CRC32CX "DI")])
 
 (define_int_attr aes_op [(UNSPEC_AESE "e") (UNSPEC_AESD "d")])
 (define_int_attr aesmc_op [(UNSPEC_AESMC "mc") (UNSPEC_AESIMC "imc")])

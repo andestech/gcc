@@ -160,11 +160,7 @@ UI_From_gnu (tree Input)
      in a signed 64-bit integer.  */
   if (tree_fits_shwi_p (Input))
     return UI_From_Int (tree_to_shwi (Input));
-
-  gcc_assert (TYPE_PRECISION (gnu_type) <= 64);
-  if (TYPE_UNSIGNED (gnu_type)
-      && TYPE_PRECISION (gnu_type) == 64
-      && wi::neg_p (Input, SIGNED))
+  else if (TREE_INT_CST_HIGH (Input) < 0 && TYPE_UNSIGNED (gnu_type))
     return No_Uint;
 #endif
 

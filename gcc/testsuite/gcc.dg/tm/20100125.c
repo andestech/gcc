@@ -3,7 +3,6 @@
 
 /* Test that the call to george() doesn't end up inside the transaction.  */
 
-void george (void);
 int trxn;
 
 void set_remove(int * val)

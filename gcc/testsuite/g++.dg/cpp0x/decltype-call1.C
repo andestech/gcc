@@ -2,7 +2,7 @@
 // N3276
 // { dg-do compile { target c++11 } }
 
-struct A;			// { dg-message "forward declaration" }
+struct A;			// { dg-error "forward declaration" }
 A f();
 
 decltype(f()) g1();		 // OK

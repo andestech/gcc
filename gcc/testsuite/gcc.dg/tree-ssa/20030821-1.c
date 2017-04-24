@@ -1,8 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O1 -fdump-tree-dom1 -fdump-tree-optimized" } */
 
-void dont_remove (void);
-
 void foo(int k)
 {
   int i = 1;

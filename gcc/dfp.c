@@ -24,7 +24,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "tm_p.h"
 #include "dfp.h"
-#include "wide-int.h"
 
 /* The order of the following headers is important for making sure
    decNumber structure is large enough to hold decimal128 digits.  */
@@ -343,7 +342,7 @@ decode_decimal128 (const struct real_format *fmt ATTRIBUTE_UNUSED,
 
 static void
 decimal_to_binary (REAL_VALUE_TYPE *to, const REAL_VALUE_TYPE *from,
-		   machine_mode mode)
+		   enum machine_mode mode)
 {
   char string[256];
   const decimal128 *const d128 = (const decimal128 *) from->sig;
@@ -459,7 +458,7 @@ decimal_round_for_format (const struct real_format *fmt, REAL_VALUE_TYPE *r)
    binary and decimal types.  */
 
 void
-decimal_real_convert (REAL_VALUE_TYPE *r, machine_mode mode,
+decimal_real_convert (REAL_VALUE_TYPE *r, enum machine_mode mode,
 		      const REAL_VALUE_TYPE *a)
 {
   const struct real_format *fmt = REAL_MODE_FORMAT (mode);
@@ -605,11 +604,11 @@ decimal_real_to_integer (const REAL_VALUE_TYPE *r)
   return real_to_integer (&to);
 }
 
-/* Likewise, but returns a wide_int with PRECISION.  *FAIL is set if the
-   value does not fit.  */
+/* Likewise, but to an integer pair, HI+LOW.  */
 
-wide_int
-decimal_real_to_integer (const REAL_VALUE_TYPE *r, bool *fail, int precision)
+void
+decimal_real_to_integer2 (HOST_WIDE_INT *plow, HOST_WIDE_INT *phigh,
+			  const REAL_VALUE_TYPE *r)
 {
   decContext set;
   decNumber dn, dn2, dn3;
@@ -629,7 +628,7 @@ decimal_real_to_integer (const REAL_VALUE_TYPE *r, bool *fail, int precision)
      function.  */
   decNumberToString (&dn, string);
   real_from_string (&to, string);
-  return real_to_integer (&to, fail, precision);
+  real_to_integer2 (plow, phigh, &to);
 }
 
 /* Perform the decimal floating point operation described by CODE.
@@ -720,7 +719,7 @@ decimal_real_arithmetic (REAL_VALUE_TYPE *r, enum tree_code code,
    If SIGN is nonzero, R is set to the most negative finite value.  */
 
 void
-decimal_real_maxval (REAL_VALUE_TYPE *r, int sign, machine_mode mode)
+decimal_real_maxval (REAL_VALUE_TYPE *r, int sign, enum machine_mode mode)
 {
   const char *max;
 

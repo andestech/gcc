@@ -33,7 +33,6 @@ all-local: gdb.py
 
 nobase_python_DATA = \
     libstdcxx/v6/printers.py \
-    libstdcxx/v6/xmethods.py \
     libstdcxx/v6/__init__.py \
     libstdcxx/__init__.py
 

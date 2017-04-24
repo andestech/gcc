@@ -45,33 +45,35 @@ _GLIBCXX_HAS_NESTED_TYPE(allocator_type)
   template<typename _Tp, typename _Alloc,
 	   bool = __has_allocator_type<_Tp>::value>
     struct __uses_allocator_helper
-    : false_type { };
+    : public false_type { };
 
   template<typename _Tp, typename _Alloc>
     struct __uses_allocator_helper<_Tp, _Alloc, true>
-    : is_convertible<_Alloc, typename _Tp::allocator_type>::type
+    : public integral_constant<bool, is_convertible<_Alloc,
+				     typename _Tp::allocator_type>::value>
     { };
 
   /// [allocator.uses.trait]
   template<typename _Tp, typename _Alloc>
     struct uses_allocator
-    : __uses_allocator_helper<_Tp, _Alloc>::type
+    : public integral_constant<bool,
+			       __uses_allocator_helper<_Tp, _Alloc>::value>
     { };
 
+  template<typename _Tp, typename _Alloc, typename... _Args>
+    struct __uses_allocator_arg
+    : is_constructible<_Tp, _Alloc, _Args...>
+    { static_assert( uses_allocator<_Tp, _Alloc>::value, "uses allocator" ); };
+
   struct __uses_alloc_base { };
-
   struct __uses_alloc0 : __uses_alloc_base
-  {
-    struct _Sink { void operator=(const void*) { } } _M_a;
-  };
-
+  { struct _Anything { _Anything(...) { } } _M_a; };
   template<typename _Alloc>
     struct __uses_alloc1 : __uses_alloc_base { const _Alloc* _M_a; };
-
   template<typename _Alloc>
     struct __uses_alloc2 : __uses_alloc_base { const _Alloc* _M_a; };
 
-  template<bool, typename _Tp, typename _Alloc, typename... _Args>
+  template<bool, typename _Alloc, typename... _Args>
     struct __uses_alloc;
 
   template<typename _Tp, typename _Alloc, typename... _Args>
@@ -87,14 +89,15 @@ _GLIBCXX_HAS_NESTED_TYPE(allocator_type)
     : __uses_alloc0 { };
 
   template<typename _Tp, typename _Alloc, typename... _Args>
-    using __uses_alloc_t =
-      __uses_alloc<uses_allocator<_Tp, _Alloc>::value, _Tp, _Alloc, _Args...>;
+    struct __uses_alloc_impl
+    : __uses_alloc<uses_allocator<_Tp, _Alloc>::value, _Tp,  _Alloc, _Args...>
+    { };
 
   template<typename _Tp, typename _Alloc, typename... _Args>
-    inline __uses_alloc_t<_Tp, _Alloc, _Args...>
+    __uses_alloc_impl<_Tp, _Alloc, _Args...>
     __use_alloc(const _Alloc& __a)
     {
-      __uses_alloc_t<_Tp, _Alloc, _Args...> __ret;
+      __uses_alloc_impl<_Tp, _Alloc, _Args...> __ret;
       __ret._M_a = &__a;
       return __ret;
     }

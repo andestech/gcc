@@ -103,13 +103,12 @@ gfc_se;
 
 /* Denotes different types of coarray.
    Please keep in sync with libgfortran/caf/libcaf.h.  */
-typedef enum
+typedef enum 
 {
   GFC_CAF_COARRAY_STATIC,
   GFC_CAF_COARRAY_ALLOC,
-  GFC_CAF_LOCK_STATIC,
-  GFC_CAF_LOCK_ALLOC,
-  GFC_CAF_CRITICAL
+  GFC_CAF_LOCK,
+  GFC_CAF_LOCK_COMP
 }
 gfc_coarray_type;
 
@@ -183,7 +182,7 @@ typedef enum
   /* An intrinsic function call.  Many intrinsic functions which map directly
      to library calls are created as GFC_SS_FUNCTION nodes.  */
   GFC_SS_INTRINSIC,
-
+  
   /* A component of a derived type.  */
   GFC_SS_COMPONENT
 }
@@ -348,6 +347,7 @@ gfc_wrapped_block;
 /* Class API functions.  */
 tree gfc_class_data_get (tree);
 tree gfc_class_vptr_get (tree);
+tree gfc_class_len_get (tree);
 void gfc_reset_vptr (stmtblock_t *, gfc_expr *);
 tree gfc_class_set_static_fields (tree, tree, tree);
 tree gfc_vtable_hash_get (tree);
@@ -419,9 +419,6 @@ tree gfc_conv_scalar_to_descriptor (gfc_se *, tree, symbol_attribute);
 /* trans-expr.c */
 void gfc_conv_scalar_char_value (gfc_symbol *sym, gfc_se *se, gfc_expr **expr);
 tree gfc_string_to_single_character (tree len, tree str, int kind);
-tree gfc_get_tree_for_caf_expr (gfc_expr *);
-void gfc_get_caf_token_offset (tree *, tree *, tree, tree, gfc_expr *);
-tree gfc_caf_get_image_index (stmtblock_t *, gfc_expr *, tree);
 
 /* Find the decl containing the auxiliary variables for assigned variables.  */
 void gfc_conv_label_variable (gfc_se * se, gfc_expr * expr);
@@ -437,10 +434,6 @@ tree size_of_string_in_bytes (int, tree);
 /* Intrinsic procedure handling.  */
 tree gfc_conv_intrinsic_subroutine (gfc_code *);
 void gfc_conv_intrinsic_function (gfc_se *, gfc_expr *);
-bool gfc_conv_ieee_arithmetic_function (gfc_se *, gfc_expr *);
-tree gfc_save_fp_state (stmtblock_t *);
-void gfc_restore_fp_state (stmtblock_t *, tree);
-
 
 /* Does an intrinsic map directly to an external library call
    This is true for array-returning intrinsics, unless
@@ -575,18 +568,10 @@ void gfc_generate_module_vars (gfc_namespace *);
 /* Get the appropriate return statement for a procedure.  */
 tree gfc_generate_return (void);
 
-struct module_decl_hasher : ggc_hasher<tree_node *>
-{
-  typedef const char *compare_type;
-
-  static hashval_t hash (tree);
-  static bool equal (tree, const char *);
-};
-
-struct GTY((for_user)) module_htab_entry {
+struct GTY(()) module_htab_entry {
   const char *name;
   tree namespace_decl;
-  hash_table<module_decl_hasher> *GTY (()) decls;
+  htab_t GTY ((param_is (union tree_node))) decls;
 };
 
 struct module_htab_entry *gfc_find_module (const char *);
@@ -715,35 +700,23 @@ extern GTY(()) tree gfor_fndecl_fdate;
 extern GTY(()) tree gfor_fndecl_in_pack;
 extern GTY(()) tree gfor_fndecl_in_unpack;
 extern GTY(()) tree gfor_fndecl_associated;
-extern GTY(()) tree gfor_fndecl_system_clock4;
-extern GTY(()) tree gfor_fndecl_system_clock8;
 
 
 /* Coarray run-time library function decls.  */
 extern GTY(()) tree gfor_fndecl_caf_init;
 extern GTY(()) tree gfor_fndecl_caf_finalize;
-extern GTY(()) tree gfor_fndecl_caf_this_image;
-extern GTY(()) tree gfor_fndecl_caf_num_images;
 extern GTY(()) tree gfor_fndecl_caf_register;
 extern GTY(()) tree gfor_fndecl_caf_deregister;
-extern GTY(()) tree gfor_fndecl_caf_get;
-extern GTY(()) tree gfor_fndecl_caf_send;
-extern GTY(()) tree gfor_fndecl_caf_sendget;
+extern GTY(()) tree gfor_fndecl_caf_critical;
+extern GTY(()) tree gfor_fndecl_caf_end_critical;
 extern GTY(()) tree gfor_fndecl_caf_sync_all;
 extern GTY(()) tree gfor_fndecl_caf_sync_images;
 extern GTY(()) tree gfor_fndecl_caf_error_stop;
 extern GTY(()) tree gfor_fndecl_caf_error_stop_str;
-extern GTY(()) tree gfor_fndecl_caf_atomic_def;
-extern GTY(()) tree gfor_fndecl_caf_atomic_ref;
-extern GTY(()) tree gfor_fndecl_caf_atomic_cas;
-extern GTY(()) tree gfor_fndecl_caf_atomic_op;
-extern GTY(()) tree gfor_fndecl_caf_lock;
-extern GTY(()) tree gfor_fndecl_caf_unlock;
-extern GTY(()) tree gfor_fndecl_co_broadcast;
-extern GTY(()) tree gfor_fndecl_co_max;
-extern GTY(()) tree gfor_fndecl_co_min;
-extern GTY(()) tree gfor_fndecl_co_reduce;
-extern GTY(()) tree gfor_fndecl_co_sum;
+
+/* Coarray global variables for num_images/this_image.  */
+extern GTY(()) tree gfort_gvar_caf_num_images;
+extern GTY(()) tree gfort_gvar_caf_this_image;
 
 
 /* Math functions.  Many other math functions are handled in
@@ -805,10 +778,6 @@ extern GTY(()) tree gfor_fndecl_sc_kind;
 extern GTY(()) tree gfor_fndecl_si_kind;
 extern GTY(()) tree gfor_fndecl_sr_kind;
 
-/* IEEE-related.  */
-extern GTY(()) tree gfor_fndecl_ieee_procedure_entry;
-extern GTY(()) tree gfor_fndecl_ieee_procedure_exit;
-
 
 /* True if node is an integer constant.  */
 #define INTEGER_CST_P(node) (TREE_CODE(node) == INTEGER_CST)
@@ -829,7 +798,10 @@ enum gfc_array_kind
 };
 
 /* Array types only.  */
-struct GTY(())	lang_type	 {
+/* FIXME: the variable_size annotation here is needed because these types are
+   variable-sized in some other frontends.  Due to gengtype deficiency the GTY
+   options of such types have to agree across all frontends. */
+struct GTY((variable_size))	lang_type	 {
   int rank, corank;
   enum gfc_array_kind akind;
   tree lbound[GFC_MAX_DIMENSIONS];
@@ -846,7 +818,7 @@ struct GTY(())	lang_type	 {
   tree caf_offset;
 };
 
-struct GTY(()) lang_decl {
+struct GTY((variable_size)) lang_decl {
   /* Dummy variables.  */
   tree saved_descriptor;
   /* Assigned integer nodes.  Stringlength is the IO format string's length.

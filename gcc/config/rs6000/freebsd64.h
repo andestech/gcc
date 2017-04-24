@@ -362,8 +362,7 @@ extern int dot_symbols;
 /* The default value isn't sufficient in 64-bit mode.  */
 #define STACK_CHECK_PROTECT (TARGET_64BIT ? 16 * 1024 : 12 * 1024)
 
-/* Use standard DWARF numbering for DWARF debugging information.  */
-#define RS6000_USE_DWARF_NUMBERING
+#define DBX_REGISTER_NUMBER(REGNO) rs6000_dbx_register_number (REGNO)
 
 /* PowerPC64 Linux word-aligns FP doubles when -malign-power is given.  */
 #undef  ADJUST_FIELD_ALIGN

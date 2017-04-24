@@ -46,19 +46,14 @@ namespace std _GLIBCXX_VISIBILITY(default)
 {
 namespace experimental
 {
-inline namespace fundamentals_v1
-{
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
-#define __cpp_lib_experimental_string_view 201402
-
   /**
-   *  @class basic_string_view <experimental/string_view>
+   *  @class basic_string_view <string_view>
    *  @brief  A non-owning reference to a string.
    *
    *  @ingroup strings
    *  @ingroup sequences
-   *  @ingroup experimental
    *
    *  @tparam _CharT  Type of character
    *  @tparam _Traits  Traits for character type, defaults to
@@ -586,7 +581,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 #endif
 
 _GLIBCXX_END_NAMESPACE_VERSION
-} // namespace fundamentals_v1
 } // namespace experimental
 
 
@@ -666,22 +660,22 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   inline namespace string_view_literals
   {
 
-    inline constexpr basic_string_view<char>
+    inline basic_string_view<char>
     operator""sv(const char* __str, size_t __len)
     { return basic_string_view<char>{__str, __len}; }
 
 #ifdef _GLIBCXX_USE_WCHAR_T
-    inline constexpr basic_string_view<wchar_t>
+    inline basic_string_view<wchar_t>
     operator""sv(const wchar_t* __str, size_t __len)
     { return basic_string_view<wchar_t>{__str, __len}; }
 #endif
 
 #ifdef _GLIBCXX_USE_C99_STDINT_TR1
-    inline constexpr basic_string_view<char16_t>
+    inline basic_string_view<char16_t>
     operator""sv(const char16_t* __str, size_t __len)
     { return basic_string_view<char16_t>{__str, __len}; }
 
-    inline constexpr basic_string_view<char32_t>
+    inline basic_string_view<char32_t>
     operator""sv(const char32_t* __str, size_t __len)
     { return basic_string_view<char32_t>{__str, __len}; }
 #endif

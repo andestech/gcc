@@ -329,29 +329,37 @@ func RuneLen(r rune) int {
 // It returns the number of bytes written.
 func EncodeRune(p []byte, r rune) int {
 	// Negative values are erroneous.  Making it unsigned addresses the problem.
-	switch i := uint32(r); {
-	case i <= rune1Max:
+	if uint32(r) <= rune1Max {
 		p[0] = byte(r)
 		return 1
-	case i <= rune2Max:
+	}
+
+	if uint32(r) <= rune2Max {
 		p[0] = t2 | byte(r>>6)
 		p[1] = tx | byte(r)&maskx
 		return 2
-	case i > MaxRune, surrogateMin <= i && i <= surrogateMax:
+	}
+
+	if uint32(r) > MaxRune {
 		r = RuneError
-		fallthrough
-	case i <= rune3Max:
+	}
+
+	if surrogateMin <= r && r <= surrogateMax {
+		r = RuneError
+	}
+
+	if uint32(r) <= rune3Max {
 		p[0] = t3 | byte(r>>12)
 		p[1] = tx | byte(r>>6)&maskx
 		p[2] = tx | byte(r)&maskx
 		return 3
-	default:
-		p[0] = t4 | byte(r>>18)
-		p[1] = tx | byte(r>>12)&maskx
-		p[2] = tx | byte(r>>6)&maskx
-		p[3] = tx | byte(r)&maskx
-		return 4
 	}
+
+	p[0] = t4 | byte(r>>18)
+	p[1] = tx | byte(r>>12)&maskx
+	p[2] = tx | byte(r>>6)&maskx
+	p[3] = tx | byte(r)&maskx
+	return 4
 }
 
 // RuneCount returns the number of runes in p.  Erroneous and short

@@ -15,7 +15,7 @@ endif
 
 SUBDIRS = ${subdirs}
 
-gcc_version := $(shell $(GOC) -dumpversion)
+gcc_version := $(shell cat $(top_srcdir)/../gcc/BASE-VER)
 
 MAINT_CHARSET = latin1
 
@@ -29,8 +29,6 @@ toolexeclibgodir = $(nover_glibgo_toolexeclibdir)/go/$(gcc_version)/$(target_ali
 
 LIBFFI = @LIBFFI@
 LIBFFIINCS = @LIBFFIINCS@
-
-LIBATOMIC = @LIBATOMIC@
 
 WARN_CFLAGS = $(WARN_FLAGS) $(WERROR)
 
@@ -198,8 +196,7 @@ toolexeclibgodebug_DATA = \
 	debug/elf.gox \
 	debug/gosym.gox \
 	debug/macho.gox \
-	debug/pe.gox \
-	debug/plan9obj.gox
+	debug/pe.gox
 
 toolexeclibgoencodingdir = $(toolexeclibgodir)/encoding
 
@@ -444,8 +441,8 @@ runtime_files = \
 	runtime/go-deferred-recover.c \
 	runtime/go-eface-compare.c \
 	runtime/go-eface-val-compare.c \
-	runtime/go-ffi.c \
 	runtime/go-fieldtrack.c \
+	runtime/go-getgoroot.c \
 	runtime/go-int-array-to-string.c \
 	runtime/go-int-to-string.c \
 	runtime/go-interface-compare.c \
@@ -486,17 +483,21 @@ runtime_files = \
 	runtime/go-type-interface.c \
 	runtime/go-type-string.c \
 	runtime/go-typedesc-equal.c \
+	runtime/go-typestring.c \
 	runtime/go-unsafe-new.c \
 	runtime/go-unsafe-newarray.c \
 	runtime/go-unsafe-pointer.c \
 	runtime/go-unwind.c \
 	runtime/go-varargs.c \
+	runtime/chan.c \
+	runtime/cpuprof.c \
 	runtime/env_posix.c \
-	runtime/heapdump.c \
+	runtime/lfstack.c \
 	$(runtime_lock_files) \
 	runtime/mcache.c \
 	runtime/mcentral.c \
 	$(runtime_mem_file) \
+	runtime/mfinal.c \
 	runtime/mfixalloc.c \
 	runtime/mgc0.c \
 	runtime/mheap.c \
@@ -511,15 +512,11 @@ runtime_files = \
 	runtime/thread.c \
 	runtime/yield.c \
 	$(rtems_task_variable_add_file) \
-	chan.c \
-	cpuprof.c \
-	go-iface.c \
-	lfstack.c \
+	iface.c \
 	malloc.c \
 	map.c \
 	mprof.c \
 	netpoll.c \
-	rdebug.c \
 	reflect.c \
 	runtime1.c \
 	sema.c \
@@ -690,8 +687,8 @@ else
 if LIBGO_IS_SOLARIS
 go_net_cgo_file = go/net/cgo_linux.go
 go_net_sock_file = go/net/sock_solaris.go
-go_net_sockopt_file = go/net/sockopt_solaris.go
-go_net_sockoptip_file = go/net/sockoptip_stub.go
+go_net_sockopt_file = go/net/sockopt_bsd.go
+go_net_sockoptip_file = go/net/sockoptip_bsd.go go/net/sockoptip_posix.go
 else
 if LIBGO_IS_FREEBSD
 go_net_cgo_file = go/net/cgo_bsd.go
@@ -756,13 +753,9 @@ if LIBGO_IS_DARWIN
 go_net_tcpsockopt_file = go/net/tcpsockopt_darwin.go
 else
 if LIBGO_IS_SOLARIS
-go_net_tcpsockopt_file = go/net/tcpsockopt_solaris.go
+go_net_tcpsockopt_file = go/net/tcpsockopt_darwin.go
 else
-if LIBGO_IS_DRAGONFLY
-go_net_tcpsockopt_file = go/net/tcpsockopt_dragonfly.go
-else
-go_net_tcpsockopt_file = go/net/tcpsockopt_unix.go
-endif
+go_net_tcpsockopt_file =  go/net/tcpsockopt_unix.go
 endif
 endif
 endif
@@ -855,16 +848,6 @@ endif
 endif
 endif
 
-if LIBGO_IS_FREEBSD
-go_os_cloexec_file = go/os/sys_freebsd.go
-else
-if LIBGO_IS_DARWIN
-go_os_cloexec_file = go/os/sys_darwin.go
-else
-go_os_cloexec_file = go/os/sys_unix.go
-endif
-endif
-
 if LIBGO_IS_SOLARIS
 go_os_stat_file = go/os/stat_solaris.go
 else
@@ -923,7 +906,6 @@ go_os_files = \
 	$(go_os_stat_file) \
 	go/os/str.go \
 	$(go_os_sys_file) \
-	$(go_os_cloexec_file) \
 	go/os/types.go \
 	go/os/types_notwin.go
 
@@ -943,40 +925,21 @@ go_reflect_makefunc_file = \
 go_reflect_makefunc_s_file = \
 	go/reflect/makefunc_386.S
 else
-if LIBGO_IS_S390
-go_reflect_makefunc_file = \
-	go/reflect/makefuncgo_s390.go
-go_reflect_makefunc_s_file = \
-	go/reflect/makefunc_s390.c
-else
-if LIBGO_IS_S390X
-go_reflect_makefunc_file = \
-	go/reflect/makefuncgo_s390x.go \
-	go/reflect/makefuncgo_s390.go
-go_reflect_makefunc_s_file = \
-	go/reflect/makefunc_s390.c
-else
 go_reflect_makefunc_file =
 go_reflect_makefunc_s_file = \
 	go/reflect/makefunc_dummy.c
-endif
-endif
 endif
 endif
 
 go_reflect_files = \
 	go/reflect/deepequal.go \
 	go/reflect/makefunc.go \
-	go/reflect/makefunc_ffi.go \
 	$(go_reflect_makefunc_file) \
 	go/reflect/type.go \
 	go/reflect/value.go
-go_reflect_makefunc_c_file = \
-	go/reflect/makefunc_ffi_c.c
 
 go_regexp_files = \
 	go/regexp/exec.go \
-	go/regexp/onepass.go \
 	go/regexp/regexp.go
 
 go_net_rpc_files = \
@@ -999,7 +962,7 @@ s-version: Makefile
 	rm -f version.go.tmp
 	echo "package runtime" > version.go.tmp
 	echo 'const defaultGoroot = "$(prefix)"' >> version.go.tmp
-	echo 'const theVersion = "'`$(GOC) --version | sed 1q`'"' >> version.go.tmp
+	echo 'const theVersion = "'`$(CC) --version | sed 1q`'"' >> version.go.tmp
 	echo 'const theGoarch = "'$(GOARCH)'"' >> version.go.tmp
 	echo 'const theGoos = "'$(GOOS)'"' >> version.go.tmp
 	$(SHELL) $(srcdir)/../move-if-change version.go.tmp version.go
@@ -1033,7 +996,6 @@ go_sync_files = \
 	go/sync/cond.go \
 	go/sync/mutex.go \
 	go/sync/once.go \
-	go/sync/pool.go \
 	go/sync/race0.go \
 	go/sync/runtime.go \
 	go/sync/rwmutex.go \
@@ -1160,8 +1122,7 @@ go_crypto_cipher_files = \
 	go/crypto/cipher/ctr.go \
 	go/crypto/cipher/gcm.go \
 	go/crypto/cipher/io.go \
-	go/crypto/cipher/ofb.go \
-	go/crypto/cipher/xor.go
+	go/crypto/cipher/ofb.go
 go_crypto_des_files = \
 	go/crypto/des/block.go \
 	go/crypto/des/cipher.go \
@@ -1178,8 +1139,7 @@ go_crypto_hmac_files = \
 	go/crypto/hmac/hmac.go
 go_crypto_md5_files = \
 	go/crypto/md5/md5.go \
-	go/crypto/md5/md5block.go \
-	go/crypto/md5/md5block_generic.go
+	go/crypto/md5/md5block.go
 go_crypto_rand_files = \
 	go/crypto/rand/rand.go \
 	go/crypto/rand/rand_unix.go \
@@ -1193,8 +1153,7 @@ go_crypto_rsa_files = \
 	go/crypto/rsa/rsa.go
 go_crypto_sha1_files = \
 	go/crypto/sha1/sha1.go \
-	go/crypto/sha1/sha1block.go \
-	go/crypto/sha1/sha1block_generic.go
+	go/crypto/sha1/sha1block.go
 go_crypto_sha256_files = \
 	go/crypto/sha256/sha256.go \
 	go/crypto/sha256/sha256block.go
@@ -1244,7 +1203,6 @@ go_debug_dwarf_files = \
 	go/debug/dwarf/line.go \
 	go/debug/dwarf/open.go \
 	go/debug/dwarf/type.go \
-	go/debug/dwarf/typeunit.go \
 	go/debug/dwarf/unit.go
 go_debug_elf_files = \
 	go/debug/elf/elf.go \
@@ -1253,15 +1211,11 @@ go_debug_gosym_files = \
 	go/debug/gosym/pclntab.go \
 	go/debug/gosym/symtab.go
 go_debug_macho_files = \
-	go/debug/macho/fat.go \
 	go/debug/macho/file.go \
 	go/debug/macho/macho.go
 go_debug_pe_files = \
 	go/debug/pe/file.go \
 	go/debug/pe/pe.go
-go_debug_plan9obj_files = \
-	go/debug/plan9obj/file.go \
-	go/debug/plan9obj/plan9obj.go
 
 go_encoding_ascii85_files = \
 	go/encoding/ascii85/ascii85.go
@@ -1292,7 +1246,6 @@ go_encoding_hex_files = \
 go_encoding_json_files = \
 	go/encoding/json/decode.go \
 	go/encoding/json/encode.go \
-	go/encoding/json/fold.go \
 	go/encoding/json/indent.go \
 	go/encoding/json/scanner.go \
 	go/encoding/json/stream.go \
@@ -1408,6 +1361,7 @@ go_index_suffixarray_files = \
 	go/index/suffixarray/suffixarray.go
 
 go_io_ioutil_files = \
+	go/io/ioutil/blackhole.go \
 	go/io/ioutil/ioutil.go \
 	go/io/ioutil/tempfile.go
 
@@ -1491,7 +1445,6 @@ go_net_http_pprof_files = \
 go_net_http_httputil_files = \
 	go/net/http/httputil/chunked.go \
 	go/net/http/httputil/dump.go \
-	go/net/http/httputil/httputil.go \
 	go/net/http/httputil/persist.go \
 	go/net/http/httputil/reverseproxy.go
 
@@ -1777,9 +1730,7 @@ go_syscall_c_files = \
 
 go_syscall_test_files = \
 	$(syscall_creds_test_file) \
-	go/syscall/mmap_unix_test.go \
-	go/syscall/syscall_test.go \
-	go/syscall/syscall_unix_test.go
+	go/syscall/passfd_test.go
 
 libcalls.go: s-libcalls; @true
 s-libcalls: libcalls-list go/syscall/mksyscall.awk $(go_base_syscall_files)
@@ -1868,7 +1819,6 @@ libgo_go_objs = \
 	path.lo \
 	reflect-go.lo \
 	reflect/makefunc.lo \
-	reflect/makefunc_ffi_c.lo \
 	regexp.lo \
 	runtime-go.lo \
 	sort.lo \
@@ -1918,7 +1868,6 @@ libgo_go_objs = \
 	debug/gosym.lo \
 	debug/macho.lo \
 	debug/pe.lo \
-	debug/plan9obj.lo \
 	encoding/ascii85.lo \
 	encoding/asn1.lo \
 	encoding/base32.lo \
@@ -2000,7 +1949,8 @@ libgo_la_LDFLAGS = \
 
 libgo_la_LIBADD = \
 	$(libgo_go_objs) ../libbacktrace/libbacktrace.la \
-	$(LIBATOMIC) $(LIBFFI) $(PTHREAD_LIBS) $(MATH_LIBS) $(NET_LIBS)
+	../libatomic/libatomic_convenience.la \
+	$(LIBFFI) $(PTHREAD_LIBS) $(MATH_LIBS) $(NET_LIBS)
 
 libgobegin_a_SOURCES = \
 	runtime/go-main.c
@@ -2030,7 +1980,6 @@ BUILDPACKAGE = \
 	$(LTGOCOMPILE) -I . -c -fgo-pkgpath=`echo $@ | sed -e 's/.lo$$//' -e 's/-go$$//'` -o $@ $$files
 
 GOTESTFLAGS =
-GOBENCH = 
 
 # Check a package.
 CHECK = \
@@ -2050,8 +1999,6 @@ CHECK = \
 	rm -f $@-testsum $@-testlog; \
 	if test "$(USE_DEJAGNU)" = "yes"; then \
 	  $(SHELL) $(srcdir)/testsuite/gotest --dejagnu=yes --basedir=$(srcdir) --srcdir=$(srcdir)/go/$(@D) --pkgpath="$(@D)" --pkgfiles="$(go_$(subst /,_,$(@D))_files)" --testname="$(@D)" --goarch="$(GOARCH)" $(GOTESTFLAGS) $(go_$(subst /,_,$(@D))_test_files); \
-	elif test "$(GOBENCH)" != ""; then \
-	  $(SHELL) $(srcdir)/testsuite/gotest --basedir=$(srcdir) --srcdir=$(srcdir)/go/$(@D) --pkgpath="$(@D)" --pkgfiles="$(go_$(subst /,_,$(@D))_files)" --goarch="$(GOARCH)" --bench="$(GOBENCH)" $(GOTESTFLAGS) $(go_$(subst /,_,$(@D))_test_files); \
 	else \
 	  if $(SHELL) $(srcdir)/testsuite/gotest --basedir=$(srcdir) --srcdir=$(srcdir)/go/$(@D) --pkgpath="$(@D)" --pkgfiles="$(go_$(subst /,_,$(@D))_files)" --goarch="$(GOARCH)" $(GOTESTFLAGS) $(go_$(subst /,_,$(@D))_test_files) >>$@-testlog 2>&1; then \
 	    echo "PASS: $(@D)" >> $@-testlog; \
@@ -2270,9 +2217,6 @@ reflect-go.lo: $(go_reflect_files)
 reflect/check: $(CHECK_DEPS)
 	@$(CHECK)
 reflect/makefunc.lo: $(go_reflect_makefunc_s_file)
-	@$(MKDIR_P) reflect
-	$(LTCOMPILE) -c -o $@ $<
-reflect/makefunc_ffi_c.lo: $(go_reflect_makefunc_c_file)
 	@$(MKDIR_P) reflect
 	$(LTCOMPILE) -c -o $@ $<
 .PHONY: reflect/check
@@ -2675,15 +2619,6 @@ debug/pe.lo: $(go_debug_pe_files)
 debug/pe/check: $(CHECK_DEPS)
 	@$(CHECK)
 .PHONY: debug/pe/check
-
-@go_include@ debug/plan9obj.lo.dep
-debug/plan9obj.lo.dep: $(go_debug_plan9obj_files)
-	$(BUILDDEPS)
-debug/plan9obj.lo: $(go_debug_plan9obj_files)
-	$(BUILDPACKAGE)
-debug/plan9obj/check: $(CHECK_DEPS)
-	@$(CHECK)
-.PHONY: debug/plan9obj/check
 
 @go_include@ encoding/asn1.lo.dep
 encoding/asn1.lo.dep: $(go_encoding_asn1_files)
@@ -3482,8 +3417,6 @@ debug/macho.gox: debug/macho.lo
 	$(BUILDGOX)
 debug/pe.gox: debug/pe.lo
 	$(BUILDGOX)
-debug/plan9obj.gox: debug/plan9obj.lo
-	$(BUILDGOX)
 
 encoding/ascii85.gox: encoding/ascii85.lo
 	$(BUILDGOX)
@@ -3708,7 +3641,6 @@ TEST_PACKAGES = \
 	debug/elf/check \
 	debug/macho/check \
 	debug/pe/check \
-	debug/plan9obj/check \
 	encoding/ascii85/check \
 	encoding/asn1/check \
 	encoding/base32/check \
@@ -3873,9 +3805,6 @@ check-am:
 
 check-multi:
 	$(MULTIDO) $(AM_MAKEFLAGS) DO=check-am multi-do # $(MAKE)
-
-bench:
-	-@$(MAKE) -k $(TEST_PACKAGES) GOBENCH=.
 
 MOSTLYCLEAN_FILES = libgo.head libgo.sum.sep libgo.log.sep
 

@@ -127,7 +127,7 @@ func benchmarkDecoder(b *testing.B, n int) {
 		if len(buf0) > n-i {
 			buf0 = buf0[:n-i]
 		}
-		w.Write(buf0)
+		io.Copy(w, bytes.NewBuffer(buf0))
 	}
 	w.Close()
 	buf1 := compressed.Bytes()
@@ -135,7 +135,7 @@ func benchmarkDecoder(b *testing.B, n int) {
 	runtime.GC()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		io.Copy(ioutil.Discard, NewReader(bytes.NewReader(buf1), LSB, 8))
+		io.Copy(ioutil.Discard, NewReader(bytes.NewBuffer(buf1), LSB, 8))
 	}
 }
 

@@ -1,7 +1,7 @@
 // PR c++/31489
 
-class foo;   // { dg-message "'class foo'" }
-struct bar;  // { dg-message "'struct bar'" }
+class foo;   // { dg-error "'class foo'" }
+struct bar;  // { dg-error "'struct bar'" }
 
 int main()
 {

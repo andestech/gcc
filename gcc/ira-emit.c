@@ -77,17 +77,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "obstack.h"
 #include "bitmap.h"
 #include "hard-reg-set.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfgrtl.h"
-#include "cfgbuild.h"
 #include "basic-block.h"
 #include "expr.h"
 #include "recog.h"
@@ -183,7 +172,7 @@ struct move
      dependencies.  */
   move_t *deps;
   /* First insn generated for the move.  */
-  rtx_insn *insn;
+  rtx insn;
 };
 
 /* Array of moves (indexed by BB index) which should be put at the
@@ -207,7 +196,7 @@ create_move (ira_allocno_t to, ira_allocno_t from)
   move->to = to;
   move->from = from;
   move->next = NULL;
-  move->insn = NULL;
+  move->insn = NULL_RTX;
   move->visited_p = false;
   return move;
 }
@@ -309,15 +298,6 @@ change_regs (rtx *loc)
 	    result = change_regs (&XVECEXP (*loc, i, j)) || result;
 	}
     }
-  return result;
-}
-
-static bool
-change_regs_in_insn (rtx_insn **insn_ptr)
-{
-  rtx rtx = *insn_ptr;
-  bool result = change_regs (&rtx);
-  *insn_ptr = as_a <rtx_insn *> (rtx);
   return result;
 }
 
@@ -577,8 +557,7 @@ change_loop (ira_loop_tree_node_t node)
   int regno;
   bool used_p;
   ira_allocno_t allocno, parent_allocno, *map;
-  rtx_insn *insn;
-  rtx original_reg;
+  rtx insn, original_reg;
   enum reg_class aclass, pclass;
   ira_loop_tree_node_t parent;
 
@@ -589,7 +568,7 @@ change_loop (ira_loop_tree_node_t node)
       if (node->bb != NULL)
 	{
 	  FOR_BB_INSNS (node->bb, insn)
-	    if (INSN_P (insn) && change_regs_in_insn (&insn))
+	    if (INSN_P (insn) && change_regs (&insn))
 	      {
 		df_insn_rescan (insn);
 		df_notes_rescan (insn);
@@ -631,10 +610,7 @@ change_loop (ira_loop_tree_node_t node)
 		  /* don't create copies because reload can spill an
 		     allocno set by copy although the allocno will not
 		     get memory slot.  */
-		  || ira_equiv_no_lvalue_p (regno)
-		  || (pic_offset_table_rtx != NULL
-		      && (ALLOCNO_REGNO (allocno)
-			  == (int) REGNO (pic_offset_table_rtx)))))
+		  || ira_equiv_no_lvalue_p (regno)))
 	    continue;
 	  original_reg = allocno_emit_reg (allocno);
 	  if (parent_allocno == NULL
@@ -788,7 +764,7 @@ modify_move_list (move_t list)
 
   if (list == NULL)
     return NULL;
-  /* Create move deps.  */
+  /* Creat move deps.  */
   curr_tick++;
   for (move = list; move != NULL; move = move->next)
     {
@@ -823,7 +799,7 @@ modify_move_list (move_t list)
 	  move->deps_num = n;
 	}
     }
-  /* Topological sorting:  */
+  /* Toplogical sorting:  */
   move_vec.truncate (0);
   for (move = list; move != NULL; move = move->next)
     traverse_moves (move);
@@ -917,14 +893,13 @@ modify_move_list (move_t list)
 
 /* Generate RTX move insns from the move list LIST.  This updates
    allocation cost using move execution frequency FREQ.  */
-static rtx_insn *
+static rtx
 emit_move_list (move_t list, int freq)
 {
   rtx to, from, dest;
   int to_regno, from_regno, cost, regno;
-  rtx_insn *result, *insn;
-  rtx set;
-  machine_mode mode;
+  rtx result, insn, set;
+  enum machine_mode mode;
   enum reg_class aclass;
 
   grow_reg_equivs ();
@@ -1009,7 +984,7 @@ emit_moves (void)
   basic_block bb;
   edge_iterator ei;
   edge e;
-  rtx_insn *insns, *tmp;
+  rtx insns, tmp;
 
   FOR_EACH_BB_FN (bb, cfun)
     {
@@ -1259,7 +1234,7 @@ void
 ira_emit (bool loops_p)
 {
   basic_block bb;
-  rtx_insn *insn;
+  rtx insn;
   edge_iterator ei;
   edge e;
   ira_allocno_t a;

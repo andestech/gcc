@@ -29,14 +29,14 @@
 #ifndef GCC_ARM_H
 #define GCC_ARM_H
 
-/* We can't use machine_mode inside a generator file because it
+/* We can't use enum machine_mode inside a generator file because it
    hasn't been created yet; we shouldn't be using any code that
    needs the real definition though, so this ought to be safe.  */
 #ifdef GENERATOR_FILE
 #define MACHMODE int
 #else
 #include "insn-modes.h"
-#define MACHMODE machine_mode
+#define MACHMODE enum machine_mode
 #endif
 
 #include "config/vxworks-dummy.h"
@@ -104,6 +104,8 @@ extern char arm_arch_name[];
 	    builtin_define ("__ARM_BIG_ENDIAN");	\
 	    if (TARGET_THUMB)				\
 	      builtin_define ("__THUMBEB__");		\
+	    if (TARGET_LITTLE_WORDS)			\
+	      builtin_define ("__ARMWEL__");		\
 	  }						\
         else						\
 	  {						\
@@ -164,12 +166,7 @@ extern char arm_arch_name[];
 	    builtin_define ("__ARM_EABI__");		\
 	  }						\
 	if (TARGET_IDIV)				\
-         {						\
-            builtin_define ("__ARM_ARCH_EXT_IDIV__");	\
-            builtin_define ("__ARM_FEATURE_IDIV");	\
-         }						\
-	if (inline_asm_unified)				\
-	  builtin_define ("__ARM_ASM_SYNTAX_UNIFIED__");\
+	  builtin_define ("__ARM_ARCH_EXT_IDIV__");	\
     } while (0)
 
 #include "config/arm/arm-opts.h"
@@ -301,9 +298,6 @@ extern void (*arm_lang_output_object_attributes_hook)(void);
 /* FPU supports VFPv3 instructions.  */
 #define TARGET_VFP3 (TARGET_VFP && arm_fpu_desc->rev >= 3)
 
-/* FPU supports FPv5 instructions.  */
-#define TARGET_VFP5 (TARGET_VFP && arm_fpu_desc->rev >= 5)
-
 /* FPU only supports VFP single-precision instructions.  */
 #define TARGET_VFP_SINGLE (TARGET_VFP && arm_fpu_desc->regs == VFP_REG_SINGLE)
 
@@ -353,8 +347,8 @@ extern void (*arm_lang_output_object_attributes_hook)(void);
        || (!optimize_size && !current_tune->prefer_constant_pool)))
 
 /* We could use unified syntax for arm mode, but for now we just use it
-   for thumb mode.  */
-#define TARGET_UNIFIED_ASM (TARGET_THUMB)
+   for Thumb-2.  */
+#define TARGET_UNIFIED_ASM TARGET_THUMB2
 
 /* Nonzero if this chip provides the DMB instruction.  */
 #define TARGET_HAVE_DMB		(arm_arch6m || arm_arch7)
@@ -447,6 +441,9 @@ extern int arm_fpu_attr;
 #ifndef TARGET_DEFAULT_FLOAT_ABI
 #define TARGET_DEFAULT_FLOAT_ABI ARM_FLOAT_ABI_SOFT
 #endif
+
+#define LARGEST_EXPONENT_IS_NORMAL(bits) \
+    ((bits) == 16 && arm_fp16_format == ARM_FP16_FORMAT_ALTERNATIVE)
 
 #ifndef ARM_DEFAULT_ABI
 #define ARM_DEFAULT_ABI ARM_ABI_APCS
@@ -646,8 +643,9 @@ extern int arm_arch_crc;
 #define BYTES_BIG_ENDIAN  (TARGET_BIG_END != 0)
 
 /* Define this if most significant word of a multiword number is the lowest
-   numbered.  */
-#define WORDS_BIG_ENDIAN  (BYTES_BIG_ENDIAN)
+   numbered.
+   This is always false, even when in big-endian mode.  */
+#define WORDS_BIG_ENDIAN  (BYTES_BIG_ENDIAN && ! TARGET_LITTLE_WORDS)
 
 #define UNITS_PER_WORD	4
 
@@ -1512,7 +1510,7 @@ typedef struct GTY(()) arm_stack_offsets
 }
 arm_stack_offsets;
 
-#if !defined(GENERATOR_FILE) && !defined (USED_FOR_TARGET)
+#ifndef GENERATOR_FILE
 /* A C structure for machine-specific, per-function data.
    This is added to the cfun structure.  */
 typedef struct GTY(()) machine_function
@@ -1549,9 +1547,7 @@ typedef struct GTY(()) machine_function
   rtx thumb1_cc_op0;
   rtx thumb1_cc_op1;
   /* Also record the CC mode that is supported.  */
-  machine_mode thumb1_cc_mode;
-  /* Set to 1 after arm_reorg has started.  */
-  int after_arm_reorg;
+  enum machine_mode thumb1_cc_mode;
 }
 machine_function;
 #endif
@@ -1580,7 +1576,6 @@ enum arm_pcs
 /* Default procedure calling standard of current compilation unit. */
 extern enum arm_pcs arm_pcs_default;
 
-#if !defined (USED_FOR_TARGET)
 /* A C type for declaring a variable that is used as the first argument of
    `FUNCTION_ARG' and other related values.  */
 typedef struct
@@ -1614,7 +1609,6 @@ typedef struct
   int aapcs_vfp_rcount;
   MACHMODE aapcs_vfp_rmode;
 } CUMULATIVE_ARGS;
-#endif
 
 #define FUNCTION_ARG_PADDING(MODE, TYPE) \
   (arm_pad_arg_upward (MODE, TYPE) ? upward : downward)
@@ -2152,13 +2146,9 @@ extern int making_const_table;
 #define CC_STATUS_INIT \
   do { cfun->machine->thumb1_cc_insn = NULL_RTX; } while (0)
 
-#undef ASM_APP_ON
-#define ASM_APP_ON (inline_asm_unified ? "\t.syntax unified\n" : \
-		    "\t.syntax divided\n")
-
 #undef  ASM_APP_OFF
-#define ASM_APP_OFF (TARGET_ARM ? "\t.arm\n\t.syntax divided\n" : \
-		     "\t.thumb\n\t.syntax unified\n")
+#define ASM_APP_OFF (TARGET_THUMB1 ? "\t.code\t16\n" : \
+		     TARGET_THUMB2 ? "\t.thumb\n" : "")
 
 /* Output a push or a pop instruction (only used when profiling).
    We can't push STATIC_CHAIN_REGNUM (r12) directly with Thumb-1.  We know
@@ -2405,5 +2395,5 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
 #endif
 
 #define DRIVER_SELF_SPECS MCPU_MTUNE_NATIVE_SPECS
-#define TARGET_SUPPORTS_WIDE_INT 1
+
 #endif /* ! GCC_ARM_H */

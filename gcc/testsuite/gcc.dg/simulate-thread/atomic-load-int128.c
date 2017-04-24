@@ -120,7 +120,6 @@ void simulate_thread_main()
     }
 }
 
-int
 main()
 {
   fill_table ();

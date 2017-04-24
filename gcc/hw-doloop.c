@@ -27,16 +27,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "expr.h"
 #include "hard-reg-set.h"
 #include "regs.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfgrtl.h"
 #include "basic-block.h"
 #include "tm_p.h"
 #include "df.h"
@@ -67,6 +57,8 @@ dump_hwloops (hwloop_info loops)
 	       loop->head == NULL ? -1 : loop->head->index,
 	       loop->depth, REGNO (loop->iter_reg));
 
+      fprintf (dump_file, " outermost: [%d] ", loop->outermost->loop_no);
+
       fprintf (dump_file, " blocks: [ ");
       for (ix = 0; loop->blocks.iterate (ix, &b); ix++)
 	fprintf (dump_file, "%d ", b->index);
@@ -94,6 +86,7 @@ scan_loop (hwloop_info loop)
 {
   unsigned ix;
   basic_block bb;
+  regset set_this_insn = ALLOC_REG_SET (NULL);
 
   if (loop->bad)
     return;
@@ -104,7 +97,7 @@ scan_loop (hwloop_info loop)
 
   for (ix = 0; loop->blocks.iterate (ix, &bb); ix++)
     {
-      rtx_insn *insn;
+      rtx insn;
       edge e;
       edge_iterator ei;
 
@@ -129,8 +122,7 @@ scan_loop (hwloop_info loop)
 	   insn != NEXT_INSN (BB_END (bb));
 	   insn = NEXT_INSN (insn))
 	{
-	  df_ref def;
-	  HARD_REG_SET set_this_insn;
+	  df_ref *def_rec;
 
 	  if (!NONDEBUG_INSN_P (insn))
 	    continue;
@@ -140,23 +132,45 @@ scan_loop (hwloop_info loop)
 		  || asm_noperands (PATTERN (insn)) >= 0))
 	    loop->has_asm = true;
 
-	  CLEAR_HARD_REG_SET (set_this_insn);
-	  FOR_EACH_INSN_DEF (def, insn)
+	  CLEAR_REG_SET (set_this_insn);
+	  for (def_rec = DF_INSN_DEFS (insn); *def_rec; def_rec++)
 	    {
-	      rtx dreg = DF_REF_REG (def);
+	      rtx dreg = DF_REF_REG (*def_rec);
+	      unsigned int regno, nregs;
 
 	      if (!REG_P (dreg))
 		continue;
 
-	      add_to_hard_reg_set (&set_this_insn, GET_MODE (dreg),
-				   REGNO (dreg));
+	      regno = REGNO (dreg);
+	      nregs = GET_MODE (dreg) / UNITS_PER_WORD;
+	      bitmap_set_range (set_this_insn, regno, nregs);
 	    }
 
 	  if (insn == loop->loop_end)
-	    CLEAR_HARD_REG_BIT (set_this_insn, REGNO (loop->iter_reg));
+	    CLEAR_REGNO_REG_SET (set_this_insn, REGNO (loop->iter_reg));
 	  else if (reg_mentioned_p (loop->iter_reg, PATTERN (insn)))
 	    loop->iter_reg_used = true;
-	  IOR_HARD_REG_SET (loop->regs_set_in_loop, set_this_insn);
+	  IOR_REG_SET (loop->regs_set_in_loop, set_this_insn);
+	}
+    }
+  FREE_REG_SET (set_this_insn);
+}
+
+/* Get outermost loop for each loop.  */
+static void
+add_outermost (hwloop_info loop)
+{
+  int ix;
+  hwloop_info inner;
+
+  if (!loop->outermost)
+    {
+      loop->outermost = loop;
+
+      for (ix = 0; loop->loops.iterate (ix, &inner); ix++)
+	{
+	  if (loop->loop_no != inner->loop_no)
+	    inner->outermost = loop;
 	}
     }
 }
@@ -242,7 +256,7 @@ add_forwarder_blocks (hwloop_info loop)
    the expected use; targets that call into this code usually replace the
    loop counter with a different special register.  */
 static void
-discover_loop (hwloop_info loop, basic_block tail_bb, rtx_insn *tail_insn, rtx reg)
+discover_loop (hwloop_info loop, basic_block tail_bb, rtx tail_insn, rtx reg)
 {
   bool found_tail;
   unsigned dwork = 0;
@@ -252,7 +266,7 @@ discover_loop (hwloop_info loop, basic_block tail_bb, rtx_insn *tail_insn, rtx r
   loop->loop_end = tail_insn;
   loop->iter_reg = reg;
   vec_alloc (loop->incoming, 2);
-  loop->start_label = as_a <rtx_insn *> (JUMP_LABEL (tail_insn));
+  loop->start_label = JUMP_LABEL (tail_insn);
 
   if (EDGE_COUNT (tail_bb->succs) != 2)
     {
@@ -369,9 +383,8 @@ discover_loops (bitmap_obstack *loop_stack, struct hw_doloop_hooks *hooks)
      structure and add the head block to the work list. */
   FOR_EACH_BB_FN (bb, cfun)
     {
-      rtx_insn *tail = BB_END (bb);
-      rtx_insn *insn;
-      rtx reg;
+      rtx tail = BB_END (bb);
+      rtx insn, reg;
 
       while (tail && NOTE_P (tail) && tail != BB_HEAD (bb))
 	tail = PREV_INSN (tail);
@@ -389,7 +402,7 @@ discover_loops (bitmap_obstack *loop_stack, struct hw_doloop_hooks *hooks)
 
       /* There's a degenerate case we can handle - an empty loop consisting
 	 of only a back branch.  Handle that by deleting the branch.  */
-      insn = JUMP_LABEL_AS_INSN (tail);
+      insn = JUMP_LABEL (tail);
       while (insn && !NONDEBUG_INSN_P (insn))
 	insn = NEXT_INSN (insn);
       if (insn == tail)
@@ -415,6 +428,7 @@ discover_loops (bitmap_obstack *loop_stack, struct hw_doloop_hooks *hooks)
       loop->loop_no = nloops++;
       loop->blocks.create (20);
       loop->block_bitmap = BITMAP_ALLOC (loop_stack);
+      loop->regs_set_in_loop = ALLOC_REG_SET (NULL);
 
       if (dump_file)
 	{
@@ -460,6 +474,10 @@ discover_loops (bitmap_obstack *loop_stack, struct hw_doloop_hooks *hooks)
 	}
     }
 
+  /* Get outermost loop for each loop.  */
+  for (loop = loops; loop; loop = loop->next)
+    add_outermost (loop);
+
   if (dump_file)
     dump_hwloops (loops);
 
@@ -477,6 +495,7 @@ free_loops (hwloop_info loops)
       loop->loops.release ();
       loop->blocks.release ();
       BITMAP_FREE (loop->block_bitmap);
+      FREE_REG_SET (loop->regs_set_in_loop);
       XDELETE (loop);
     }
 }
@@ -560,6 +579,32 @@ reorder_loops (hwloop_info loops)
   df_analyze ();
 }
 
+/* Compute real depth for each loop, for example
+   if 3 neseting depth of loop, the depth form
+   outermost to innermost is 1, 2, 3.  */
+static void
+compute_real_depth (hwloop_info loop)
+{
+  int ix;
+  hwloop_info inner;
+  int inner_depth = 0;
+
+  if (loop->computed_depth)
+    return;
+
+  loop->computed_depth = 1;
+
+  for (ix = 0; loop->loops.iterate (ix, &inner); ix++)
+    {
+      compute_real_depth (inner);
+
+      if (inner_depth < inner->real_depth)
+	inner_depth = inner->real_depth;
+    }
+
+  loop->real_depth = inner_depth + 1;
+}
+
 /* Call the OPT function for LOOP and all of its sub-loops.  This is
    done in a depth-first search; innermost loops are visited first.
    OPTIMIZE and FAIL are the functions passed to reorg_loops by the
@@ -596,7 +641,7 @@ optimize_loop (hwloop_info loop, struct hw_doloop_hooks *hooks)
 	inner_depth = inner->depth;
       /* The set of registers may be changed while optimizing the inner
 	 loop.  */
-      IOR_HARD_REG_SET (loop->regs_set_in_loop, inner->regs_set_in_loop);
+      IOR_REG_SET (loop->regs_set_in_loop, inner->regs_set_in_loop);
     }
 
   loop->depth = inner_depth + 1;
@@ -647,9 +692,7 @@ reorg_loops (bool do_reorder, struct hw_doloop_hooks *hooks)
 
   loops = discover_loops (&loop_stack, hooks);
 
-  /* We can't enter cfglayout mode anymore if basic block partitioning
-     already happened.  */
-  if (do_reorder && !flag_reorder_blocks_and_partition)
+  if (do_reorder)
     {
       reorder_loops (loops);
       free_loops (loops);
@@ -662,6 +705,10 @@ reorg_loops (bool do_reorder, struct hw_doloop_hooks *hooks)
 
   for (loop = loops; loop; loop = loop->next)
     scan_loop (loop);
+
+  /* Compute real depth for each loop.  */
+  for (loop = loops; loop; loop = loop->next)
+    compute_real_depth (loop);
 
   /* Now apply the optimizations.  */
   for (loop = loops; loop; loop = loop->next)

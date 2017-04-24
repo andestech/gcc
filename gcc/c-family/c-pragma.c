@@ -25,12 +25,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "stringpool.h"
 #include "attribs.h"
 #include "varasm.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
+#include "gcc-symtab.h"
 #include "function.h"		/* For cfun.  FIXME: Does the parser know
 				   when it is inside a function, so that
 				   we don't have to look at cfun?  */
@@ -40,14 +35,11 @@ along with GCC; see the file COPYING3.  If not see
 #include "c-common.h"
 #include "tm_p.h"		/* For REGISTER_TARGET_PRAGMAS (why is
 				   this not a target hook?).  */
+#include "vec.h"
 #include "target.h"
 #include "diagnostic.h"
 #include "opts.h"
 #include "plugin.h"
-#include "hash-map.h"
-#include "is-a.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
 
 #define GCC_BAD(gmsgid) \
@@ -82,7 +74,9 @@ static void pop_alignment (tree);
 static void
 push_alignment (int alignment, tree id)
 {
-  align_stack * entry = ggc_alloc<align_stack> ();
+  align_stack * entry;
+
+  entry = ggc_alloc_align_stack ();
 
   entry->alignment  = alignment;
   entry->id	    = id;
@@ -337,7 +331,7 @@ maybe_apply_pending_pragma_weaks (void)
       if (id == NULL)
 	continue;
 
-      target = symtab_node::get_for_asmname (id);
+      target = symtab_node_for_asm (id);
       decl = build_decl (UNKNOWN_LOCATION,
 			 target ? TREE_CODE (target->decl) : FUNCTION_DECL,
 			 alias_id, default_function_type);
@@ -487,7 +481,7 @@ handle_pragma_redefine_extname (cpp_reader * ARG_UNUSED (dummy))
 			 "conflict with previous rename");
 	    }
 	  else
-	    symtab->change_decl_assembler_name (decl, newname);
+	    change_decl_assembler_name (decl, newname);
 	}
     }
 
@@ -917,6 +911,7 @@ handle_pragma_push_options (cpp_reader *ARG_UNUSED(dummy))
 {
   enum cpp_ttype token;
   tree x = 0;
+  opt_stack *p;
 
   token = pragma_lex (&x);
   if (token != CPP_EOF)
@@ -925,7 +920,7 @@ handle_pragma_push_options (cpp_reader *ARG_UNUSED(dummy))
       return;
     }
 
-  opt_stack *p = ggc_alloc<opt_stack> ();
+  p = ggc_alloc_opt_stack ();
   p->prev = options_stack;
   options_stack = p;
 
@@ -1414,11 +1409,6 @@ init_pragma (void)
   if (!flag_preprocess_only)
     cpp_register_deferred_pragma (parse_in, "GCC", "ivdep", PRAGMA_IVDEP, false,
 				  false);
-
-  if (flag_cilkplus && !flag_preprocess_only)
-    cpp_register_deferred_pragma (parse_in, "cilk", "grainsize",
-				  PRAGMA_CILK_GRAINSIZE, true, false);
-
 #ifdef HANDLE_PRAGMA_PACK_WITH_EXPANSION
   c_register_pragma_with_expansion (0, "pack", handle_pragma_pack);
 #else

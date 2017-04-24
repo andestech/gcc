@@ -1,5 +1,5 @@
 void
-f (int n, int ppt, int xrot)
+f (n, ppt, xrot)
 {
   int tileWidth;
   int nlwSrc;

@@ -125,7 +125,7 @@ namespace __gnu_profile
       if (!__is_on())
 	return;
 
-      // First find the item from the live objects and update the information.
+      // First find the item from the live objects and update the informations.
       __hashfunc_info* __objs = __get_object_info(__obj);
       if (!__objs)
 	return;

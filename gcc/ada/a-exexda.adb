@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -36,40 +36,39 @@ package body Exception_Data is
 
    --  This unit implements the Exception_Information related services for
    --  both the Ada standard requirements and the GNAT.Exception_Traces
-   --  facility. This is also used by the implementation of the stream
-   --  attributes of types Exception_Id and Exception_Occurrence.
+   --  facility.
 
    --  There are common parts between the contents of Exception_Information
-   --  (the regular Ada interface) and Untailored_Exception_Information (used
-   --  for streaming, and when there is no symbolic traceback available) The
-   --  overall structure is sketched below:
+   --  (the regular Ada interface) and Tailored_Exception_Information (what
+   --  the automatic backtracing output includes). The overall structure is
+   --  sketched below:
 
    --
-   --                 Untailored_Exception_Information
+   --                      Exception_Information
    --                               |
    --                       +-------+--------+
    --                       |                |
-   --                Basic_Exc_Info & Untailored_Exc_Tback
-   --                    (B_E_I)         (U_E_TB)
+   --                Basic_Exc_Info & Basic_Exc_Tback
+   --                    (B_E_I)          (B_E_TB)
 
    --           o--
    --  (B_E_I)  |  Exception_Name: <exception name> (as in Exception_Name)
    --           |  Message: <message> (or a null line if no message)
    --           |  PID=nnnn (if != 0)
    --           o--
-   --  (U_E_TB) |  Call stack traceback locations:
+   --  (B_E_TB) |  Call stack traceback locations:
    --           |  <0xyyyyyyyy 0xyyyyyyyy ...>
    --           o--
 
-   --                     Exception_Information
+   --                  Tailored_Exception_Information
    --                               |
    --                    +----------+----------+
    --                    |                     |
-   --             Basic_Exc_Info    &      traceback
+   --             Basic_Exc_Info    &  Tailored_Exc_Tback
    --                                          |
    --                              +-----------+------------+
    --                              |                        |
-   --                     Untailored_Exc_Tback    Or    Tback_Decorator
+   --                       Basic_Exc_Tback    Or    Tback_Decorator
    --                     if no decorator set           otherwise
 
    --  Functions returning String imply secondary stack use, which is a heavy
@@ -82,8 +81,8 @@ package body Exception_Data is
 
    --  The procedural interface is composed of two major sections: a neutral
    --  section for basic types like Address, Character, Natural or String, and
-   --  an exception oriented section for the exception names, messages, and
-   --  information. This is the Append_Info family of procedures below.
+   --  an exception oriented section for the e.g. Basic_Exception_Information.
+   --  This is the Append_Info family of procedures below.
 
    --  Output to stderr is commanded by passing an empty buffer to update, and
    --  care is taken not to overflow otherwise.
@@ -141,12 +140,12 @@ package body Exception_Data is
       Info : in out String;
       Ptr  : in out Natural);
 
-   procedure Append_Info_Untailored_Exception_Traceback
+   procedure Append_Info_Basic_Exception_Traceback
      (X    : Exception_Occurrence;
       Info : in out String;
       Ptr  : in out Natural);
 
-   procedure Append_Info_Untailored_Exception_Information
+   procedure Append_Info_Exception_Information
      (X    : Exception_Occurrence;
       Info : in out String;
       Ptr  : in out Natural);
@@ -163,7 +162,7 @@ package body Exception_Data is
    function Basic_Exception_Info_Maxlength
      (X : Exception_Occurrence) return Natural;
 
-   function Untailored_Exception_Traceback_Maxlength
+   function Basic_Exception_Tback_Maxlength
      (X : Exception_Occurrence) return Natural;
 
    function Exception_Info_Maxlength
@@ -182,11 +181,11 @@ package body Exception_Data is
    -- Functional Interface --
    --------------------------
 
-   function Untailored_Exception_Traceback
+   function Basic_Exception_Traceback
      (X : Exception_Occurrence) return String;
    --  Returns an image of the complete call chain associated with an
    --  exception occurrence in its most basic form, that is as a raw sequence
-   --  of hexadecimal addresses.
+   --  of hexadecimal binary addresses.
 
    function Tailored_Exception_Traceback
      (X : Exception_Occurrence) return String;
@@ -202,8 +201,7 @@ package body Exception_Data is
      (Ada, Append_Info_Exception_Message, "__gnat_append_info_e_msg");
 
    pragma Export
-     (Ada, Append_Info_Untailored_Exception_Information,
-      "__gnat_append_info_u_e_info");
+     (Ada, Append_Info_Exception_Information, "__gnat_append_info_e_info");
 
    pragma Export
      (Ada, Exception_Message_Length, "__gnat_exception_msg_len");
@@ -244,55 +242,6 @@ package body Exception_Data is
       Append_Info_String (S (P - 1 .. S'Last), Info, Ptr);
    end Append_Info_Address;
 
-   ---------------------------------------------
-   -- Append_Info_Basic_Exception_Information --
-   ---------------------------------------------
-
-   --  To ease the maximum length computation, we define and pull out a couple
-   --  of string constants:
-
-   BEI_Name_Header : constant String := "Exception name: ";
-   BEI_Msg_Header  : constant String := "Message: ";
-   BEI_PID_Header  : constant String := "PID: ";
-
-   procedure Append_Info_Basic_Exception_Information
-     (X    : Exception_Occurrence;
-      Info : in out String;
-      Ptr  : in out Natural)
-   is
-      Name : String (1 .. Exception_Name_Length (X));
-      --  Buffer in which to fetch the exception name, in order to check
-      --  whether this is an internal _ABORT_SIGNAL or a regular occurrence.
-
-      Name_Ptr : Natural := Name'First - 1;
-
-   begin
-      --  Output exception name and message except for _ABORT_SIGNAL, where
-      --  these two lines are omitted.
-
-      Append_Info_Exception_Name (X, Name, Name_Ptr);
-
-      if Name (Name'First) /= '_' then
-         Append_Info_String (BEI_Name_Header, Info, Ptr);
-         Append_Info_String (Name, Info, Ptr);
-         Append_Info_NL (Info, Ptr);
-
-         if Exception_Message_Length (X) /= 0 then
-            Append_Info_String (BEI_Msg_Header, Info, Ptr);
-            Append_Info_Exception_Message  (X, Info, Ptr);
-            Append_Info_NL (Info, Ptr);
-         end if;
-      end if;
-
-      --  Output PID line if non-zero
-
-      if X.Pid /= 0 then
-         Append_Info_String (BEI_PID_Header, Info, Ptr);
-         Append_Info_Nat (X.Pid, Info, Ptr);
-         Append_Info_NL (Info, Ptr);
-      end if;
-   end Append_Info_Basic_Exception_Information;
-
    ---------------------------
    -- Append_Info_Character --
    ---------------------------
@@ -310,72 +259,6 @@ package body Exception_Data is
          Info (Ptr) := C;
       end if;
    end Append_Info_Character;
-
-   -----------------------------------
-   -- Append_Info_Exception_Message --
-   -----------------------------------
-
-   procedure Append_Info_Exception_Message
-     (X    : Exception_Occurrence;
-      Info : in out String;
-      Ptr  : in out Natural)
-   is
-   begin
-      if X.Id = Null_Id then
-         raise Constraint_Error;
-      end if;
-
-      declare
-         Len : constant Natural           := Exception_Message_Length (X);
-         Msg : constant String (1 .. Len) := X.Msg (1 .. Len);
-      begin
-         Append_Info_String (Msg, Info, Ptr);
-      end;
-   end Append_Info_Exception_Message;
-
-   --------------------------------
-   -- Append_Info_Exception_Name --
-   --------------------------------
-
-   procedure Append_Info_Exception_Name
-     (Id   : Exception_Id;
-      Info : in out String;
-      Ptr  : in out Natural)
-   is
-   begin
-      if Id = Null_Id then
-         raise Constraint_Error;
-      end if;
-
-      declare
-         Len  : constant Natural           := Exception_Name_Length (Id);
-         Name : constant String (1 .. Len) := To_Ptr (Id.Full_Name) (1 .. Len);
-      begin
-         Append_Info_String (Name, Info, Ptr);
-      end;
-   end Append_Info_Exception_Name;
-
-   procedure Append_Info_Exception_Name
-     (X    : Exception_Occurrence;
-      Info : in out String;
-      Ptr  : in out Natural)
-   is
-   begin
-      Append_Info_Exception_Name (X.Id, Info, Ptr);
-   end Append_Info_Exception_Name;
-
-   ------------------------------
-   -- Exception_Info_Maxlength --
-   ------------------------------
-
-   function Exception_Info_Maxlength
-     (X : Exception_Occurrence) return Natural
-   is
-   begin
-      return
-        Basic_Exception_Info_Maxlength (X)
-        + Untailored_Exception_Traceback_Maxlength (X);
-   end Exception_Info_Maxlength;
 
    ---------------------
    -- Append_Info_Nat --
@@ -430,30 +313,78 @@ package body Exception_Data is
       end if;
    end Append_Info_String;
 
-   --------------------------------------------------
-   -- Append_Info_Untailored_Exception_Information --
-   --------------------------------------------------
+   ---------------------------------------------
+   -- Append_Info_Basic_Exception_Information --
+   ---------------------------------------------
 
-   procedure Append_Info_Untailored_Exception_Information
+   --  To ease the maximum length computation, we define and pull out a couple
+   --  of string constants:
+
+   BEI_Name_Header : constant String := "Exception name: ";
+   BEI_Msg_Header  : constant String := "Message: ";
+   BEI_PID_Header  : constant String := "PID: ";
+
+   procedure Append_Info_Basic_Exception_Information
      (X    : Exception_Occurrence;
       Info : in out String;
       Ptr  : in out Natural)
    is
-   begin
-      Append_Info_Basic_Exception_Information (X, Info, Ptr);
-      Append_Info_Untailored_Exception_Traceback (X, Info, Ptr);
-   end Append_Info_Untailored_Exception_Information;
+      Name : String (1 .. Exception_Name_Length (X));
+      --  Buffer in which to fetch the exception name, in order to check
+      --  whether this is an internal _ABORT_SIGNAL or a regular occurrence.
 
-   ------------------------------------------------
-   -- Append_Info_Untailored_Exception_Traceback --
-   ------------------------------------------------
+      Name_Ptr : Natural := Name'First - 1;
+
+   begin
+      --  Output exception name and message except for _ABORT_SIGNAL, where
+      --  these two lines are omitted.
+
+      Append_Info_Exception_Name (X, Name, Name_Ptr);
+
+      if Name (Name'First) /= '_' then
+         Append_Info_String (BEI_Name_Header, Info, Ptr);
+         Append_Info_String (Name, Info, Ptr);
+         Append_Info_NL (Info, Ptr);
+
+         if Exception_Message_Length (X) /= 0 then
+            Append_Info_String (BEI_Msg_Header, Info, Ptr);
+            Append_Info_Exception_Message  (X, Info, Ptr);
+            Append_Info_NL (Info, Ptr);
+         end if;
+      end if;
+
+      --  Output PID line if non-zero
+
+      if X.Pid /= 0 then
+         Append_Info_String (BEI_PID_Header, Info, Ptr);
+         Append_Info_Nat (X.Pid, Info, Ptr);
+         Append_Info_NL (Info, Ptr);
+      end if;
+   end Append_Info_Basic_Exception_Information;
+
+   -------------------------------------------
+   -- Basic_Exception_Information_Maxlength --
+   -------------------------------------------
+
+   function Basic_Exception_Info_Maxlength
+     (X : Exception_Occurrence) return Natural is
+   begin
+      return
+        BEI_Name_Header'Length + Exception_Name_Length (X) + 1
+        + BEI_Msg_Header'Length + Exception_Message_Length (X) + 1
+        + BEI_PID_Header'Length + 15;
+   end Basic_Exception_Info_Maxlength;
+
+   -------------------------------------------
+   -- Append_Info_Basic_Exception_Traceback --
+   -------------------------------------------
 
    --  As for Basic_Exception_Information:
 
    BETB_Header : constant String := "Call stack traceback locations:";
    LDAD_Header : constant String := "Load address: ";
 
-   procedure Append_Info_Untailored_Exception_Traceback
+   procedure Append_Info_Basic_Exception_Traceback
      (X    : Exception_Occurrence;
       Info : in out String;
       Ptr  : in out Natural)
@@ -476,7 +407,6 @@ package body Exception_Data is
       end if;
 
       --  The traceback lines
-
       Append_Info_String (BETB_Header, Info, Ptr);
       Append_Info_NL (Info, Ptr);
 
@@ -487,41 +417,122 @@ package body Exception_Data is
       end loop;
 
       Append_Info_NL (Info, Ptr);
-   end Append_Info_Untailored_Exception_Traceback;
+   end Append_Info_Basic_Exception_Traceback;
 
-   -------------------------------------------
-   -- Basic_Exception_Information_Maxlength --
-   -------------------------------------------
+   -----------------------------------------
+   -- Basic_Exception_Traceback_Maxlength --
+   -----------------------------------------
 
-   function Basic_Exception_Info_Maxlength
+   function Basic_Exception_Tback_Maxlength
+     (X : Exception_Occurrence) return Natural
+   is
+      Space_Per_Address : constant := 2 + 16 + 1;
+      --  Space for "0x" + HHHHHHHHHHHHHHHH + " "
+   begin
+      return
+        LDAD_Header'Length + Space_Per_Address + BETB_Header'Length + 1 +
+          X.Num_Tracebacks * Space_Per_Address + 1;
+   end Basic_Exception_Tback_Maxlength;
+
+   ---------------------------------------
+   -- Append_Info_Exception_Information --
+   ---------------------------------------
+
+   procedure Append_Info_Exception_Information
+     (X    : Exception_Occurrence;
+      Info : in out String;
+      Ptr  : in out Natural)
+   is
+   begin
+      Append_Info_Basic_Exception_Information (X, Info, Ptr);
+      Append_Info_Basic_Exception_Traceback   (X, Info, Ptr);
+   end Append_Info_Exception_Information;
+
+   ------------------------------
+   -- Exception_Info_Maxlength --
+   ------------------------------
+
+   function Exception_Info_Maxlength
      (X : Exception_Occurrence) return Natural
    is
    begin
       return
-        BEI_Name_Header'Length + Exception_Name_Length (X) + 1
-        + BEI_Msg_Header'Length + Exception_Message_Length (X) + 1
-        + BEI_PID_Header'Length + 15;
-   end Basic_Exception_Info_Maxlength;
+        Basic_Exception_Info_Maxlength (X)
+        + Basic_Exception_Tback_Maxlength (X);
+   end Exception_Info_Maxlength;
 
-   ---------------------------
-   -- Exception_Information --
-   ---------------------------
+   -----------------------------------
+   -- Append_Info_Exception_Message --
+   -----------------------------------
 
-   function Exception_Information (X : Exception_Occurrence) return String is
-      --  The tailored exception information is the basic information
-      --  associated with the tailored call chain backtrace.
-
-      Tback_Info : constant String  := Tailored_Exception_Traceback (X);
-      Tback_Len  : constant Natural := Tback_Info'Length;
-
-      Info : String (1 .. Basic_Exception_Info_Maxlength (X) + Tback_Len);
-      Ptr  : Natural := Info'First - 1;
-
+   procedure Append_Info_Exception_Message
+     (X    : Exception_Occurrence;
+      Info : in out String;
+      Ptr  : in out Natural)
+   is
    begin
-      Append_Info_Basic_Exception_Information (X, Info, Ptr);
-      Append_Info_String (Tback_Info, Info, Ptr);
-      return Info (Info'First .. Ptr);
-   end Exception_Information;
+      if X.Id = Null_Id then
+         raise Constraint_Error;
+      end if;
+
+      declare
+         Len : constant Natural           := Exception_Message_Length (X);
+         Msg : constant String (1 .. Len) := X.Msg (1 .. Len);
+      begin
+         Append_Info_String (Msg, Info, Ptr);
+      end;
+   end Append_Info_Exception_Message;
+
+   --------------------------------
+   -- Append_Info_Exception_Name --
+   --------------------------------
+
+   procedure Append_Info_Exception_Name
+     (Id   : Exception_Id;
+      Info : in out String;
+      Ptr  : in out Natural)
+   is
+   begin
+      if Id = Null_Id then
+         raise Constraint_Error;
+      end if;
+
+      declare
+         Len  : constant Natural           := Exception_Name_Length (Id);
+         Name : constant String (1 .. Len) := To_Ptr (Id.Full_Name) (1 .. Len);
+      begin
+         Append_Info_String (Name, Info, Ptr);
+      end;
+   end Append_Info_Exception_Name;
+
+   procedure Append_Info_Exception_Name
+     (X    : Exception_Occurrence;
+      Info : in out String;
+      Ptr  : in out Natural)
+   is
+   begin
+      Append_Info_Exception_Name (X.Id, Info, Ptr);
+   end Append_Info_Exception_Name;
+
+   ---------------------------
+   -- Exception_Name_Length --
+   ---------------------------
+
+   function Exception_Name_Length
+     (Id : Exception_Id) return Natural
+   is
+   begin
+      --  What is stored in the internal Name buffer includes a terminating
+      --  null character that we never care about.
+
+      return Id.Name_Length - 1;
+   end Exception_Name_Length;
+
+   function Exception_Name_Length
+     (X : Exception_Occurrence) return Natural is
+   begin
+      return Exception_Name_Length (X.Id);
+   end Exception_Name_Length;
 
    ------------------------------
    -- Exception_Message_Length --
@@ -534,51 +545,33 @@ package body Exception_Data is
       return X.Msg_Length;
    end Exception_Message_Length;
 
-   ---------------------------
-   -- Exception_Name_Length --
-   ---------------------------
-
-   function Exception_Name_Length (Id : Exception_Id) return Natural is
-   begin
-      --  What is stored in the internal Name buffer includes a terminating
-      --  null character that we never care about.
-
-      return Id.Name_Length - 1;
-   end Exception_Name_Length;
-
-   function Exception_Name_Length (X : Exception_Occurrence) return Natural is
-   begin
-      return Exception_Name_Length (X.Id);
-   end Exception_Name_Length;
-
    -------------------------------
-   -- Untailored_Exception_Traceback --
+   -- Basic_Exception_Traceback --
    -------------------------------
 
-   function Untailored_Exception_Traceback
+   function Basic_Exception_Traceback
      (X : Exception_Occurrence) return String
    is
-      Info : aliased String
-                       (1 .. Untailored_Exception_Traceback_Maxlength (X));
+      Info : aliased String (1 .. Basic_Exception_Tback_Maxlength (X));
       Ptr  : Natural := Info'First - 1;
    begin
-      Append_Info_Untailored_Exception_Traceback (X, Info, Ptr);
+      Append_Info_Basic_Exception_Traceback (X, Info, Ptr);
       return Info (Info'First .. Ptr);
-   end Untailored_Exception_Traceback;
+   end Basic_Exception_Traceback;
 
-   --------------------------------------
-   -- Untailored_Exception_Information --
-   --------------------------------------
+   ---------------------------
+   -- Exception_Information --
+   ---------------------------
 
-   function Untailored_Exception_Information
+   function Exception_Information
      (X : Exception_Occurrence) return String
    is
       Info : String (1 .. Exception_Info_Maxlength (X));
       Ptr  : Natural := Info'First - 1;
    begin
-      Append_Info_Untailored_Exception_Information (X, Info, Ptr);
+      Append_Info_Exception_Information (X, Info, Ptr);
       return Info (Info'First .. Ptr);
-   end Untailored_Exception_Information;
+   end Exception_Information;
 
    -------------------------
    -- Set_Exception_C_Msg --
@@ -685,8 +678,8 @@ package body Exception_Data is
       Id      : Exception_Id;
       Message : String)
    is
-      Len : constant Natural :=
-              Natural'Min (Message'Length, Exception_Msg_Max_Length);
+      Len   : constant Natural :=
+        Natural'Min (Message'Length, Exception_Msg_Max_Length);
       First : constant Integer := Message'First;
    begin
       Excep.Exception_Raised := False;
@@ -716,29 +709,36 @@ package body Exception_Data is
       --  call become inoffensive.
 
       Wrapper : constant Traceback_Decorator_Wrapper_Call :=
-                  Traceback_Decorator_Wrapper;
+        Traceback_Decorator_Wrapper;
 
    begin
       if Wrapper = null then
-         return Untailored_Exception_Traceback (X);
+         return Basic_Exception_Traceback (X);
       else
          return Wrapper.all (X.Tracebacks'Address, X.Num_Tracebacks);
       end if;
    end Tailored_Exception_Traceback;
 
-   ----------------------------------------------
-   -- Untailored_Exception_Traceback_Maxlength --
-   ----------------------------------------------
+   ------------------------------------
+   -- Tailored_Exception_Information --
+   ------------------------------------
 
-   function Untailored_Exception_Traceback_Maxlength
-     (X : Exception_Occurrence) return Natural
+   function Tailored_Exception_Information
+     (X : Exception_Occurrence) return String
    is
-      Space_Per_Address : constant := 2 + 16 + 1;
-      --  Space for "0x" + HHHHHHHHHHHHHHHH + " "
+      --  The tailored exception information is the basic information
+      --  associated with the tailored call chain backtrace.
+
+      Tback_Info : constant String  := Tailored_Exception_Traceback (X);
+      Tback_Len  : constant Natural := Tback_Info'Length;
+
+      Info : String (1 .. Basic_Exception_Info_Maxlength (X) + Tback_Len);
+      Ptr  : Natural := Info'First - 1;
+
    begin
-      return
-        LDAD_Header'Length + Space_Per_Address + BETB_Header'Length + 1 +
-          X.Num_Tracebacks * Space_Per_Address + 1;
-   end Untailored_Exception_Traceback_Maxlength;
+      Append_Info_Basic_Exception_Information (X, Info, Ptr);
+      Append_Info_String (Tback_Info, Info, Ptr);
+      return Info (Info'First .. Ptr);
+   end Tailored_Exception_Information;
 
 end Exception_Data;

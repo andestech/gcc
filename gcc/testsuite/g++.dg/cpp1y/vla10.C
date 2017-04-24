@@ -1,5 +1,5 @@
 // PR c++/57402
-// { dg-do compile { target c++14 } }
+// { dg-do compile { target c++1y } }
 
 int i = 2;
 

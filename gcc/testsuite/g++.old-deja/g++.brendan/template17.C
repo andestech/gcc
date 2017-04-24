@@ -9,7 +9,7 @@ public:
 };
 
 const Regex NDAMName<'L'>::pattern("^[Ll](.*)$",   1);// { dg-error "type/value mismatch" "mismatch" }
-// { dg-message "expected a type" "expected" { target *-*-* } 11 }
+// { dg-error "expected a type" "expected" { target *-*-* } 11 }
 // { dg-warning "deprecated" "depr" { target *-*-* } 11 }
 unsigned NDAMName<'L'>::sequence_number = 0;// { dg-error "type/value mismatch" "mismatch" }
-// { dg-message "expected a type" "exp" { target *-*-* } 14 }
+// { dg-error "expected a type" "exp" { target *-*-* } 14 }

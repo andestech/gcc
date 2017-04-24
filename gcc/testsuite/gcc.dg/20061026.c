@@ -6,8 +6,6 @@
    large for a 16bit constant and therefore should reserve the literal
    pool base pointer.  */
 
-void g ();
-
 int f () {
   char a[32608];
 

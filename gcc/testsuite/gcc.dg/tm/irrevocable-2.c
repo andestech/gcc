@@ -7,7 +7,6 @@
 int global;
 int george;
 
-void
 foo()
 {
 	__transaction_relaxed {

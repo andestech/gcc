@@ -23,40 +23,25 @@ along with GCC; see the file COPYING3.  If not see
 
 #include "config.h"
 
-#ifdef HAVE_isl
+#ifdef HAVE_cloog
 #include <isl/aff.h>
 #include <isl/set.h>
 #include <isl/map.h>
 #include <isl/union_map.h>
 #include <isl/ilp.h>
-#include <isl/val.h>
-#if defined(__cplusplus)
-extern "C" {
-#endif
-#include <isl/val_gmp.h>
-#if defined(__cplusplus)
-}
-#endif
-#ifdef HAVE_cloog
 #include <cloog/cloog.h>
 #include <cloog/isl/domain.h>
+#ifdef HAVE_ISL_SCHED_CONSTRAINTS_COMPUTE_SCHEDULE
+#include <isl/deprecated/int.h>
+#include <isl/deprecated/aff_int.h>
+#include <isl/deprecated/ilp_int.h>
+#include <isl/deprecated/constraint_int.h>
 #endif
 #endif
 
 #include "system.h"
 #include "coretypes.h"
 #include "tree.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "tm.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -72,7 +57,7 @@ extern "C" {
 #include "tree-scalar-evolution.h"
 #include "sese.h"
 
-#ifdef HAVE_isl
+#ifdef HAVE_cloog
 #include "graphite-poly.h"
 
 /* XXX isl rewrite following comment */
@@ -100,13 +85,13 @@ build_linearized_memory_access (isl_map *map, poly_dr_p pdr)
   isl_local_space *ls = isl_local_space_from_space (isl_map_get_space (map));
   unsigned offset, nsubs;
   int i;
-  isl_ctx *ctx;
-
-  isl_val *size, *subsize, *size1;
+  isl_int size, subsize;
 
   res = isl_equality_alloc (ls);
-  ctx = isl_local_space_get_ctx (ls);
-  size = isl_val_int_from_ui (ctx, 1);
+  isl_int_init (size);
+  isl_int_set_ui (size, 1);
+  isl_int_init (subsize);
+  isl_int_set_ui (subsize, 1);
 
   nsubs = isl_set_dim (pdr->extent, isl_dim_set);
   /* -1 for the already included L dimension.  */
@@ -119,17 +104,18 @@ build_linearized_memory_access (isl_map *map, poly_dr_p pdr)
       isl_space *dc;
       isl_aff *aff;
 
-      size1 = isl_val_copy (size);
-      res = isl_constraint_set_coefficient_val (res, isl_dim_out, offset + i, size);
+      res = isl_constraint_set_coefficient (res, isl_dim_out, offset + i, size);
+
       dc = isl_set_get_space (pdr->extent);
       aff = isl_aff_zero_on_domain (isl_local_space_from_space (dc));
       aff = isl_aff_set_coefficient_si (aff, isl_dim_in, i, 1);
-      subsize = isl_set_max_val (pdr->extent, aff);
+      isl_set_max (pdr->extent, aff, &subsize);
       isl_aff_free (aff);
-      size = isl_val_mul (size1, subsize);
+      isl_int_mul (size, size, subsize);
     }
 
-  isl_val_free (size);
+  isl_int_clear (subsize);
+  isl_int_clear (size);
 
   return res;
 }
@@ -146,7 +132,7 @@ pdr_stride_in_loop (mpz_t stride, graphite_dim_t depth, poly_dr_p pdr)
   isl_aff *aff;
   isl_space *dc;
   isl_constraint *lma, *c;
-  isl_val *islstride;
+  isl_int islstride;
   graphite_dim_t time_depth;
   unsigned offset, nt;
   unsigned i;
@@ -259,9 +245,10 @@ pdr_stride_in_loop (mpz_t stride, graphite_dim_t depth, poly_dr_p pdr)
   aff = isl_aff_zero_on_domain (isl_local_space_from_space (dc));
   aff = isl_aff_set_coefficient_si (aff, isl_dim_in, offset - 1, -1);
   aff = isl_aff_set_coefficient_si (aff, isl_dim_in, offset + offset - 1, 1);
-  islstride = isl_set_max_val (set, aff);
-  isl_val_get_num_gmp (islstride, stride);
-  isl_val_free (islstride);
+  isl_int_init (islstride);
+  isl_set_max (set, aff, &islstride);
+  isl_int_get_gmp (islstride, stride);
+  isl_int_clear (islstride);
   isl_aff_free (aff);
   isl_set_free (set);
 

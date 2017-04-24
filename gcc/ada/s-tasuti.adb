@@ -6,7 +6,7 @@
 --                                                                          --
 --                                  B o d y                                 --
 --                                                                          --
---         Copyright (C) 1992-2014, Free Software Foundation, Inc.          --
+--         Copyright (C) 1992-2011, Free Software Foundation, Inc.          --
 --                                                                          --
 -- GNARL is free software; you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -242,10 +242,12 @@ package body System.Tasking.Utilities is
    -- Make_Independent --
    ----------------------
 
-   function Make_Independent return Boolean is
+   procedure Make_Independent is
       Self_Id               : constant Task_Id := STPO.Self;
       Environment_Task      : constant Task_Id := STPO.Environment_Task;
       Parent                : constant Task_Id := Self_Id.Common.Parent;
+      Parent_Needs_Updating : Boolean := False;
+      Master_of_Task        : Integer;
 
    begin
       if Self_Id.Known_Tasks_Index /= -1 then
@@ -261,12 +263,23 @@ package body System.Tasking.Utilities is
       Write_Lock (Environment_Task);
       Write_Lock (Self_Id);
 
+      pragma Assert (Parent = Environment_Task
+        or else Self_Id.Master_of_Task = Library_Task_Level);
+
+      Master_of_Task := Self_Id.Master_of_Task;
+      Self_Id.Master_of_Task := Independent_Task_Level;
+
       --  The run time assumes that the parent of an independent task is the
       --  environment task.
 
-      pragma Assert (Parent = Environment_Task);
+      if Parent /= Environment_Task then
 
-      Self_Id.Master_of_Task := Independent_Task_Level;
+         --  We cannot lock three tasks at the same time, so defer the
+         --  operations on the parent.
+
+         Parent_Needs_Updating := True;
+         Self_Id.Common.Parent := Environment_Task;
+      end if;
 
       --  Update Independent_Task_Count that is needed for the GLADE
       --  termination rule. See also pending update in
@@ -274,12 +287,32 @@ package body System.Tasking.Utilities is
 
       Independent_Task_Count := Independent_Task_Count + 1;
 
-      --  This should be called before the task reaches its "begin" (see spec),
-      --  which ensures that the environment task cannot race ahead and be
-      --  already waiting for children to complete.
-
       Unlock (Self_Id);
-      pragma Assert (Environment_Task.Common.State /= Master_Completion_Sleep);
+
+      --  Changing the parent after creation is not trivial. Do not forget
+      --  to update the old parent counts, and the new parent (i.e. the
+      --  Environment_Task) counts.
+
+      if Parent_Needs_Updating then
+         Write_Lock (Parent);
+         Parent.Awake_Count := Parent.Awake_Count - 1;
+         Parent.Alive_Count := Parent.Alive_Count - 1;
+         Environment_Task.Awake_Count := Environment_Task.Awake_Count + 1;
+         Environment_Task.Alive_Count := Environment_Task.Alive_Count + 1;
+         Unlock (Parent);
+      end if;
+
+      --  In case the environment task is already waiting for children to
+      --  complete.
+      --  ??? There may be a race condition if the environment task was not in
+      --  master completion sleep when this task was created, but now is
+
+      if Environment_Task.Common.State = Master_Completion_Sleep and then
+        Master_of_Task = Environment_Task.Master_Within
+      then
+         Environment_Task.Common.Wait_Count :=
+           Environment_Task.Common.Wait_Count - 1;
+      end if;
 
       Unlock (Environment_Task);
 
@@ -288,11 +321,6 @@ package body System.Tasking.Utilities is
       end if;
 
       Initialization.Undefer_Abort (Self_Id);
-
-      --  Return True. Actually the return value is junk, since we expect it
-      --  always to be ignored (see spec), but we have to return something!
-
-      return True;
    end Make_Independent;
 
    ------------------
@@ -477,10 +505,13 @@ package body System.Tasking.Utilities is
             (Self_ID, "Make_Passive: Phase 1, parent waiting", 'M'));
 
          --  If parent is in Master_Completion_Sleep, it cannot be on a
-         --  terminate alternative, hence it cannot have Wait_Count of zero.
+         --  terminate alternative, hence it cannot have Wait_Count of
+         --  zero. ???Except that the race condition in Make_Independent can
+         --  cause Wait_Count to be zero, so we need to check for that.
 
-         pragma Assert (P.Common.Wait_Count > 0);
-         P.Common.Wait_Count := P.Common.Wait_Count - 1;
+         if P.Common.Wait_Count > 0 then
+            P.Common.Wait_Count := P.Common.Wait_Count - 1;
+         end if;
 
          if P.Common.Wait_Count = 0 then
             Wakeup (P, Master_Completion_Sleep);
@@ -488,7 +519,8 @@ package body System.Tasking.Utilities is
 
       else
          pragma Debug
-           (Debug.Trace (Self_ID, "Make_Passive: Phase 1, parent awake", 'M'));
+           (Debug.Trace
+             (Self_ID, "Make_Passive: Phase 1, parent awake", 'M'));
          null;
       end if;
 

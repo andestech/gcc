@@ -211,10 +211,6 @@ bool flag_opts_finished
 Variable
 unsigned int flag_sanitize
 
-; What sanitizers should recover from errors
-Variable
-unsigned int flag_sanitize_recover = SANITIZE_UNDEFINED | SANITIZE_NONDEFAULT | SANITIZE_KERNEL_ADDRESS
-
 ; Flag whether a prefix has been added to dump_base_name
 Variable
 bool dump_base_name_prefixed = false
@@ -591,10 +587,6 @@ Warn if the loop cannot be optimized due to nontrivial assumptions.
 Wmissing-noreturn
 Common Alias(Wsuggest-attribute=noreturn)
 
-Wodr
-Common Var(warn_odr_violations) Init(1) Warning
-Warn about some C++ One Definition Rule violations during link time optimization
-
 Woverflow
 Common Var(warn_overflow) Init(1) Warning
 Warn about overflow in arithmetic expressions
@@ -608,12 +600,8 @@ Common Var(warn_padded) Warning
 Warn when padding is required to align structure members
 
 Wpedantic
-Common Var(pedantic) Init(0) Warning
+Common Var(pedantic) Warning
 Issue warnings needed for strict compliance to the standard
-
-Wreturn-local-addr
-Common Var(warn_return_local_addr) Init(1) Warning
-Warn about returning a pointer/reference to a local or temporary variable.
 
 Wshadow
 Common Var(warn_shadow) Warning
@@ -654,14 +642,6 @@ Warn about functions which might be candidates for __attribute__((pure))
 Wsuggest-attribute=noreturn
 Common Var(warn_suggest_attribute_noreturn) Warning
 Warn about functions which might be candidates for __attribute__((noreturn))
-
-Wsuggest-final-types
-Common Var(warn_suggest_final_types) Warning
-Warn about C++ polymorphic types where adding final keyword would improve code quality
-
-Wsuggest-final-methods
-Common Var(warn_suggest_final_methods) Warning
-Warn about C++ virtual methods where adding final keyword would improve code quality
 
 Wsystem-headers
 Common Var(warn_system_headers) Warning
@@ -796,7 +776,7 @@ Driver Undocumented
 ;    Therefore, 0 will not necessarily indicate the same ABI in different
 ;    versions of G++.
 ;
-; 1: The version of the ABI first used in G++ 3.2.  No longer selectable.
+; 1: The version of the ABI first used in G++ 3.2.
 ;
 ; 2: The version of the ABI first used in G++ 3.4 (and current default).
 ;
@@ -828,8 +808,7 @@ Driver Undocumented
 ; Additional positive integers will be assigned as new versions of
 ; the ABI become the default version of the ABI.
 fabi-version=
-Common Joined RejectNegative UInteger Var(flag_abi_version) Init(0)
-The version of the C++ ABI in use
+Common Joined RejectNegative UInteger Var(flag_abi_version) Init(2)
 
 faggressive-loop-optimizations
 Common Report Var(flag_aggressive_loop_optimizations) Optimization Init(1) 
@@ -883,22 +862,6 @@ fsanitize=
 Common Driver Report Joined
 Select what to sanitize
 
-fasan-shadow-offset=
-Common Joined RejectNegative Var(common_deferred_options) Defer
--fasan-shadow-offset=<number>	Use custom shadow memory offset.
-
-fsanitize-recover=
-Common Report Joined
-After diagnosing undefined behavior attempt to continue execution
-
-fsanitize-recover
-Common Report
-This switch is deprecated; use -fsanitize-recover= instead
-
-fsanitize-undefined-trap-on-error
-Common Report Var(flag_sanitize_undefined_trap_on_error) Init(0)
-Use trap instead of a library function for undefined behavior sanitization
-
 fasynchronous-unwind-tables
 Common Report Var(flag_asynchronous_unwind_tables) Optimization
 Generate unwind tables that are exact at each instruction boundary
@@ -906,16 +869,6 @@ Generate unwind tables that are exact at each instruction boundary
 fauto-inc-dec
 Common Report Var(flag_auto_inc_dec) Init(1)
 Generate auto-inc/dec instructions
-
-fauto-profile
-Common Report Var(flag_auto_profile) Optimization
-Use sample profile information for call graph node weights. The default
-profile file is fbdata.afdo in 'pwd'.
-
-fauto-profile=
-Common Joined RejectNegative Var(auto_profile_file)
-Use sample profile information for call graph node weights. The profile
-file is specified in the argument.
 
 ; -fcheck-bounds causes gcc to generate array bounds checks.
 ; For C, C++ and ObjC: defaults off.
@@ -944,6 +897,10 @@ Perform branch target load optimization after prologue / epilogue threading
 fbtr-bb-exclusive
 Common Report Var(flag_btr_bb_exclusive) Optimization
 Restrict target load migration not to re-use registers in any basic block
+
+fbuiltin
+Common Var(flag_no_builtin, 0)
+Recognize built-in functions
 
 fcall-saved-
 Common Joined RejectNegative Var(common_deferred_options) Defer
@@ -1142,11 +1099,6 @@ fdump-noaddr
 Common Report Var(flag_dump_noaddr)
 Suppress output of addresses in debugging dumps
 
-freport-bug
-Common Driver Var(flag_report_bug)
-Collect and dump debug information into temporary file if ICE in C/C++
-compiler occured.
-
 fdump-passes
 Common Var(flag_dump_passes) Init(0)
 Dump optimization passes
@@ -1212,7 +1164,7 @@ ffast-math
 Common
 
 ffat-lto-objects
-Common Var(flag_fat_lto_objects)
+Common Var(flag_fat_lto_objects) Init(1)
 Output lto objects containing both the intermediate language and binary output.
 
 ffinite-math-only
@@ -1293,19 +1245,6 @@ Enable in and out of Graphite representation
 fgraphite-identity
 Common Report Var(flag_graphite_identity) Optimization
 Enable Graphite Identity transformation
- 
-fgraphite-code-generator=
-Common Report RejectNegative Joined Optimization Enum(fgraphite_generator) Var(flag_graphite_code_gen) Init(FGRAPHITE_CODE_GEN_ISL)
-Choose code generator of Graphite
-
-Enum
-Name(fgraphite_generator) Type(enum fgraphite_generator) UnknownError(unknown code generator of graphite %qs)
-
-EnumValue
-Enum(fgraphite_generator) String(isl) Value(FGRAPHITE_CODE_GEN_ISL)
-
-EnumValue
-Enum(fgraphite_generator) String(cloog) Value(FGRAPHITE_CODE_GEN_CLOOG)
 
 fhoist-adjacent-loads
 Common Report Var(flag_hoist_adjacent_loads) Optimization
@@ -1465,18 +1404,6 @@ fipa-pure-const
 Common Report Var(flag_ipa_pure_const) Init(0) Optimization
 Discover pure and const functions
 
-fipa-icf
-Common Report Var(flag_ipa_icf) Optimization
-Perform Identical Code Folding for functions and read-only variables
-
-fipa-icf-functions
-Common Report Var(flag_ipa_icf_functions) Optimization
-Perform Identical Code Folding for functions
-
-fipa-icf-variables
-Common Report Var(flag_ipa_icf_variables) Optimization
-Perform Identical Code Folding for variables
-
 fipa-reference
 Common Report Var(flag_ipa_reference) Init(0) Optimization
 Discover readonly and non addressable static variables
@@ -1572,36 +1499,26 @@ flto=
 Common RejectNegative Joined Var(flag_lto)
 Link-time optimization with number of parallel jobs or jobserver.
 
-Enum
-Name(lto_partition_model) Type(enum lto_partition_model) UnknownError(unknown LTO partitioning model %qs)
+flto-partition=1to1
+Common Var(flag_lto_partition_1to1)
+Partition symbols and vars at linktime based on object files they originate from
 
-EnumValue
-Enum(lto_partition_model) String(none) Value(LTO_PARTITION_NONE)
+flto-partition=balanced
+Common Var(flag_lto_partition_balanced)
+Partition functions and vars at linktime into approximately same sized buckets
 
-EnumValue
-Enum(lto_partition_model) String(one) Value(LTO_PARTITION_ONE)
+flto-partition=max
+Common Var(flag_lto_partition_max)
+Put every symbol into separate partition
 
-EnumValue
-Enum(lto_partition_model) String(balanced) Value(LTO_PARTITION_BALANCED)
-
-EnumValue
-Enum(lto_partition_model) String(1to1) Value(LTO_PARTITION_1TO1)
-
-EnumValue
-Enum(lto_partition_model) String(max) Value(LTO_PARTITION_MAX)
-
-flto-partition=
-Common Joined RejectNegative Enum(lto_partition_model) Var(flag_lto_partition) Init(LTO_PARTITION_BALANCED)
-Specify the algorithm to partition symbols and vars at linktime
+flto-partition=none
+Common Var(flag_lto_partition_none)
+Disable partioning and streaming
 
 ; The initial value of -1 comes from Z_DEFAULT_COMPRESSION in zlib.h.
 flto-compression-level=
 Common Joined RejectNegative UInteger Var(flag_lto_compression_level) Init(-1)
 -flto-compression-level=<number>	Use zlib compression level <number> for IL
-
-flto-odr-type-merging
-Common Report Var(flag_lto_odr_type_mering) Init(1)
-Merge C++ types using One Definition Rule
 
 flto-report
 Common Report Var(flag_lto_report) Init(0)
@@ -1812,7 +1729,7 @@ Common Var(common_deferred_options) Defer
 
 frandom-seed=
 Common Joined RejectNegative Var(common_deferred_options) Defer
--frandom-seed=<number>	Make compile reproducible using <number>
+-frandom-seed=<string>	Make compile reproducible using <string>
 
 ; This switch causes the command line that was used to create an
 ; object file to be recorded into the object file.  The exact format
@@ -1831,6 +1748,11 @@ Return small aggregates in registers
 fregmove
 Common Ignore
 Does nothing. Preserved for backward compatibility.
+
+flifetime-dse
+Common Report Var(flag_lifetime_dse) Init(1) Optimization
+Tell DSE that the storage for a C++ object is dead when the constructor
+starts and when the destructor finishes.
 
 flive-range-shrinkage
 Common Report Var(flag_live_range_shrinkage) Init(0) Optimization
@@ -1927,10 +1849,6 @@ fsel-sched-reschedule-pipelined
 Common Report Var(flag_sel_sched_reschedule_pipelined) Init(0) Optimization
 Reschedule pipelined regions without pipelining
 
-fsemantic-interposition
-Common Report Var(flag_semantic_interposition) Init(1)
-Allow interposing function (or variables) by ones with different semantics (or initializer) respectively by dynamic linker
-
 ; sched_stalled_insns means that insns can be moved prematurely from the queue
 ; of stalled insns into the ready list.
 fsched-stalled-insns
@@ -2025,10 +1943,6 @@ Generate discontiguous stack frames
 fsplit-wide-types
 Common Report Var(flag_split_wide_types) Optimization
 Split wide types into independent registers
-
-fssa-phiopt
-Common Report Var(flag_ssa_phiopt) Optimization
-Optimize conditional patterns using SSA PHI nodes
 
 fvariable-expansion-in-unroller
 Common Report Var(flag_variable_expansion_in_unroller) Optimization
@@ -2291,6 +2205,10 @@ Perform straight-line strength reduction
 ftree-sra
 Common Report Var(flag_tree_sra) Optimization
 Perform scalar replacement of aggregates
+
+ftree-switch-shortcut
+Common Report Var(flag_tree_switch_shortcut) Init(0) Optimization
+Do fancy switch statement shortcutting
 
 ftree-ter
 Common Report Var(flag_tree_ter) Optimization
@@ -2599,28 +2517,6 @@ gxcoff+
 Common JoinedOrMissing Negative(gcoff)
 Generate debug information in extended XCOFF format
 
-Enum
-Name(compressed_debug_sections) Type(int)
-
-; Since -gz= is completely handled in specs, the values aren't used and we
-; assign arbitrary constants.
-EnumValue
-Enum(compressed_debug_sections) String(none) Value(0)
-
-EnumValue
-Enum(compressed_debug_sections) String(zlib) Value(1)
-
-EnumValue
-Enum(compressed_debug_sections) String(zlib-gnu) Value(2)
-
-gz
-Common Driver
-Generate compressed debug sections
-
-gz=
-Common Driver Joined Enum(compressed_debug_sections)
--gz=<format>	Generate compressed debug sections in format <format>
-
 h
 Driver Joined Separate
 
@@ -2805,9 +2701,5 @@ Create a position independent executable
 
 z
 Driver Joined Separate
-
-fuse-caller-save
-Common Report Var(flag_use_caller_save) Optimization
-Use caller save register across calls if possible
 
 ; This comment is to ensure we retain the blank line above.

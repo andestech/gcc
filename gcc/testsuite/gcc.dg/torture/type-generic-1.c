@@ -3,6 +3,7 @@
 
 /* { dg-do run } */
 /* { dg-skip-if "No Inf/NaN support" { spu-*-* } } */
+/* { dg-skip-if "No Denormmalized support" { nds32_ext_fpu } } */
 /* { dg-options "-DUNSAFE" { target tic6x*-*-* } } */
 /* { dg-add-options ieee } */
 

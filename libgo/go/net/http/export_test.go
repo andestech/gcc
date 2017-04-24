@@ -21,7 +21,7 @@ var ExportAppendTime = appendTime
 func (t *Transport) NumPendingRequestsForTesting() int {
 	t.reqMu.Lock()
 	defer t.reqMu.Unlock()
-	return len(t.reqCanceler)
+	return len(t.reqConn)
 }
 
 func (t *Transport) IdleConnKeysForTesting() (keys []string) {
@@ -32,7 +32,7 @@ func (t *Transport) IdleConnKeysForTesting() (keys []string) {
 		return
 	}
 	for key := range t.idleConn {
-		keys = append(keys, key.String())
+		keys = append(keys, key)
 	}
 	return
 }
@@ -43,12 +43,11 @@ func (t *Transport) IdleConnCountForTesting(cacheKey string) int {
 	if t.idleConn == nil {
 		return 0
 	}
-	for k, conns := range t.idleConn {
-		if k.String() == cacheKey {
-			return len(conns)
-		}
+	conns, ok := t.idleConn[cacheKey]
+	if !ok {
+		return 0
 	}
-	return 0
+	return len(conns)
 }
 
 func (t *Transport) IdleConnChMapSizeForTesting() int {
@@ -62,11 +61,6 @@ func NewTestTimeoutHandler(handler Handler, ch <-chan time.Time) Handler {
 		return ch
 	}
 	return &timeoutHandler{handler, f, ""}
-}
-
-func ResetCachedEnvironment() {
-	httpProxyEnv.reset()
-	noProxyEnv.reset()
 }
 
 var DefaultUserAgent = defaultUserAgent

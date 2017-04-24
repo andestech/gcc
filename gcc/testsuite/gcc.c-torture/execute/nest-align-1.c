@@ -2,9 +2,6 @@
    function.  */
 /* Origin: Joey Ye <joey.ye@intel.com> */
 
-/* Force bigger stack alignment for PowerPC EABI targets.  */
-/* { dg-options "-mno-eabi" { target powerpc-*-eabi* } } */
-
 #include <stddef.h>
 
 typedef int aligned __attribute__((aligned));

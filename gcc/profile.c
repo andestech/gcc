@@ -55,17 +55,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "flags.h"
 #include "regs.h"
 #include "expr.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
 #include "function.h"
-#include "predict.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfganal.h"
 #include "basic-block.h"
 #include "diagnostic-core.h"
 #include "coverage.h"
@@ -80,14 +70,11 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-cfg.h"
 #include "cfgloop.h"
 #include "dumpfile.h"
-#include "hash-map.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
 
 #include "profile.h"
 
-struct bb_profile_info {
+struct bb_info {
   unsigned int count_valid : 1;
 
   /* Number of successor and predecessor edges.  */
@@ -95,7 +82,7 @@ struct bb_profile_info {
   gcov_type pred_count;
 };
 
-#define BB_INFO(b)  ((struct bb_profile_info *) (b)->aux)
+#define BB_INFO(b)  ((struct bb_info *) (b)->aux)
 
 
 /* Counter summary from the last set of coverage counts read.  */
@@ -119,14 +106,6 @@ static int total_num_times_called;
 static int total_hist_br_prob[20];
 static int total_num_branches;
 
-/* Helper function to update gcov_working_sets.  */
-
-void add_working_set (gcov_working_set_t *set) {
-  int i = 0;
-  for (; i < NUM_GCOV_WORKING_SETS; i++)
-    gcov_working_sets[i] = set[i];
-}
-
 /* Forward declarations.  */
 static void find_spanning_tree (struct edge_list *);
 
@@ -149,7 +128,7 @@ instrument_edges (struct edge_list *el)
 
       FOR_EACH_EDGE (e, ei, bb->succs)
 	{
-	  struct edge_profile_info *inf = EDGE_INFO (e);
+	  struct edge_info *inf = EDGE_INFO (e);
 
 	  if (!inf->ignore && !inf->on_tree)
 	    {
@@ -204,7 +183,6 @@ instrument_values (histogram_values values)
 	  break;
 
  	case HIST_TYPE_INDIR_CALL:
- 	case HIST_TYPE_INDIR_CALL_TOPN:
  	  gimple_gen_ic_profiler (hist, t, 0);
   	  break;
 
@@ -259,10 +237,10 @@ get_working_sets (void)
           ws_info = &gcov_working_sets[ws_ix];
           /* Print out the percentage using int arithmatic to avoid float.  */
           fprintf (dump_file, "\t\t%u.%02u%%: num counts=%u, min counter="
-                   "%"PRId64 "\n",
+                   HOST_WIDEST_INT_PRINT_DEC "\n",
                    pct / 100, pct - (pct / 100 * 100),
                    ws_info->num_counters,
-                   (int64_t)ws_info->min_counter);
+                   (HOST_WIDEST_INT)ws_info->min_counter);
         }
     }
 }
@@ -340,7 +318,7 @@ is_edge_inconsistent (vec<edge, va_gc> *edges)
 	      if (dump_file)
 		{
 		  fprintf (dump_file,
-		  	   "Edge %i->%i is inconsistent, count%"PRId64,
+		  	   "Edge %i->%i is inconsistent, count"HOST_WIDEST_INT_PRINT_DEC,
 			   e->src->index, e->dest->index, e->count);
 		  dump_bb (dump_file, e->src, 0, TDF_DETAILS);
 		  dump_bb (dump_file, e->dest, 0, TDF_DETAILS);
@@ -389,7 +367,7 @@ is_inconsistent (void)
 	  if (dump_file)
 	    {
 	      fprintf (dump_file, "BB %i count is negative "
-		       "%"PRId64,
+		       HOST_WIDEST_INT_PRINT_DEC,
 		       bb->index,
 		       bb->count);
 	      dump_bb (dump_file, bb, 0, TDF_DETAILS);
@@ -401,7 +379,7 @@ is_inconsistent (void)
 	  if (dump_file)
 	    {
 	      fprintf (dump_file, "BB %i count does not match sum of incoming edges "
-		       "%"PRId64" should be %"PRId64,
+		       HOST_WIDEST_INT_PRINT_DEC" should be " HOST_WIDEST_INT_PRINT_DEC,
 		       bb->index,
 		       bb->count,
 		       sum_edge_counts (bb->preds));
@@ -416,7 +394,7 @@ is_inconsistent (void)
 	  if (dump_file)
 	    {
 	      fprintf (dump_file, "BB %i count does not match sum of outgoing edges "
-		       "%"PRId64" should be %"PRId64,
+		       HOST_WIDEST_INT_PRINT_DEC" should be " HOST_WIDEST_INT_PRINT_DEC,
 		       bb->index,
 		       bb->count,
 		       sum_edge_counts (bb->succs));
@@ -493,8 +471,8 @@ read_profile_edge_counts (gcov_type *exec_counts)
 	      {
 		fprintf (dump_file, "\nRead edge from %i to %i, count:",
 			 bb->index, e->dest->index);
-		fprintf (dump_file, "%"PRId64,
-			 (int64_t) e->count);
+		fprintf (dump_file, HOST_WIDEST_INT_PRINT_DEC,
+			 (HOST_WIDEST_INT) e->count);
 	      }
 	  }
     }
@@ -564,7 +542,7 @@ compute_branch_probabilities (unsigned cfg_checksum, unsigned lineno_checksum)
     }
 
   /* Attach extra info block to each bb.  */
-  alloc_aux_for_blocks (sizeof (struct bb_profile_info));
+  alloc_aux_for_blocks (sizeof (struct bb_info));
   FOR_BB_BETWEEN (bb, ENTRY_BLOCK_PTR_FOR_FN (cfun), NULL, next_bb)
     {
       edge e;
@@ -612,7 +590,7 @@ compute_branch_probabilities (unsigned cfg_checksum, unsigned lineno_checksum)
       changes = 0;
       FOR_BB_BETWEEN (bb, EXIT_BLOCK_PTR_FOR_FN (cfun), NULL, prev_bb)
 	{
-	  struct bb_profile_info *bi = BB_INFO (bb);
+	  struct bb_info *bi = BB_INFO (bb);
 	  if (! bi->count_valid)
 	    {
 	      if (bi->succ_count == 0)
@@ -940,8 +918,9 @@ compute_value_histograms (histogram_values values, unsigned cfg_checksum,
          the corresponding call graph node.  */
       if (hist->type == HIST_TYPE_TIME_PROFILE)
         {
-	  node = cgraph_node::get (hist->fun->decl);
-	  node->tp_first_run = hist->hvalue.counters[0];
+          node = cgraph_get_node (hist->fun->decl);
+
+          node->tp_first_run = hist->hvalue.counters[0];
 
           if (dump_file)
             fprintf (dump_file, "Read tp_first_run: %d\n", node->tp_first_run);
@@ -1151,7 +1130,7 @@ branch_prob (void)
 
   el = create_edge_list ();
   num_edges = NUM_EDGES (el);
-  alloc_aux_for_edges (sizeof (struct edge_profile_info));
+  alloc_aux_for_edges (sizeof (struct edge_info));
 
   /* The basic blocks are expected to be numbered sequentially.  */
   compact_blocks ();
@@ -1183,7 +1162,7 @@ branch_prob (void)
   for (num_instrumented = i = 0; i < num_edges; i++)
     {
       edge e = INDEX_EDGE (el, i);
-      struct edge_profile_info *inf = EDGE_INFO (e);
+      struct edge_info *inf = EDGE_INFO (e);
 
       if (inf->ignore || inf->on_tree)
 	/*NOP*/;
@@ -1216,7 +1195,7 @@ branch_prob (void)
      the checksum in only once place, since it depends on the shape
      of the control flow which can change during 
      various transformations.  */
-  cfg_checksum = coverage_compute_cfg_checksum (cfun);
+  cfg_checksum = coverage_compute_cfg_checksum ();
   lineno_checksum = coverage_compute_lineno_checksum ();
 
   /* Write the data from which gcov can reconstruct the basic block
@@ -1243,7 +1222,7 @@ branch_prob (void)
 
 	  FOR_EACH_EDGE (e, ei, bb->succs)
 	    {
-	      struct edge_profile_info *i = EDGE_INFO (e);
+	      struct edge_info *i = EDGE_INFO (e);
 	      if (!i->ignore)
 		{
 		  unsigned flag_bits = 0;

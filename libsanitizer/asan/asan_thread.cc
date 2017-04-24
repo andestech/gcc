@@ -18,7 +18,6 @@
 #include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_placement_new.h"
 #include "sanitizer_common/sanitizer_stackdepot.h"
-#include "sanitizer_common/sanitizer_tls_get_addr.h"
 #include "lsan/lsan_common.h"
 
 namespace __asan {
@@ -77,7 +76,7 @@ AsanThread *AsanThread::Create(thread_callback_t start_routine,
                                void *arg) {
   uptr PageSize = GetPageSizeCached();
   uptr size = RoundUpTo(sizeof(AsanThread), PageSize);
-  AsanThread *thread = (AsanThread*)MmapOrDie(size, __func__);
+  AsanThread *thread = (AsanThread*)MmapOrDie(size, __FUNCTION__);
   thread->start_routine_ = start_routine;
   thread->arg_ = arg;
 
@@ -86,27 +85,28 @@ AsanThread *AsanThread::Create(thread_callback_t start_routine,
 
 void AsanThread::TSDDtor(void *tsd) {
   AsanThreadContext *context = (AsanThreadContext*)tsd;
-  VReport(1, "T%d TSDDtor\n", context->tid);
+  if (common_flags()->verbosity >= 1)
+    Report("T%d TSDDtor\n", context->tid);
   if (context->thread)
     context->thread->Destroy();
 }
 
 void AsanThread::Destroy() {
-  int tid = this->tid();
-  VReport(1, "T%d exited\n", tid);
+  if (common_flags()->verbosity >= 1) {
+    Report("T%d exited\n", tid());
+  }
 
   malloc_storage().CommitBack();
-  if (common_flags()->use_sigaltstack) UnsetAlternateSignalStack();
-  asanThreadRegistry().FinishThread(tid);
+  if (flags()->use_sigaltstack) UnsetAlternateSignalStack();
+  asanThreadRegistry().FinishThread(tid());
   FlushToDeadThreadStats(&stats_);
   // We also clear the shadow on thread destruction because
   // some code may still be executing in later TSD destructors
   // and we don't want it to have any poisoned stack.
   ClearShadowForThreadStackAndTLS();
-  DeleteFakeStack(tid);
+  DeleteFakeStack();
   uptr size = RoundUpTo(sizeof(AsanThread), GetPageSizeCached());
   UnmapOrDie(this, size);
-  DTLS_Destroy();
 }
 
 // We want to create the FakeStack lazyly on the first use, but not eralier
@@ -121,16 +121,13 @@ FakeStack *AsanThread::AsyncSignalSafeLazyInitFakeStack() {
   // 1   -- being initialized
   // ptr -- initialized
   // This CAS checks if the state was 0 and if so changes it to state 1,
-  // if that was successful, it initializes the pointer.
+  // if that was successfull, it initilizes the pointer.
   if (atomic_compare_exchange_strong(
       reinterpret_cast<atomic_uintptr_t *>(&fake_stack_), &old_val, 1UL,
       memory_order_relaxed)) {
     uptr stack_size_log = Log2(RoundUpToPowerOfTwo(stack_size));
-    CHECK_LE(flags()->min_uar_stack_size_log, flags()->max_uar_stack_size_log);
-    stack_size_log =
-        Min(stack_size_log, static_cast<uptr>(flags()->max_uar_stack_size_log));
-    stack_size_log =
-        Max(stack_size_log, static_cast<uptr>(flags()->min_uar_stack_size_log));
+    if (flags()->uar_stack_size_log)
+      stack_size_log = static_cast<uptr>(flags()->uar_stack_size_log);
     fake_stack_ = FakeStack::Create(stack_size_log);
     SetTLSFakeStack(fake_stack_);
     return fake_stack_;
@@ -139,24 +136,24 @@ FakeStack *AsanThread::AsyncSignalSafeLazyInitFakeStack() {
 }
 
 void AsanThread::Init() {
-  fake_stack_ = 0;  // Will be initialized lazily if needed.
-  CHECK_EQ(this->stack_size(), 0U);
   SetThreadStackAndTls();
-  CHECK_GT(this->stack_size(), 0U);
   CHECK(AddrIsInMem(stack_bottom_));
   CHECK(AddrIsInMem(stack_top_ - 1));
   ClearShadowForThreadStackAndTLS();
-  int local = 0;
-  VReport(1, "T%d: stack [%p,%p) size 0x%zx; local=%p\n", tid(),
-          (void *)stack_bottom_, (void *)stack_top_, stack_top_ - stack_bottom_,
-          &local);
+  if (common_flags()->verbosity >= 1) {
+    int local = 0;
+    Report("T%d: stack [%p,%p) size 0x%zx; local=%p\n",
+           tid(), (void*)stack_bottom_, (void*)stack_top_,
+           stack_top_ - stack_bottom_, &local);
+  }
+  fake_stack_ = 0;  // Will be initialized lazily if needed.
   AsanPlatformThreadInit();
 }
 
 thread_return_t AsanThread::ThreadStart(uptr os_id) {
   Init();
   asanThreadRegistry().StartThread(tid(), os_id, 0);
-  if (common_flags()->use_sigaltstack) SetAlternateSignalStack();
+  if (flags()->use_sigaltstack) SetAlternateSignalStack();
 
   if (!start_routine_) {
     // start_routine_ == 0 if we're on the main thread or on one of the
@@ -268,8 +265,10 @@ AsanThread *GetCurrentThread() {
 
 void SetCurrentThread(AsanThread *t) {
   CHECK(t->context());
-  VReport(2, "SetCurrentThread: %p for thread %p\n", t->context(),
-          (void *)GetThreadSelf());
+  if (common_flags()->verbosity >= 2) {
+    Report("SetCurrentThread: %p for thread %p\n",
+           t->context(), (void*)GetThreadSelf());
+  }
   // Make sure we do not reset the current AsanThread.
   CHECK_EQ(0, AsanTSDGet());
   AsanTSDSet(t->context());

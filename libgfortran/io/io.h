@@ -207,7 +207,7 @@ typedef enum
 unit_advance;
 
 typedef enum
-{READING, WRITING}
+{READING, WRITING, LIST_READING, LIST_WRITING}
 unit_mode;
 
 typedef enum
@@ -567,19 +567,14 @@ typedef struct gfc_unit
   array_loop_spec *ls;
   int rank;
 
-  /* Name of the file at the time OPEN was executed, as a
-     null-terminated C string.  */
-  char *filename;
+  int file_len;
+  char *file;
 
   /* The format hash table.  */
   struct format_hash_entry format_hash_table[FORMAT_HASH_SIZE];
   
   /* Formatting buffer.  */
   struct fbuf *fbuf;
-  
-  /* Function pointer, points to list_read worker functions.  */
-  int (*next_char_fn_ptr) (st_parameter_dt *);
-  void (*push_char_fn_ptr) (st_parameter_dt *, int);
 }
 gfc_unit;
 

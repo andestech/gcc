@@ -1,5 +1,3 @@
-/* { dg-options "-fgnu89-inline" } */
-
 int main(void)
 {
   return 0;

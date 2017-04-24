@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-O3 -fipa-cp -fipa-cp-clone -fdump-ipa-cp -fno-early-inlining -fdump-tree-optimized -fno-ipa-icf"  } */
+/* { dg-options "-O3 -fipa-cp -fipa-cp-clone -fdump-ipa-cp -fno-early-inlining -fdump-tree-optimized"  } */
 /* { dg-add-options bind_pic_locally } */
 
 int array[100];
@@ -59,7 +59,6 @@ i_can_not_be_propagated_fully2 (int *a)
   }
   i_can_not_be_propagated_fully (a);
 }
-int
 main()
 {
   int i;

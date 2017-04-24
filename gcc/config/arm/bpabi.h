@@ -70,13 +70,10 @@
    |mcpu=cortex-a53					\
    |mcpu=cortex-a57					\
    |mcpu=cortex-a57.cortex-a53				\
-   |mcpu=cortex-m1.small-multiply                       \
-   |mcpu=cortex-m0.small-multiply                       \
-   |mcpu=cortex-m0plus.small-multiply			\
    |mcpu=generic-armv7-a                                \
    |march=armv7ve	                                \
    |march=armv7-m|mcpu=cortex-m3                        \
-   |march=armv7e-m|mcpu=cortex-m4|mcpu=cortex-m7        \
+   |march=armv7e-m|mcpu=cortex-m4                       \
    |march=armv6-m|mcpu=cortex-m0                        \
    |march=armv8-a					\
    :%{!r:--be8}}}"
@@ -90,14 +87,11 @@
    |mcpu=cortex-a53					\
    |mcpu=cortex-a57					\
    |mcpu=cortex-a57.cortex-a53				\
-   |mcpu=cortex-m1.small-multiply                       \
-   |mcpu=cortex-m0.small-multiply                       \
-   |mcpu=cortex-m0plus.small-multiply                   \
    |mcpu=marvell-pj4					\
    |mcpu=generic-armv7-a                                \
    |march=armv7ve	                                \
    |march=armv7-m|mcpu=cortex-m3                        \
-   |march=armv7e-m|mcpu=cortex-m4|mcpu=cortex-m7        \
+   |march=armv7e-m|mcpu=cortex-m4                       \
    |march=armv6-m|mcpu=cortex-m0                        \
    |march=armv8-a					\
    :%{!r:--be8}}}"

@@ -135,7 +135,9 @@ extern size_t reg_info_p_size;
    or profile driven feedback is available and the function is never executed,
    frequency is always equivalent.  Otherwise rescale the basic block
    frequency.  */
-#define REG_FREQ_FROM_BB(bb) (optimize_function_for_size_p (cfun)	      \
+#define REG_FREQ_FROM_BB(bb) (optimize_size				      \
+			      || (flag_branch_probabilities		      \
+				  && !ENTRY_BLOCK_PTR_FOR_FN (cfun)->count)   \
 			      ? REG_FREQ_MAX				      \
 			      : ((bb)->frequency * REG_FREQ_MAX / BB_FREQ_MAX)\
 			      ? ((bb)->frequency * REG_FREQ_MAX / BB_FREQ_MAX)\
@@ -214,6 +216,14 @@ extern short *reg_renumber;
 
 extern int caller_save_needed;
 
+/* Predicate to decide whether to give a hard reg to a pseudo which
+   is referenced REFS times and would need to be saved and restored
+   around a call CALLS times.  */
+
+#ifndef CALLER_SAVE_PROFITABLE
+#define CALLER_SAVE_PROFITABLE(REFS, CALLS)  (4 * (CALLS) < (REFS))
+#endif
+
 /* Select a register mode required for caller save of hard regno REGNO.  */
 #ifndef HARD_REGNO_CALLER_SAVE_MODE
 #define HARD_REGNO_CALLER_SAVE_MODE(REGNO, NREGS, MODE) \
@@ -236,7 +246,7 @@ struct target_regs {
      This will be a MODE_INT mode if the register can hold integers.  Otherwise
      it will be a MODE_FLOAT or a MODE_CC mode, whichever is valid for the
      register.  */
-  machine_mode x_reg_raw_mode[FIRST_PSEUDO_REGISTER];
+  enum machine_mode x_reg_raw_mode[FIRST_PSEUDO_REGISTER];
 
   /* Vector indexed by machine mode saying whether there are regs of
      that mode.  */
@@ -281,7 +291,7 @@ extern struct target_regs *this_target_regs;
    register (reg:MODE REGNO).  */
 
 static inline unsigned int
-end_hard_regno (machine_mode mode, unsigned int regno)
+end_hard_regno (enum machine_mode mode, unsigned int regno)
 {
   return regno + hard_regno_nregs[regno][(int) mode];
 }
@@ -298,7 +308,7 @@ end_hard_regno (machine_mode mode, unsigned int regno)
    in register REGNO.  */
 
 static inline void
-add_to_hard_reg_set (HARD_REG_SET *regs, machine_mode mode,
+add_to_hard_reg_set (HARD_REG_SET *regs, enum machine_mode mode,
 		     unsigned int regno)
 {
   unsigned int end_regno;
@@ -312,7 +322,7 @@ add_to_hard_reg_set (HARD_REG_SET *regs, machine_mode mode,
 /* Likewise, but remove the registers.  */
 
 static inline void
-remove_from_hard_reg_set (HARD_REG_SET *regs, machine_mode mode,
+remove_from_hard_reg_set (HARD_REG_SET *regs, enum machine_mode mode,
 			  unsigned int regno)
 {
   unsigned int end_regno;
@@ -326,7 +336,7 @@ remove_from_hard_reg_set (HARD_REG_SET *regs, machine_mode mode,
 /* Return true if REGS contains the whole of (reg:MODE REGNO).  */
 
 static inline bool
-in_hard_reg_set_p (const HARD_REG_SET regs, machine_mode mode,
+in_hard_reg_set_p (const HARD_REG_SET regs, enum machine_mode mode,
 		   unsigned int regno)
 {
   unsigned int end_regno;
@@ -351,7 +361,7 @@ in_hard_reg_set_p (const HARD_REG_SET regs, machine_mode mode,
 /* Return true if (reg:MODE REGNO) includes an element of REGS.  */
 
 static inline bool
-overlaps_hard_reg_set_p (const HARD_REG_SET regs, machine_mode mode,
+overlaps_hard_reg_set_p (const HARD_REG_SET regs, enum machine_mode mode,
 			 unsigned int regno)
 {
   unsigned int end_regno;
@@ -410,9 +420,5 @@ range_in_hard_reg_set_p (const HARD_REG_SET set, unsigned regno, int nregs)
       return false;
   return true;
 }
-
-/* Get registers used by given function call instruction.  */
-extern bool get_call_reg_set_usage (rtx_insn *insn, HARD_REG_SET *reg_set,
-				    HARD_REG_SET default_set);
 
 #endif /* GCC_REGS_H */

@@ -21,13 +21,7 @@
 #ifndef GCC_AARCH64_LINUX_H
 #define GCC_AARCH64_LINUX_H
 
-#define GLIBC_DYNAMIC_LINKER "/lib/ld-linux-aarch64%{mbig-endian:_be}%{mabi=ilp32:_ilp32}.so.1"
-
-#undef  ASAN_CC1_SPEC
-#define ASAN_CC1_SPEC "%{%:sanitize(address):-funwind-tables}"
-
-#undef  CC1_SPEC
-#define CC1_SPEC GNU_USER_TARGET_CC1_SPEC ASAN_CC1_SPEC
+#define GLIBC_DYNAMIC_LINKER "/lib/ld-linux-aarch64%{mbig-endian:_be}.so.1"
 
 #define CPP_SPEC "%{pthread:-D_REENTRANT}"
 
@@ -39,7 +33,7 @@
    -dynamic-linker " GNU_USER_DYNAMIC_LINKER "	\
    -X						\
    %{mbig-endian:-EB} %{mlittle-endian:-EL}     \
-   -maarch64linux%{mabi=ilp32:32}%{mbig-endian:b}"
+   -maarch64linux%{mbig-endian:b}"
 
 #ifdef TARGET_FIX_ERR_A53_835769_DEFAULT
 #define CA53_ERR_835769_SPEC \
@@ -49,16 +43,17 @@
   " %{mfix-cortex-a53-835769:--fix-cortex-a53-835769}"
 #endif
 
+#ifdef TARGET_FIX_ERR_A53_843419_DEFAULT
+#define CA53_ERR_843419_SPEC \
+  " %{!mno-fix-cortex-a53-843419:--fix-cortex-a53-843419}"
+#else
+#define CA53_ERR_843419_SPEC \
+  " %{mfix-cortex-a53-843419:--fix-cortex-a53-843419}"
+#endif
+
 #define LINK_SPEC LINUX_TARGET_LINK_SPEC \
-                  CA53_ERR_835769_SPEC
-
-#define GNU_USER_TARGET_MATHFILE_SPEC \
-  "%{Ofast|ffast-math|funsafe-math-optimizations:crtfastmath.o%s}"
-
-#undef ENDFILE_SPEC
-#define ENDFILE_SPEC   \
-  GNU_USER_TARGET_MATHFILE_SPEC " " \
-  GNU_USER_TARGET_ENDFILE_SPEC
+                  CA53_ERR_835769_SPEC \
+                  CA53_ERR_843419_SPEC
 
 #define TARGET_OS_CPP_BUILTINS()		\
   do						\

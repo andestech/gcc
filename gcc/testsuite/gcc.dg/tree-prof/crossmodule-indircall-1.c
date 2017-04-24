@@ -5,7 +5,6 @@
 int a;
 extern void (*p[2])(int n);
 void abort (void);
-int
 main()
 { int i;
 

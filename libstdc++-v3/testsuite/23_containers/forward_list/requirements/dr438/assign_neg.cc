@@ -1,5 +1,5 @@
 // { dg-do compile }
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 // { dg-error "no matching" "" { target *-*-* } 33 }
 
 // Copyright (C) 2009-2014 Free Software Foundation, Inc.

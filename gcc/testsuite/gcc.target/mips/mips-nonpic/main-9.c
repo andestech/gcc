@@ -2,7 +2,6 @@
 
 #include "mips-nonpic.h"
 
-int
 main ()
 {
   pic_addr ();

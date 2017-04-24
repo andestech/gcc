@@ -1,21 +1,26 @@
+2015-06-26  Release Manager
+
+	* GCC 4.9.3 released.
+
+2014-10-30  Release Manager
+
+	* GCC 4.9.2 released.
+
+2014-07-16  Release Manager
+
+	* GCC 4.9.1 released.
+
 2014-05-14  Joseph Myers  <joseph@codesourcery.com>
 
 	* zh_CN.po: Update.
-
-2014-05-01  Jeff Law  <law@redhat.com>
-
-	* Revert:
-	2014-04-24  Jincheng Miao  <jincheng.miao@gmail.com>
-
-	* zh_CN.po: Fix typo for -mfentry.
 
 2014-05-01  Joseph Myers  <joseph@codesourcery.com>
 
 	* sv.po: Update.
 
-2014-04-24  Jincheng Miao  <jincheng.miao@gmail.com>
+2014-04-22  Release Manager
 
-	* zh_CN.po: Fix typo for -mfentry.
+	* GCC 4.9.0 released.
 
 2014-03-31  Joseph Myers  <joseph@codesourcery.com>
 

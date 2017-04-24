@@ -1,5 +1,5 @@
 #   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-#   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2014
+#   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
 #   Free Software Foundation, Inc.
 #
 # This file is free software; you can redistribute it and/or modify it
@@ -126,13 +126,13 @@ extra_host_args=
 # these library is used by various programs built for the build
 # environment
 #
-build_libs="build-libiberty build-libcpp"
+build_libs="build-libiberty"
 
 # these tools are built for the build environment
 build_tools="build-texinfo build-flex build-bison build-m4 build-fixincludes"
 
 # these libraries are used by various programs built for the host environment
-#f
+#
 host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc isl cloog libelf libiconv"
 
 # these tools are built for the host environment
@@ -141,7 +141,7 @@ host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktr
 # binutils, gas and ld appear in that order because it makes sense to run
 # "make check" in that particular order.
 # If --enable-gold is used, "gold" may replace "ld".
-host_tools="texinfo flex bison binutils gas ld fixincludes gcc cgen sid sim gdb gprof etc expect dejagnu m4 utils guile fastjar gnattools libcc1"
+host_tools="texinfo flex bison binutils gas ld fixincludes gcc cgen sid sim gdb gprof etc expect dejagnu m4 utils guile fastjar gnattools"
 
 # libgcj represents the runtime libraries only used by gcj.
 libgcj="target-libffi \
@@ -331,8 +331,7 @@ case "${ENABLE_GOLD}" in
     if test "$is_elf" = "yes"; then
       # Check for target supported by gold.
       case "${target}" in
-        i?86-*-* | x86_64-*-* | sparc*-*-* | powerpc*-*-* | arm*-*-* \
-        | aarch64*-*-* | tilegx*-*-*)
+        i?86-*-* | x86_64-*-* | sparc*-*-* | powerpc*-*-* | arm*-*-* | tilegx*-*-*)
 	  configdirs="$configdirs gold"
 	  if test x${ENABLE_GOLD} = xdefault; then
 	    default_ld=gold
@@ -436,7 +435,7 @@ AS_HELP_STRING([--disable-libstdcxx],
 ENABLE_LIBSTDCXX=$enableval,
 ENABLE_LIBSTDCXX=default)
 [if test "${ENABLE_LIBSTDCXX}" = "no" ; then
-  noconfigdirs="$noconfigdirs target-libstdc++-v3"
+  noconfigdirs="$noconfigdirs libstdc++-v3"
 fi]
 
 # Save it here so that, even in case of --enable-libgcj, if the Java
@@ -769,15 +768,7 @@ case "${target}" in
     ;;
   *-*-lynxos*)
     noconfigdirs="$noconfigdirs ${libgcj}"
-    ;;
-esac
-
-# Disable the go frontend on systems where it is known to not work. Please keep
-# this in sync with contrib/config-list.mk.
-case "${target}" in
-*-*-darwin* | *-*-cygwin* | *-*-mingw* | *-*-aix*)
-    unsupported_languages="$unsupported_languages go"
-    ;;
+    ;; 
 esac
 
 # Disable libgo for some systems where it is known to not work.
@@ -1186,7 +1177,7 @@ case "${host}" in
   *-mingw*)
     host_makefile_frag="config/mh-mingw"
     ;;
-  alpha*-*-linux*)
+  alpha*-linux*)
     host_makefile_frag="config/mh-alpha-linux"
     ;;
   hppa*-hp-hpux10*)
@@ -1653,15 +1644,25 @@ AC_ARG_WITH(isl,
     Equivalent to --with-isl-include=PATH/include
     plus --with-isl-lib=PATH/lib])])
 
-# Treat --without-isl as a request to disable
+# Treat either --without-cloog or --without-isl as a request to disable
 # GRAPHITE support and skip all following checks.
-if test "x$with_isl" != "xno"; then
+if test "x$with_isl" != "xno" &&
+   test "x$with_cloog" != "xno"; then
   # Check for ISL
   dnl Provide configure switches and initialize islinc & isllibs
   dnl with user input.
   ISL_INIT_FLAGS
   dnl The versions of ISL that work for Graphite
-  ISL_CHECK_VERSION()
+  ISL_CHECK_VERSION(0,10)
+  if test "${gcc_cv_isl}" = no ; then
+    ISL_CHECK_VERSION(0,11)
+    if test "${gcc_cv_isl}" = no ; then
+      ISL_CHECK_VERSION(0,12)
+      if test "${gcc_cv_isl}" = no ; then
+        ISL_CHECK_VERSION(0,14)
+      fi
+    fi
+  fi
   dnl Only execute fail-action, if ISL has been requested.
   ISL_IF_FAILED([
     AC_MSG_ERROR([Unable to find a usable ISL.  See config.log for details.])])
@@ -1672,7 +1673,10 @@ if test "x$with_isl" != "xno"; then
     dnl with user input.
     CLOOG_INIT_FLAGS
     dnl The versions of CLooG that work for Graphite.
-    CLOOG_CHECK_VERSION(0,18,1)
+    CLOOG_CHECK_VERSION(0,17,0)
+    if test "${gcc_cv_cloog}" = no ; then
+      CLOOG_CHECK_VERSION(0,18,0)
+    fi
 
     dnl Only execute fail-action, if CLooG has been requested.
     CLOOG_IF_FAILED([
@@ -1680,9 +1684,11 @@ if test "x$with_isl" != "xno"; then
   fi
 fi
 
-# If the ISL check failed, disable builds of in-tree
-# variants of both ISL and CLooG
+# If either the ISL or the CLooG check failed, disable builds of in-tree
+# variants of both
 if test "x$with_isl" = xno ||
+   test "x$with_cloog" = xno ||
+   test "x$gcc_cv_cloog" = xno ||
    test "x$gcc_cv_isl" = xno; then
   noconfigdirs="$noconfigdirs cloog isl"
   islinc=
@@ -1690,19 +1696,10 @@ if test "x$with_isl" = xno ||
   clooglibs=
 fi
 
-# If the CLooG check failed, disable builds of in-tree
-# variants of CLooG
-if test "x$with_cloog" = xno ||
-   test "x$gcc_cv_cloog" = xno; then
-  noconfigdirs="$noconfigdirs cloog isl"
-  clooginc=
-  clooglibs=
-fi
-
-AC_SUBST(isllibs)
 AC_SUBST(islinc)
 AC_SUBST(clooglibs)
 AC_SUBST(clooginc)
+
 
 # Check for LTO support.
 AC_ARG_ENABLE(lto,
@@ -1739,19 +1736,6 @@ ACX_ELF_TARGET_IFELSE([# ELF platforms build the lto-plugin always.
     *) ;;
   esac
 ])
-
-AC_ARG_ENABLE(linker-plugin-configure-flags,
-  [AS_HELP_STRING([[--enable-linker-plugin-configure-flags=FLAGS]],
-    [additional flags for configuring linker plugins @<:@none@:>@])],
-  extra_linker_plugin_configure_flags=$enableval,
-  extra_linker_plugin_configure_flags=)
-AC_SUBST(extra_linker_plugin_configure_flags)
-AC_ARG_ENABLE(linker-plugin-flags,
-  [AS_HELP_STRING([[--enable-linker-plugin-flags=FLAGS]],
-    [additional flags for configuring and building linker plugins @<:@none@:>@])],
-  extra_linker_plugin_flags=$enableval,
-  extra_linker_plugin_flags=)
-AC_SUBST(extra_linker_plugin_flags)
 
 
 # By default, C and C++ are the only stage 1 languages.
@@ -1853,6 +1837,7 @@ if test -d ${srcdir}/gcc; then
   new_enable_languages=,c,
 
   # If LTO is enabled, add the LTO front end.
+  extra_host_libiberty_configure_flags=
   if test "$enable_lto" = "yes" ; then
     case ,${enable_languages}, in
       *,lto,*) ;;
@@ -1860,8 +1845,10 @@ if test -d ${srcdir}/gcc; then
     esac
     if test "${build_lto_plugin}" = "yes" ; then
       configdirs="$configdirs lto-plugin"
+      extra_host_libiberty_configure_flags=--enable-shared
     fi
   fi
+  AC_SUBST(extra_host_libiberty_configure_flags)
 
   missing_languages=`echo ",$enable_languages," | sed -e s/,all,/,/ -e s/,c,/,/ `
   potential_languages=,c,
@@ -2076,17 +2063,9 @@ case ,${enable_languages},:${enable_objc_gc} in
     ;;
 esac
 
-# Disable libcilkrts, libitm, libsanitizer, libvtv if we're not building C++
+# Disable libitm, libsanitizer, libvtv if we're not building C++
 case ,${enable_languages}, in
-  *,c++,*)
-    # Disable libcilkrts, libitm, libsanitizer if we're not building libstdc++
-    case "${noconfigdirs}" in
-      *target-libstdc++-v3*)
-        noconfigdirs="$noconfigdirs target-libcilkrts target-libitm target-libsanitizer"
-        ;;
-      *) ;;
-    esac
-    ;;
+  *,c++,*) ;;
   *)
     noconfigdirs="$noconfigdirs target-libcilkrts target-libitm target-libsanitizer target-libvtv"
     ;;
@@ -2159,32 +2138,6 @@ for i in ${target_configdirs_all} ; do
     target_configdirs="${target_configdirs} $i"
   fi
 done
-
-# libiberty-linker-plugin is special: it doesn't have its own source directory,
-# so we have to add it after the preceding checks.
-if test x"$extra_linker_plugin_flags$extra_linker_plugin_configure_flags" != x
-then
-  case " $configdirs " in
-    *" libiberty "*)
-      # If we can build libiberty, we can also build libiberty-linker-plugin.
-      configdirs="$configdirs libiberty-linker-plugin"
-      extra_linker_plugin_configure_flags="$extra_linker_plugin_configure_flags \
-        --with-libiberty=../libiberty-linker-plugin";;
-    *)
-      AC_MSG_ERROR([libiberty missing]);;
-  esac
-fi
-
-# Sometimes we have special requirements for the host libiberty.
-extra_host_libiberty_configure_flags=
-case " $configdirs " in
-  *" lto-plugin "* | *" libcc1 "*)
-    # When these are to be built as shared libraries, the same applies to
-    # libiberty.
-    extra_host_libiberty_configure_flags=--enable-shared
-    ;;
-esac
-AC_SUBST(extra_host_libiberty_configure_flags)
 
 # Produce a warning message for the subdirs we can't configure.
 # This isn't especially interesting in the Cygnus tree, but in the individual
@@ -2422,9 +2375,6 @@ case "${target}" in
     ;;
   mips*-*-*linux* | mips*-*-gnu*)
     target_makefile_frag="config/mt-mips-gnu"
-    ;;
-  nios2-*-elf*)
-    target_makefile_frag="config/mt-nios2-elf"
     ;;
   *-*-linux* | *-*-gnu* | *-*-k*bsd*-gnu | *-*-kopensolaris*-gnu)
     target_makefile_frag="config/mt-gnu"
@@ -2835,7 +2785,7 @@ changequote(,)
 changequote([,])
 
     case $lib in
-    mpc | mpfr | gmp | isl | cloog)
+    mpc | mpfr | gmp | cloog)
       # If we're processing --with-$lib, --with-$lib-include or
       # --with-$lib-lib, for one of the libs above, and target is
       # different from host, don't pass the current argument to any
@@ -2931,10 +2881,8 @@ AC_ARG_VAR([target_configargs],
 
 # For the build-side libraries, we just need to pretend we're native,
 # and not use the same cache file.  Multilibs are neither needed nor
-# desired.  We can't even use the same cache file for all build-side
-# libraries, as they're compiled differently; some with C, some with
-# C++ or with different feature-enabling options.
-build_configargs="$build_configargs --cache-file=./config.cache ${baseargs}"
+# desired.
+build_configargs="$build_configargs --cache-file=../config.cache ${baseargs}"
 
 # For host modules, accept cache file option, or specification as blank.
 case "${cache_file}" in

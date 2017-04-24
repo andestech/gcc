@@ -32,8 +32,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "diagnostic-core.h"
 #include "target.h"
 #include "langhooks.h"
-#include "builtins.h"
-#include "ubsan.h"
 
 /* Convert EXPR to some pointer or reference type TYPE.
    EXPR must be pointer, reference, integer, enumeral, or literal zero;
@@ -98,6 +96,15 @@ convert_to_real (tree type, tree expr)
 {
   enum built_in_function fcode = builtin_mathfn_code (expr);
   tree itype = TREE_TYPE (expr);
+
+  if (TREE_CODE (expr) == COMPOUND_EXPR)
+    {
+      tree t = convert_to_real (type, TREE_OPERAND (expr, 1));
+      if (t == TREE_OPERAND (expr, 1))
+	return expr;
+      return build2_loc (EXPR_LOCATION (expr), COMPOUND_EXPR, TREE_TYPE (t),
+			 TREE_OPERAND (expr, 0), t);
+    }    
 
   /* Disable until we figure out how to decide whether the functions are
      present in runtime.  */
@@ -396,7 +403,6 @@ convert_to_integer (tree type, tree expr)
   tree intype = TREE_TYPE (expr);
   unsigned int inprec = element_precision (intype);
   unsigned int outprec = element_precision (type);
-  location_t loc = EXPR_LOCATION (expr);
 
   /* An INTEGER_TYPE cannot be incomplete, but an ENUMERAL_TYPE can
      be.  Consider `enum E = { a, b = (enum E) 3 };'.  */
@@ -405,6 +411,15 @@ convert_to_integer (tree type, tree expr)
       error ("conversion to incomplete type");
       return error_mark_node;
     }
+
+  if (ex_form == COMPOUND_EXPR)
+    {
+      tree t = convert_to_integer (type, TREE_OPERAND (expr, 1));
+      if (t == TREE_OPERAND (expr, 1))
+	return expr;
+      return build2_loc (EXPR_LOCATION (expr), COMPOUND_EXPR, TREE_TYPE (t),
+			 TREE_OPERAND (expr, 0), t);
+    }    
 
   /* Convert e.g. (long)round(d) -> lround(d).  */
   /* If we're converting to char, we may encounter differing behavior
@@ -456,8 +471,8 @@ convert_to_integer (tree type, tree expr)
 	  break;
 
 	CASE_FLT_FN (BUILT_IN_ROUND):
-	  /* Only convert in ISO C99 mode and with -fno-math-errno.  */
-	  if (!targetm.libc_has_function (function_c99_misc) || flag_errno_math)
+	  /* Only convert in ISO C99 mode.  */
+	  if (!targetm.libc_has_function (function_c99_misc))
 	    break;
 	  if (outprec < TYPE_PRECISION (integer_type_node)
 	      || (outprec == TYPE_PRECISION (integer_type_node)
@@ -477,8 +492,8 @@ convert_to_integer (tree type, tree expr)
 	    break;
 	  /* ... Fall through ...  */
 	CASE_FLT_FN (BUILT_IN_RINT):
-	  /* Only convert in ISO C99 mode and with -fno-math-errno.  */
-	  if (!targetm.libc_has_function (function_c99_misc) || flag_errno_math)
+	  /* Only convert in ISO C99 mode.  */
+	  if (!targetm.libc_has_function (function_c99_misc))
 	    break;
 	  if (outprec < TYPE_PRECISION (integer_type_node)
 	      || (outprec == TYPE_PRECISION (integer_type_node)
@@ -746,9 +761,8 @@ convert_to_integer (tree type, tree expr)
 		/* Can't do arithmetic in enumeral types
 		   so use an integer type that will hold the values.  */
 		if (TREE_CODE (typex) == ENUMERAL_TYPE)
-		  typex
-		    = lang_hooks.types.type_for_size (TYPE_PRECISION (typex),
-						      TYPE_UNSIGNED (typex));
+		  typex = lang_hooks.types.type_for_size
+		    (TYPE_PRECISION (typex), TYPE_UNSIGNED (typex));
 
 		/* But now perhaps TYPEX is as wide as INPREC.
 		   In that case, do nothing special here.
@@ -789,15 +803,9 @@ convert_to_integer (tree type, tree expr)
 			    && (ex_form == PLUS_EXPR
 				|| ex_form == MINUS_EXPR
 				|| ex_form == MULT_EXPR)))
-		      {
-			if (!TYPE_UNSIGNED (typex))
-			  typex = unsigned_type_for (typex);
-		      }
+		      typex = unsigned_type_for (typex);
 		    else
-		      {
-			if (TYPE_UNSIGNED (typex))
-			  typex = signed_type_for (typex);
-		      }
+		      typex = signed_type_for (typex);
 		    return convert (type,
 				    fold_build2 (ex_form, typex,
 						 convert (typex, arg0),
@@ -812,26 +820,14 @@ convert_to_integer (tree type, tree expr)
 	  /* This is not correct for ABS_EXPR,
 	     since we must test the sign before truncation.  */
 	  {
-	    /* Do the arithmetic in type TYPEX,
-	       then convert result to TYPE.  */
-	    tree typex = type;
-
-	    /* Can't do arithmetic in enumeral types
-	       so use an integer type that will hold the values.  */
-	    if (TREE_CODE (typex) == ENUMERAL_TYPE)
-	      typex
-		= lang_hooks.types.type_for_size (TYPE_PRECISION (typex),
-						  TYPE_UNSIGNED (typex));
-
-	    if (!TYPE_UNSIGNED (typex))
-	      typex = unsigned_type_for (typex);
+	    tree typex = unsigned_type_for (type);
 	    return convert (type,
 			    fold_build1 (ex_form, typex,
 					 convert (typex,
 						  TREE_OPERAND (expr, 0))));
 	  }
 
-	CASE_CONVERT:
+	case NOP_EXPR:
 	  /* Don't introduce a
 	     "can't convert between vector values of different size" error.  */
 	  if (TREE_CODE (TREE_TYPE (TREE_OPERAND (expr, 0))) == VECTOR_TYPE
@@ -866,20 +862,7 @@ convert_to_integer (tree type, tree expr)
       return build1 (CONVERT_EXPR, type, expr);
 
     case REAL_TYPE:
-      if (flag_sanitize & SANITIZE_FLOAT_CAST
-	  && current_function_decl != NULL_TREE
-	  && !lookup_attribute ("no_sanitize_undefined",
-				DECL_ATTRIBUTES (current_function_decl)))
-	{
-	  expr = save_expr (expr);
-	  tree check = ubsan_instrument_float_cast (loc, type, expr);
-	  expr = build1 (FIX_TRUNC_EXPR, type, expr);
-	  if (check == NULL)
-	    return expr;
-	  return fold_build2 (COMPOUND_EXPR, TREE_TYPE (expr), check, expr);
-	}
-      else
-	return build1 (FIX_TRUNC_EXPR, type, expr);
+      return build1 (FIX_TRUNC_EXPR, type, expr);
 
     case FIXED_POINT_TYPE:
       return build1 (FIXED_CONVERT_EXPR, type, expr);
@@ -926,6 +909,14 @@ convert_to_complex (tree type, tree expr)
 
 	if (TYPE_MAIN_VARIANT (elt_type) == TYPE_MAIN_VARIANT (subtype))
 	  return expr;
+	else if (TREE_CODE (expr) == COMPOUND_EXPR)
+	  {
+	    tree t = convert_to_complex (type, TREE_OPERAND (expr, 1));
+	    if (t == TREE_OPERAND (expr, 1))
+	      return expr;
+	    return build2_loc (EXPR_LOCATION (expr), COMPOUND_EXPR,
+			       TREE_TYPE (t), TREE_OPERAND (expr, 0), t);
+	  }    
 	else if (TREE_CODE (expr) == COMPLEX_EXPR)
 	  return fold_build2 (COMPLEX_EXPR, type,
 			      convert (subtype, TREE_OPERAND (expr, 0)),

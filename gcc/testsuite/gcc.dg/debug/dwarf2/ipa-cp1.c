@@ -17,7 +17,6 @@ t(int constant_propagated_par)
   q(local_var);
   q(local_var);
 }
-int
 main()
 {
   t(5);

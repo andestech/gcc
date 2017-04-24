@@ -10,17 +10,13 @@
 #include "malloc.h"
 
 void *
-__go_new (const struct __go_type_descriptor *td, uintptr_t size)
+__go_new (uintptr_t size)
 {
-  return runtime_mallocgc (size,
-			   (uintptr) td | TypeInfo_SingleObject,
-			   0);
+  return runtime_mallocgc (size, 0, 0);
 }
 
 void *
-__go_new_nopointers (const struct __go_type_descriptor *td,  uintptr_t size)
+__go_new_nopointers (uintptr_t size)
 {
-  return runtime_mallocgc (size,
-			   (uintptr) td | TypeInfo_SingleObject,
-			   FlagNoScan);
+  return runtime_mallocgc (size, 0, FlagNoScan);
 }

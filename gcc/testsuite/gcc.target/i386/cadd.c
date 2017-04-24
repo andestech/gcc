@@ -6,7 +6,6 @@ extern void abort (void);
 
 /* Conditional increment is best done using sbb $-1, val.  */
 int t[]={0,0,0,0,1,1,1,1,1,1};
-void
 q()
 {
   int sum=0;
@@ -17,7 +16,6 @@ q()
   if (sum != 6)
     abort ();
 }
-int
 main()
 {
   int i;

@@ -4,7 +4,6 @@
 /* A test for unreachable blocks removal -- bind_expr whose entry is
    unreachable, but it contains reachable statements.  */   
 
-void bar (void);
 void foo(void)
 {
   if (1)

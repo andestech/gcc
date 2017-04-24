@@ -36,29 +36,13 @@ along with GCC; see the file COPYING3.  If not see
 #include "output.h"
 #include "insn-attr.h"
 #include "flags.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "input.h"
 #include "function.h"
-#include "insn-codes.h"
-#include "optabs.h"
 #include "expr.h"
 #include "diagnostic-core.h"
 #include "recog.h"
 #include "toplev.h"
 #include "tm_p.h"
 #include "target.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfgrtl.h"
-#include "cfganal.h"
-#include "lcm.h"
-#include "cfgbuild.h"
-#include "cfgcleanup.h"
-#include "predict.h"
-#include "basic-block.h"
 #include "df.h"
 #include "langhooks.h"
 #include "insn-codes.h"
@@ -67,7 +51,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-pass.h"	/* for current_pass */
 #include "context.h"
 #include "pass_manager.h"
-#include "builtins.h"
 
 /* Which cpu we're compiling for.  */
 int epiphany_cpu_type;
@@ -90,9 +73,9 @@ static int get_epiphany_condition_code (rtx);
 static tree epiphany_handle_interrupt_attribute (tree *, tree, tree, int, bool *);
 static tree epiphany_handle_forwarder_attribute (tree *, tree, tree, int,
 						 bool *);
-static bool epiphany_pass_by_reference (cumulative_args_t, machine_mode,
+static bool epiphany_pass_by_reference (cumulative_args_t, enum machine_mode,
 					const_tree, bool);
-static rtx_insn *frame_insn (rtx);
+static rtx frame_insn (rtx);
 
 /* defines for the initialization of the GCC target structure.  */
 #define TARGET_ATTRIBUTE_TABLE epiphany_attribute_table
@@ -161,27 +144,6 @@ static rtx_insn *frame_insn (rtx);
 #define TARGET_ASM_CAN_OUTPUT_MI_THUNK \
   hook_bool_const_tree_hwi_hwi_const_tree_true
 #define TARGET_ASM_OUTPUT_MI_THUNK epiphany_output_mi_thunk
-
-/* ??? we can use larger offsets for wider-mode sized accesses, but there
-   is no concept of anchors being dependent on the modes that they are used
-   for, so we can only use an offset range that would suit all modes.  */
-#define TARGET_MAX_ANCHOR_OFFSET (optimize_size ? 31 : 2047)
-/* We further restrict the minimum to be a multiple of eight.  */
-#define TARGET_MIN_ANCHOR_OFFSET (optimize_size ? 0 : -2040)
-
-/* Mode switching hooks.  */
-
-#define TARGET_MODE_EMIT emit_set_fp_mode
-
-#define TARGET_MODE_NEEDED epiphany_mode_needed
-
-#define TARGET_MODE_PRIORITY epiphany_mode_priority
-
-#define TARGET_MODE_ENTRY epiphany_mode_entry
-
-#define TARGET_MODE_EXIT epiphany_mode_exit
-
-#define TARGET_MODE_AFTER epiphany_mode_after
 
 #include "target-def.h"
 
@@ -376,7 +338,7 @@ get_epiphany_condition_code (rtx comparison)
 
 /* Return 1 if hard register REGNO can hold a value of machine_mode MODE.  */
 int
-hard_regno_mode_ok (int regno, machine_mode mode)
+hard_regno_mode_ok (int regno, enum machine_mode mode)
 {
   if (GET_MODE_SIZE (mode) > UNITS_PER_WORD)
     return (regno & 1) == 0 && GPR_P (regno);
@@ -387,7 +349,7 @@ hard_regno_mode_ok (int regno, machine_mode mode)
 /* Given a comparison code (EQ, NE, etc.) and the first operand of a COMPARE,
    return the mode to be used for the comparison.  */
 
-machine_mode
+enum machine_mode
 epiphany_select_cc_mode (enum rtx_code op,
 			 rtx x ATTRIBUTE_UNUSED,
 			 rtx y ATTRIBUTE_UNUSED)
@@ -481,28 +443,15 @@ static const struct attribute_spec epiphany_attribute_table[] =
 /* Handle an "interrupt" attribute; arguments as in
    struct attribute_spec.handler.  */
 static tree
-epiphany_handle_interrupt_attribute (tree *node, tree name, tree args,
+epiphany_handle_interrupt_attribute (tree *node ATTRIBUTE_UNUSED,
+				     tree name, tree args,
 				     int flags ATTRIBUTE_UNUSED,
 				     bool *no_add_attrs)
 {
   tree value;
 
   if (!args)
-    {
-      gcc_assert (DECL_P (*node));
-      tree t = TREE_TYPE (*node);
-      if (TREE_CODE (t) != FUNCTION_TYPE)
-	warning (OPT_Wattributes, "%qE attribute only applies to functions",
-		 name);
-      /* Argument handling and the stack layout for interrupt handlers
-	 don't mix.  It makes no sense in the first place, so emit an
-	 error for this.  */
-      else if (TYPE_ARG_TYPES (t)
-	       && TREE_VALUE (TYPE_ARG_TYPES (t)) != void_type_node)
-	error_at (DECL_SOURCE_LOCATION (*node),
-		  "interrupt handlers cannot have arguments");
-      return NULL_TREE;
-    }
+    return NULL_TREE;
 
   value = TREE_VALUE (args);
 
@@ -582,10 +531,10 @@ sfunc_symbol (const char *name)
    mode, and return the rtx for the cc reg comparison in CMODE.  */
 
 rtx
-gen_compare_reg (machine_mode cmode, enum rtx_code code,
-		 machine_mode in_mode, rtx x, rtx y)
+gen_compare_reg (enum machine_mode cmode, enum rtx_code code,
+		 enum machine_mode in_mode, rtx x, rtx y)
 {
-  machine_mode mode = SELECT_CC_MODE (code, x, y);
+  enum machine_mode mode = SELECT_CC_MODE (code, x, y);
   rtx cc_reg, pat, clob0, clob1, clob2;
 
   if (in_mode == VOIDmode)
@@ -705,7 +654,7 @@ gen_compare_reg (machine_mode cmode, enum rtx_code code,
    : (CUM))
 
 static unsigned int
-epiphany_function_arg_boundary (machine_mode mode, const_tree type)
+epiphany_function_arg_boundary (enum machine_mode mode, const_tree type)
 {
   if ((type ? TYPE_ALIGN (type) : GET_MODE_BITSIZE (mode)) <= PARM_BOUNDARY)
     return PARM_BOUNDARY;
@@ -720,7 +669,7 @@ epiphany_function_arg_boundary (machine_mode mode, const_tree type)
 
 
 static void
-epiphany_setup_incoming_varargs (cumulative_args_t cum, machine_mode mode,
+epiphany_setup_incoming_varargs (cumulative_args_t cum, enum machine_mode mode,
 				 tree type, int *pretend_size, int no_rtl)
 {
   int first_anon_arg;
@@ -748,7 +697,7 @@ epiphany_setup_incoming_varargs (cumulative_args_t cum, machine_mode mode,
 }
 
 static int
-epiphany_arg_partial_bytes (cumulative_args_t cum, machine_mode mode,
+epiphany_arg_partial_bytes (cumulative_args_t cum, enum machine_mode mode,
 			    tree type, bool named ATTRIBUTE_UNUSED)
 {
   int words = 0, rounded_cum;
@@ -814,28 +763,6 @@ epiphany_rtx_costs (rtx x, int code, int outer_code, int opno ATTRIBUTE_UNUSED,
       *total = COSTS_N_INSNS (1);
       return true;
 
-    case COMPARE:
-      switch (GET_MODE (x))
-	{
-	/* There are a number of single-insn combiner patterns that use
-	   the flag side effects of arithmetic.  */
-	case CC_N_NEmode:
-	case CC_C_LTUmode:
-	case CC_C_GTUmode:
-	  return true;
-	default:
-	  return false;
-	}
-
-	
-    case SET:
-      {
-	rtx src = SET_SRC (x);
-	if (BINARY_P (src))
-	  *total = 0;
-	return false;
-      }
-
     default:
       return false;
     }
@@ -846,7 +773,7 @@ epiphany_rtx_costs (rtx x, int code, int outer_code, int opno ATTRIBUTE_UNUSED,
    If ADDR is not a valid address, its cost is irrelevant.  */
 
 static int
-epiphany_address_cost (rtx addr, machine_mode mode,
+epiphany_address_cost (rtx addr, enum machine_mode mode,
 		       addr_space_t as ATTRIBUTE_UNUSED, bool speed)
 {
   rtx reg;
@@ -907,7 +834,7 @@ epiphany_address_cost (rtx addr, machine_mode mode,
    but issue pich is the same.  For floating point, load latency is three
    times as much as a reg-reg move.  */
 static int
-epiphany_memory_move_cost (machine_mode mode,
+epiphany_memory_move_cost (enum machine_mode mode,
                           reg_class_t rclass ATTRIBUTE_UNUSED,
                           bool in ATTRIBUTE_UNUSED)
 {
@@ -999,7 +926,7 @@ epiphany_init_machine_status (void)
   /* Reset state info for each function.  */
   current_frame_info = zero_frame_info;
 
-  machine = ggc_cleared_alloc<machine_function_t> ();
+  machine = ggc_alloc_cleared_machine_function_t ();
 
   return machine;
 }
@@ -1456,7 +1383,7 @@ epiphany_print_operand_address (FILE *file, rtx addr)
 }
 
 void
-epiphany_final_prescan_insn (rtx_insn *insn ATTRIBUTE_UNUSED,
+epiphany_final_prescan_insn (rtx insn ATTRIBUTE_UNUSED,
 			     rtx *opvec ATTRIBUTE_UNUSED,
 			     int noperands ATTRIBUTE_UNUSED)
 {
@@ -1486,7 +1413,7 @@ epiphany_return_in_memory (const_tree type, const_tree fntype ATTRIBUTE_UNUSED)
 
 static bool
 epiphany_pass_by_reference (cumulative_args_t ca ATTRIBUTE_UNUSED,
-		       machine_mode mode, const_tree type,
+		       enum machine_mode mode, const_tree type,
 		       bool named ATTRIBUTE_UNUSED)
 {
   if (type)
@@ -1504,7 +1431,7 @@ epiphany_function_value (const_tree ret_type,
 			 const_tree fn_decl_or_type ATTRIBUTE_UNUSED,
 			 bool outgoing ATTRIBUTE_UNUSED)
 {
-  machine_mode mode;
+  enum machine_mode mode;
 
   mode = TYPE_MODE (ret_type);
   /* We must change the mode like PROMOTE_MODE does.
@@ -1522,7 +1449,7 @@ epiphany_function_value (const_tree ret_type,
 }
 
 static rtx
-epiphany_libcall_value (machine_mode mode, const_rtx fun ATTRIBUTE_UNUSED)
+epiphany_libcall_value (enum machine_mode mode, const_rtx fun ATTRIBUTE_UNUSED)
 {
   return gen_rtx_REG (mode, 0);
 }
@@ -1561,12 +1488,11 @@ frame_subreg_note (rtx set, int offset)
   return set;
 }
 
-static rtx_insn *
+static rtx
 frame_insn (rtx x)
 {
   int i;
   rtx note = NULL_RTX;
-  rtx_insn *insn;
 
   if (GET_CODE (x) == PARALLEL)
     {
@@ -1601,14 +1527,14 @@ frame_insn (rtx x)
     note = gen_rtx_PARALLEL (VOIDmode,
 			     gen_rtvec (2, frame_subreg_note (x, 0),
 					frame_subreg_note (x, UNITS_PER_WORD)));
-  insn = emit_insn (x);
-  RTX_FRAME_RELATED_P (insn) = 1;
+  x = emit_insn (x);
+  RTX_FRAME_RELATED_P (x) = 1;
   if (note)
-    add_reg_note (insn, REG_FRAME_RELATED_EXPR, note);
-  return insn;
+    add_reg_note (x, REG_FRAME_RELATED_EXPR, note);
+  return x;
 }
 
-static rtx_insn *
+static rtx
 frame_move_insn (rtx to, rtx from)
 {
   return frame_insn (gen_rtx_SET (VOIDmode, to, from));
@@ -1617,7 +1543,7 @@ frame_move_insn (rtx to, rtx from)
 /* Generate a MEM referring to a varargs argument slot.  */
 
 static rtx
-gen_varargs_mem (machine_mode mode, rtx addr)
+gen_varargs_mem (enum machine_mode mode, rtx addr)
 {
   rtx mem = gen_rtx_MEM (mode, addr);
   MEM_NOTRAP_P (mem) = 1;
@@ -1649,10 +1575,10 @@ epiphany_emit_save_restore (int min, int limit, rtx addr, int epilogue_p)
       last_saved--;
   for (i = 0; i < limit; i++)
     {
-      machine_mode mode = word_mode;
+      enum machine_mode mode = word_mode;
       rtx mem, reg;
       int n = i;
-      rtx (*gen_mem) (machine_mode, rtx) = gen_frame_mem;
+      rtx (*gen_mem) (enum machine_mode, rtx) = gen_frame_mem;
 
       /* Make sure we push the arguments in the right order.  */
       if (n < MAX_EPIPHANY_PARM_REGS && crtl->args.pretend_args_size)
@@ -1813,7 +1739,7 @@ epiphany_expand_prologue (void)
 	 allocate the entire frame; this is joint with one register save.  */
       if (current_frame_info.first_slot >= 0)
 	{
-	  machine_mode mode
+	  enum machine_mode mode
 	= (current_frame_info.first_slot_size == UNITS_PER_WORD
 	   ? word_mode : DImode);
 
@@ -1836,8 +1762,7 @@ epiphany_expand_prologue (void)
      register save.  */
   if (current_frame_info.last_slot >= 0)
     {
-      rtx ip, mem2, note;
-      rtx_insn *insn;
+      rtx ip, mem2, insn, note;
 
       gcc_assert (current_frame_info.last_slot != GPR_FP
 		  || (!current_frame_info.need_fp
@@ -2002,7 +1927,7 @@ epiphany_issue_rate (void)
    the same cost as a data-dependence.  The return value should be
    the new value for COST.  */
 static int
-epiphany_adjust_cost (rtx_insn *insn, rtx link, rtx_insn *dep_insn, int cost)
+epiphany_adjust_cost (rtx insn, rtx link, rtx dep_insn, int cost)
 {
   if (REG_NOTE_KIND (link) == 0)
     {
@@ -2049,7 +1974,7 @@ epiphany_adjust_cost (rtx_insn *insn, rtx link, rtx_insn *dep_insn, int cost)
      || RTX_OK_FOR_OFFSET_P (MODE, XEXP (X, 1))))
 
 static bool
-epiphany_legitimate_address_p (machine_mode mode, rtx x, bool strict)
+epiphany_legitimate_address_p (enum machine_mode mode, rtx x, bool strict)
 {
 #define REG_OK_FOR_BASE_P(X) \
   (strict ? GPR_P (REGNO (X)) : GPR_AP_OR_PSEUDO_P (REGNO (X)))
@@ -2078,13 +2003,13 @@ epiphany_legitimate_address_p (machine_mode mode, rtx x, bool strict)
       && LEGITIMATE_OFFSET_ADDRESS_P (mode, XEXP ((x), 1)))
     return true;
   if (mode == BLKmode)
-    return epiphany_legitimate_address_p (SImode, x, strict);
+    return true;
   return false;
 }
 
 static reg_class_t
 epiphany_secondary_reload (bool in_p, rtx x, reg_class_t rclass,
-			machine_mode mode ATTRIBUTE_UNUSED,
+			enum machine_mode mode ATTRIBUTE_UNUSED,
 			secondary_reload_info *sri)
 {
   /* This could give more reload inheritance, but we are missing some
@@ -2202,8 +2127,8 @@ epiphany_call_uninterruptible_p (rtx mem)
   return epiphany_uninterruptible_p (t);
 }
 
-static machine_mode
-epiphany_promote_function_mode (const_tree type, machine_mode mode,
+static enum machine_mode
+epiphany_promote_function_mode (const_tree type, enum machine_mode mode,
 				int *punsignedp ATTRIBUTE_UNUSED,
 				const_tree funtype ATTRIBUTE_UNUSED,
 				int for_return ATTRIBUTE_UNUSED)
@@ -2263,7 +2188,7 @@ epiphany_conditional_register_usage (void)
 /* On the EPIPHANY the first MAX_EPIPHANY_PARM_REGS args are normally in
    registers and the rest are pushed.  */
 static rtx
-epiphany_function_arg (cumulative_args_t cum_v, machine_mode mode,
+epiphany_function_arg (cumulative_args_t cum_v, enum machine_mode mode,
 		       const_tree type, bool named ATTRIBUTE_UNUSED)
 {
   CUMULATIVE_ARGS cum = *get_cumulative_args (cum_v);
@@ -2277,7 +2202,7 @@ epiphany_function_arg (cumulative_args_t cum_v, machine_mode mode,
    of mode MODE and data type TYPE.
    (TYPE is null for libcalls where that information may not be available.)  */
 static void
-epiphany_function_arg_advance (cumulative_args_t cum_v, machine_mode mode,
+epiphany_function_arg_advance (cumulative_args_t cum_v, enum machine_mode mode,
 			       const_tree type, bool named ATTRIBUTE_UNUSED)
 {
   CUMULATIVE_ARGS *cum = get_cumulative_args (cum_v);
@@ -2352,8 +2277,8 @@ epiphany_optimize_mode_switching (int entity)
   gcc_unreachable ();
 }
 
-static int
-epiphany_mode_priority (int entity, int priority)
+int
+epiphany_mode_priority_to_mode (int entity, unsigned priority)
 {
   if (entity == EPIPHANY_MSW_ENTITY_AND || entity == EPIPHANY_MSW_ENTITY_OR
       || entity== EPIPHANY_MSW_ENTITY_CONFIG)
@@ -2401,7 +2326,7 @@ epiphany_mode_priority (int entity, int priority)
 }
 
 int
-epiphany_mode_needed (int entity, rtx_insn *insn)
+epiphany_mode_needed (int entity, rtx insn)
 {
   enum attr_fp_mode mode;
 
@@ -2461,7 +2386,7 @@ epiphany_mode_needed (int entity, rtx_insn *insn)
   }
 }
 
-static int
+int
 epiphany_mode_entry_exit (int entity, bool exit)
 {
   int normal_mode = epiphany_normal_fp_mode ;
@@ -2499,7 +2424,7 @@ epiphany_mode_entry_exit (int entity, bool exit)
 }
 
 int
-epiphany_mode_after (int entity, int last_mode, rtx_insn *insn)
+epiphany_mode_after (int entity, int last_mode, rtx insn)
 {
   /* We have too few call-saved registers to hope to keep the masks across
      calls.  */
@@ -2548,21 +2473,8 @@ epiphany_mode_after (int entity, int last_mode, rtx_insn *insn)
   return last_mode;
 }
 
-static int
-epiphany_mode_entry (int entity)
-{
-  return epiphany_mode_entry_exit (entity, false);
-}
-
-static int
-epiphany_mode_exit (int entity)
-{
-  return epiphany_mode_entry_exit (entity, true);
-}
-
 void
-emit_set_fp_mode (int entity, int mode, int prev_mode ATTRIBUTE_UNUSED,
-		  HARD_REG_SET regs_live ATTRIBUTE_UNUSED)
+emit_set_fp_mode (int entity, int mode, HARD_REG_SET regs_live ATTRIBUTE_UNUSED)
 {
   rtx save_cc, cc_reg, mask, src, src2;
   enum attr_fp_mode fp_mode;
@@ -2708,7 +2620,7 @@ epiphany_expand_set_fp_mode (rtx *operands)
 }
 
 void
-epiphany_insert_mode_switch_use (rtx_insn *insn,
+epiphany_insert_mode_switch_use (rtx insn,
 				 int entity ATTRIBUTE_UNUSED,
 				 int mode ATTRIBUTE_UNUSED)
 {
@@ -2777,7 +2689,7 @@ epiphany_epilogue_uses (int regno)
 }
 
 static unsigned int
-epiphany_min_divisions_for_recip_mul (machine_mode mode)
+epiphany_min_divisions_for_recip_mul (enum machine_mode mode)
 {
   if (flag_reciprocal_math && mode == SFmode)
     /* We'll expand into a multiply-by-reciprocal anyway, so we might a well do
@@ -2786,14 +2698,14 @@ epiphany_min_divisions_for_recip_mul (machine_mode mode)
   return default_min_divisions_for_recip_mul (mode);
 }
 
-static machine_mode
-epiphany_preferred_simd_mode (machine_mode mode ATTRIBUTE_UNUSED)
+static enum machine_mode
+epiphany_preferred_simd_mode (enum machine_mode mode ATTRIBUTE_UNUSED)
 {
   return TARGET_VECT_DOUBLE ? DImode : SImode;
 }
 
 static bool
-epiphany_vector_mode_supported_p (machine_mode mode)
+epiphany_vector_mode_supported_p (enum machine_mode mode)
 {
   if (mode == V2SFmode)
     return true;
@@ -2815,7 +2727,7 @@ epiphany_vector_alignment_reachable (const_tree type, bool is_packed)
 }
 
 static bool
-epiphany_support_vector_misalignment (machine_mode mode, const_tree type,
+epiphany_support_vector_misalignment (enum machine_mode mode, const_tree type,
 				      int misalignment, bool is_packed)
 {
   if (GET_MODE_SIZE (mode) == 8 && misalignment % 4 == 0)

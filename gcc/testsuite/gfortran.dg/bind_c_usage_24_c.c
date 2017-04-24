@@ -1,12 +1,11 @@
 /* Compiled and linked by bind_c.f90.  */
 
 #include <stdlib.h>
-#include <stdbool.h>
 
-void subtest (bool, int *);
+void subtest (_Bool, int *);
 
 void
-c_proc (bool present, int *val)
+c_proc (_Bool present, int *val)
 {
   int val2;
   if (!present && val)

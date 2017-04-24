@@ -65,5 +65,4 @@ int main()
   return 0;
 }
 
-/* { dg-final { cleanup-tree-dump "slp1" } } */
-/* { dg-final { cleanup-tree-dump "slp2" } } */
+/* { dg-final { cleanup-tree-dump "slp" } } */

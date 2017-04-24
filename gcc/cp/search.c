@@ -917,11 +917,9 @@ accessible_p (tree type, tree decl, bool consider_local_p)
       /* Figure out where the reference is occurring.  Check to see if
 	 DECL is private or protected in this scope, since that will
 	 determine whether protected access is allowed.  */
-      tree ct = current_nonlambda_class_type ();
-      if (ct)
+      if (current_class_type)
 	protected_ok = protected_accessible_p (decl,
-					       ct,
-					       binfo);
+					       current_class_type, binfo);
 
       /* Now, loop through the classes of which we are a friend.  */
       if (!protected_ok)

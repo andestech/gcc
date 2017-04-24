@@ -1,5 +1,7 @@
 /* { dg-do run } */
+/* { dg-require-effective-target nds32_full_addr_space { target nds32*-*-elf* } } */
 /* { dg-options "-O2 -floop-interchange -ffast-math -fno-ipa-cp" } */
+/* { dg-additional-options "-mcmodel=large" { target nds32*-*-elf* } } */
 
 #define DEBUG 0
 #if DEBUG

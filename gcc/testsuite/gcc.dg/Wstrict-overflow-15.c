@@ -10,6 +10,6 @@ foo (int j)
   int sum = 0;
 
   for (i = 1; i < j; i += i)
-    sum += __builtin_abs (i); /* { dg-warning "assuming signed overflow does not occur" "" { xfail *-*-* } } */
+    sum += __builtin_abs (i); /* { dg-warning "assuming signed overflow does not occur" "" } */
   return sum;
 }

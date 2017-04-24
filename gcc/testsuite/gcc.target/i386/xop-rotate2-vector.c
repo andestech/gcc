@@ -2,10 +2,9 @@
    into prot on XOP systems.  */
 
 /* { dg-do compile { target { ! { ia32 } } } } */
-/* { dg-options "-O2 -mxop -mno-avx2 -ftree-vectorize" } */
+/* { dg-options "-O2 -mxop -ftree-vectorize" } */
 
 extern void exit (int);
-extern void right_rotate (void);
 
 typedef long __m128i  __attribute__ ((__vector_size__ (16), __may_alias__));
 

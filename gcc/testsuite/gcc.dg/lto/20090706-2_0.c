@@ -7,7 +7,6 @@ int foo (int size)
   return a[size - 10] + size;
 }
 
-int
 main()
 {
   int x = foo (20);

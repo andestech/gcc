@@ -23,7 +23,7 @@
 #include <type_traits>
 
 // { dg-do compile }
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 
 void test01()
 {

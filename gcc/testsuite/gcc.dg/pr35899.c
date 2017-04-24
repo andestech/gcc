@@ -1,6 +1,6 @@
 /* PR tree-optimization/35899 */
 /* { dg-do compile } */
-/* { dg-options "-std=gnu89 -O2" } */
+/* { dg-options "-O2" } */
 
 int
 foo (void)

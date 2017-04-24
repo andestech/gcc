@@ -1,8 +1,6 @@
 /* { dg-do run } */ 
 /* { dg-options "-O2" } */
 
-void link_error (void);
-
 struct A
 {
   int a;
@@ -27,7 +25,6 @@ void foo (int i)
     link_error ();
 }
 
-int
 main ()
 {
   foo (3);

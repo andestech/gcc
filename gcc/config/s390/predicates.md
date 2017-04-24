@@ -314,7 +314,7 @@
 (define_special_predicate "load_multiple_operation"
   (match_code "parallel")
 {
-  machine_mode elt_mode;
+  enum machine_mode elt_mode;
   int count = XVECLEN (op, 0);
   unsigned int dest_regno;
   rtx src_addr;
@@ -374,7 +374,7 @@
   (match_code "parallel")
 {
   rtx pattern = op;
-  rtx_insn *insn;
+  rtx insn;
   int icode;
 
   /* This is redundant but since this predicate is evaluated
@@ -406,7 +406,8 @@
   if (icode < 0)
     return false;
 
-  extract_constrain_insn (insn);
+  extract_insn (insn);
+  constrain_operands (1);
 
   return which_alternative >= 0;
 })
@@ -417,7 +418,7 @@
 (define_special_predicate "store_multiple_operation"
   (match_code "parallel")
 {
-  machine_mode elt_mode;
+  enum machine_mode elt_mode;
   int count = XVECLEN (op, 0);
   unsigned int src_regno;
   rtx dest_addr;

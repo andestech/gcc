@@ -156,6 +156,9 @@ c_finish_omp_atomic (location_t loc, enum tree_code code,
       return error_mark_node;
     }
 
+  if (opcode == RDIV_EXPR)
+    opcode = TRUNC_DIV_EXPR;
+
   /* ??? Validate that rhs does not overlap lhs.  */
 
   /* Take and save the address of the lhs.  From then on we'll reference it
@@ -190,7 +193,7 @@ c_finish_omp_atomic (location_t loc, enum tree_code code,
      to do this, and then take it apart again.  */
   if (swapped)
     {
-      rhs = build2_loc (loc, opcode, TREE_TYPE (lhs), rhs, lhs);
+      rhs = build_binary_op (loc, opcode, rhs, lhs, 1);
       opcode = NOP_EXPR;
     }
   bool save = in_late_binary_op;
@@ -396,7 +399,7 @@ c_finish_omp_for (location_t locus, enum tree_code code, tree declv,
   bool fail = false;
   int i;
 
-  if ((code == CILK_SIMD || code == CILK_FOR)
+  if (code == CILK_SIMD
       && !c_check_cilk_loop (locus, TREE_VEC_ELT (declv, 0)))
     fail = true;
 
@@ -515,10 +518,7 @@ c_finish_omp_for (location_t locus, enum tree_code code, tree declv,
 		  || TREE_CODE (cond) == EQ_EXPR)
 		{
 		  if (!INTEGRAL_TYPE_P (TREE_TYPE (decl)))
-		    {
-		      if (code != CILK_SIMD && code != CILK_FOR)
-			cond_ok = false;
-		    }
+		    cond_ok = false;
 		  else if (operand_equal_p (TREE_OPERAND (cond, 1),
 					    TYPE_MIN_VALUE (TREE_TYPE (decl)),
 					    0))
@@ -529,7 +529,7 @@ c_finish_omp_for (location_t locus, enum tree_code code, tree declv,
 					    0))
 		    TREE_SET_CODE (cond, TREE_CODE (cond) == NE_EXPR
 					 ? LT_EXPR : GE_EXPR);
-		  else if (code != CILK_SIMD && code != CILK_FOR)
+		  else if (code != CILK_SIMD)
 		    cond_ok = false;
 		}
 	    }

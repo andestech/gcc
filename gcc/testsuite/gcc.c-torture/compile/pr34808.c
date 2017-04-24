@@ -6,9 +6,6 @@ extern int flags;
 
 struct r { int code; int val;};
 
-void bar (void);
-void baz (void);
-
 int
 foo (struct r *home)
 {

@@ -5,11 +5,8 @@
 
 #define N 32
 
-float __attribute__((aligned(16))) input[N];
-float __attribute__((aligned(16))) output[N];
-
 void
-foo ()
+foo (float *output, float *input)
 {
   int i = 0;
   /* Vectorizable.  */

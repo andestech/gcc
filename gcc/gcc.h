@@ -46,6 +46,9 @@ extern void lang_specific_driver (struct cl_decoded_option **,
 /* Called before linking.  Returns 0 on success and -1 on failure.  */
 extern int lang_specific_pre_link (void);
 
+/* Called before parsing the spec to tell which language driver is used.  */
+extern int lang_specific_is_c_plus_plus (void);
+
 extern int n_infiles;
 
 /* Number of extra output files that lang_specific_pre_link may generate.  */

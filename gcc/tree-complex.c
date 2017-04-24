@@ -24,16 +24,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "stor-layout.h"
 #include "flags.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -83,7 +73,7 @@ static vec<complex_lattice_t> complex_lattice_values;
 
 /* For each complex variable, a pair of variables for the components exists in
    the hashtable.  */
-static int_tree_htab_type *complex_variable_components;
+static int_tree_htab_type complex_variable_components;
 
 /* For each complex SSA_NAME, a pair of ssa names for the components.  */
 static vec<tree> complex_ssa_name_components;
@@ -93,9 +83,10 @@ static vec<tree> complex_ssa_name_components;
 static tree
 cvc_lookup (unsigned int uid)
 {
-  struct int_tree_map in;
+  struct int_tree_map *h, in;
   in.uid = uid;
-  return complex_variable_components->find_with_hash (in, uid).to;
+  h = complex_variable_components.find_with_hash (&in, uid);
+  return h ? h->to : NULL;
 }
 
 /* Insert the pair UID, TO into the complex_variable_components hashtable.  */
@@ -103,13 +94,14 @@ cvc_lookup (unsigned int uid)
 static void
 cvc_insert (unsigned int uid, tree to)
 {
-  int_tree_map h;
-  int_tree_map *loc;
+  struct int_tree_map *h;
+  int_tree_map **loc;
 
-  h.uid = uid;
-  loc = complex_variable_components->find_slot_with_hash (h, uid, INSERT);
-  loc->uid = uid;
-  loc->to = to;
+  h = XNEW (struct int_tree_map);
+  h->uid = uid;
+  h->to = to;
+  loc = complex_variable_components.find_slot_with_hash (h, uid, INSERT);
+  *loc = h;
 }
 
 /* Return true if T is not a zero constant.  In the case of real values,
@@ -839,15 +831,12 @@ expand_complex_move (gimple_stmt_iterator *gsi, tree type)
     {
       tree x;
       gimple t;
-      location_t loc;
 
-      loc = gimple_location (stmt);
       r = extract_component (gsi, rhs, 0, false);
       i = extract_component (gsi, rhs, 1, false);
 
       x = build1 (REALPART_EXPR, inner_type, unshare_expr (lhs));
       t = gimple_build_assign (x, r);
-      gimple_set_location (t, loc);
       gsi_insert_before (gsi, t, GSI_SAME_STMT);
 
       if (stmt == gsi_stmt (*gsi))
@@ -860,7 +849,6 @@ expand_complex_move (gimple_stmt_iterator *gsi, tree type)
 	{
 	  x = build1 (IMAGPART_EXPR, inner_type, unshare_expr (lhs));
 	  t = gimple_build_assign (x, i);
-	  gimple_set_location (t, loc);
 	  gsi_insert_before (gsi, t, GSI_SAME_STMT);
 
 	  stmt = gsi_stmt (*gsi);
@@ -957,7 +945,7 @@ static void
 expand_complex_libcall (gimple_stmt_iterator *gsi, tree ar, tree ai,
 			tree br, tree bi, enum tree_code code)
 {
-  machine_mode mode;
+  enum machine_mode mode;
   enum built_in_function bcode;
   tree fn, type, lhs;
   gimple old_stmt, stmt;
@@ -1170,8 +1158,11 @@ expand_complex_div_wide (gimple_stmt_iterator *gsi, tree inner_type,
       make_edge (bb_cond, bb_false, EDGE_FALSE_VALUE);
       make_edge (bb_true, bb_join, EDGE_FALLTHRU);
       make_edge (bb_false, bb_join, EDGE_FALLTHRU);
-      add_bb_to_loop (bb_true, bb_cond->loop_father);
-      add_bb_to_loop (bb_false, bb_cond->loop_father);
+      if (current_loops)
+	{
+	  add_bb_to_loop (bb_true, bb_cond->loop_father);
+	  add_bb_to_loop (bb_false, bb_cond->loop_father);
+	}
 
       /* Update dominance info.  Note that bb_join's data was
          updated by split_block.  */
@@ -1637,7 +1628,7 @@ tree_lower_complex (void)
   init_parameter_lattice_values ();
   ssa_propagate (complex_visit_stmt, complex_visit_phi);
 
-  complex_variable_components = new int_tree_htab_type (10);
+  complex_variable_components.create (10);
 
   complex_ssa_name_components.create (2 * num_ssa_names);
   complex_ssa_name_components.safe_grow_cleared (2 * num_ssa_names);
@@ -1658,8 +1649,7 @@ tree_lower_complex (void)
 
   gsi_commit_edge_inserts ();
 
-  delete complex_variable_components;
-  complex_variable_components = NULL;
+  complex_variable_components.dispose ();
   complex_ssa_name_components.release ();
   complex_lattice_values.release ();
   return 0;
@@ -1672,12 +1662,14 @@ const pass_data pass_data_lower_complex =
   GIMPLE_PASS, /* type */
   "cplxlower", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  false, /* has_gate */
+  true, /* has_execute */
   TV_NONE, /* tv_id */
   PROP_ssa, /* properties_required */
   PROP_gimple_lcx, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  TODO_update_ssa, /* todo_flags_finish */
+  ( TODO_update_ssa | TODO_verify_stmts ), /* todo_flags_finish */
 };
 
 class pass_lower_complex : public gimple_opt_pass
@@ -1689,7 +1681,7 @@ public:
 
   /* opt_pass methods: */
   opt_pass * clone () { return new pass_lower_complex (m_ctxt); }
-  virtual unsigned int execute (function *) { return tree_lower_complex (); }
+  unsigned int execute () { return tree_lower_complex (); }
 
 }; // class pass_lower_complex
 
@@ -1702,6 +1694,14 @@ make_pass_lower_complex (gcc::context *ctxt)
 }
 
 
+static bool
+gate_no_optimization (void)
+{
+  /* With errors, normal optimization passes are not run.  If we don't
+     lower complex operations at all, rtl expansion will abort.  */
+  return !(cfun->curr_properties & PROP_gimple_lcx);
+}
+
 namespace {
 
 const pass_data pass_data_lower_complex_O0 =
@@ -1709,12 +1709,14 @@ const pass_data pass_data_lower_complex_O0 =
   GIMPLE_PASS, /* type */
   "cplxlower0", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_NONE, /* tv_id */
   PROP_cfg, /* properties_required */
   PROP_gimple_lcx, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  TODO_update_ssa, /* todo_flags_finish */
+  ( TODO_update_ssa | TODO_verify_stmts ), /* todo_flags_finish */
 };
 
 class pass_lower_complex_O0 : public gimple_opt_pass
@@ -1725,14 +1727,8 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *fun)
-    {
-      /* With errors, normal optimization passes are not run.  If we don't
-	 lower complex operations at all, rtl expansion will abort.  */
-      return !(fun->curr_properties & PROP_gimple_lcx);
-    }
-
-  virtual unsigned int execute (function *) { return tree_lower_complex (); }
+  bool gate () { return gate_no_optimization (); }
+  unsigned int execute () { return tree_lower_complex (); }
 
 }; // class pass_lower_complex_O0
 

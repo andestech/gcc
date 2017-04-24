@@ -23,20 +23,9 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm.h"
 #include "tree.h"
 #include "tm_p.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfganal.h"
 #include "basic-block.h"
 #include "gimple-pretty-print.h"
-#include "hash-map.h"
+#include "pointer-set.h"
 #include "hash-table.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -114,7 +103,7 @@ struct lim_aux_data
 
 /* Maps statements to their lim_aux_data.  */
 
-static hash_map<gimple, lim_aux_data *> *lim_aux_data_map;
+static struct pointer_map_t *lim_aux_data_map;
 
 /* Description of a memory reference location.  */
 
@@ -127,7 +116,7 @@ typedef struct mem_ref_loc
 
 /* Description of a memory reference.  */
 
-typedef struct im_mem_ref
+typedef struct mem_ref
 {
   unsigned id;			/* ID assigned to the memory reference
 				   (its index in memory_accesses.refs_list)  */
@@ -164,15 +153,15 @@ typedef struct im_mem_ref
 
 /* Mem_ref hashtable helpers.  */
 
-struct mem_ref_hasher : typed_noop_remove <im_mem_ref>
+struct mem_ref_hasher : typed_noop_remove <mem_ref>
 {
-  typedef im_mem_ref value_type;
+  typedef mem_ref value_type;
   typedef tree_node compare_type;
   static inline hashval_t hash (const value_type *);
   static inline bool equal (const value_type *, const compare_type *);
 };
 
-/* A hash function for struct im_mem_ref object OBJ.  */
+/* A hash function for struct mem_ref object OBJ.  */
 
 inline hashval_t
 mem_ref_hasher::hash (const value_type *mem)
@@ -180,7 +169,7 @@ mem_ref_hasher::hash (const value_type *mem)
   return mem->hash;
 }
 
-/* An equality function for struct im_mem_ref object MEM1 with
+/* An equality function for struct mem_ref object MEM1 with
    memory reference OBJ2.  */
 
 inline bool
@@ -195,7 +184,7 @@ mem_ref_hasher::equal (const value_type *mem1, const compare_type *obj2)
 static struct
 {
   /* The hash table of memory references accessed in loops.  */
-  hash_table<mem_ref_hasher> *refs;
+  hash_table <mem_ref_hasher> refs;
 
   /* The list of memory references.  */
   vec<mem_ref_p> refs_list;
@@ -210,7 +199,7 @@ static struct
   vec<bitmap_head> all_refs_stored_in_loop;
 
   /* Cache for expanding memory addresses.  */
-  hash_map<tree, name_expansion *> *ttae_cache;
+  struct pointer_map_t *ttae_cache;
 } memory_accesses;
 
 /* Obstack for the bitmaps in the above data structures.  */
@@ -236,20 +225,20 @@ static bool ref_indep_loop_p (struct loop *, mem_ref_p);
 static struct lim_aux_data *
 init_lim_data (gimple stmt)
 {
-  lim_aux_data *p = XCNEW (struct lim_aux_data);
-  lim_aux_data_map->put (stmt, p);
+  void **p = pointer_map_insert (lim_aux_data_map, stmt);
 
-  return p;
+  *p = XCNEW (struct lim_aux_data);
+  return (struct lim_aux_data *) *p;
 }
 
 static struct lim_aux_data *
 get_lim_data (gimple stmt)
 {
-  lim_aux_data **p = lim_aux_data_map->get (stmt);
+  void **p = pointer_map_contains (lim_aux_data_map, stmt);
   if (!p)
     return NULL;
 
-  return *p;
+  return (struct lim_aux_data *) *p;
 }
 
 /* Releases the memory occupied by DATA.  */
@@ -264,11 +253,11 @@ free_lim_aux_data (struct lim_aux_data *data)
 static void
 clear_lim_data (gimple stmt)
 {
-  lim_aux_data **p = lim_aux_data_map->get (stmt);
+  void **p = pointer_map_contains (lim_aux_data_map, stmt);
   if (!p)
     return;
 
-  free_lim_aux_data (*p);
+  free_lim_aux_data ((struct lim_aux_data *) *p);
   *p = NULL;
 }
 
@@ -620,7 +609,7 @@ mem_ref_in_stmt (gimple stmt)
   gcc_assert (!store);
 
   hash = iterative_hash_expr (*mem, 0);
-  ref = memory_accesses.refs->find_with_hash (*mem, hash);
+  ref = memory_accesses.refs.find_with_hash (*mem, hash);
 
   gcc_assert (ref != NULL);
   return ref;
@@ -730,31 +719,18 @@ determine_max_movement (gimple stmt, bool must_preserve_exec)
       FOR_EACH_PHI_ARG (use_p, stmt, iter, SSA_OP_USE)
 	{
 	  val = USE_FROM_PTR (use_p);
-
 	  if (TREE_CODE (val) != SSA_NAME)
-	    {
-	      /* Assign const 1 to constants.  */
-	      min_cost = MIN (min_cost, 1);
-	      total_cost += 1;
-	      continue;
-	    }
+	    continue;
 	  if (!add_dependency (val, lim_data, loop, false))
 	    return false;
-
-	  gimple def_stmt = SSA_NAME_DEF_STMT (val);
-	  if (gimple_bb (def_stmt)
-	      && gimple_bb (def_stmt)->loop_father == loop)
+	  def_data = get_lim_data (SSA_NAME_DEF_STMT (val));
+	  if (def_data)
 	    {
-	      def_data = get_lim_data (def_stmt);
-	      if (def_data)
-		{
-		  min_cost = MIN (min_cost, def_data->cost);
-		  total_cost += def_data->cost;
-		}
+	      min_cost = MIN (min_cost, def_data->cost);
+	      total_cost += def_data->cost;
 	    }
 	}
 
-      min_cost = MIN (min_cost, total_cost);
       lim_data->cost += min_cost;
 
       if (gimple_phi_num_args (stmt) > 1)
@@ -1406,7 +1382,7 @@ force_move_till (tree ref, tree *index, void *data)
 /* A function to free the mem_ref object OBJ.  */
 
 static void
-memref_free (struct im_mem_ref *mem)
+memref_free (struct mem_ref *mem)
 {
   mem->accesses_in_loop.release ();
 }
@@ -1417,7 +1393,7 @@ memref_free (struct im_mem_ref *mem)
 static mem_ref_p
 mem_ref_alloc (tree mem, unsigned hash, unsigned id)
 {
-  mem_ref_p ref = XOBNEW (&mem_ref_obstack, struct im_mem_ref);
+  mem_ref_p ref = XOBNEW (&mem_ref_obstack, struct mem_ref);
   ao_ref_init (&ref->mem, mem);
   ref->id = id;
   ref->hash = hash;
@@ -1472,7 +1448,7 @@ gather_mem_refs_stmt (struct loop *loop, gimple stmt)
 {
   tree *mem = NULL;
   hashval_t hash;
-  im_mem_ref **slot;
+  mem_ref **slot;
   mem_ref_p ref;
   bool is_stored;
   unsigned id;
@@ -1496,7 +1472,7 @@ gather_mem_refs_stmt (struct loop *loop, gimple stmt)
   else
     {
       hash = iterative_hash_expr (*mem, 0);
-      slot = memory_accesses.refs->find_slot_with_hash (*mem, hash, INSERT);
+      slot = memory_accesses.refs.find_slot_with_hash (*mem, hash, INSERT);
       if (*slot)
 	{
 	  ref = (mem_ref_p) *slot;
@@ -1589,7 +1565,7 @@ analyze_memory_references (void)
 
   /* Sort the location list of gathered memory references after their
      loop postorder number.  */
-  im_mem_ref *ref;
+  mem_ref *ref;
   FOR_EACH_VEC_ELT (memory_accesses.refs_list, i, ref)
     ref->accesses_in_loop.qsort (sort_locs_in_loop_postorder_cmp);
 
@@ -1620,12 +1596,12 @@ analyze_memory_references (void)
 
 static bool
 mem_refs_may_alias_p (mem_ref_p mem1, mem_ref_p mem2,
-		      hash_map<tree, name_expansion *> **ttae_cache)
+		      struct pointer_map_t **ttae_cache)
 {
   /* Perform BASE + OFFSET analysis -- if MEM1 and MEM2 are based on the same
      object and their offset differ in such a way that the locations cannot
      overlap, then they cannot alias.  */
-  widest_int size1, size2;
+  double_int size1, size2;
   aff_tree off1, off2;
 
   /* Perform basic offset and type-based disambiguation.  */
@@ -1641,7 +1617,7 @@ mem_refs_may_alias_p (mem_ref_p mem1, mem_ref_p mem2,
   get_inner_reference_aff (mem2->mem.ref, &off2, &size2);
   aff_combination_expand (&off1, ttae_cache);
   aff_combination_expand (&off2, ttae_cache);
-  aff_combination_scale (&off1, -1);
+  aff_combination_scale (&off1, double_int_minus_one);
   aff_combination_add (&off2, &off1);
 
   if (aff_comb_cannot_overlap_p (&off2, size1, size2))
@@ -2440,14 +2416,14 @@ tree_ssa_lim_initialize (void)
 
   bitmap_obstack_initialize (&lim_bitmap_obstack);
   gcc_obstack_init (&mem_ref_obstack);
-  lim_aux_data_map = new hash_map<gimple, lim_aux_data *>;
+  lim_aux_data_map = pointer_map_create ();
 
   if (flag_tm)
     compute_transaction_bits ();
 
   alloc_aux_for_edges (0);
 
-  memory_accesses.refs = new hash_table<mem_ref_hasher> (100);
+  memory_accesses.refs.create (100);
   memory_accesses.refs_list.create (100);
   /* Allocate a special, unanalyzable mem-ref with ID zero.  */
   memory_accesses.refs_list.quick_push
@@ -2495,10 +2471,9 @@ tree_ssa_lim_finalize (void)
     SET_ALWAYS_EXECUTED_IN (bb, NULL);
 
   bitmap_obstack_release (&lim_bitmap_obstack);
-  delete lim_aux_data_map;
+  pointer_map_destroy (lim_aux_data_map);
 
-  delete memory_accesses.refs;
-  memory_accesses.refs = NULL;
+  memory_accesses.refs.dispose ();
 
   FOR_EACH_VEC_ELT (memory_accesses.refs_list, i, ref)
     memref_free (ref);
@@ -2550,6 +2525,21 @@ tree_ssa_lim (void)
 
 /* Loop invariant motion pass.  */
 
+static unsigned int
+tree_ssa_loop_im (void)
+{
+  if (number_of_loops (cfun) <= 1)
+    return 0;
+
+  return tree_ssa_lim ();
+}
+
+static bool
+gate_tree_ssa_loop_im (void)
+{
+  return flag_tree_loop_im != 0;
+}
+
 namespace {
 
 const pass_data pass_data_lim =
@@ -2557,6 +2547,8 @@ const pass_data pass_data_lim =
   GIMPLE_PASS, /* type */
   "lim", /* name */
   OPTGROUP_LOOP, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_LIM, /* tv_id */
   PROP_cfg, /* properties_required */
   0, /* properties_provided */
@@ -2574,19 +2566,10 @@ public:
 
   /* opt_pass methods: */
   opt_pass * clone () { return new pass_lim (m_ctxt); }
-  virtual bool gate (function *) { return flag_tree_loop_im != 0; }
-  virtual unsigned int execute (function *);
+  bool gate () { return gate_tree_ssa_loop_im (); }
+  unsigned int execute () { return tree_ssa_loop_im (); }
 
 }; // class pass_lim
-
-unsigned int
-pass_lim::execute (function *fun)
-{
-  if (number_of_loops (fun) <= 1)
-    return 0;
-
-  return tree_ssa_lim ();
-}
 
 } // anon namespace
 

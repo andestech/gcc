@@ -5,10 +5,6 @@
 /* { dg-require-effective-target nonpic } */
 /* { dg-options "-O1 -fdump-tree-local-pure-const1 -fdump-ipa-pure-const" } */
 
-int recurse1 (int);
-int recurse2b (int);
-int norecurse1b (int);
-
 int recurese1 (int i)
 {
   return recurse1 (i+1);

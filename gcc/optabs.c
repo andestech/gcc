@@ -29,30 +29,19 @@ along with GCC; see the file COPYING3.  If not see
 #include "insn-config.h"
 #include "rtl.h"
 #include "tree.h"
-#include "tree-hasher.h"
 #include "stor-layout.h"
 #include "stringpool.h"
 #include "varasm.h"
 #include "tm_p.h"
 #include "flags.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
 #include "function.h"
 #include "except.h"
 #include "expr.h"
-#include "insn-codes.h"
 #include "optabs.h"
 #include "libfuncs.h"
 #include "recog.h"
 #include "reload.h"
 #include "ggc.h"
-#include "predict.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "target.h"
 
@@ -68,9 +57,9 @@ struct target_libfuncs *this_target_libfuncs = &default_target_libfuncs;
   (this_target_libfuncs->x_libfunc_hash)
 
 static void prepare_float_lib_cmp (rtx, rtx, enum rtx_code, rtx *,
-				   machine_mode *);
-static rtx expand_unop_direct (machine_mode, optab, rtx, rtx, int);
-static void emit_libcall_block_1 (rtx_insn *, rtx, rtx, rtx, bool);
+				   enum machine_mode *);
+static rtx expand_unop_direct (enum machine_mode, optab, rtx, rtx, int);
+static void emit_libcall_block_1 (rtx, rtx, rtx, rtx, bool);
 
 /* Debug facility for use in GDB.  */
 void debug_optab_libfuncs (void);
@@ -84,17 +73,20 @@ void debug_optab_libfuncs (void);
 
 /* Used for libfunc_hash.  */
 
-hashval_t
-libfunc_hasher::hash (libfunc_entry *e)
+static hashval_t
+hash_libfunc (const void *p)
 {
+  const struct libfunc_entry *const e = (const struct libfunc_entry *) p;
   return ((e->mode1 + e->mode2 * NUM_MACHINE_MODES) ^ e->op);
 }
 
 /* Used for libfunc_hash.  */
 
-bool
-libfunc_hasher::equal (libfunc_entry *e1, libfunc_entry *e2)
+static int
+eq_libfunc (const void *p, const void *q)
 {
+  const struct libfunc_entry *const e1 = (const struct libfunc_entry *) p;
+  const struct libfunc_entry *const e2 = (const struct libfunc_entry *) q;
   return e1->op == e2->op && e1->mode1 == e2->mode1 && e1->mode2 == e2->mode2;
 }
 
@@ -102,8 +94,8 @@ libfunc_hasher::equal (libfunc_entry *e1, libfunc_entry *e2)
    from MODE2 to MODE1.  Trigger lazy initialization if needed, return NULL
    if no libfunc is available.  */
 rtx
-convert_optab_libfunc (convert_optab optab, machine_mode mode1,
-		       machine_mode mode2)
+convert_optab_libfunc (convert_optab optab, enum machine_mode mode1,
+		       enum machine_mode mode2)
 {
   struct libfunc_entry e;
   struct libfunc_entry **slot;
@@ -117,7 +109,8 @@ convert_optab_libfunc (convert_optab optab, machine_mode mode1,
   e.op = optab;
   e.mode1 = mode1;
   e.mode2 = mode2;
-  slot = libfunc_hash->find_slot (&e, NO_INSERT);
+  slot = (struct libfunc_entry **)
+    htab_find_slot (libfunc_hash, &e, NO_INSERT);
   if (!slot)
     {
       const struct convert_optab_libcall_d *d
@@ -127,7 +120,8 @@ convert_optab_libfunc (convert_optab optab, machine_mode mode1,
 	return NULL;
 
       d->libcall_gen (optab, d->libcall_basename, mode1, mode2);
-      slot = libfunc_hash->find_slot (&e, NO_INSERT);
+      slot = (struct libfunc_entry **)
+	htab_find_slot (libfunc_hash, &e, NO_INSERT);
       if (!slot)
 	return NULL;
     }
@@ -138,7 +132,7 @@ convert_optab_libfunc (convert_optab optab, machine_mode mode1,
    Trigger lazy initialization if needed, return NULL if no libfunc is
    available.  */
 rtx
-optab_libfunc (optab optab, machine_mode mode)
+optab_libfunc (optab optab, enum machine_mode mode)
 {
   struct libfunc_entry e;
   struct libfunc_entry **slot;
@@ -152,7 +146,8 @@ optab_libfunc (optab optab, machine_mode mode)
   e.op = optab;
   e.mode1 = mode;
   e.mode2 = VOIDmode;
-  slot = libfunc_hash->find_slot (&e, NO_INSERT);
+  slot = (struct libfunc_entry **)
+    htab_find_slot (libfunc_hash, &e, NO_INSERT);
   if (!slot)
     {
       const struct optab_libcall_d *d
@@ -162,7 +157,8 @@ optab_libfunc (optab optab, machine_mode mode)
 	return NULL;
 
       d->libcall_gen (optab, d->libcall_basename, d->libcall_suffix, mode);
-      slot = libfunc_hash->find_slot (&e, NO_INSERT);
+      slot = (struct libfunc_entry **)
+	htab_find_slot (libfunc_hash, &e, NO_INSERT);
       if (!slot)
 	return NULL;
     }
@@ -181,10 +177,9 @@ optab_libfunc (optab optab, machine_mode mode)
    try again, ensuring that TARGET is not one of the operands.  */
 
 static int
-add_equal_note (rtx_insn *insns, rtx target, enum rtx_code code, rtx op0, rtx op1)
+add_equal_note (rtx insns, rtx target, enum rtx_code code, rtx op0, rtx op1)
 {
-  rtx_insn *last_insn;
-  rtx set;
+  rtx last_insn, set;
   rtx note;
 
   gcc_assert (insns && INSN_P (insns) && NEXT_INSN (insns));
@@ -233,7 +228,7 @@ add_equal_note (rtx_insn *insns, rtx target, enum rtx_code code, rtx op0, rtx op
       return 0;
     }
 
-  set = set_for_reg_notes (last_insn);
+  set = single_set (last_insn);
   if (set == NULL_RTX)
     return 1;
 
@@ -282,12 +277,12 @@ add_equal_note (rtx_insn *insns, rtx target, enum rtx_code code, rtx op0, rtx op
    for a widening operation would be.  In most cases this would be OP0, but if
    that's a constant it'll be VOIDmode, which isn't useful.  */
 
-static machine_mode
-widened_mode (machine_mode to_mode, rtx op0, rtx op1)
+static enum machine_mode
+widened_mode (enum machine_mode to_mode, rtx op0, rtx op1)
 {
-  machine_mode m0 = GET_MODE (op0);
-  machine_mode m1 = GET_MODE (op1);
-  machine_mode result;
+  enum machine_mode m0 = GET_MODE (op0);
+  enum machine_mode m1 = GET_MODE (op1);
+  enum machine_mode result;
 
   if (m0 == VOIDmode && m1 == VOIDmode)
     return to_mode;
@@ -302,25 +297,6 @@ widened_mode (machine_mode to_mode, rtx op0, rtx op1)
   return result;
 }
 
-/* Like optab_handler, but for widening_operations that have a
-   TO_MODE and a FROM_MODE.  */
-
-enum insn_code
-widening_optab_handler (optab op, machine_mode to_mode,
-			machine_mode from_mode)
-{
-  unsigned scode = (op << 16) | to_mode;
-  if (to_mode != from_mode && from_mode != VOIDmode)
-    {
-      /* ??? Why does find_widening_optab_handler_and_mode attempt to
-	 widen things that can't be widened?  E.g. add_optab... */
-      if (op > LAST_CONV_OPTAB)
-	return CODE_FOR_nothing;
-      scode |= from_mode << 8;
-    }
-  return raw_optab_handler (scode);
-}
-
 /* Find a widening optab even if it doesn't widen as much as we want.
    E.g. if from_mode is HImode, and to_mode is DImode, and there is no
    direct HI->SI insn, then return SI->DI, if that exists.
@@ -328,10 +304,10 @@ widening_optab_handler (optab op, machine_mode to_mode,
    non-widening optabs also.  */
 
 enum insn_code
-find_widening_optab_handler_and_mode (optab op, machine_mode to_mode,
-				      machine_mode from_mode,
+find_widening_optab_handler_and_mode (optab op, enum machine_mode to_mode,
+				      enum machine_mode from_mode,
 				      int permit_non_widening,
-				      machine_mode *found_mode)
+				      enum machine_mode *found_mode)
 {
   for (; (permit_non_widening || from_mode != to_mode)
 	 && GET_MODE_SIZE (from_mode) <= GET_MODE_SIZE (to_mode)
@@ -359,7 +335,7 @@ find_widening_optab_handler_and_mode (optab op, machine_mode to_mode,
    of logical operations, but not right shifts.  */
 
 static rtx
-widen_operand (rtx op, machine_mode mode, machine_mode oldmode,
+widen_operand (rtx op, enum machine_mode mode, enum machine_mode oldmode,
 	       int unsignedp, int no_extend)
 {
   rtx result;
@@ -373,7 +349,7 @@ widen_operand (rtx op, machine_mode mode, machine_mode oldmode,
      a promoted object differs from our extension.  */
   if (! no_extend
       || (GET_CODE (op) == SUBREG && SUBREG_PROMOTED_VAR_P (op)
-	  && SUBREG_CHECK_PROMOTED_SIGN (op, unsignedp)))
+	  && SUBREG_PROMOTED_UNSIGNED_P (op) == unsignedp))
     return convert_modes (mode, oldmode, op, unsignedp);
 
   /* If MODE is no wider than a single word, we return a lowpart or paradoxical
@@ -489,9 +465,6 @@ optab_for_tree_code (enum tree_code code, const_tree type,
     case DOT_PROD_EXPR:
       return TYPE_UNSIGNED (type) ? udot_prod_optab : sdot_prod_optab;
 
-    case SAD_EXPR:
-      return TYPE_UNSIGNED (type) ? usad_optab : ssad_optab;
-
     case WIDEN_MULT_PLUS_EXPR:
       return (TYPE_UNSIGNED (type)
 	      ? (TYPE_SATURATING (type)
@@ -510,15 +483,16 @@ optab_for_tree_code (enum tree_code code, const_tree type,
       return fma_optab;
 
     case REDUC_MAX_EXPR:
-      return TYPE_UNSIGNED (type)
-	     ? reduc_umax_scal_optab : reduc_smax_scal_optab;
+      return TYPE_UNSIGNED (type) ? reduc_umax_optab : reduc_smax_optab;
 
     case REDUC_MIN_EXPR:
-      return TYPE_UNSIGNED (type)
-	     ? reduc_umin_scal_optab : reduc_smin_scal_optab;
+      return TYPE_UNSIGNED (type) ? reduc_umin_optab : reduc_smin_optab;
 
     case REDUC_PLUS_EXPR:
-      return reduc_plus_scal_optab;
+      return TYPE_UNSIGNED (type) ? reduc_uplus_optab : reduc_splus_optab;
+
+    case VEC_LSHIFT_EXPR:
+      return vec_shl_optab;
 
     case VEC_RSHIFT_EXPR:
       return vec_shr_optab;
@@ -611,26 +585,7 @@ optab_for_tree_code (enum tree_code code, const_tree type,
       return unknown_optab;
     }
 }
-
-/* Given optab UNOPTAB that reduces a vector to a scalar, find instead the old
-   optab that produces a vector with the reduction result in one element,
-   for a tree with type TYPE.  */
-
-optab
-scalar_reduc_to_vector (optab unoptab, const_tree type)
-{
-  switch (unoptab)
-    {
-    case reduc_plus_scal_optab:
-      return TYPE_UNSIGNED (type) ? reduc_uplus_optab : reduc_splus_optab;
-
-    case reduc_smin_scal_optab: return reduc_smin_optab;
-    case reduc_umin_scal_optab: return reduc_umin_optab;
-    case reduc_smax_scal_optab: return reduc_smax_optab;
-    case reduc_umax_scal_optab: return reduc_umax_optab;
-    default: return unknown_optab;
-    }
-}
+
 
 /* Expand vector widening operations.
 
@@ -658,7 +613,7 @@ expand_widen_pattern_expr (sepops ops, rtx op0, rtx op1, rtx wide_op,
 {
   struct expand_operand eops[4];
   tree oprnd0, oprnd1, oprnd2;
-  machine_mode wmode = VOIDmode, tmode0, tmode1 = VOIDmode;
+  enum machine_mode wmode = VOIDmode, tmode0, tmode1 = VOIDmode;
   optab widen_pattern_optab;
   enum insn_code icode;
   int nops = TREE_CODE_LENGTH (ops->code);
@@ -717,7 +672,7 @@ expand_widen_pattern_expr (sepops ops, rtx op0, rtx op1, rtx wide_op,
    this may or may not be TARGET.  */
 
 rtx
-expand_ternary_op (machine_mode mode, optab ternary_optab, rtx op0,
+expand_ternary_op (enum machine_mode mode, optab ternary_optab, rtx op0,
 		   rtx op1, rtx op2, rtx target, int unsignedp)
 {
   struct expand_operand ops[4];
@@ -739,7 +694,7 @@ expand_ternary_op (machine_mode mode, optab ternary_optab, rtx op0,
    otherwise the same as for expand_binop.  */
 
 rtx
-simplify_expand_binop (machine_mode mode, optab binoptab,
+simplify_expand_binop (enum machine_mode mode, optab binoptab,
 		       rtx op0, rtx op1, rtx target, int unsignedp,
 		       enum optab_methods methods)
 {
@@ -758,7 +713,7 @@ simplify_expand_binop (machine_mode mode, optab binoptab,
    Return true if the expansion succeeded.  */
 
 bool
-force_expand_binop (machine_mode mode, optab binoptab,
+force_expand_binop (enum machine_mode mode, optab binoptab,
 		    rtx op0, rtx op1, rtx target, int unsignedp,
 		    enum optab_methods methods)
 {
@@ -771,7 +726,7 @@ force_expand_binop (machine_mode mode, optab binoptab,
   return true;
 }
 
-/* Generate insns for VEC_RSHIFT_EXPR.  */
+/* Generate insns for VEC_LSHIFT_EXPR, VEC_RSHIFT_EXPR.  */
 
 rtx
 expand_vec_shift_expr (sepops ops, rtx target)
@@ -779,13 +734,24 @@ expand_vec_shift_expr (sepops ops, rtx target)
   struct expand_operand eops[3];
   enum insn_code icode;
   rtx rtx_op1, rtx_op2;
-  machine_mode mode = TYPE_MODE (ops->type);
+  enum machine_mode mode = TYPE_MODE (ops->type);
   tree vec_oprnd = ops->op0;
   tree shift_oprnd = ops->op1;
+  optab shift_optab;
 
-  gcc_assert (ops->code == VEC_RSHIFT_EXPR);
+  switch (ops->code)
+    {
+      case VEC_RSHIFT_EXPR:
+	shift_optab = vec_shr_optab;
+	break;
+      case VEC_LSHIFT_EXPR:
+	shift_optab = vec_shl_optab;
+	break;
+      default:
+	gcc_unreachable ();
+    }
 
-  icode = optab_handler (vec_shr_optab, mode);
+  icode = optab_handler (shift_optab, mode);
   gcc_assert (icode != CODE_FOR_nothing);
 
   rtx_op1 = expand_normal (vec_oprnd);
@@ -804,7 +770,7 @@ expand_vec_shift_expr (sepops ops, rtx target)
    then the return value will be a constant.  */
 
 static rtx
-expand_vector_broadcast (machine_mode vmode, rtx op)
+expand_vector_broadcast (enum machine_mode vmode, rtx op)
 {
   enum insn_code icode;
   rtvec vec;
@@ -870,7 +836,7 @@ expand_superword_shift (optab binoptab, rtx outof_input, rtx superword_op1,
    value are the same as for the parent routine.  */
 
 static bool
-expand_subword_shift (machine_mode op1_mode, optab binoptab,
+expand_subword_shift (enum machine_mode op1_mode, optab binoptab,
 		      rtx outof_input, rtx into_input, rtx op1,
 		      rtx outof_target, rtx into_target,
 		      int unsignedp, enum optab_methods methods,
@@ -888,8 +854,7 @@ expand_subword_shift (machine_mode op1_mode, optab binoptab,
   if (CONSTANT_P (op1) || shift_mask >= BITS_PER_WORD)
     {
       carries = outof_input;
-      tmp = immed_wide_int_const (wi::shwi (BITS_PER_WORD,
-					    op1_mode), op1_mode);
+      tmp = immed_double_const (BITS_PER_WORD, 0, op1_mode);
       tmp = simplify_expand_binop (op1_mode, sub_optab, tmp, op1,
 				   0, true, methods);
     }
@@ -904,15 +869,13 @@ expand_subword_shift (machine_mode op1_mode, optab binoptab,
 			      outof_input, const1_rtx, 0, unsignedp, methods);
       if (shift_mask == BITS_PER_WORD - 1)
 	{
-	  tmp = immed_wide_int_const
-	    (wi::minus_one (GET_MODE_PRECISION (op1_mode)), op1_mode);
+	  tmp = immed_double_const (-1, -1, op1_mode);
 	  tmp = simplify_expand_binop (op1_mode, xor_optab, op1, tmp,
 				       0, true, methods);
 	}
       else
 	{
-	  tmp = immed_wide_int_const (wi::shwi (BITS_PER_WORD - 1,
-						op1_mode), op1_mode);
+	  tmp = immed_double_const (BITS_PER_WORD - 1, 0, op1_mode);
 	  tmp = simplify_expand_binop (op1_mode, sub_optab, tmp, op1,
 				       0, true, methods);
 	}
@@ -954,7 +917,7 @@ expand_subword_shift (machine_mode op1_mode, optab binoptab,
    arguments are the same as the parent routine.  */
 
 static bool
-expand_doubleword_shift_condmove (machine_mode op1_mode, optab binoptab,
+expand_doubleword_shift_condmove (enum machine_mode op1_mode, optab binoptab,
 				  enum rtx_code cmp_code, rtx cmp1, rtx cmp2,
 				  rtx outof_input, rtx into_input,
 				  rtx subword_op1, rtx superword_op1,
@@ -1038,13 +1001,14 @@ expand_doubleword_shift_condmove (machine_mode op1_mode, optab binoptab,
    Return true if the shift could be successfully synthesized.  */
 
 static bool
-expand_doubleword_shift (machine_mode op1_mode, optab binoptab,
+expand_doubleword_shift (enum machine_mode op1_mode, optab binoptab,
 			 rtx outof_input, rtx into_input, rtx op1,
 			 rtx outof_target, rtx into_target,
 			 int unsignedp, enum optab_methods methods,
 			 unsigned HOST_WIDE_INT shift_mask)
 {
   rtx superword_op1, tmp, cmp1, cmp2;
+  rtx subword_label, done_label;
   enum rtx_code cmp_code;
 
   /* See if word-mode shifts by BITS_PER_WORD...BITS_PER_WORD * 2 - 1 will
@@ -1074,7 +1038,7 @@ expand_doubleword_shift (machine_mode op1_mode, optab binoptab,
      is true when the effective shift value is less than BITS_PER_WORD.
      Set SUPERWORD_OP1 to the shift count that should be used to shift
      OUTOF_INPUT into INTO_TARGET when the condition is false.  */
-  tmp = immed_wide_int_const (wi::shwi (BITS_PER_WORD, op1_mode), op1_mode);
+  tmp = immed_double_const (BITS_PER_WORD, 0, op1_mode);
   if (!CONSTANT_P (op1) && shift_mask == BITS_PER_WORD - 1)
     {
       /* Set CMP1 to OP1 & BITS_PER_WORD.  The result is zero iff OP1
@@ -1116,7 +1080,7 @@ expand_doubleword_shift (machine_mode op1_mode, optab binoptab,
 #ifdef HAVE_conditional_move
   /* Try using conditional moves to generate straight-line code.  */
   {
-    rtx_insn *start = get_last_insn ();
+    rtx start = get_last_insn ();
     if (expand_doubleword_shift_condmove (op1_mode, binoptab,
 					  cmp_code, cmp1, cmp2,
 					  outof_input, into_input,
@@ -1129,8 +1093,8 @@ expand_doubleword_shift (machine_mode op1_mode, optab binoptab,
 #endif
 
   /* As a last resort, use branches to select the correct alternative.  */
-  rtx_code_label *subword_label = gen_label_rtx ();
-  rtx_code_label *done_label = gen_label_rtx ();
+  subword_label = gen_label_rtx ();
+  done_label = gen_label_rtx ();
 
   NO_DEFER_POP;
   do_compare_rtx_and_jump (cmp1, cmp2, cmp_code, false, op1_mode,
@@ -1212,7 +1176,7 @@ expand_doubleword_shift (machine_mode op1_mode, optab binoptab,
       the 0 or -1.  */
 
 static rtx
-expand_doubleword_mult (machine_mode mode, rtx op0, rtx op1, rtx target,
+expand_doubleword_mult (enum machine_mode mode, rtx op0, rtx op1, rtx target,
 		       bool umulp, enum optab_methods methods)
 {
   int low = (WORDS_BIG_ENDIAN ? 1 : 0);
@@ -1320,7 +1284,7 @@ expand_doubleword_mult (machine_mode mode, rtx op0, rtx op1, rtx target,
    the operation to perform, not an optab pointer.  All other
    arguments are the same.  */
 rtx
-expand_simple_binop (machine_mode mode, enum rtx_code code, rtx op0,
+expand_simple_binop (enum machine_mode mode, enum rtx_code code, rtx op0,
 		     rtx op1, rtx target, int unsignedp,
 		     enum optab_methods methods)
 {
@@ -1392,7 +1356,7 @@ commutative_optab_p (optab binoptab)
    register.  Return X otherwise.  UNSIGNEDP says whether X is unsigned.  */
 
 static rtx
-avoid_expensive_constant (machine_mode mode, optab binoptab,
+avoid_expensive_constant (enum machine_mode mode, optab binoptab,
 			  int opn, rtx x, bool unsignedp)
 {
   bool speed = optimize_insn_for_speed_p ();
@@ -1420,17 +1384,17 @@ avoid_expensive_constant (machine_mode mode, optab binoptab,
    is an insn that directly implements the indicated operation.
    Returns null if this is not possible.  */
 static rtx
-expand_binop_directly (machine_mode mode, optab binoptab,
+expand_binop_directly (enum machine_mode mode, optab binoptab,
 		       rtx op0, rtx op1,
 		       rtx target, int unsignedp, enum optab_methods methods,
-		       rtx_insn *last)
+		       rtx last)
 {
-  machine_mode from_mode = widened_mode (mode, op0, op1);
+  enum machine_mode from_mode = widened_mode (mode, op0, op1);
   enum insn_code icode = find_widening_optab_handler (binoptab, mode,
 						      from_mode, 1);
-  machine_mode xmode0 = insn_data[(int) icode].operand[1].mode;
-  machine_mode xmode1 = insn_data[(int) icode].operand[2].mode;
-  machine_mode mode0, mode1, tmp_mode;
+  enum machine_mode xmode0 = insn_data[(int) icode].operand[1].mode;
+  enum machine_mode xmode1 = insn_data[(int) icode].operand[2].mode;
+  enum machine_mode mode0, mode1, tmp_mode;
   struct expand_operand ops[3];
   bool commutative_p;
   rtx pat;
@@ -1516,9 +1480,8 @@ expand_binop_directly (machine_mode mode, optab binoptab,
       /* If PAT is composed of more than one insn, try to add an appropriate
 	 REG_EQUAL note to it.  If we can't because TEMP conflicts with an
 	 operand, call expand_binop again, this time without a target.  */
-      if (INSN_P (pat) && NEXT_INSN (as_a <rtx_insn *> (pat)) != NULL_RTX
-	  && ! add_equal_note (as_a <rtx_insn *> (pat), ops[0].value,
-			       optab_to_code (binoptab),
+      if (INSN_P (pat) && NEXT_INSN (pat) != NULL_RTX
+	  && ! add_equal_note (pat, ops[0].value, optab_to_code (binoptab),
 			       ops[1].value, ops[2].value))
 	{
 	  delete_insns_since (last);
@@ -1545,18 +1508,18 @@ expand_binop_directly (machine_mode mode, optab binoptab,
    this may or may not be TARGET.  */
 
 rtx
-expand_binop (machine_mode mode, optab binoptab, rtx op0, rtx op1,
+expand_binop (enum machine_mode mode, optab binoptab, rtx op0, rtx op1,
 	      rtx target, int unsignedp, enum optab_methods methods)
 {
   enum optab_methods next_methods
     = (methods == OPTAB_LIB || methods == OPTAB_LIB_WIDEN
        ? OPTAB_WIDEN : methods);
   enum mode_class mclass;
-  machine_mode wider_mode;
+  enum machine_mode wider_mode;
   rtx libfunc;
   rtx temp;
-  rtx_insn *entry_last = get_last_insn ();
-  rtx_insn *last;
+  rtx entry_last = get_last_insn ();
+  rtx last;
 
   mclass = GET_MODE_CLASS (mode);
 
@@ -1752,7 +1715,7 @@ expand_binop (machine_mode mode, optab binoptab, rtx op0, rtx op1,
       && optab_handler (binoptab, word_mode) != CODE_FOR_nothing)
     {
       int i;
-      rtx_insn *insns;
+      rtx insns;
 
       /* If TARGET is the same as one of the operands, the REG_EQUAL note
 	 won't be accurate, so use a new target.  */
@@ -1802,7 +1765,7 @@ expand_binop (machine_mode mode, optab binoptab, rtx op0, rtx op1,
       && optab_handler (lshr_optab, word_mode) != CODE_FOR_nothing)
     {
       unsigned HOST_WIDE_INT shift_mask, double_shift_mask;
-      machine_mode op1_mode;
+      enum machine_mode op1_mode;
 
       double_shift_mask = targetm.shift_truncation_mask (mode);
       shift_mask = targetm.shift_truncation_mask (word_mode);
@@ -1821,7 +1784,7 @@ expand_binop (machine_mode mode, optab binoptab, rtx op0, rtx op1,
 	  || (shift_mask == BITS_PER_WORD - 1
 	      && double_shift_mask == BITS_PER_WORD * 2 - 1))
 	{
-	  rtx_insn *insns;
+	  rtx insns;
 	  rtx into_target, outof_target;
 	  rtx into_input, outof_input;
 	  int left_shift, outof_word;
@@ -1873,7 +1836,7 @@ expand_binop (machine_mode mode, optab binoptab, rtx op0, rtx op1,
       && optab_handler (ashl_optab, word_mode) != CODE_FOR_nothing
       && optab_handler (lshr_optab, word_mode) != CODE_FOR_nothing)
     {
-      rtx_insn *insns;
+      rtx insns;
       rtx into_target, outof_target;
       rtx into_input, outof_input;
       rtx inter;
@@ -2158,9 +2121,9 @@ expand_binop (machine_mode mode, optab binoptab, rtx op0, rtx op1,
   if (libfunc
       && (methods == OPTAB_LIB || methods == OPTAB_LIB_WIDEN))
     {
-      rtx_insn *insns;
+      rtx insns;
       rtx op1x = op1;
-      machine_mode op1_mode = mode;
+      enum machine_mode op1_mode = mode;
       rtx value;
 
       start_sequence ();
@@ -2280,7 +2243,7 @@ expand_binop (machine_mode mode, optab binoptab, rtx op0, rtx op1,
    of an unsigned wider operation, since the result would be the same.  */
 
 rtx
-sign_expand_binop (machine_mode mode, optab uoptab, optab soptab,
+sign_expand_binop (enum machine_mode mode, optab uoptab, optab soptab,
 		   rtx op0, rtx op1, rtx target, int unsignedp,
 		   enum optab_methods methods)
 {
@@ -2343,11 +2306,11 @@ int
 expand_twoval_unop (optab unoptab, rtx op0, rtx targ0, rtx targ1,
 		    int unsignedp)
 {
-  machine_mode mode = GET_MODE (targ0 ? targ0 : targ1);
+  enum machine_mode mode = GET_MODE (targ0 ? targ0 : targ1);
   enum mode_class mclass;
-  machine_mode wider_mode;
-  rtx_insn *entry_last = get_last_insn ();
-  rtx_insn *last;
+  enum machine_mode wider_mode;
+  rtx entry_last = get_last_insn ();
+  rtx last;
 
   mclass = GET_MODE_CLASS (mode);
 
@@ -2417,11 +2380,11 @@ int
 expand_twoval_binop (optab binoptab, rtx op0, rtx op1, rtx targ0, rtx targ1,
 		     int unsignedp)
 {
-  machine_mode mode = GET_MODE (targ0 ? targ0 : targ1);
+  enum machine_mode mode = GET_MODE (targ0 ? targ0 : targ1);
   enum mode_class mclass;
-  machine_mode wider_mode;
-  rtx_insn *entry_last = get_last_insn ();
-  rtx_insn *last;
+  enum machine_mode wider_mode;
+  rtx entry_last = get_last_insn ();
+  rtx last;
 
   mclass = GET_MODE_CLASS (mode);
 
@@ -2437,8 +2400,8 @@ expand_twoval_binop (optab binoptab, rtx op0, rtx op1, rtx targ0, rtx targ1,
     {
       struct expand_operand ops[4];
       enum insn_code icode = optab_handler (binoptab, mode);
-      machine_mode mode0 = insn_data[icode].operand[1].mode;
-      machine_mode mode1 = insn_data[icode].operand[2].mode;
+      enum machine_mode mode0 = insn_data[icode].operand[1].mode;
+      enum machine_mode mode1 = insn_data[icode].operand[2].mode;
       rtx xop0 = op0, xop1 = op1;
 
       /* If we are optimizing, force expensive constants into a register.  */
@@ -2499,10 +2462,10 @@ bool
 expand_twoval_binop_libfunc (optab binoptab, rtx op0, rtx op1,
 			     rtx targ0, rtx targ1, enum rtx_code code)
 {
-  machine_mode mode;
-  machine_mode libval_mode;
+  enum machine_mode mode;
+  enum machine_mode libval_mode;
   rtx libval;
-  rtx_insn *insns;
+  rtx insns;
   rtx libfunc;
 
   /* Exactly one of TARG0 or TARG1 should be non-NULL.  */
@@ -2539,7 +2502,7 @@ expand_twoval_binop_libfunc (optab binoptab, rtx op0, rtx op1,
    the operation to perform, not an optab pointer.  All other
    arguments are the same.  */
 rtx
-expand_simple_unop (machine_mode mode, enum rtx_code code, rtx op0,
+expand_simple_unop (enum machine_mode mode, enum rtx_code code, rtx op0,
 		    rtx target, int unsignedp)
 {
   optab unop = code_to_optab (code);
@@ -2556,20 +2519,19 @@ expand_simple_unop (machine_mode mode, enum rtx_code code, rtx op0,
    A similar operation can be used for clrsb.  UNOPTAB says which operation
    we are trying to expand.  */
 static rtx
-widen_leading (machine_mode mode, rtx op0, rtx target, optab unoptab)
+widen_leading (enum machine_mode mode, rtx op0, rtx target, optab unoptab)
 {
   enum mode_class mclass = GET_MODE_CLASS (mode);
   if (CLASS_HAS_WIDER_MODES_P (mclass))
     {
-      machine_mode wider_mode;
+      enum machine_mode wider_mode;
       for (wider_mode = GET_MODE_WIDER_MODE (mode);
 	   wider_mode != VOIDmode;
 	   wider_mode = GET_MODE_WIDER_MODE (wider_mode))
 	{
 	  if (optab_handler (unoptab, wider_mode) != CODE_FOR_nothing)
 	    {
-	      rtx xop0, temp;
-	      rtx_insn *last;
+	      rtx xop0, temp, last;
 
 	      last = get_last_insn ();
 
@@ -2599,15 +2561,14 @@ widen_leading (machine_mode mode, rtx op0, rtx target, optab unoptab)
 /* Try calculating clz of a double-word quantity as two clz's of word-sized
    quantities, choosing which based on whether the high word is nonzero.  */
 static rtx
-expand_doubleword_clz (machine_mode mode, rtx op0, rtx target)
+expand_doubleword_clz (enum machine_mode mode, rtx op0, rtx target)
 {
   rtx xop0 = force_reg (mode, op0);
   rtx subhi = gen_highpart (word_mode, xop0);
   rtx sublo = gen_lowpart (word_mode, xop0);
-  rtx_code_label *hi0_label = gen_label_rtx ();
-  rtx_code_label *after_label = gen_label_rtx ();
-  rtx_insn *seq;
-  rtx temp, result;
+  rtx hi0_label = gen_label_rtx ();
+  rtx after_label = gen_label_rtx ();
+  rtx seq, temp, result;
 
   /* If we were not given a target, use a word_mode register, not a
      'mode' register.  The result will fit, and nobody is expecting
@@ -2672,12 +2633,11 @@ expand_doubleword_clz (machine_mode mode, rtx op0, rtx target)
    as
 	(lshiftrt:wide (bswap:wide x) ((width wide) - (width narrow))).  */
 static rtx
-widen_bswap (machine_mode mode, rtx op0, rtx target)
+widen_bswap (enum machine_mode mode, rtx op0, rtx target)
 {
   enum mode_class mclass = GET_MODE_CLASS (mode);
-  machine_mode wider_mode;
-  rtx x;
-  rtx_insn *last;
+  enum machine_mode wider_mode;
+  rtx x, last;
 
   if (!CLASS_HAS_WIDER_MODES_P (mclass))
     return NULL_RTX;
@@ -2718,7 +2678,7 @@ widen_bswap (machine_mode mode, rtx op0, rtx target)
 /* Try calculating bswap as two bswaps of two word-sized operands.  */
 
 static rtx
-expand_doubleword_bswap (machine_mode mode, rtx op, rtx target)
+expand_doubleword_bswap (enum machine_mode mode, rtx op, rtx target)
 {
   rtx t0, t1;
 
@@ -2740,19 +2700,18 @@ expand_doubleword_bswap (machine_mode mode, rtx op, rtx target)
 /* Try calculating (parity x) as (and (popcount x) 1), where
    popcount can also be done in a wider mode.  */
 static rtx
-expand_parity (machine_mode mode, rtx op0, rtx target)
+expand_parity (enum machine_mode mode, rtx op0, rtx target)
 {
   enum mode_class mclass = GET_MODE_CLASS (mode);
   if (CLASS_HAS_WIDER_MODES_P (mclass))
     {
-      machine_mode wider_mode;
+      enum machine_mode wider_mode;
       for (wider_mode = mode; wider_mode != VOIDmode;
 	   wider_mode = GET_MODE_WIDER_MODE (wider_mode))
 	{
 	  if (optab_handler (popcount_optab, wider_mode) != CODE_FOR_nothing)
 	    {
-	      rtx xop0, temp;
-	      rtx_insn *last;
+	      rtx xop0, temp, last;
 
 	      last = get_last_insn ();
 
@@ -2787,10 +2746,9 @@ expand_parity (machine_mode mode, rtx op0, rtx target)
    less convenient for expand_ffs anyway.  */
 
 static rtx
-expand_ctz (machine_mode mode, rtx op0, rtx target)
+expand_ctz (enum machine_mode mode, rtx op0, rtx target)
 {
-  rtx_insn *seq;
-  rtx temp;
+  rtx seq, temp;
 
   if (optab_handler (clz_optab, mode) == CODE_FOR_nothing)
     return 0;
@@ -2830,12 +2788,11 @@ expand_ctz (machine_mode mode, rtx op0, rtx target)
    may have an undefined value in that case.  If they do not give us a
    convenient value, we have to generate a test and branch.  */
 static rtx
-expand_ffs (machine_mode mode, rtx op0, rtx target)
+expand_ffs (enum machine_mode mode, rtx op0, rtx target)
 {
   HOST_WIDE_INT val = 0;
   bool defined_at_zero = false;
-  rtx temp;
-  rtx_insn *seq;
+  rtx temp, seq;
 
   if (optab_handler (ctz_optab, mode) != CODE_FOR_nothing)
     {
@@ -2877,7 +2834,7 @@ expand_ffs (machine_mode mode, rtx op0, rtx target)
 	 the operation sets condition codes that can be recycled for this.
 	 (This is true on i386, for instance.)  */
 
-      rtx_code_label *nonzero_label = gen_label_rtx ();
+      rtx nonzero_label = gen_label_rtx ();
       emit_cmp_and_jump_insns (op0, CONST0_RTX (mode), NE, 0,
 			       mode, true, nonzero_label);
 
@@ -2910,8 +2867,8 @@ expand_ffs (machine_mode mode, rtx op0, rtx target)
    register will work around the situation.  */
 
 static rtx
-lowpart_subreg_maybe_copy (machine_mode omode, rtx val,
-			   machine_mode imode)
+lowpart_subreg_maybe_copy (enum machine_mode omode, rtx val,
+			   enum machine_mode imode)
 {
   rtx ret;
   ret = lowpart_subreg (omode, val, imode);
@@ -2928,14 +2885,14 @@ lowpart_subreg_maybe_copy (machine_mode omode, rtx val,
    logical operation on the sign bit.  */
 
 static rtx
-expand_absneg_bit (enum rtx_code code, machine_mode mode,
+expand_absneg_bit (enum rtx_code code, enum machine_mode mode,
 		   rtx op0, rtx target)
 {
   const struct real_format *fmt;
   int bitpos, word, nwords, i;
-  machine_mode imode;
-  rtx temp;
-  rtx_insn *insns;
+  enum machine_mode imode;
+  double_int mask;
+  rtx temp, insns;
 
   /* The format has to have a simple sign bit.  */
   fmt = REAL_MODE_FORMAT (mode);
@@ -2970,7 +2927,7 @@ expand_absneg_bit (enum rtx_code code, machine_mode mode,
       nwords = (GET_MODE_BITSIZE (mode) + BITS_PER_WORD - 1) / BITS_PER_WORD;
     }
 
-  wide_int mask = wi::set_bit_in_zero (bitpos, GET_MODE_PRECISION (imode));
+  mask = double_int_zero.set_bit (bitpos);
   if (code == ABS)
     mask = ~mask;
 
@@ -2992,7 +2949,7 @@ expand_absneg_bit (enum rtx_code code, machine_mode mode,
 	    {
 	      temp = expand_binop (imode, code == ABS ? and_optab : xor_optab,
 				   op0_piece,
-				   immed_wide_int_const (mask, imode),
+				   immed_double_int_const (mask, imode),
 				   targ_piece, 1, OPTAB_LIB_WIDEN);
 	      if (temp != targ_piece)
 		emit_move_insn (targ_piece, temp);
@@ -3010,7 +2967,7 @@ expand_absneg_bit (enum rtx_code code, machine_mode mode,
     {
       temp = expand_binop (imode, code == ABS ? and_optab : xor_optab,
 			   gen_lowpart (imode, op0),
-			   immed_wide_int_const (mask, imode),
+			   immed_double_int_const (mask, imode),
 		           gen_lowpart (imode, target), 1, OPTAB_LIB_WIDEN);
       target = lowpart_subreg_maybe_copy (mode, temp, imode);
 
@@ -3025,14 +2982,14 @@ expand_absneg_bit (enum rtx_code code, machine_mode mode,
 /* As expand_unop, but will fail rather than attempt the operation in a
    different mode or with a libcall.  */
 static rtx
-expand_unop_direct (machine_mode mode, optab unoptab, rtx op0, rtx target,
+expand_unop_direct (enum machine_mode mode, optab unoptab, rtx op0, rtx target,
 	     int unsignedp)
 {
   if (optab_handler (unoptab, mode) != CODE_FOR_nothing)
     {
       struct expand_operand ops[2];
       enum insn_code icode = optab_handler (unoptab, mode);
-      rtx_insn *last = get_last_insn ();
+      rtx last = get_last_insn ();
       rtx pat;
 
       create_output_operand (&ops[0], target, mode);
@@ -3040,9 +2997,8 @@ expand_unop_direct (machine_mode mode, optab unoptab, rtx op0, rtx target,
       pat = maybe_gen_insn (icode, 2, ops);
       if (pat)
 	{
-	  if (INSN_P (pat) && NEXT_INSN (as_a <rtx_insn *> (pat)) != NULL_RTX
-	      && ! add_equal_note (as_a <rtx_insn *> (pat), ops[0].value,
-				   optab_to_code (unoptab),
+	  if (INSN_P (pat) && NEXT_INSN (pat) != NULL_RTX
+	      && ! add_equal_note (pat, ops[0].value, optab_to_code (unoptab),
 				   ops[1].value, NULL_RTX))
 	    {
 	      delete_insns_since (last);
@@ -3069,11 +3025,11 @@ expand_unop_direct (machine_mode mode, optab unoptab, rtx op0, rtx target,
    this may or may not be TARGET.  */
 
 rtx
-expand_unop (machine_mode mode, optab unoptab, rtx op0, rtx target,
+expand_unop (enum machine_mode mode, optab unoptab, rtx op0, rtx target,
 	     int unsignedp)
 {
   enum mode_class mclass = GET_MODE_CLASS (mode);
-  machine_mode wider_mode;
+  enum machine_mode wider_mode;
   rtx temp;
   rtx libfunc;
 
@@ -3118,8 +3074,7 @@ expand_unop (machine_mode mode, optab unoptab, rtx op0, rtx target,
 	 be always more efficient than the other fallback methods.  */
       if (mode == HImode)
 	{
-	  rtx_insn *last;
-	  rtx temp1, temp2;
+	  rtx last, temp1, temp2;
 
 	  if (optab_handler (rotl_optab, mode) != CODE_FOR_nothing)
 	    {
@@ -3177,7 +3132,7 @@ expand_unop (machine_mode mode, optab unoptab, rtx op0, rtx target,
 	if (optab_handler (unoptab, wider_mode) != CODE_FOR_nothing)
 	  {
 	    rtx xop0 = op0;
-	    rtx_insn *last = get_last_insn ();
+	    rtx last = get_last_insn ();
 
 	    /* For certain operations, we need not actually extend
 	       the narrow operand, as long as we will truncate the
@@ -3216,7 +3171,7 @@ expand_unop (machine_mode mode, optab unoptab, rtx op0, rtx target,
       && optab_handler (unoptab, word_mode) != CODE_FOR_nothing)
     {
       int i;
-      rtx_insn *insns;
+      rtx insns;
 
       if (target == 0 || target == op0 || !valid_multiword_target_p (target))
 	target = gen_reg_rtx (mode);
@@ -3294,10 +3249,10 @@ expand_unop (machine_mode mode, optab unoptab, rtx op0, rtx target,
   libfunc = optab_libfunc (unoptab, mode);
   if (libfunc)
     {
-      rtx_insn *insns;
+      rtx insns;
       rtx value;
       rtx eq_value;
-      machine_mode outmode = mode;
+      enum machine_mode outmode = mode;
 
       /* All of these functions return small values.  Thus we choose to
 	 have them return something that isn't a double-word.  */
@@ -3341,7 +3296,7 @@ expand_unop (machine_mode mode, optab unoptab, rtx op0, rtx target,
 	      || optab_libfunc (unoptab, wider_mode))
 	    {
 	      rtx xop0 = op0;
-	      rtx_insn *last = get_last_insn ();
+	      rtx last = get_last_insn ();
 
 	      /* For certain operations, we need not actually extend
 		 the narrow operand, as long as we will truncate the
@@ -3424,7 +3379,7 @@ expand_unop (machine_mode mode, optab unoptab, rtx op0, rtx target,
  */
 
 rtx
-expand_abs_nojump (machine_mode mode, rtx op0, rtx target,
+expand_abs_nojump (enum machine_mode mode, rtx op0, rtx target,
 		   int result_unsignedp)
 {
   rtx temp;
@@ -3451,7 +3406,7 @@ expand_abs_nojump (machine_mode mode, rtx op0, rtx target,
   if (optab_handler (smax_optab, mode) != CODE_FOR_nothing
       && !HONOR_SIGNED_ZEROS (mode))
     {
-      rtx_insn *last = get_last_insn ();
+      rtx last = get_last_insn ();
 
       temp = expand_unop (mode, result_unsignedp ? neg_optab : negv_optab,
 			  op0, NULL_RTX, 0);
@@ -3491,11 +3446,10 @@ expand_abs_nojump (machine_mode mode, rtx op0, rtx target,
 }
 
 rtx
-expand_abs (machine_mode mode, rtx op0, rtx target,
+expand_abs (enum machine_mode mode, rtx op0, rtx target,
 	    int result_unsignedp, int safe)
 {
-  rtx temp;
-  rtx_code_label *op1;
+  rtx temp, op1;
 
   if (GET_MODE_CLASS (mode) != MODE_INT
       || ! flag_trapv)
@@ -3545,7 +3499,7 @@ expand_abs (machine_mode mode, rtx op0, rtx target,
    different but can be deduced from MODE.  */
 
 rtx
-expand_one_cmpl_abs_nojump (machine_mode mode, rtx op0, rtx target)
+expand_one_cmpl_abs_nojump (enum machine_mode mode, rtx op0, rtx target)
 {
   rtx temp;
 
@@ -3556,7 +3510,7 @@ expand_one_cmpl_abs_nojump (machine_mode mode, rtx op0, rtx target)
   /* If we have a MAX insn, we can do this as MAX (x, ~x).  */
   if (optab_handler (smax_optab, mode) != CODE_FOR_nothing)
     {
-      rtx_insn *last = get_last_insn ();
+      rtx last = get_last_insn ();
 
       temp = expand_unop (mode, one_cmpl_optab, op0, NULL_RTX, 0);
       if (temp != 0)
@@ -3596,13 +3550,12 @@ expand_one_cmpl_abs_nojump (machine_mode mode, rtx op0, rtx target)
    and not playing with subregs so much, will help the register allocator.  */
 
 static rtx
-expand_copysign_absneg (machine_mode mode, rtx op0, rtx op1, rtx target,
+expand_copysign_absneg (enum machine_mode mode, rtx op0, rtx op1, rtx target,
 		        int bitpos, bool op0_is_abs)
 {
-  machine_mode imode;
+  enum machine_mode imode;
   enum insn_code icode;
-  rtx sign;
-  rtx_code_label *label;
+  rtx sign, label;
 
   if (target == op1)
     target = NULL_RTX;
@@ -3618,6 +3571,8 @@ expand_copysign_absneg (machine_mode mode, rtx op0, rtx op1, rtx target,
     }
   else
     {
+      double_int mask;
+
       if (GET_MODE_SIZE (mode) <= UNITS_PER_WORD)
 	{
 	  imode = int_mode_for_mode (mode);
@@ -3638,9 +3593,10 @@ expand_copysign_absneg (machine_mode mode, rtx op0, rtx op1, rtx target,
 	  op1 = operand_subword_force (op1, word, mode);
 	}
 
-      wide_int mask = wi::set_bit_in_zero (bitpos, GET_MODE_PRECISION (imode));
+      mask = double_int_zero.set_bit (bitpos);
+
       sign = expand_binop (imode, and_optab, op1,
-			   immed_wide_int_const (mask, imode),
+			   immed_double_int_const (mask, imode),
 			   NULL_RTX, 1, OPTAB_LIB_WIDEN);
     }
 
@@ -3680,13 +3636,13 @@ expand_copysign_absneg (machine_mode mode, rtx op0, rtx op1, rtx target,
    is true if op0 is known to have its sign bit clear.  */
 
 static rtx
-expand_copysign_bit (machine_mode mode, rtx op0, rtx op1, rtx target,
+expand_copysign_bit (enum machine_mode mode, rtx op0, rtx op1, rtx target,
 		     int bitpos, bool op0_is_abs)
 {
-  machine_mode imode;
+  enum machine_mode imode;
+  double_int mask;
   int word, nwords, i;
-  rtx temp;
-  rtx_insn *insns;
+  rtx temp, insns;
 
   if (GET_MODE_SIZE (mode) <= UNITS_PER_WORD)
     {
@@ -3708,7 +3664,7 @@ expand_copysign_bit (machine_mode mode, rtx op0, rtx op1, rtx target,
       nwords = (GET_MODE_BITSIZE (mode) + BITS_PER_WORD - 1) / BITS_PER_WORD;
     }
 
-  wide_int mask = wi::set_bit_in_zero (bitpos, GET_MODE_PRECISION (imode));
+  mask = double_int_zero.set_bit (bitpos);
 
   if (target == 0
       || target == op0
@@ -3730,11 +3686,12 @@ expand_copysign_bit (machine_mode mode, rtx op0, rtx op1, rtx target,
 	      if (!op0_is_abs)
 		op0_piece
 		  = expand_binop (imode, and_optab, op0_piece,
-				  immed_wide_int_const (~mask, imode),
+				  immed_double_int_const (~mask, imode),
 				  NULL_RTX, 1, OPTAB_LIB_WIDEN);
+
 	      op1 = expand_binop (imode, and_optab,
 				  operand_subword_force (op1, i, mode),
-				  immed_wide_int_const (mask, imode),
+				  immed_double_int_const (mask, imode),
 				  NULL_RTX, 1, OPTAB_LIB_WIDEN);
 
 	      temp = expand_binop (imode, ior_optab, op0_piece, op1,
@@ -3754,13 +3711,13 @@ expand_copysign_bit (machine_mode mode, rtx op0, rtx op1, rtx target,
   else
     {
       op1 = expand_binop (imode, and_optab, gen_lowpart (imode, op1),
-		          immed_wide_int_const (mask, imode),
+		          immed_double_int_const (mask, imode),
 		          NULL_RTX, 1, OPTAB_LIB_WIDEN);
 
       op0 = gen_lowpart (imode, op0);
       if (!op0_is_abs)
 	op0 = expand_binop (imode, and_optab, op0,
-			    immed_wide_int_const (~mask, imode),
+			    immed_double_int_const (~mask, imode),
 			    NULL_RTX, 1, OPTAB_LIB_WIDEN);
 
       temp = expand_binop (imode, ior_optab, op0, op1,
@@ -3778,7 +3735,7 @@ expand_copysign_bit (machine_mode mode, rtx op0, rtx op1, rtx target,
 rtx
 expand_copysign (rtx op0, rtx op1, rtx target)
 {
-  machine_mode mode = GET_MODE (op0);
+  enum machine_mode mode = GET_MODE (op0);
   const struct real_format *fmt;
   bool op0_is_abs;
   rtx temp;
@@ -3842,10 +3799,8 @@ maybe_emit_unop_insn (enum insn_code icode, rtx target, rtx op0,
   if (!pat)
     return false;
 
-  if (INSN_P (pat) && NEXT_INSN (as_a <rtx_insn *> (pat)) != NULL_RTX
-      && code != UNKNOWN)
-    add_equal_note (as_a <rtx_insn *> (pat), ops[0].value, code, ops[1].value,
-		    NULL_RTX);
+  if (INSN_P (pat) && NEXT_INSN (pat) != NULL_RTX && code != UNKNOWN)
+    add_equal_note (pat, ops[0].value, code, ops[1].value, NULL_RTX);
 
   emit_insn (pat);
 
@@ -3868,8 +3823,7 @@ emit_unop_insn (enum insn_code icode, rtx target, rtx op0, enum rtx_code code)
 
 struct no_conflict_data
 {
-  rtx target;
-  rtx_insn *first, *insn;
+  rtx target, first, insn;
   bool must_stay;
 };
 
@@ -3921,11 +3875,11 @@ no_conflict_move_test (rtx dest, const_rtx set, void *p0)
    note with an operand of EQUIV.  */
 
 static void
-emit_libcall_block_1 (rtx_insn *insns, rtx target, rtx result, rtx equiv,
+emit_libcall_block_1 (rtx insns, rtx target, rtx result, rtx equiv,
 		      bool equiv_may_trap)
 {
   rtx final_dest = target;
-  rtx_insn *next, *last, *insn;
+  rtx next, last, insn;
 
   /* If this is a reg with REG_USERVAR_P set, then it could possibly turn
      into a MEM later.  Protect the libcall block from this change.  */
@@ -3986,12 +3940,12 @@ emit_libcall_block_1 (rtx_insn *insns, rtx target, rtx result, rtx equiv,
 	  if (! data.must_stay)
 	    {
 	      if (PREV_INSN (insn))
-		SET_NEXT_INSN (PREV_INSN (insn)) = next;
+		NEXT_INSN (PREV_INSN (insn)) = next;
 	      else
 		insns = next;
 
 	      if (next)
-		SET_PREV_INSN (next) = PREV_INSN (insn);
+		PREV_INSN (next) = PREV_INSN (insn);
 
 	      add_insn (insn);
 	    }
@@ -4021,8 +3975,7 @@ emit_libcall_block_1 (rtx_insn *insns, rtx target, rtx result, rtx equiv,
 void
 emit_libcall_block (rtx insns, rtx target, rtx result, rtx equiv)
 {
-  emit_libcall_block_1 (safe_as_a <rtx_insn *> (insns),
-			target, result, equiv, false);
+  emit_libcall_block_1 (insns, target, result, equiv, false);
 }
 
 /* Nonzero if we can perform a comparison of mode MODE straightforwardly.
@@ -4034,7 +3987,7 @@ emit_libcall_block (rtx insns, rtx target, rtx result, rtx equiv)
    required to implement all (or any) of the unordered bcc operations.  */
 
 int
-can_compare_p (enum rtx_code code, machine_mode mode,
+can_compare_p (enum rtx_code code, enum machine_mode mode,
 	       enum can_compare_purpose purpose)
 {
   rtx test;
@@ -4083,11 +4036,11 @@ can_compare_p (enum rtx_code code, machine_mode mode,
 static void
 prepare_cmp_insn (rtx x, rtx y, enum rtx_code comparison, rtx size,
 		  int unsignedp, enum optab_methods methods,
-		  rtx *ptest, machine_mode *pmode)
+		  rtx *ptest, enum machine_mode *pmode)
 {
-  machine_mode mode = *pmode;
+  enum machine_mode mode = *pmode;
   rtx libfunc, test;
-  machine_mode cmp_mode;
+  enum machine_mode cmp_mode;
   enum mode_class mclass;
 
   /* The other methods are not needed.  */
@@ -4122,7 +4075,7 @@ prepare_cmp_insn (rtx x, rtx y, enum rtx_code comparison, rtx size,
 
   if (mode == BLKmode)
     {
-      machine_mode result_mode;
+      enum machine_mode result_mode;
       enum insn_code cmp_code;
       tree length_type;
       rtx libfunc;
@@ -4213,7 +4166,7 @@ prepare_cmp_insn (rtx x, rtx y, enum rtx_code comparison, rtx size,
       if (icode != CODE_FOR_nothing
 	  && insn_operand_matches (icode, 0, test))
 	{
-	  rtx_insn *last = get_last_insn ();
+	  rtx last = get_last_insn ();
 	  rtx op0 = prepare_operand (icode, x, 1, mode, cmp_mode, unsignedp);
 	  rtx op1 = prepare_operand (icode, y, 2, mode, cmp_mode, unsignedp);
 	  if (op0 && op1
@@ -4241,7 +4194,7 @@ prepare_cmp_insn (rtx x, rtx y, enum rtx_code comparison, rtx size,
   if (!SCALAR_FLOAT_MODE_P (mode))
     {
       rtx result;
-      machine_mode ret_mode;
+      enum machine_mode ret_mode;
 
       /* Handle a libcall just for the mode we are using.  */
       libfunc = optab_libfunc (cmp_optab, mode);
@@ -4281,7 +4234,7 @@ prepare_cmp_insn (rtx x, rtx y, enum rtx_code comparison, rtx size,
 	    y = const0_rtx;
 	}
 
-      *pmode = ret_mode;
+      *pmode = word_mode;
       prepare_cmp_insn (x, y, comparison, NULL_RTX, unsignedp, methods,
 			ptest, pmode);
     }
@@ -4300,8 +4253,8 @@ prepare_cmp_insn (rtx x, rtx y, enum rtx_code comparison, rtx size,
    that it is accepted by the operand predicate.  Return the new value.  */
 
 rtx
-prepare_operand (enum insn_code icode, rtx x, int opnum, machine_mode mode,
-		 machine_mode wider_mode, int unsignedp)
+prepare_operand (enum insn_code icode, rtx x, int opnum, enum machine_mode mode,
+		 enum machine_mode wider_mode, int unsignedp)
 {
   if (mode != wider_mode)
     x = convert_modes (wider_mode, mode, x, unsignedp);
@@ -4320,12 +4273,12 @@ prepare_operand (enum insn_code icode, rtx x, int opnum, machine_mode mode,
    we can do the branch.  */
 
 static void
-emit_cmp_and_jump_insn_1 (rtx test, machine_mode mode, rtx label, int prob)
+emit_cmp_and_jump_insn_1 (rtx test, enum machine_mode mode, rtx label, int prob)
 {
-  machine_mode optab_mode;
+  enum machine_mode optab_mode;
   enum mode_class mclass;
   enum insn_code icode;
-  rtx_insn *insn;
+  rtx insn;
 
   mclass = GET_MODE_CLASS (mode);
   optab_mode = (mclass == MODE_CC) ? CCmode : mode;
@@ -4365,7 +4318,7 @@ emit_cmp_and_jump_insn_1 (rtx test, machine_mode mode, rtx label, int prob)
 
 void
 emit_cmp_and_jump_insns (rtx x, rtx y, enum rtx_code comparison, rtx size,
-			 machine_mode mode, int unsignedp, rtx label,
+			 enum machine_mode mode, int unsignedp, rtx label,
                          int prob)
 {
   rtx op0 = x, op1 = y;
@@ -4399,15 +4352,14 @@ emit_cmp_and_jump_insns (rtx x, rtx y, enum rtx_code comparison, rtx size,
 
 static void
 prepare_float_lib_cmp (rtx x, rtx y, enum rtx_code comparison,
-		       rtx *ptest, machine_mode *pmode)
+		       rtx *ptest, enum machine_mode *pmode)
 {
   enum rtx_code swapped = swap_condition (comparison);
   enum rtx_code reversed = reverse_condition_maybe_unordered (comparison);
-  machine_mode orig_mode = GET_MODE (x);
-  machine_mode mode, cmp_mode;
+  enum machine_mode orig_mode = GET_MODE (x);
+  enum machine_mode mode, cmp_mode;
   rtx true_rtx, false_rtx;
-  rtx value, target, equiv;
-  rtx_insn *insns;
+  rtx value, target, insns, equiv;
   rtx libfunc = 0;
   bool reversed_p = false;
   cmp_mode = targetm.libgcc_cmp_return_mode ();
@@ -4531,16 +4483,13 @@ prepare_float_lib_cmp (rtx x, rtx y, enum rtx_code comparison,
 /* Generate code to indirectly jump to a location given in the rtx LOC.  */
 
 void
-emit_indirect_jump (rtx loc ATTRIBUTE_UNUSED)
+emit_indirect_jump (rtx loc)
 {
-#ifndef HAVE_indirect_jump
-  sorry ("indirect jumps are not available on this target");
-#else
   struct expand_operand ops[1];
+
   create_address_operand (&ops[0], loc);
   expand_jump_insn (CODE_FOR_indirect_jump, 1, ops);
   emit_barrier ();
-#endif
 }
 
 #ifdef HAVE_conditional_move
@@ -4561,11 +4510,10 @@ emit_indirect_jump (rtx loc ATTRIBUTE_UNUSED)
 
 rtx
 emit_conditional_move (rtx target, enum rtx_code code, rtx op0, rtx op1,
-		       machine_mode cmode, rtx op2, rtx op3,
-		       machine_mode mode, int unsignedp)
+		       enum machine_mode cmode, rtx op2, rtx op3,
+		       enum machine_mode mode, int unsignedp)
 {
-  rtx tem, comparison;
-  rtx_insn *last;
+  rtx tem, comparison, last;
   enum insn_code icode;
   enum rtx_code reversed;
 
@@ -4657,7 +4605,7 @@ emit_conditional_move (rtx target, enum rtx_code code, rtx op0, rtx op1,
    comparisons, and vice versa.  How do we handle them?  */
 
 int
-can_conditionally_move_p (machine_mode mode)
+can_conditionally_move_p (enum machine_mode mode)
 {
   if (direct_optab_handler (movcc_optab, mode) != CODE_FOR_nothing)
     return 1;
@@ -4683,11 +4631,10 @@ can_conditionally_move_p (machine_mode mode)
 
 rtx
 emit_conditional_add (rtx target, enum rtx_code code, rtx op0, rtx op1,
-		      machine_mode cmode, rtx op2, rtx op3,
-		      machine_mode mode, int unsignedp)
+		      enum machine_mode cmode, rtx op2, rtx op3,
+		      enum machine_mode mode, int unsignedp)
 {
-  rtx tem, comparison;
-  rtx_insn *last;
+  rtx tem, comparison, last;
   enum insn_code icode;
 
   /* If one operand is constant, make it the second one.  Only do this
@@ -4898,13 +4845,28 @@ have_sub2_insn (rtx x, rtx y)
 
   return 1;
 }
+
+/* Generate the body of an instruction to copy Y into X.
+   It may be a list of insns, if one insn isn't enough.  */
+
+rtx
+gen_move_insn (rtx x, rtx y)
+{
+  rtx seq;
+
+  start_sequence ();
+  emit_move_insn_1 (x, y);
+  seq = get_insns ();
+  end_sequence ();
+  return seq;
+}
 
 /* Return the insn code used to extend FROM_MODE to TO_MODE.
    UNSIGNEDP specifies zero-extension instead of sign-extension.  If
    no such operation exists, CODE_FOR_nothing will be returned.  */
 
 enum insn_code
-can_extend_p (machine_mode to_mode, machine_mode from_mode,
+can_extend_p (enum machine_mode to_mode, enum machine_mode from_mode,
 	      int unsignedp)
 {
   convert_optab tab;
@@ -4921,8 +4883,8 @@ can_extend_p (machine_mode to_mode, machine_mode from_mode,
    into X (with mode MTO).  Do zero-extension if UNSIGNEDP is nonzero.  */
 
 rtx
-gen_extend_insn (rtx x, rtx y, machine_mode mto,
-		 machine_mode mfrom, int unsignedp)
+gen_extend_insn (rtx x, rtx y, enum machine_mode mto,
+		 enum machine_mode mfrom, int unsignedp)
 {
   enum insn_code icode = can_extend_p (mto, mfrom, unsignedp);
   return GEN_FCN (icode) (x, y);
@@ -4938,7 +4900,7 @@ gen_extend_insn (rtx x, rtx y, machine_mode mto,
    an explicit FTRUNC insn before the fix insn; otherwise 0.  */
 
 static enum insn_code
-can_fix_p (machine_mode fixmode, machine_mode fltmode,
+can_fix_p (enum machine_mode fixmode, enum machine_mode fltmode,
 	   int unsignedp, int *truncp_ptr)
 {
   convert_optab tab;
@@ -4969,7 +4931,7 @@ can_fix_p (machine_mode fixmode, machine_mode fltmode,
 }
 
 enum insn_code
-can_float_p (machine_mode fltmode, machine_mode fixmode,
+can_float_p (enum machine_mode fltmode, enum machine_mode fixmode,
 	     int unsignedp)
 {
   convert_optab tab;
@@ -5002,7 +4964,7 @@ supportable_convert_operation (enum tree_code code,
                                     tree vectype_out, tree vectype_in,
                                     tree *decl, enum tree_code *code1)
 {
-  machine_mode m1,m2;
+  enum machine_mode m1,m2;
   int truncp;
 
   m1 = TYPE_MODE (vectype_out);
@@ -5043,7 +5005,7 @@ expand_float (rtx to, rtx from, int unsignedp)
 {
   enum insn_code icode;
   rtx target = to;
-  machine_mode fmode, imode;
+  enum machine_mode fmode, imode;
   bool can_do_signed = false;
 
   /* Crash now, because we won't be able to decide which mode to use.  */
@@ -5096,7 +5058,7 @@ expand_float (rtx to, rtx from, int unsignedp)
      then unconditionally adjust the result.  */
   if (unsignedp && can_do_signed)
     {
-      rtx_code_label *label = gen_label_rtx ();
+      rtx label = gen_label_rtx ();
       rtx temp;
       REAL_VALUE_TYPE offset;
 
@@ -5120,7 +5082,7 @@ expand_float (rtx to, rtx from, int unsignedp)
 	      < GET_MODE_PRECISION (GET_MODE (from)))
 	    {
 	      rtx temp1;
-	      rtx_code_label *neglabel = gen_label_rtx ();
+	      rtx neglabel = gen_label_rtx ();
 
 	      /* Don't use TARGET if it isn't a register, is a hard register,
 		 or is the wrong mode.  */
@@ -5199,11 +5161,11 @@ expand_float (rtx to, rtx from, int unsignedp)
   /* No hardware instruction available; call a library routine.  */
     {
       rtx libfunc;
-      rtx_insn *insns;
+      rtx insns;
       rtx value;
       convert_optab tab = unsignedp ? ufloat_optab : sfloat_optab;
 
-      if (GET_MODE_PRECISION (GET_MODE (from)) < GET_MODE_PRECISION (SImode))
+      if (GET_MODE_SIZE (GET_MODE (from)) < GET_MODE_SIZE (SImode))
 	from = convert_to_mode (SImode, from, unsignedp);
 
       libfunc = convert_optab_libfunc (tab, GET_MODE (to), GET_MODE (from));
@@ -5244,7 +5206,7 @@ expand_fix (rtx to, rtx from, int unsignedp)
 {
   enum insn_code icode;
   rtx target = to;
-  machine_mode fmode, imode;
+  enum machine_mode fmode, imode;
   int must_trunc = 0;
 
   /* We first try to find a pair of modes, one real and one integer, at
@@ -5265,7 +5227,7 @@ expand_fix (rtx to, rtx from, int unsignedp)
 
 	if (icode != CODE_FOR_nothing)
 	  {
-	    rtx_insn *last = get_last_insn ();
+	    rtx last = get_last_insn ();
 	    if (fmode != GET_MODE (from))
 	      from = convert_to_mode (fmode, from, 0);
 
@@ -5323,9 +5285,7 @@ expand_fix (rtx to, rtx from, int unsignedp)
 	{
 	  int bitsize;
 	  REAL_VALUE_TYPE offset;
-	  rtx limit;
-	  rtx_code_label *lab1, *lab2;
-	  rtx_insn *insn;
+	  rtx limit, lab1, lab2, insn;
 
 	  bitsize = GET_MODE_PRECISION (GET_MODE (to));
 	  real_2expN (&offset, bitsize - 1, fmode);
@@ -5381,7 +5341,7 @@ expand_fix (rtx to, rtx from, int unsignedp)
      that the mode of TO is at least as wide as SImode, since those are the
      only library calls we know about.  */
 
-  if (GET_MODE_PRECISION (GET_MODE (to)) < GET_MODE_PRECISION (SImode))
+  if (GET_MODE_SIZE (GET_MODE (to)) < GET_MODE_SIZE (SImode))
     {
       target = gen_reg_rtx (SImode);
 
@@ -5389,7 +5349,7 @@ expand_fix (rtx to, rtx from, int unsignedp)
     }
   else
     {
-      rtx_insn *insns;
+      rtx insns;
       rtx value;
       rtx libfunc;
 
@@ -5426,13 +5386,12 @@ expand_fix (rtx to, rtx from, int unsignedp)
 void
 expand_fixed_convert (rtx to, rtx from, int uintp, int satp)
 {
-  machine_mode to_mode = GET_MODE (to);
-  machine_mode from_mode = GET_MODE (from);
+  enum machine_mode to_mode = GET_MODE (to);
+  enum machine_mode from_mode = GET_MODE (from);
   convert_optab tab;
   enum rtx_code this_code;
   enum insn_code code;
-  rtx_insn *insns;
-  rtx value;
+  rtx insns, value;
   rtx libfunc;
 
   if (to_mode == from_mode)
@@ -5480,7 +5439,7 @@ expand_sfix_optab (rtx to, rtx from, convert_optab tab)
 {
   enum insn_code icode;
   rtx target = to;
-  machine_mode fmode, imode;
+  enum machine_mode fmode, imode;
 
   /* We first try to find a pair of modes, one real and one integer, at
      least as wide as FROM and TO, respectively, in which we can open-code
@@ -5495,7 +5454,7 @@ expand_sfix_optab (rtx to, rtx from, convert_optab tab)
 	icode = convert_optab_handler (tab, imode, fmode);
 	if (icode != CODE_FOR_nothing)
 	  {
-	    rtx_insn *last = get_last_insn ();
+	    rtx last = get_last_insn ();
 	    if (fmode != GET_MODE (from))
 	      from = convert_to_mode (fmode, from, 0);
 
@@ -5519,7 +5478,7 @@ expand_sfix_optab (rtx to, rtx from, convert_optab tab)
 /* Report whether we have an instruction to perform the operation
    specified by CODE on operands of mode MODE.  */
 int
-have_insn_for (enum rtx_code code, machine_mode mode)
+have_insn_for (enum rtx_code code, enum machine_mode mode)
 {
   return (code_to_optab (code)
 	  && (optab_handler (code_to_optab (code), mode)
@@ -5542,7 +5501,7 @@ have_insn_for (enum rtx_code code, machine_mode mode)
 
 static void
 gen_libfunc (optab optable, const char *opname, int suffix,
-	     machine_mode mode)
+	     enum machine_mode mode)
 {
   unsigned opname_len = strlen (opname);
   const char *mname = GET_MODE_NAME (mode);
@@ -5578,20 +5537,16 @@ gen_libfunc (optab optable, const char *opname, int suffix,
 
 void
 gen_int_libfunc (optab optable, const char *opname, char suffix,
-		 machine_mode mode)
+		 enum machine_mode mode)
 {
   int maxsize = 2 * BITS_PER_WORD;
-  int minsize = BITS_PER_WORD;
 
   if (GET_MODE_CLASS (mode) != MODE_INT)
     return;
   if (maxsize < LONG_LONG_TYPE_SIZE)
     maxsize = LONG_LONG_TYPE_SIZE;
-  if (minsize > INT_TYPE_SIZE
-      && (trapv_binoptab_p (optable)
-	  || trapv_unoptab_p (optable)))
-    minsize = INT_TYPE_SIZE;
-  if (GET_MODE_BITSIZE (mode) < minsize
+  if (GET_MODE_CLASS (mode) != MODE_INT
+      || GET_MODE_BITSIZE (mode) < BITS_PER_WORD
       || GET_MODE_BITSIZE (mode) > maxsize)
     return;
   gen_libfunc (optable, opname, suffix, mode);
@@ -5601,7 +5556,7 @@ gen_int_libfunc (optab optable, const char *opname, char suffix,
 
 void
 gen_fp_libfunc (optab optable, const char *opname, char suffix,
-		machine_mode mode)
+		enum machine_mode mode)
 {
   char *dec_opname;
 
@@ -5622,7 +5577,7 @@ gen_fp_libfunc (optab optable, const char *opname, char suffix,
 
 void
 gen_fixed_libfunc (optab optable, const char *opname, char suffix,
-		   machine_mode mode)
+		   enum machine_mode mode)
 {
   if (!ALL_FIXED_POINT_MODE_P (mode))
     return;
@@ -5634,7 +5589,7 @@ gen_fixed_libfunc (optab optable, const char *opname, char suffix,
 
 void
 gen_signed_fixed_libfunc (optab optable, const char *opname, char suffix,
-			  machine_mode mode)
+			  enum machine_mode mode)
 {
   if (!SIGNED_FIXED_POINT_MODE_P (mode))
     return;
@@ -5646,7 +5601,7 @@ gen_signed_fixed_libfunc (optab optable, const char *opname, char suffix,
 
 void
 gen_unsigned_fixed_libfunc (optab optable, const char *opname, char suffix,
-			    machine_mode mode)
+			    enum machine_mode mode)
 {
   if (!UNSIGNED_FIXED_POINT_MODE_P (mode))
     return;
@@ -5657,7 +5612,7 @@ gen_unsigned_fixed_libfunc (optab optable, const char *opname, char suffix,
 
 void
 gen_int_fp_libfunc (optab optable, const char *name, char suffix,
-		    machine_mode mode)
+		    enum machine_mode mode)
 {
   if (DECIMAL_FLOAT_MODE_P (mode) || GET_MODE_CLASS (mode) == MODE_FLOAT)
     gen_fp_libfunc (optable, name, suffix, mode);
@@ -5670,7 +5625,7 @@ gen_int_fp_libfunc (optab optable, const char *name, char suffix,
 
 void
 gen_intv_fp_libfunc (optab optable, const char *name, char suffix,
-		     machine_mode mode)
+		     enum machine_mode mode)
 {
   if (DECIMAL_FLOAT_MODE_P (mode) || GET_MODE_CLASS (mode) == MODE_FLOAT)
     gen_fp_libfunc (optable, name, suffix, mode);
@@ -5690,7 +5645,7 @@ gen_intv_fp_libfunc (optab optable, const char *name, char suffix,
 
 void
 gen_int_fp_fixed_libfunc (optab optable, const char *name, char suffix,
-			  machine_mode mode)
+			  enum machine_mode mode)
 {
   if (DECIMAL_FLOAT_MODE_P (mode) || GET_MODE_CLASS (mode) == MODE_FLOAT)
     gen_fp_libfunc (optable, name, suffix, mode);
@@ -5705,7 +5660,7 @@ gen_int_fp_fixed_libfunc (optab optable, const char *name, char suffix,
 
 void
 gen_int_fp_signed_fixed_libfunc (optab optable, const char *name, char suffix,
-				 machine_mode mode)
+				 enum machine_mode mode)
 {
   if (DECIMAL_FLOAT_MODE_P (mode) || GET_MODE_CLASS (mode) == MODE_FLOAT)
     gen_fp_libfunc (optable, name, suffix, mode);
@@ -5720,7 +5675,7 @@ gen_int_fp_signed_fixed_libfunc (optab optable, const char *name, char suffix,
 
 void
 gen_int_fixed_libfunc (optab optable, const char *name, char suffix,
-		       machine_mode mode)
+		       enum machine_mode mode)
 {
   if (INTEGRAL_MODE_P (mode))
     gen_int_libfunc (optable, name, suffix, mode);
@@ -5733,7 +5688,7 @@ gen_int_fixed_libfunc (optab optable, const char *name, char suffix,
 
 void
 gen_int_signed_fixed_libfunc (optab optable, const char *name, char suffix,
-			      machine_mode mode)
+			      enum machine_mode mode)
 {
   if (INTEGRAL_MODE_P (mode))
     gen_int_libfunc (optable, name, suffix, mode);
@@ -5746,7 +5701,7 @@ gen_int_signed_fixed_libfunc (optab optable, const char *name, char suffix,
 
 void
 gen_int_unsigned_fixed_libfunc (optab optable, const char *name, char suffix,
-				machine_mode mode)
+				enum machine_mode mode)
 {
   if (INTEGRAL_MODE_P (mode))
     gen_int_libfunc (optable, name, suffix, mode);
@@ -5763,8 +5718,8 @@ gen_int_unsigned_fixed_libfunc (optab optable, const char *name, char suffix,
 void
 gen_interclass_conv_libfunc (convert_optab tab,
 			     const char *opname,
-			     machine_mode tmode,
-			     machine_mode fmode)
+			     enum machine_mode tmode,
+			     enum machine_mode fmode)
 {
   size_t opname_len = strlen (opname);
   size_t mname_len = 0;
@@ -5835,8 +5790,8 @@ gen_interclass_conv_libfunc (convert_optab tab,
 void
 gen_int_to_fp_conv_libfunc (convert_optab tab,
 			    const char *opname,
-			    machine_mode tmode,
-			    machine_mode fmode)
+			    enum machine_mode tmode,
+			    enum machine_mode fmode)
 {
   if (GET_MODE_CLASS (fmode) != MODE_INT)
     return;
@@ -5851,8 +5806,8 @@ gen_int_to_fp_conv_libfunc (convert_optab tab,
 void
 gen_ufloat_conv_libfunc (convert_optab tab,
 			 const char *opname ATTRIBUTE_UNUSED,
-			 machine_mode tmode,
-			 machine_mode fmode)
+			 enum machine_mode tmode,
+			 enum machine_mode fmode)
 {
   if (DECIMAL_FLOAT_MODE_P (tmode))
     gen_int_to_fp_conv_libfunc (tab, "floatuns", tmode, fmode);
@@ -5866,8 +5821,8 @@ gen_ufloat_conv_libfunc (convert_optab tab,
 void
 gen_int_to_fp_nondecimal_conv_libfunc (convert_optab tab,
 			               const char *opname,
-			               machine_mode tmode,
-			               machine_mode fmode)
+			               enum machine_mode tmode,
+			               enum machine_mode fmode)
 {
   if (GET_MODE_CLASS (fmode) != MODE_INT)
     return;
@@ -5882,8 +5837,8 @@ gen_int_to_fp_nondecimal_conv_libfunc (convert_optab tab,
 void
 gen_fp_to_int_conv_libfunc (convert_optab tab,
 			    const char *opname,
-			    machine_mode tmode,
-			    machine_mode fmode)
+			    enum machine_mode tmode,
+			    enum machine_mode fmode)
 {
   if (GET_MODE_CLASS (fmode) != MODE_FLOAT && !DECIMAL_FLOAT_MODE_P (fmode))
     return;
@@ -5898,7 +5853,7 @@ gen_fp_to_int_conv_libfunc (convert_optab tab,
 
 void
 gen_intraclass_conv_libfunc (convert_optab tab, const char *opname,
-			     machine_mode tmode, machine_mode fmode)
+			     enum machine_mode tmode, enum machine_mode fmode)
 {
   size_t opname_len = strlen (opname);
   size_t mname_len = 0;
@@ -5969,8 +5924,8 @@ gen_intraclass_conv_libfunc (convert_optab tab, const char *opname,
 void
 gen_trunc_conv_libfunc (convert_optab tab,
 			 const char *opname,
-			 machine_mode tmode,
-			 machine_mode fmode)
+			 enum machine_mode tmode,
+			 enum machine_mode fmode)
 {
   if (GET_MODE_CLASS (tmode) != MODE_FLOAT && !DECIMAL_FLOAT_MODE_P (tmode))
     return;
@@ -5998,8 +5953,8 @@ gen_trunc_conv_libfunc (convert_optab tab,
 void
 gen_extend_conv_libfunc (convert_optab tab,
 			 const char *opname ATTRIBUTE_UNUSED,
-			 machine_mode tmode,
-			 machine_mode fmode)
+			 enum machine_mode tmode,
+			 enum machine_mode fmode)
 {
   if (GET_MODE_CLASS (tmode) != MODE_FLOAT && !DECIMAL_FLOAT_MODE_P (tmode))
     return;
@@ -6027,8 +5982,8 @@ gen_extend_conv_libfunc (convert_optab tab,
 void
 gen_fract_conv_libfunc (convert_optab tab,
 			const char *opname,
-			machine_mode tmode,
-			machine_mode fmode)
+			enum machine_mode tmode,
+			enum machine_mode fmode)
 {
   if (tmode == fmode)
     return;
@@ -6046,8 +6001,8 @@ gen_fract_conv_libfunc (convert_optab tab,
 void
 gen_fractuns_conv_libfunc (convert_optab tab,
 			   const char *opname,
-			   machine_mode tmode,
-			   machine_mode fmode)
+			   enum machine_mode tmode,
+			   enum machine_mode fmode)
 {
   if (tmode == fmode)
     return;
@@ -6067,8 +6022,8 @@ gen_fractuns_conv_libfunc (convert_optab tab,
 void
 gen_satfract_conv_libfunc (convert_optab tab,
 			   const char *opname,
-			   machine_mode tmode,
-			   machine_mode fmode)
+			   enum machine_mode tmode,
+			   enum machine_mode fmode)
 {
   if (tmode == fmode)
     return;
@@ -6087,8 +6042,8 @@ gen_satfract_conv_libfunc (convert_optab tab,
 void
 gen_satfractuns_conv_libfunc (convert_optab tab,
 			      const char *opname,
-			      machine_mode tmode,
-			      machine_mode fmode)
+			      enum machine_mode tmode,
+			      enum machine_mode fmode)
 {
   if (tmode == fmode)
     return;
@@ -6099,25 +6054,22 @@ gen_satfractuns_conv_libfunc (convert_optab tab,
   gen_interclass_conv_libfunc (tab, opname, tmode, fmode);
 }
 
+/* A table of previously-created libfuncs, hashed by name.  */
+static GTY ((param_is (union tree_node))) htab_t libfunc_decls;
+
 /* Hashtable callbacks for libfunc_decls.  */
 
-struct libfunc_decl_hasher : ggc_hasher<tree>
+static hashval_t
+libfunc_decl_hash (const void *entry)
 {
-  static hashval_t
-  hash (tree entry)
-  {
-    return IDENTIFIER_HASH_VALUE (DECL_NAME (entry));
-  }
+  return IDENTIFIER_HASH_VALUE (DECL_NAME ((const_tree) entry));
+}
 
-  static bool
-  equal (tree decl, tree name)
-  {
-    return DECL_NAME (decl) == name;
-  }
-};
-
-/* A table of previously-created libfuncs, hashed by name.  */
-static GTY (()) hash_table<libfunc_decl_hasher> *libfunc_decls;
+static int
+libfunc_decl_eq (const void *entry1, const void *entry2)
+{
+  return DECL_NAME ((const_tree) entry1) == (const_tree) entry2;
+}
 
 /* Build a decl for a libfunc named NAME. */
 
@@ -6145,16 +6097,18 @@ rtx
 init_one_libfunc (const char *name)
 {
   tree id, decl;
+  void **slot;
   hashval_t hash;
 
   if (libfunc_decls == NULL)
-    libfunc_decls = hash_table<libfunc_decl_hasher>::create_ggc (37);
+    libfunc_decls = htab_create_ggc (37, libfunc_decl_hash,
+				     libfunc_decl_eq, NULL);
 
   /* See if we have already created a libfunc decl for this function.  */
   id = get_identifier (name);
   hash = IDENTIFIER_HASH_VALUE (id);
-  tree *slot = libfunc_decls->find_slot_with_hash (id, hash, INSERT);
-  decl = *slot;
+  slot = htab_find_slot_with_hash (libfunc_decls, id, hash, INSERT);
+  decl = (tree) *slot;
   if (decl == NULL)
     {
       /* Create a new decl, so that it can be passed to
@@ -6171,11 +6125,12 @@ rtx
 set_user_assembler_libfunc (const char *name, const char *asmspec)
 {
   tree id, decl;
+  void **slot;
   hashval_t hash;
 
   id = get_identifier (name);
   hash = IDENTIFIER_HASH_VALUE (id);
-  tree *slot = libfunc_decls->find_slot_with_hash (id, hash, NO_INSERT);
+  slot = htab_find_slot_with_hash (libfunc_decls, id, hash, NO_INSERT);
   gcc_assert (slot);
   decl = (tree) *slot;
   set_user_assembler_name (decl, asmspec);
@@ -6185,7 +6140,7 @@ set_user_assembler_libfunc (const char *name, const char *asmspec)
 /* Call this to reset the function entry for one optab (OPTABLE) in mode
    MODE to NAME, which should be either 0 or a string constant.  */
 void
-set_optab_libfunc (optab op, machine_mode mode, const char *name)
+set_optab_libfunc (optab op, enum machine_mode mode, const char *name)
 {
   rtx val;
   struct libfunc_entry e;
@@ -6199,9 +6154,9 @@ set_optab_libfunc (optab op, machine_mode mode, const char *name)
     val = init_one_libfunc (name);
   else
     val = 0;
-  slot = libfunc_hash->find_slot (&e, INSERT);
+  slot = (struct libfunc_entry **) htab_find_slot (libfunc_hash, &e, INSERT);
   if (*slot == NULL)
-    *slot = ggc_alloc<libfunc_entry> ();
+    *slot = ggc_alloc_libfunc_entry ();
   (*slot)->op = op;
   (*slot)->mode1 = mode;
   (*slot)->mode2 = VOIDmode;
@@ -6212,8 +6167,8 @@ set_optab_libfunc (optab op, machine_mode mode, const char *name)
    (OPTABLE) from mode FMODE to mode TMODE to NAME, which should be
    either 0 or a string constant.  */
 void
-set_conv_libfunc (convert_optab optab, machine_mode tmode,
-		  machine_mode fmode, const char *name)
+set_conv_libfunc (convert_optab optab, enum machine_mode tmode,
+		  enum machine_mode fmode, const char *name)
 {
   rtx val;
   struct libfunc_entry e;
@@ -6227,9 +6182,9 @@ set_conv_libfunc (convert_optab optab, machine_mode tmode,
     val = init_one_libfunc (name);
   else
     val = 0;
-  slot = libfunc_hash->find_slot (&e, INSERT);
+  slot = (struct libfunc_entry **) htab_find_slot (libfunc_hash, &e, INSERT);
   if (*slot == NULL)
-    *slot = ggc_alloc<libfunc_entry> ();
+    *slot = ggc_alloc_libfunc_entry ();
   (*slot)->op = optab;
   (*slot)->mode1 = tmode;
   (*slot)->mode2 = fmode;
@@ -6243,9 +6198,9 @@ void
 init_optabs (void)
 {
   if (libfunc_hash)
-    libfunc_hash->empty ();
+    htab_empty (libfunc_hash);
   else
-    libfunc_hash = hash_table<libfunc_hasher>::create_ggc (10);
+    libfunc_hash = htab_create_ggc (10, hash_libfunc, eq_libfunc, NULL);
 
   /* Fill in the optabs with the insns we support.  */
   init_all_optabs (this_fn_optabs);
@@ -6322,7 +6277,8 @@ init_tree_optimization_optabs (tree optnode)
   if (tmp_optabs)
     memset (tmp_optabs, 0, sizeof (struct target_optabs));
   else
-    tmp_optabs = ggc_alloc<target_optabs> ();
+    tmp_optabs = (struct target_optabs *)
+      ggc_alloc_atomic (sizeof (struct target_optabs));
 
   /* Generate a new set of optabs into tmp_optabs.  */
   init_all_optabs (tmp_optabs);
@@ -6343,7 +6299,7 @@ init_tree_optimization_optabs (tree optnode)
 static void
 init_sync_libfuncs_1 (optab tab, const char *base, int max)
 {
-  machine_mode mode;
+  enum machine_mode mode;
   char buf[64];
   size_t len = strlen (base);
   int i;
@@ -6403,7 +6359,7 @@ debug_optab_libfuncs (void)
   for (i = FIRST_NORM_OPTAB; i <= LAST_NORMLIB_OPTAB; ++i)
     for (j = 0; j < NUM_MACHINE_MODES; ++j)
       {
-	rtx l = optab_libfunc ((optab) i, (machine_mode) j);
+	rtx l = optab_libfunc ((optab) i, (enum machine_mode) j);
 	if (l)
 	  {
 	    gcc_assert (GET_CODE (l) == SYMBOL_REF);
@@ -6419,8 +6375,8 @@ debug_optab_libfuncs (void)
     for (j = 0; j < NUM_MACHINE_MODES; ++j)
       for (k = 0; k < NUM_MACHINE_MODES; ++k)
 	{
-	  rtx l = convert_optab_libfunc ((optab) i, (machine_mode) j,
-					 (machine_mode) k);
+	  rtx l = convert_optab_libfunc ((optab) i, (enum machine_mode) j,
+					 (enum machine_mode) k);
 	  if (l)
 	    {
 	      gcc_assert (GET_CODE (l) == SYMBOL_REF);
@@ -6440,7 +6396,7 @@ debug_optab_libfuncs (void)
 rtx
 gen_cond_trap (enum rtx_code code, rtx op1, rtx op2, rtx tcode)
 {
-  machine_mode mode = GET_MODE (op1);
+  enum machine_mode mode = GET_MODE (op1);
   enum insn_code icode;
   rtx insn;
   rtx trap_rtx;
@@ -6568,10 +6524,10 @@ vector_compare_rtx (enum tree_code tcode, tree t_op0, tree t_op1,
    of the CPU.  SEL may be NULL, which stands for an unknown constant.  */
 
 bool
-can_vec_perm_p (machine_mode mode, bool variable,
+can_vec_perm_p (enum machine_mode mode, bool variable,
 		const unsigned char *sel)
 {
-  machine_mode qimode;
+  enum machine_mode qimode;
 
   /* If the target doesn't implement a vector mode for the vector type,
      then no operations are supported.  */
@@ -6624,8 +6580,8 @@ static rtx
 expand_vec_perm_1 (enum insn_code icode, rtx target,
 		   rtx v0, rtx v1, rtx sel)
 {
-  machine_mode tmode = GET_MODE (target);
-  machine_mode smode = GET_MODE (sel);
+  enum machine_mode tmode = GET_MODE (target);
+  enum machine_mode smode = GET_MODE (sel);
   struct expand_operand ops[4];
 
   create_output_operand (&ops[0], target, tmode);
@@ -6658,10 +6614,10 @@ expand_vec_perm_1 (enum insn_code icode, rtx target,
    and three operands.  */
 
 rtx
-expand_vec_perm (machine_mode mode, rtx v0, rtx v1, rtx sel, rtx target)
+expand_vec_perm (enum machine_mode mode, rtx v0, rtx v1, rtx sel, rtx target)
 {
   enum insn_code icode;
-  machine_mode qimode;
+  enum machine_mode qimode;
   unsigned int i, w, e, u;
   rtx tmp, sel_qi = NULL;
   rtvec vec;
@@ -6744,7 +6700,7 @@ expand_vec_perm (machine_mode mode, rtx v0, rtx v1, rtx sel, rtx target)
   if (sel_qi == NULL)
     {
       /* Multiply each element by its byte size.  */
-      machine_mode selmode = GET_MODE (sel);
+      enum machine_mode selmode = GET_MODE (sel);
       if (u == 2)
 	sel = expand_simple_binop (selmode, PLUS, sel, sel,
 				   sel, 0, OPTAB_DIRECT);
@@ -6792,7 +6748,7 @@ expand_vec_perm (machine_mode mode, rtx v0, rtx v1, rtx sel, rtx target)
    mode CMODE, unsigned if UNS is true, resulting in a value of mode VMODE.  */
 
 static inline enum insn_code
-get_vcond_icode (machine_mode vmode, machine_mode cmode, bool uns)
+get_vcond_icode (enum machine_mode vmode, enum machine_mode cmode, bool uns)
 {
   enum insn_code icode = CODE_FOR_nothing;
   if (uns)
@@ -6809,8 +6765,8 @@ get_vcond_icode (machine_mode vmode, machine_mode cmode, bool uns)
 bool
 expand_vec_cond_expr_p (tree value_type, tree cmp_op_type)
 {
-  machine_mode value_mode = TYPE_MODE (value_type);
-  machine_mode cmp_op_mode = TYPE_MODE (cmp_op_type);
+  enum machine_mode value_mode = TYPE_MODE (value_type);
+  enum machine_mode cmp_op_mode = TYPE_MODE (cmp_op_type);
   if (GET_MODE_SIZE (value_mode) != GET_MODE_SIZE (cmp_op_mode)
       || GET_MODE_NUNITS (value_mode) != GET_MODE_NUNITS (cmp_op_mode)
       || get_vcond_icode (TYPE_MODE (value_type), TYPE_MODE (cmp_op_type),
@@ -6829,8 +6785,8 @@ expand_vec_cond_expr (tree vec_cond_type, tree op0, tree op1, tree op2,
   struct expand_operand ops[6];
   enum insn_code icode;
   rtx comparison, rtx_op1, rtx_op2;
-  machine_mode mode = TYPE_MODE (vec_cond_type);
-  machine_mode cmp_op_mode;
+  enum machine_mode mode = TYPE_MODE (vec_cond_type);
+  enum machine_mode cmp_op_mode;
   bool unsignedp;
   tree op0a, op0b;
   enum tree_code tcode;
@@ -6879,7 +6835,7 @@ expand_vec_cond_expr (tree vec_cond_type, tree op0, tree op1, tree op2,
    2 for even/odd widening, and 3 for hi/lo widening.  */
 
 int
-can_mult_highpart_p (machine_mode mode, bool uns_p)
+can_mult_highpart_p (enum machine_mode mode, bool uns_p)
 {
   optab op;
   unsigned char *sel;
@@ -6928,13 +6884,13 @@ can_mult_highpart_p (machine_mode mode, bool uns_p)
 /* Expand a highpart multiply.  */
 
 rtx
-expand_mult_highpart (machine_mode mode, rtx op0, rtx op1,
+expand_mult_highpart (enum machine_mode mode, rtx op0, rtx op1,
 		      rtx target, bool uns_p)
 {
   struct expand_operand eops[3];
   enum insn_code icode;
   int method, i, nunits;
-  machine_mode wmode;
+  enum machine_mode wmode;
   rtx m1, m2, perm;
   optab tab1, tab2;
   rtvec v;
@@ -7003,10 +6959,10 @@ expand_mult_highpart (machine_mode mode, rtx op0, rtx op1,
 
 /* Return true if target supports vector masked load/store for mode.  */
 bool
-can_vec_mask_load_store_p (machine_mode mode, bool is_load)
+can_vec_mask_load_store_p (enum machine_mode mode, bool is_load)
 {
   optab op = is_load ? maskload_optab : maskstore_optab;
-  machine_mode vmode;
+  enum machine_mode vmode;
   unsigned int vector_sizes;
 
   /* If mode is vector mode, check it directly.  */
@@ -7043,7 +6999,7 @@ can_vec_mask_load_store_p (machine_mode mode, bool is_load)
 /* Return true if there is a compare_and_swap pattern.  */
 
 bool
-can_compare_and_swap_p (machine_mode mode, bool allow_libcall)
+can_compare_and_swap_p (enum machine_mode mode, bool allow_libcall)
 {
   enum insn_code icode;
 
@@ -7066,7 +7022,7 @@ can_compare_and_swap_p (machine_mode mode, bool allow_libcall)
 /* Return true if an atomic exchange can be performed.  */
 
 bool
-can_atomic_exchange_p (machine_mode mode, bool allow_libcall)
+can_atomic_exchange_p (enum machine_mode mode, bool allow_libcall)
 {
   enum insn_code icode;
 
@@ -7110,9 +7066,8 @@ find_cc_set (rtx x, const_rtx pat, void *data)
 static bool
 expand_compare_and_swap_loop (rtx mem, rtx old_reg, rtx new_reg, rtx seq)
 {
-  machine_mode mode = GET_MODE (mem);
-  rtx_code_label *label;
-  rtx cmp_reg, success, oldval;
+  enum machine_mode mode = GET_MODE (mem);
+  rtx label, cmp_reg, success, oldval;
 
   /* The loop we want to generate looks like
 
@@ -7160,7 +7115,7 @@ expand_compare_and_swap_loop (rtx mem, rtx old_reg, rtx new_reg, rtx seq)
 static rtx
 maybe_emit_atomic_exchange (rtx target, rtx mem, rtx val, enum memmodel model)
 {
-  machine_mode mode = GET_MODE (mem);
+  enum machine_mode mode = GET_MODE (mem);
   enum insn_code icode;
 
   /* If the target supports the exchange directly, great.  */
@@ -7190,9 +7145,9 @@ static rtx
 maybe_emit_sync_lock_test_and_set (rtx target, rtx mem, rtx val,
 				   enum memmodel model)
 {
-  machine_mode mode = GET_MODE (mem);
+  enum machine_mode mode = GET_MODE (mem);
   enum insn_code icode;
-  rtx_insn *last_insn = get_last_insn ();
+  rtx last_insn = get_last_insn ();
 
   icode = optab_handler (sync_lock_test_and_set_optab, mode);
 
@@ -7246,7 +7201,7 @@ maybe_emit_sync_lock_test_and_set (rtx target, rtx mem, rtx val,
 static rtx 
 maybe_emit_compare_and_swap_exchange_loop (rtx target, rtx mem, rtx val)
 {
-  machine_mode mode = GET_MODE (mem);
+  enum machine_mode mode = GET_MODE (mem);
 
   if (can_compare_and_swap_p (mode, true))
     {
@@ -7271,7 +7226,7 @@ maybe_emit_compare_and_swap_exchange_loop (rtx target, rtx mem, rtx val)
 static rtx
 maybe_emit_atomic_test_and_set (rtx target, rtx mem, enum memmodel model)
 {
-  machine_mode pat_bool_mode;
+  enum machine_mode pat_bool_mode;
   struct expand_operand ops[3];
 
   if (!HAVE_atomic_test_and_set)
@@ -7338,7 +7293,7 @@ expand_sync_lock_test_and_set (rtx target, rtx mem, rtx val)
 rtx
 expand_atomic_test_and_set (rtx target, rtx mem, enum memmodel model)
 {
-  machine_mode mode = GET_MODE (mem);
+  enum machine_mode mode = GET_MODE (mem);
   rtx ret, trueval, subtarget;
 
   ret = maybe_emit_atomic_test_and_set (target, mem, model);
@@ -7433,7 +7388,7 @@ expand_atomic_compare_and_swap (rtx *ptarget_bool, rtx *ptarget_oval,
 				bool is_weak, enum memmodel succ_model,
 				enum memmodel fail_model)
 {
-  machine_mode mode = GET_MODE (mem);
+  enum machine_mode mode = GET_MODE (mem);
   struct expand_operand ops[8];
   enum insn_code icode;
   rtx target_oval, target_bool = NULL_RTX;
@@ -7454,7 +7409,7 @@ expand_atomic_compare_and_swap (rtx *ptarget_bool, rtx *ptarget_oval,
   icode = direct_optab_handler (atomic_compare_and_swap_optab, mode);
   if (icode != CODE_FOR_nothing)
     {
-      machine_mode bool_mode = insn_data[icode].operand[0].mode;
+      enum machine_mode bool_mode = insn_data[icode].operand[0].mode;
 
       /* Make sure we always have a place for the bool operand.  */
       if (ptarget_bool == NULL
@@ -7624,7 +7579,7 @@ expand_mem_signal_fence (enum memmodel model)
 rtx
 expand_atomic_load (rtx target, rtx mem, enum memmodel model)
 {
-  machine_mode mode = GET_MODE (mem);
+  enum machine_mode mode = GET_MODE (mem);
   enum insn_code icode;
 
   /* If the target supports the load directly, great.  */
@@ -7680,7 +7635,7 @@ expand_atomic_load (rtx target, rtx mem, enum memmodel model)
 rtx
 expand_atomic_store (rtx mem, rtx val, enum memmodel model, bool use_release)
 {
-  machine_mode mode = GET_MODE (mem);
+  enum machine_mode mode = GET_MODE (mem);
   enum insn_code icode;
   struct expand_operand ops[3];
 
@@ -7875,7 +7830,7 @@ static rtx
 maybe_emit_op (const struct atomic_op_functions *optab, rtx target, rtx mem,
 	       rtx val, bool use_memmodel, enum memmodel model, bool after)
 {
-  machine_mode mode = GET_MODE (mem);
+  enum machine_mode mode = GET_MODE (mem);
   struct expand_operand ops[4];
   enum insn_code icode;
   int op_counter = 0;
@@ -7945,7 +7900,7 @@ expand_atomic_fetch_op_no_fallback (rtx target, rtx mem, rtx val,
 				    enum rtx_code code, enum memmodel model,
 				    bool after)
 {
-  machine_mode mode = GET_MODE (mem);
+  enum machine_mode mode = GET_MODE (mem);
   struct atomic_op_functions optab;
   rtx result;
   bool unused_result = (target == const0_rtx);
@@ -8034,7 +7989,7 @@ rtx
 expand_atomic_fetch_op (rtx target, rtx mem, rtx val, enum rtx_code code,
 			enum memmodel model, bool after)
 {
-  machine_mode mode = GET_MODE (mem);
+  enum machine_mode mode = GET_MODE (mem);
   rtx result;
   bool unused_result = (target == const0_rtx);
 
@@ -8106,7 +8061,7 @@ expand_atomic_fetch_op (rtx target, rtx mem, rtx val, enum rtx_code code,
   /* If nothing else has succeeded, default to a compare and swap loop.  */
   if (can_compare_and_swap_p (mode, true))
     {
-      rtx_insn *insn;
+      rtx insn;
       rtx t0 = gen_reg_rtx (mode), t1;
 
       start_sequence ();
@@ -8165,7 +8120,7 @@ insn_operand_matches (enum insn_code icode, unsigned int opno, rtx operand)
 bool
 valid_multiword_target_p (rtx target)
 {
-  machine_mode mode;
+  enum machine_mode mode;
   int i;
 
   mode = GET_MODE (target);
@@ -8199,8 +8154,8 @@ maybe_legitimize_operand_same_code (enum insn_code icode, unsigned int opno,
       if (!(REG_P (addr) && REGNO (addr) > LAST_VIRTUAL_REGISTER)
 	  && !side_effects_p (addr))
 	{
-	  rtx_insn *last;
-	  machine_mode mode;
+	  rtx last;
+	  enum machine_mode mode;
 
 	  last = get_last_insn ();
 	  mode = get_address_mode (mem);
@@ -8224,7 +8179,7 @@ static bool
 maybe_legitimize_operand (enum insn_code icode, unsigned int opno,
 			  struct expand_operand *op)
 {
-  machine_mode mode, imode;
+  enum machine_mode mode, imode;
   bool old_volatile_ok, result;
 
   mode = op->mode;
@@ -8313,7 +8268,7 @@ bool
 maybe_legitimize_operands (enum insn_code icode, unsigned int opno,
 			   unsigned int nops, struct expand_operand *ops)
 {
-  rtx_insn *last;
+  rtx last;
   unsigned int i;
 
   last = get_last_insn ();
@@ -8452,23 +8407,23 @@ enum extraction_type { ET_unaligned_mem, ET_reg };
 static bool
 get_traditional_extraction_insn (extraction_insn *insn,
 				 enum extraction_type type,
-				 machine_mode mode,
+				 enum machine_mode mode,
 				 enum insn_code icode,
 				 int struct_op, int field_op)
 {
   const struct insn_data_d *data = &insn_data[icode];
 
-  machine_mode struct_mode = data->operand[struct_op].mode;
+  enum machine_mode struct_mode = data->operand[struct_op].mode;
   if (struct_mode == VOIDmode)
     struct_mode = word_mode;
   if (mode != struct_mode)
     return false;
 
-  machine_mode field_mode = data->operand[field_op].mode;
+  enum machine_mode field_mode = data->operand[field_op].mode;
   if (field_mode == VOIDmode)
     field_mode = word_mode;
 
-  machine_mode pos_mode = data->operand[struct_op + 2].mode;
+  enum machine_mode pos_mode = data->operand[struct_op + 2].mode;
   if (pos_mode == VOIDmode)
     pos_mode = word_mode;
 
@@ -8489,7 +8444,7 @@ get_traditional_extraction_insn (extraction_insn *insn,
 static bool
 get_optab_extraction_insn (struct extraction_insn *insn,
 			   enum extraction_type type,
-			   machine_mode mode, direct_optab reg_optab,
+			   enum machine_mode mode, direct_optab reg_optab,
 			   direct_optab misalign_optab, int pos_op)
 {
   direct_optab optab = (type == ET_unaligned_mem ? misalign_optab : reg_optab);
@@ -8516,7 +8471,7 @@ static bool
 get_extraction_insn (extraction_insn *insn,
 		     enum extraction_pattern pattern,
 		     enum extraction_type type,
-		     machine_mode mode)
+		     enum machine_mode mode)
 {
   switch (pattern)
     {
@@ -8564,9 +8519,9 @@ get_best_extraction_insn (extraction_insn *insn,
 			  enum extraction_pattern pattern,
 			  enum extraction_type type,
 			  unsigned HOST_WIDE_INT struct_bits,
-			  machine_mode field_mode)
+			  enum machine_mode field_mode)
 {
-  machine_mode mode = smallest_mode_for_size (struct_bits, MODE_INT);
+  enum machine_mode mode = smallest_mode_for_size (struct_bits, MODE_INT);
   while (mode != VOIDmode)
     {
       if (get_extraction_insn (insn, pattern, type, mode))
@@ -8600,7 +8555,7 @@ bool
 get_best_reg_extraction_insn (extraction_insn *insn,
 			      enum extraction_pattern pattern,
 			      unsigned HOST_WIDE_INT struct_bits,
-			      machine_mode field_mode)
+			      enum machine_mode field_mode)
 {
   return get_best_extraction_insn (insn, pattern, ET_reg, struct_bits,
 				   field_mode);
@@ -8619,7 +8574,7 @@ bool
 get_best_mem_extraction_insn (extraction_insn *insn,
 			      enum extraction_pattern pattern,
 			      HOST_WIDE_INT bitsize, HOST_WIDE_INT bitnum,
-			      machine_mode field_mode)
+			      enum machine_mode field_mode)
 {
   unsigned HOST_WIDE_INT struct_bits = (bitnum % BITS_PER_UNIT
 					+ bitsize
@@ -8627,33 +8582,6 @@ get_best_mem_extraction_insn (extraction_insn *insn,
   struct_bits -= struct_bits % BITS_PER_UNIT;
   return get_best_extraction_insn (insn, pattern, ET_unaligned_mem,
 				   struct_bits, field_mode);
-}
-
-/* Determine whether "1 << x" is relatively cheap in word_mode.  */
-
-bool
-lshift_cheap_p (bool speed_p)
-{
-  /* FIXME: This should be made target dependent via this "this_target"
-     mechanism, similar to e.g. can_copy_init_p in gcse.c.  */
-  static bool init[2] = { false, false };
-  static bool cheap[2] = { true, true };
-
-  /* If the targer has no lshift in word_mode, the operation will most
-     probably not be cheap.  ??? Does GCC even work for such targets?  */
-  if (optab_handler (ashl_optab, word_mode) == CODE_FOR_nothing)
-    return false;
-
-  if (!init[speed_p])
-    {
-      rtx reg = gen_raw_REG (word_mode, 10000);
-      int cost = set_src_cost (gen_rtx_ASHIFT (word_mode, const1_rtx, reg),
-			       speed_p);
-      cheap[speed_p] = cost < COSTS_N_INSNS (3);
-      init[speed_p] = true;
-    }
-
-  return cheap[speed_p];
 }
 
 #include "gt-optabs.h"

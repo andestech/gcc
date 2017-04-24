@@ -78,18 +78,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "system.h"
 #include "coretypes.h"
 #include "tree.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "tm.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfganal.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -104,11 +92,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "gimplify-me.h"
 #include "gimple-walk.h"
 #include "target.h"
-#include "hash-map.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
-#include "cgraph.h"
-#include "alloc-pool.h"
 #include "ipa-prop.h"
 #include "gimple-ssa.h"
 #include "tree-cfg.h"
@@ -127,7 +110,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "gimple-pretty-print.h"
 #include "ipa-inline.h"
 #include "cfgloop.h"
-#include "tree-chkp.h"
 
 /* Per basic block info.  */
 
@@ -135,9 +117,9 @@ typedef struct
 {
   unsigned int size;
   unsigned int time;
-} split_bb_info;
+} bb_info;
 
-static vec<split_bb_info> bb_info_vec;
+static vec<bb_info> bb_info_vec;
 
 /* Description of split point.  */
 
@@ -169,7 +151,6 @@ struct split_point best_split_point;
 static bitmap forbidden_dominators;
 
 static tree find_retval (basic_block return_bb);
-static tree find_retbnd (basic_block return_bb);
 
 /* Callback for walk_stmt_load_store_addr_ops.  If T is non-SSA automatic
    variable, check it if it is present in bitmap passed via DATA.  */
@@ -415,21 +396,6 @@ dominated_by_forbidden (basic_block bb)
   return false;
 }
 
-/* For give split point CURRENT and return block RETURN_BB return 1
-   if ssa name VAL is set by split part and 0 otherwise.  */
-static bool
-split_part_set_ssa_name_p (tree val, struct split_point *current,
-			   basic_block return_bb)
-{
-  if (TREE_CODE (val) != SSA_NAME)
-    return false;
-
-  return (!SSA_NAME_IS_DEFAULT_DEF (val)
-	  && (bitmap_bit_p (current->split_bbs,
-			    gimple_bb (SSA_NAME_DEF_STMT (val))->index)
-	      || gimple_bb (SSA_NAME_DEF_STMT (val)) == return_bb));
-}
-
 /* We found an split_point CURRENT.  NON_SSA_VARS is bitmap of all non ssa
    variables used and RETURN_BB is return basic block.
    See if we can split function here.  */
@@ -447,7 +413,6 @@ consider_split (struct split_point *current, bitmap non_ssa_vars,
   unsigned int i;
   int incoming_freq = 0;
   tree retval;
-  tree retbnd;
   bool back_edge = false;
 
   if (dump_file && (dump_flags & TDF_DETAILS))
@@ -549,14 +514,13 @@ consider_split (struct split_point *current, bitmap non_ssa_vars,
 			       SSA_NAME_VERSION (ddef)))
 	    {
 	      if (!VOID_TYPE_P (TREE_TYPE (parm)))
-		call_overhead += estimate_move_cost (TREE_TYPE (parm), false);
+		call_overhead += estimate_move_cost (TREE_TYPE (parm));
 	      num_args++;
 	    }
 	}
     }
   if (!VOID_TYPE_P (TREE_TYPE (current_function_decl)))
-    call_overhead += estimate_move_cost (TREE_TYPE (current_function_decl),
-					 false);
+    call_overhead += estimate_move_cost (TREE_TYPE (current_function_decl));
 
   if (current->split_size <= call_overhead)
     {
@@ -636,7 +600,10 @@ consider_split (struct split_point *current, bitmap non_ssa_vars,
        = bitmap_bit_p (non_ssa_vars, DECL_UID (SSA_NAME_VAR (retval)));
   else if (TREE_CODE (retval) == SSA_NAME)
     current->split_part_set_retval
-      = split_part_set_ssa_name_p (retval, current, return_bb);
+      = (!SSA_NAME_IS_DEFAULT_DEF (retval)
+	 && (bitmap_bit_p (current->split_bbs,
+			  gimple_bb (SSA_NAME_DEF_STMT (retval))->index)
+	     || gimple_bb (SSA_NAME_DEF_STMT (retval)) == return_bb));
   else if (TREE_CODE (retval) == PARM_DECL)
     current->split_part_set_retval = false;
   else if (TREE_CODE (retval) == VAR_DECL
@@ -645,29 +612,6 @@ consider_split (struct split_point *current, bitmap non_ssa_vars,
       = bitmap_bit_p (non_ssa_vars, DECL_UID (retval));
   else
     current->split_part_set_retval = true;
-
-  /* See if retbnd used by return bb is computed by header or split part.  */
-  retbnd = find_retbnd (return_bb);
-  if (retbnd)
-    {
-      bool split_part_set_retbnd
-	= split_part_set_ssa_name_p (retbnd, current, return_bb);
-
-      /* If we have both return value and bounds then keep their definitions
-	 in a single function.  We use SSA names to link returned bounds and
-	 value and therefore do not handle cases when result is passed by
-	 reference (which should not be our case anyway since bounds are
-	 returned for pointers only).  */
-      if ((DECL_BY_REFERENCE (DECL_RESULT (current_function_decl))
-	   && current->split_part_set_retval)
-	  || split_part_set_retbnd != current->split_part_set_retval)
-	{
-	  if (dump_file && (dump_flags & TDF_DETAILS))
-	    fprintf (dump_file,
-		     "  Refused: split point splits return value and bounds\n");
-	  return;
-	}
-    }
 
   /* split_function fixes up at most one PHI non-virtual PHI node in return_bb,
      for the return value.  If there are other PHIs, give up.  */
@@ -788,18 +732,6 @@ find_retval (basic_block return_bb)
     else if (gimple_code (gsi_stmt (bsi)) == GIMPLE_ASSIGN
 	     && !gimple_clobber_p (gsi_stmt (bsi)))
       return gimple_assign_rhs1 (gsi_stmt (bsi));
-  return NULL;
-}
-
-/* Given return basic block RETURN_BB, see where return bounds are really
-   stored.  */
-static tree
-find_retbnd (basic_block return_bb)
-{
-  gimple_stmt_iterator bsi;
-  for (bsi = gsi_last_bb (return_bb); !gsi_end_p (bsi); gsi_prev (&bsi))
-    if (gimple_code (gsi_stmt (bsi)) == GIMPLE_RETURN)
-      return gimple_return_retbnd (gsi_stmt (bsi));
   return NULL;
 }
 
@@ -1173,19 +1105,6 @@ find_split_points (int overall_time, int overall_size)
   BITMAP_FREE (current.ssa_names_to_pass);
 }
 
-/* Build and insert initialization of returned bounds RETBND
-   for returned value RETVAL.  Statements are inserted after
-   a statement pointed by GSI and GSI is modified to point to
-   the last inserted statement.  */
-
-static void
-insert_bndret_call_after (tree retbnd, tree retval, gimple_stmt_iterator *gsi)
-{
-  tree fndecl = targetm.builtin_chkp_function (BUILT_IN_CHKP_BNDRET);
-  gimple bndret = gimple_build_call (fndecl, 1, retval);
-  gimple_call_set_lhs (bndret, retbnd);
-  gsi_insert_after (gsi, bndret, GSI_CONTINUE_LINKING);
-}
 /* Split function at SPLIT_POINT.  */
 
 static void
@@ -1195,16 +1114,15 @@ split_function (struct split_point *split_point)
   bitmap args_to_skip;
   tree parm;
   int num = 0;
-  cgraph_node *node, *cur_node = cgraph_node::get (current_function_decl);
+  struct cgraph_node *node, *cur_node = cgraph_get_node (current_function_decl);
   basic_block return_bb = find_return_bb ();
   basic_block call_bb;
   gimple_stmt_iterator gsi;
   gimple call;
   edge e;
   edge_iterator ei;
-  tree retval = NULL, real_retval = NULL, retbnd = NULL;
+  tree retval = NULL, real_retval = NULL;
   bool split_part_return_p = false;
-  bool with_bounds = chkp_function_instrumented_p (current_function_decl);
   gimple last_stmt = NULL;
   unsigned int i;
   tree arg, ddef;
@@ -1286,7 +1204,8 @@ split_function (struct split_point *split_point)
       e = make_edge (new_return_bb, EXIT_BLOCK_PTR_FOR_FN (cfun), 0);
       e->probability = REG_BR_PROB_BASE;
       e->count = new_return_bb->count;
-      add_bb_to_loop (new_return_bb, current_loops->tree_root);
+      if (current_loops)
+	add_bb_to_loop (new_return_bb, current_loops->tree_root);
       bitmap_set_bit (split_point->split_bbs, new_return_bb->index);
     }
   /* When we pass around the value, use existing return block.  */
@@ -1337,10 +1256,13 @@ split_function (struct split_point *split_point)
     }
 
   /* Now create the actual clone.  */
-  cgraph_edge::rebuild_edges ();
-  node = cur_node->create_version_clone_with_body
-    (vNULL, NULL, args_to_skip, !split_part_return_p, split_point->split_bbs,
-     split_point->entry_bb, "part");
+  rebuild_cgraph_edges ();
+  node = cgraph_function_versioning (cur_node, vNULL,
+				     NULL,
+				     args_to_skip,
+				     !split_part_return_p,
+				     split_point->split_bbs,
+				     split_point->entry_bb, "part");
 
   /* Let's take a time profile for splitted function.  */
   node->tp_first_run = cur_node->tp_first_run + 1;
@@ -1353,17 +1275,11 @@ split_function (struct split_point *split_point)
       DECL_BUILT_IN_CLASS (node->decl) = NOT_BUILT_IN;
       DECL_FUNCTION_CODE (node->decl) = (enum built_in_function) 0;
     }
-
-  /* If the original function is instrumented then it's
-     part is also instrumented.  */
-  if (with_bounds)
-    chkp_function_mark_instrumented (node->decl);
-
   /* If the original function is declared inline, there is no point in issuing
      a warning for the non-inlinable part.  */
   DECL_NO_INLINE_WARNING_P (node->decl) = 1;
-  cur_node->remove_callees ();
-  cur_node->remove_all_references ();
+  cgraph_node_remove_callees (cur_node);
+  ipa_remove_all_references (&cur_node->ref_list);
   if (!split_part_return_p)
     TREE_THIS_VOLATILE (node->decl) = 1;
   if (dump_file)
@@ -1393,7 +1309,6 @@ split_function (struct split_point *split_point)
 	args_to_pass[i] = arg;
       }
   call = gimple_build_call_vec (node->decl, args_to_pass);
-  gimple_call_set_with_bounds (call, with_bounds);
   gimple_set_block (call, DECL_INITIAL (current_function_decl));
   args_to_pass.release ();
 
@@ -1500,7 +1415,6 @@ split_function (struct split_point *split_point)
       if (return_bb != EXIT_BLOCK_PTR_FOR_FN (cfun))
 	{
 	  real_retval = retval = find_retval (return_bb);
-	  retbnd = find_retbnd (return_bb);
 
 	  if (real_retval && split_point->split_part_set_retval)
 	    {
@@ -1545,21 +1459,6 @@ split_function (struct split_point *split_point)
 			  }
 		      update_stmt (gsi_stmt (bsi));
 		    }
-
-		  /* Replace retbnd with new one.  */
-		  if (retbnd)
-		    {
-		      gimple_stmt_iterator bsi;
-		      for (bsi = gsi_last_bb (return_bb); !gsi_end_p (bsi);
-			   gsi_prev (&bsi))
-			if (gimple_code (gsi_stmt (bsi)) == GIMPLE_RETURN)
-			  {
-			    retbnd = copy_ssa_name (retbnd, call);
-			    gimple_return_set_retbnd (gsi_stmt (bsi), retbnd);
-			    update_stmt (gsi_stmt (bsi));
-			    break;
-			  }
-		    }
 		}
 	      if (DECL_BY_REFERENCE (DECL_RESULT (current_function_decl)))
 		{
@@ -1581,9 +1480,6 @@ split_function (struct split_point *split_point)
 		      gsi_insert_after (&gsi, cpy, GSI_NEW_STMT);
 		      retval = tem;
 		    }
-		  /* Build bndret call to obtain returned bounds.  */
-		  if (retbnd)
-		    insert_bndret_call_after (retbnd, retval, &gsi);
 		  gimple_call_set_lhs (call, retval);
 		  update_stmt (call);
 		}
@@ -1601,10 +1497,6 @@ split_function (struct split_point *split_point)
 	      && !VOID_TYPE_P (TREE_TYPE (TREE_TYPE (current_function_decl))))
 	    {
 	      retval = DECL_RESULT (current_function_decl);
-
-	      if (chkp_function_instrumented_p (current_function_decl)
-		  && BOUNDED_P (retval))
-		retbnd = create_tmp_reg (pointer_bounds_type_node, NULL);
 
 	      /* We use temporary register to hold value when aggregate_value_p
 		 is false.  Similarly for DECL_BY_REFERENCE we must avoid extra
@@ -1629,9 +1521,6 @@ split_function (struct split_point *split_point)
 	        gimple_call_set_lhs (call, retval);
 	    }
           gsi_insert_after (&gsi, call, GSI_NEW_STMT);
-	  /* Build bndret call to obtain returned bounds.  */
-	  if (retbnd)
-	    insert_bndret_call_after (retbnd, retval, &gsi);
 	  ret = gimple_build_return (retval);
 	  gsi_insert_after (&gsi, ret, GSI_NEW_STMT);
 	}
@@ -1650,7 +1539,7 @@ execute_split_functions (void)
   basic_block bb;
   int overall_time = 0, overall_size = 0;
   int todo = 0;
-  struct cgraph_node *node = cgraph_node::get (current_function_decl);
+  struct cgraph_node *node = cgraph_get_node (current_function_decl);
 
   if (flags_from_decl_or_type (current_function_decl)
       & (ECF_NORETURN|ECF_MALLOC))
@@ -1784,6 +1673,17 @@ execute_split_functions (void)
   return todo;
 }
 
+/* Gate function splitting pass.  When doing profile feedback, we want
+   to execute the pass after profiling is read.  So disable one in 
+   early optimization.  */
+
+static bool
+gate_split_functions (void)
+{
+  return (flag_partial_inlining
+	  && !profile_arc_flag && !flag_branch_probabilities);
+}
+
 namespace {
 
 const pass_data pass_data_split_functions =
@@ -1791,12 +1691,14 @@ const pass_data pass_data_split_functions =
   GIMPLE_PASS, /* type */
   "fnsplit", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_IPA_FNSPLIT, /* tv_id */
   PROP_cfg, /* properties_required */
   0, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  0, /* todo_flags_finish */
+  TODO_verify_all, /* todo_flags_finish */
 };
 
 class pass_split_functions : public gimple_opt_pass
@@ -1807,22 +1709,10 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *);
-  virtual unsigned int execute (function *)
-    {
-      return execute_split_functions ();
-    }
+  bool gate () { return gate_split_functions (); }
+  unsigned int execute () { return execute_split_functions (); }
 
 }; // class pass_split_functions
-
-bool
-pass_split_functions::gate (function *)
-{
-  /* When doing profile feedback, we want to execute the pass after profiling
-     is read.  So disable one in early optimization.  */
-  return (flag_partial_inlining
-	  && !profile_arc_flag && !flag_branch_probabilities);
-}
 
 } // anon namespace
 
@@ -1830,6 +1720,17 @@ gimple_opt_pass *
 make_pass_split_functions (gcc::context *ctxt)
 {
   return new pass_split_functions (ctxt);
+}
+
+/* Gate feedback driven function splitting pass.
+   We don't need to split when profiling at all, we are producing
+   lousy code anyway.  */
+
+static bool
+gate_feedback_split_functions (void)
+{
+  return (flag_partial_inlining
+	  && flag_branch_probabilities);
 }
 
 /* Execute function splitting pass.  */
@@ -1850,12 +1751,14 @@ const pass_data pass_data_feedback_split_functions =
   GIMPLE_PASS, /* type */
   "feedback_fnsplit", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_IPA_FNSPLIT, /* tv_id */
   PROP_cfg, /* properties_required */
   0, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  0, /* todo_flags_finish */
+  TODO_verify_all, /* todo_flags_finish */
 };
 
 class pass_feedback_split_functions : public gimple_opt_pass
@@ -1866,22 +1769,10 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *);
-  virtual unsigned int execute (function *)
-    {
-      return execute_feedback_split_functions ();
-    }
+  bool gate () { return gate_feedback_split_functions (); }
+  unsigned int execute () { return execute_feedback_split_functions (); }
 
 }; // class pass_feedback_split_functions
-
-bool
-pass_feedback_split_functions::gate (function *)
-{
-  /* We don't need to split when profiling at all, we are producing
-     lousy code anyway.  */
-  return (flag_partial_inlining
-	  && flag_branch_probabilities);
-}
 
 } // anon namespace
 

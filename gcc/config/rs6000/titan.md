@@ -34,26 +34,28 @@
 ;; instructions. It provides its own, dedicated result-bus, so we
 ;; don't need the titan_fxu_wb reservation to complete.
 (define_insn_reservation "titan_fxu_adder" 1
-  (and (ior (eq_attr "type" "cmp,trap")
-	    (and (eq_attr "type" "add,logical")
-		 (eq_attr "dot" "yes")))
+  (and (eq_attr "type" "cmp,fast_compare,trap")
        (eq_attr "cpu" "titan"))
   "titan_issue,titan_fxu_sh")
 
+;; Keep the titan_imul and titan_mulhw (half-word) rules in order, to
+;; ensure the proper match: the half-word instructions are tagged as
+;; imul3 only, whereas regular multiplys will always carry a imul tag.
+
 (define_insn_reservation "titan_imul" 5
-  (and (eq_attr "type" "mul")
+  (and (eq_attr "type" "imul,imul2,imul_compare")
        (eq_attr "cpu" "titan"))       
   "titan_issue,titan_fxu_sh,nothing*5,titan_fxu_wb")  
 
 (define_insn_reservation "titan_mulhw" 4
-  (and (eq_attr "type" "halfmul")
+  (and (eq_attr "type" "imul3")
        (eq_attr "cpu" "titan"))
   "titan_issue,titan_fxu_sh,nothing*4,titan_fxu_wb")
 
 (define_bypass 2 "titan_mulhw" "titan_mulhw")
 
 (define_insn_reservation "titan_fxu_shift_and_rotate" 2
-  (and (eq_attr "type" "insert,shift,cntlz")
+  (and (eq_attr "type" "insert_word,shift,var_shift_rotate,cntlz")
        (eq_attr "cpu" "titan"))
   "titan_issue,titan_fxu_sh,nothing*2,titan_fxu_wb")
 
@@ -69,14 +71,12 @@
 ;; through its latency and initial disptach bottlenecks (i.e. issue
 ;; slots and fxu scheduler availability)
 (define_insn_reservation "titan_fxu_div" 34
-  (and (eq_attr "type" "div")
+  (and (eq_attr "type" "idiv")
        (eq_attr "cpu" "titan"))
   "titan_issue,titan_fxu_sh")
 
 (define_insn_reservation "titan_fxu_alu" 1
-  (and (ior (eq_attr "type" "integer,exts")
-	    (and (eq_attr "type" "add,logical")
-		 (eq_attr "dot" "no")))
+  (and (eq_attr "type" "integer,exts")
        (eq_attr "cpu" "titan"))
   "titan_issue,titan_fxu_sh,nothing,titan_fxu_wb")
 
@@ -95,12 +95,13 @@
 
 ;; Loads.
 (define_insn_reservation "titan_lsu_load" 3
-  (and (eq_attr "type" "load,load_l,sync")
+  (and (eq_attr "type" "load,load_ext,load_ext_u,load_ext_ux,load_ux,load_u,\
+			load_l,sync")
        (eq_attr "cpu" "titan"))
   "titan_issue,titan_lsu_sh")
 
 (define_insn_reservation "titan_lsu_fpload" 12
-  (and (eq_attr "type" "fpload")
+  (and (eq_attr "type" "fpload,fpload_ux,fpload_u")
        (eq_attr "cpu" "titan"))
   "titan_issue,titan_lsu_sh")
 
@@ -114,12 +115,12 @@
 
 ;; Stores.
 (define_insn_reservation "titan_lsu_store" 12
-  (and (eq_attr "type" "store,store_c")
+  (and (eq_attr "type" "store,store_ux,store_u,store_c")
        (eq_attr "cpu" "titan"))
   "titan_issue,titan_lsu_sh")
 
 (define_insn_reservation "titan_lsu_fpstore" 12
-  (and (eq_attr "type" "fpstore")
+  (and (eq_attr "type" "fpstore,fpstore_ux,fpstore_u")
        (eq_attr "cpu" "titan"))
   "titan_issue,titan_lsu_sh")
 

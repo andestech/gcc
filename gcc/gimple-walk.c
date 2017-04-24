@@ -25,14 +25,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm.h"
 #include "tree.h"
 #include "stmt.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -188,7 +180,7 @@ tree
 walk_gimple_op (gimple stmt, walk_tree_fn callback_op,
 		struct walk_stmt_info *wi)
 {
-  hash_set<tree> *pset = (wi) ? wi->pset : NULL;
+  struct pointer_set_t *pset = (wi) ? wi->pset : NULL;
   unsigned i;
   tree ret = NULL_TREE;
 

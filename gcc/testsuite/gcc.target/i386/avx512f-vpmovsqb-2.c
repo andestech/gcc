@@ -10,11 +10,10 @@
 #include "avx512f-mask-type.h"
 #include <limits.h>
 
-void static
 CALC (char *r, long long *s, int mem)
 {
   int i;
-  int len = mem ? SIZE : 16;
+  int len = mem ? 8 : 16;
   for (i = 0; i < len; i++)
     {
       if (s[i] < CHAR_MIN)
@@ -27,7 +26,7 @@ CALC (char *r, long long *s, int mem)
     }
 }
 
-void
+void static
 TEST (void)
 {
   int i, sign;

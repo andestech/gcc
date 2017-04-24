@@ -102,7 +102,7 @@ case "${target_cpu}" in
   x86_64)
 	case " ${CC} ${CFLAGS} " in
 	  *" -m32 "*)
-	    XCFLAGS="${XCFLAGS} -march=i486 -mtune=i686"
+	    XCFLAGS="${XCFLAGS} -march=i486 -mtune=generic"
 	    XCFLAGS="${XCFLAGS} -fomit-frame-pointer"
 	    ;;
 	esac
@@ -141,7 +141,7 @@ case "${target}" in
   *-*-gnu* | *-*-k*bsd*-gnu \
   | *-*-netbsd* | *-*-freebsd* | *-*-openbsd* \
   | *-*-solaris2* | *-*-sysv4* | *-*-hpux11* \
-  | *-*-darwin* | *-*-aix* | *-*-dragonfly*)
+  | *-*-darwin* | *-*-aix*)
 	# POSIX system.  The OS is supported.
 	;;
 

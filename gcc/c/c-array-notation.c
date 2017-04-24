@@ -1312,7 +1312,7 @@ expand_array_notations (tree *tp, int *walk_subtrees, void *)
 	 A[x:y:z];
 	 A[x:y];
 	 Replace those with just void zero node.  */
-      *tp = void_node;
+      *tp = void_zero_node;
     default:
       break;
     }

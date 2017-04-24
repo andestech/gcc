@@ -1,7 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -funroll-loops -fdump-rtl-web" } */
 
-int
 foo()
 {
 }

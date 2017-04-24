@@ -10,7 +10,6 @@ import (
 	"io"
 	"os"
 	"sort"
-	"sync"
 )
 
 // readAll reads from r until an error or EOF and returns the data it read
@@ -137,21 +136,14 @@ func (devNull) WriteString(s string) (int, error) {
 	return len(s), nil
 }
 
-var blackHolePool = sync.Pool{
-	New: func() interface{} {
-		b := make([]byte, 8192)
-		return &b
-	},
-}
-
 func (devNull) ReadFrom(r io.Reader) (n int64, err error) {
-	bufp := blackHolePool.Get().(*[]byte)
+	buf := blackHole()
+	defer blackHolePut(buf)
 	readSize := 0
 	for {
-		readSize, err = r.Read(*bufp)
+		readSize, err = r.Read(buf)
 		n += int64(readSize)
 		if err != nil {
-			blackHolePool.Put(bufp)
 			if err == io.EOF {
 				return n, nil
 			}

@@ -8,10 +8,6 @@
 
 #include "runtime.h"
 #include "go-type.h"
-#include "mgc0.h"
-
-/* A pointer with a zero value.  */
-static void *zero_pointer;
 
 /* This file provides the type descriptor for the unsafe.Pointer type.
    The unsafe package is defined by the compiler itself, which means
@@ -20,9 +16,6 @@ static void *zero_pointer;
 
 extern const struct __go_type_descriptor unsafe_Pointer
   __asm__ (GOSYM_PREFIX "__go_tdn_unsafe.Pointer");
-
-extern const uintptr unsafe_Pointer_gc[]
-  __asm__ (GOSYM_PREFIX "__go_tdn_unsafe.Pointer$gc");
 
 /* Used to determine the field alignment.  */
 struct field_align
@@ -38,8 +31,6 @@ static const String reflection_string =
   (const byte *) REFLECTION,
   sizeof REFLECTION - 1
 };
-
-const uintptr unsafe_Pointer_gc[] = {sizeof(void*), GC_APTR, 0, GC_END};
 
 const struct __go_type_descriptor unsafe_Pointer =
 {
@@ -57,16 +48,12 @@ const struct __go_type_descriptor unsafe_Pointer =
   __go_type_hash_identity,
   /* __equalfn */
   __go_type_equal_identity,
-  /* __gc */
-  unsafe_Pointer_gc,
   /* __reflection */
   &reflection_string,
   /* __uncommon */
   NULL,
   /* __pointer_to_this */
-  NULL,
-  /* __zero */
-  &zero_pointer
+  NULL
 };
 
 /* We also need the type descriptor for the pointer to unsafe.Pointer,
@@ -102,16 +89,12 @@ const struct __go_ptr_type pointer_unsafe_Pointer =
     __go_type_hash_identity,
     /* __equalfn */
     __go_type_equal_identity,
-    /* __gc */
-    unsafe_Pointer_gc,
     /* __reflection */
     &preflection_string,
     /* __uncommon */
     NULL,
     /* __pointer_to_this */
-    NULL,
-    /* __zero */
-    &zero_pointer
+    NULL
   },
   /* __element_type */
   &unsafe_Pointer

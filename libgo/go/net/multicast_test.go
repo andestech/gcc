@@ -25,10 +25,8 @@ var ipv4MulticastListenerTests = []struct {
 // port.
 func TestIPv4MulticastListener(t *testing.T) {
 	switch runtime.GOOS {
-	case "nacl", "plan9":
+	case "plan9":
 		t.Skipf("skipping test on %q", runtime.GOOS)
-	case "solaris":
-		t.Skipf("skipping test on solaris, see issue 7399")
 	}
 
 	closer := func(cs []*UDPConn) {
@@ -95,10 +93,8 @@ var ipv6MulticastListenerTests = []struct {
 // port.
 func TestIPv6MulticastListener(t *testing.T) {
 	switch runtime.GOOS {
-	case "plan9":
+	case "plan9", "solaris":
 		t.Skipf("skipping test on %q", runtime.GOOS)
-	case "solaris":
-		t.Skipf("skipping test on solaris, see issue 7399")
 	}
 	if !supportsIPv6 {
 		t.Skip("ipv6 is not supported")

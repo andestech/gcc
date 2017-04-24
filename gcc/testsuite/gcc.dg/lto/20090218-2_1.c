@@ -1,4 +1,3 @@
-/* { dg-options { -fgnu89-inline } } */
 typedef struct {
 } mem_attrs;
 int main(void)

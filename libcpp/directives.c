@@ -213,33 +213,16 @@ skip_rest_of_line (cpp_reader *pfile)
       ;
 }
 
-/* Helper function for check_oel.  */
-
+/* Ensure there are no stray tokens at the end of a directive.  If
+   EXPAND is true, tokens macro-expanding to nothing are allowed.  */
 static void
-check_eol_1 (cpp_reader *pfile, bool expand, int reason)
+check_eol (cpp_reader *pfile, bool expand)
 {
   if (! SEEN_EOL () && (expand
 			? cpp_get_token (pfile)
 			: _cpp_lex_token (pfile))->type != CPP_EOF)
-    cpp_pedwarning (pfile, reason, "extra tokens at end of #%s directive",
-		    pfile->directive->name);
-}
-
-/* Variant of check_eol used for Wendif-labels warnings.  */
-
-static void
-check_eol_endif_labels (cpp_reader *pfile)
-{
-  check_eol_1 (pfile, false, CPP_W_ENDIF_LABELS);
-}
-
-/* Ensure there are no stray tokens at the end of a directive.  If
-   EXPAND is true, tokens macro-expanding to nothing are allowed.  */
-
-static void
-check_eol (cpp_reader *pfile, bool expand)
-{
-  check_eol_1 (pfile, expand, CPP_W_NONE);
+    cpp_error (pfile, CPP_DL_PEDWARN, "extra tokens at end of #%s directive",
+	       pfile->directive->name);
 }
 
 /* Ensure there are no stray tokens other than comments at the end of
@@ -632,11 +615,6 @@ do_undef (cpp_reader *pfile)
 	  if (node->flags & NODE_WARN)
 	    cpp_error (pfile, CPP_DL_WARNING,
 		       "undefining \"%s\"", NODE_NAME (node));
-	  else if ((node->flags & NODE_BUILTIN)
-		   && CPP_OPTION (pfile, warn_builtin_macro_redefined))
-	    cpp_warning_with_line (pfile, CPP_W_BUILTIN_MACRO_REDEFINED,
-				   pfile->directive_line, 0,
-				   "undefining \"%s\"", NODE_NAME (node));
 
 	  if (CPP_OPTION (pfile, warn_unused_macros))
 	    _cpp_warn_if_unused_macro (pfile, node, NULL);
@@ -2012,7 +1990,7 @@ do_else (cpp_reader *pfile)
 
       /* Only check EOL if was not originally skipping.  */
       if (!ifs->was_skipping && CPP_OPTION (pfile, warn_endif_labels))
-	check_eol_endif_labels (pfile);
+	check_eol (pfile, false);
     }
 }
 
@@ -2073,7 +2051,7 @@ do_endif (cpp_reader *pfile)
     {
       /* Only check EOL if was not originally skipping.  */
       if (!ifs->was_skipping && CPP_OPTION (pfile, warn_endif_labels))
-	check_eol_endif_labels (pfile);
+	check_eol (pfile, false);
 
       /* If potential control macro, we go back outside again.  */
       if (ifs->next == 0 && ifs->mi_cmacro)

@@ -11,4 +11,5 @@ int func(T, U)			// { dg-message "note" }
 int main ()
 {
   func (0, 1);			// { dg-error "ambiguous" }
+  // { dg-message "candidate" "candidate note" { target *-*-* } 13 }
 }

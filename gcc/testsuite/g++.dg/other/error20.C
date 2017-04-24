@@ -9,4 +9,5 @@ struct A			// { dg-message "operator=|no known conversion" }
 void bar (A& a)
 {
   a.foo () = 0; // { dg-error "operand types are 'A' and 'int'" }
+  // { dg-message "candidate" "candidate note" { target *-*-* } 11 }
 }   

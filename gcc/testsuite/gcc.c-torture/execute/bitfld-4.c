@@ -6,8 +6,6 @@
    32-bit systems.  */
 /* Origin: Joseph Myers <jsm@polyomino.org.uk> */
 
-/* { dg-require-effective-target int32plus } */
-
 extern void abort (void);
 
 struct s { int a:12, b:20; };

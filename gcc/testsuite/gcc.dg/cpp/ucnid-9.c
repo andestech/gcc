@@ -1,5 +1,5 @@
 /* { dg-do preprocess } */
-/* { dg-options "-std=c99 -pedantic" } */
+/* { dg-options "-std=c99 -pedantic -fextended-identifiers" } */
 
 \u2160
 \u2182

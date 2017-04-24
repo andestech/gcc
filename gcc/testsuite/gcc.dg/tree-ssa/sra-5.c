@@ -3,7 +3,6 @@
 
 /* Tests for SRA of unions. */
 
-void link_error (void);
 
 typedef union testunion
 {

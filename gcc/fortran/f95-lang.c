@@ -27,31 +27,21 @@ along with GCC; see the file COPYING3.  If not see
 #include "ansidecl.h"
 #include "system.h"
 #include "coretypes.h"
-#include "gfortran.h"
 #include "tree.h"
 #include "flags.h"
 #include "langhooks.h"
 #include "langhooks-def.h"
 #include "timevar.h"
 #include "tm.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
 #include "function.h"
 #include "ggc.h"
 #include "toplev.h"
 #include "target.h"
 #include "debug.h"
-#include "diagnostic.h" /* For errorcount/warningcount */
+#include "diagnostic.h"
 #include "dumpfile.h"
-#include "hash-map.h"
-#include "is-a.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
+#include "gfortran.h"
 #include "cpp.h"
 #include "trans.h"
 #include "trans-types.h"
@@ -352,12 +342,12 @@ getdecls (void)
   return current_binding_level->names;
 }
 
-/* Enter a new binding level.  */
+/* Enter a new binding level. */
 
 void
 pushlevel (void)
 {
-  struct binding_level *newlevel = ggc_alloc<binding_level> ();
+  struct binding_level *newlevel = ggc_alloc_binding_level ();
 
   *newlevel = clear_binding_level;
 
@@ -420,7 +410,7 @@ poplevel (int keep, int functionbody)
   current_binding_level = current_binding_level->level_chain;
 
   if (functionbody)
-    /* This is the top level block of a function.  */
+    /* This is the top level block of a function. */
     DECL_INITIAL (current_function_decl) = block_node;
   else if (current_binding_level == global_binding_level)
     /* When using gfc_start_block/gfc_finish_block from middle-end hooks,
@@ -573,7 +563,6 @@ gfc_builtin_function (tree decl)
 #define ATTR_NOTHROW_LEAF_LIST		(ECF_NOTHROW | ECF_LEAF)
 #define ATTR_NOTHROW_LEAF_MALLOC_LIST	(ECF_NOTHROW | ECF_LEAF | ECF_MALLOC)
 #define ATTR_CONST_NOTHROW_LEAF_LIST	(ECF_NOTHROW | ECF_LEAF | ECF_CONST)
-#define ATTR_PURE_NOTHROW_LEAF_LIST	(ECF_NOTHROW | ECF_LEAF | ECF_PURE)
 #define ATTR_NOTHROW_LIST		(ECF_NOTHROW)
 #define ATTR_CONST_NOTHROW_LIST		(ECF_NOTHROW | ECF_CONST)
 
@@ -655,12 +644,9 @@ gfc_init_builtin_functions (void)
 #define DEF_FUNCTION_TYPE_3(NAME, RETURN, ARG1, ARG2, ARG3) NAME,
 #define DEF_FUNCTION_TYPE_4(NAME, RETURN, ARG1, ARG2, ARG3, ARG4) NAME,
 #define DEF_FUNCTION_TYPE_5(NAME, RETURN, ARG1, ARG2, ARG3, ARG4, ARG5) NAME,
-#define DEF_FUNCTION_TYPE_6(NAME, RETURN, ARG1, ARG2, ARG3, ARG4, ARG5, \
-			    ARG6) NAME,
-#define DEF_FUNCTION_TYPE_7(NAME, RETURN, ARG1, ARG2, ARG3, ARG4, ARG5, \
-			    ARG6, ARG7) NAME,
-#define DEF_FUNCTION_TYPE_8(NAME, RETURN, ARG1, ARG2, ARG3, ARG4, ARG5, \
-			    ARG6, ARG7, ARG8) NAME,
+#define DEF_FUNCTION_TYPE_6(NAME, RETURN, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6) NAME,
+#define DEF_FUNCTION_TYPE_7(NAME, RETURN, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7) NAME,
+#define DEF_FUNCTION_TYPE_8(NAME, RETURN, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8) NAME,
 #define DEF_FUNCTION_TYPE_VAR_0(NAME, RETURN) NAME,
 #define DEF_POINTER_TYPE(NAME, TYPE) NAME,
 #include "types.def"
@@ -693,8 +679,6 @@ gfc_init_builtin_functions (void)
   tree func_longdouble_longdoublep_longdoublep;
   tree ftype, ptype;
   tree builtin_types[(int) BT_LAST + 1];
-
-  int attr;
 
   build_builtin_fntypes (mfunc_float, float_type_node);
   build_builtin_fntypes (mfunc_double, double_type_node);
@@ -783,32 +767,6 @@ gfc_init_builtin_functions (void)
 		      BUILT_IN_NEXTAFTERF, "nextafterf",
 		      ATTR_CONST_NOTHROW_LEAF_LIST);
  
-  /* Some built-ins depend on rounding mode. Depending on compilation options, they
-     will be "pure" or "const".  */
-  attr = flag_rounding_math ? ATTR_PURE_NOTHROW_LEAF_LIST : ATTR_CONST_NOTHROW_LEAF_LIST;
-
-  gfc_define_builtin ("__builtin_rintl", mfunc_longdouble[0], 
-		      BUILT_IN_RINTL, "rintl", attr);
-  gfc_define_builtin ("__builtin_rint", mfunc_double[0], 
-		      BUILT_IN_RINT, "rint", attr);
-  gfc_define_builtin ("__builtin_rintf", mfunc_float[0], 
-		      BUILT_IN_RINTF, "rintf", attr);
-
-  gfc_define_builtin ("__builtin_remainderl", mfunc_longdouble[1], 
-		      BUILT_IN_REMAINDERL, "remainderl", attr);
-  gfc_define_builtin ("__builtin_remainder", mfunc_double[1], 
-		      BUILT_IN_REMAINDER, "remainder", attr);
-  gfc_define_builtin ("__builtin_remainderf", mfunc_float[1], 
-		      BUILT_IN_REMAINDERF, "remainderf", attr);
- 
-  gfc_define_builtin ("__builtin_logbl", mfunc_longdouble[0], 
-		      BUILT_IN_LOGBL, "logbl", ATTR_CONST_NOTHROW_LEAF_LIST);
-  gfc_define_builtin ("__builtin_logb", mfunc_double[0], 
-		      BUILT_IN_LOGB, "logb", ATTR_CONST_NOTHROW_LEAF_LIST);
-  gfc_define_builtin ("__builtin_logbf", mfunc_float[0], 
-		      BUILT_IN_LOGBF, "logbf", ATTR_CONST_NOTHROW_LEAF_LIST);
-
-
   gfc_define_builtin ("__builtin_frexpl", mfunc_longdouble[4], 
 		      BUILT_IN_FREXPL, "frexpl", ATTR_NOTHROW_LEAF_LIST);
   gfc_define_builtin ("__builtin_frexp", mfunc_double[4], 
@@ -823,11 +781,11 @@ gfc_init_builtin_functions (void)
   gfc_define_builtin ("__builtin_fabsf", mfunc_float[0], 
 		      BUILT_IN_FABSF, "fabsf", ATTR_CONST_NOTHROW_LEAF_LIST);
  
-  gfc_define_builtin ("__builtin_scalbnl", mfunc_longdouble[2],
+  gfc_define_builtin ("__builtin_scalbnl", mfunc_longdouble[5], 
 		      BUILT_IN_SCALBNL, "scalbnl", ATTR_CONST_NOTHROW_LEAF_LIST);
-  gfc_define_builtin ("__builtin_scalbn", mfunc_double[2],
+  gfc_define_builtin ("__builtin_scalbn", mfunc_double[5], 
 		      BUILT_IN_SCALBN, "scalbn", ATTR_CONST_NOTHROW_LEAF_LIST);
-  gfc_define_builtin ("__builtin_scalbnf", mfunc_float[2],
+  gfc_define_builtin ("__builtin_scalbnf", mfunc_float[5], 
 		      BUILT_IN_SCALBNF, "scalbnf", ATTR_CONST_NOTHROW_LEAF_LIST);
  
   gfc_define_builtin ("__builtin_fmodl", mfunc_longdouble[1], 
@@ -890,11 +848,11 @@ gfc_init_builtin_functions (void)
 		      BUILT_IN_CPOW, "cpow", ATTR_CONST_NOTHROW_LEAF_LIST);
   gfc_define_builtin ("__builtin_cpowf", mfunc_cfloat[1], 
 		      BUILT_IN_CPOWF, "cpowf", ATTR_CONST_NOTHROW_LEAF_LIST);
-  gfc_define_builtin ("__builtin_powil", mfunc_longdouble[2],
+  gfc_define_builtin ("__builtin_powil", mfunc_longdouble[2], 
 		      BUILT_IN_POWIL, "powil", ATTR_CONST_NOTHROW_LEAF_LIST);
-  gfc_define_builtin ("__builtin_powi", mfunc_double[2],
+  gfc_define_builtin ("__builtin_powi", mfunc_double[2], 
 		      BUILT_IN_POWI, "powi", ATTR_CONST_NOTHROW_LEAF_LIST);
-  gfc_define_builtin ("__builtin_powif", mfunc_float[2],
+  gfc_define_builtin ("__builtin_powif", mfunc_float[2], 
 		      BUILT_IN_POWIF, "powif", ATTR_CONST_NOTHROW_LEAF_LIST);
 
 
@@ -999,34 +957,6 @@ gfc_init_builtin_functions (void)
                                     void_type_node, NULL_TREE);
   gfc_define_builtin ("__builtin_isnan", ftype, BUILT_IN_ISNAN,
 		      "__builtin_isnan", ATTR_CONST_NOTHROW_LEAF_LIST);
-  gfc_define_builtin ("__builtin_isfinite", ftype, BUILT_IN_ISFINITE,
-		      "__builtin_isfinite", ATTR_CONST_NOTHROW_LEAF_LIST);
-  gfc_define_builtin ("__builtin_isnormal", ftype, BUILT_IN_ISNORMAL,
-		      "__builtin_isnormal", ATTR_CONST_NOTHROW_LEAF_LIST);
-
-  ftype = build_function_type_list (integer_type_node, void_type_node,
-				    void_type_node, NULL_TREE);
-  gfc_define_builtin ("__builtin_isunordered", ftype, BUILT_IN_ISUNORDERED,
-		      "__builtin_isunordered", ATTR_CONST_NOTHROW_LEAF_LIST);
-  gfc_define_builtin ("__builtin_islessequal", ftype, BUILT_IN_ISLESSEQUAL,
-		      "__builtin_islessequal", ATTR_CONST_NOTHROW_LEAF_LIST);
-  gfc_define_builtin ("__builtin_isgreaterequal", ftype,
-		      BUILT_IN_ISGREATEREQUAL, "__builtin_isgreaterequal",
-		      ATTR_CONST_NOTHROW_LEAF_LIST);
-
-  ftype = build_function_type_list (integer_type_node,
-                                    float_type_node, NULL_TREE); 
-  gfc_define_builtin("__builtin_signbitf", ftype, BUILT_IN_SIGNBITF,
-		     "signbitf", ATTR_CONST_NOTHROW_LEAF_LIST);
-  ftype = build_function_type_list (integer_type_node,
-                                    double_type_node, NULL_TREE); 
-  gfc_define_builtin("__builtin_signbit", ftype, BUILT_IN_SIGNBIT,
-		     "signbit", ATTR_CONST_NOTHROW_LEAF_LIST);
-  ftype = build_function_type_list (integer_type_node,
-                                    long_double_type_node, NULL_TREE); 
-  gfc_define_builtin("__builtin_signbitl", ftype, BUILT_IN_SIGNBITL,
-		     "signbitl", ATTR_CONST_NOTHROW_LEAF_LIST);
-
 
 #define DEF_PRIMITIVE_TYPE(ENUM, VALUE) \
   builtin_types[(int) ENUM] = VALUE;
@@ -1114,15 +1044,12 @@ gfc_init_builtin_functions (void)
     = build_pointer_type (builtin_types[(int) TYPE]);
 #include "types.def"
 #undef DEF_PRIMITIVE_TYPE
-#undef DEF_FUNCTION_TYPE_0
 #undef DEF_FUNCTION_TYPE_1
 #undef DEF_FUNCTION_TYPE_2
 #undef DEF_FUNCTION_TYPE_3
 #undef DEF_FUNCTION_TYPE_4
 #undef DEF_FUNCTION_TYPE_5
 #undef DEF_FUNCTION_TYPE_6
-#undef DEF_FUNCTION_TYPE_7
-#undef DEF_FUNCTION_TYPE_8
 #undef DEF_FUNCTION_TYPE_VAR_0
 #undef DEF_POINTER_TYPE
   builtin_types[(int) BT_LAST] = NULL_TREE;

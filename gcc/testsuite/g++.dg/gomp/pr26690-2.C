@@ -12,5 +12,6 @@ foo ()
 {
   A a(6);
 #pragma omp parallel private (a)	// { dg-error "call of overloaded" }
+  // { dg-message "candidate" "candidate note" { target *-*-* } 14 }
   ;
 }

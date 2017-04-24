@@ -4,7 +4,6 @@
 struct large { int x[100]; };
 struct large bark();
 extern int test (void) __attribute__((transaction_safe));
-extern int readint (void);
 struct large lacopy;
 
 int f()

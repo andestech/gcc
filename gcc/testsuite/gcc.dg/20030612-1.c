@@ -14,7 +14,6 @@ void foo()
   });
 }
 
-int
 main()
 {
   B = 5;

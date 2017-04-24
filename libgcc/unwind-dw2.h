@@ -22,6 +22,12 @@
    see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
    <http://www.gnu.org/licenses/>.  */
 
+/* A target can override (perhaps for backward compatibility) how
+   many dwarf2 columns are unwound.  */
+#ifndef DWARF_FRAME_REGISTERS
+#define DWARF_FRAME_REGISTERS FIRST_PSEUDO_REGISTER
+#endif
+
 /* The result of interpreting the frame unwind info for a frame.
    This is all symbolic at this point, as none of the values can
    be resolved until the target pc is located.  */
@@ -46,7 +52,7 @@ typedef struct
 	REG_SAVED_VAL_EXP,
 	REG_UNDEFINED
       } how;
-    } reg[__LIBGCC_DWARF_FRAME_REGISTERS__+1];
+    } reg[DWARF_FRAME_REGISTERS+1];
 
     /* Used to implement DW_CFA_remember_state.  */
     struct frame_state_reg_info *prev;

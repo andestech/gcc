@@ -143,7 +143,6 @@ AC_PROG_INSTALL
 
 # Configure libtool
 AM_PROG_LIBTOOL
-ACX_LT_HOST_FLAGS
 AC_SUBST(enable_shared)
 AC_SUBST(enable_static)
 AM_MAINTAINER_MODE
@@ -151,11 +150,6 @@ AM_MAINTAINER_MODE
 # For libtool versioning info, format is CURRENT:REVISION:AGE
 libtool_VERSION=2:0:1
 AC_SUBST(libtool_VERSION)
-
-# Check for used threading-model
-AC_MSG_CHECKING([for thread model used by GCC])
-target_thread_file=`$CC -v 2>&1 | sed -n 's/^Thread model: //p'`
-AC_MSG_RESULT([$target_thread_file])
 
 # Get target configury.
 . ${srcdir}/configure.tgt

@@ -26,24 +26,24 @@
 ;; 505/801/821/823
 
 (define_insn_reservation "mpccore-load" 2
-  (and (eq_attr "type" "load,load_l,store_c,sync")
+  (and (eq_attr "type" "load,load_ext,load_ext_u,load_ext_ux,load_ux,load_u,\
+			load_l,store_c,sync")
        (eq_attr "cpu" "mpccore"))
   "lsu_mpc")
 
 (define_insn_reservation "mpccore-store" 2
-  (and (eq_attr "type" "store,fpstore")
+  (and (eq_attr "type" "store,store_ux,store_u,fpstore,fpstore_ux,fpstore_u")
        (eq_attr "cpu" "mpccore"))
   "lsu_mpc")
 
 (define_insn_reservation "mpccore-fpload" 2
-  (and (eq_attr "type" "fpload")
+  (and (eq_attr "type" "fpload,fpload_ux,fpload_u")
        (eq_attr "cpu" "mpccore"))
   "lsu_mpc")
 
 (define_insn_reservation "mpccore-integer" 1
-  (and (ior (eq_attr "type" "integer,insert,trap,cntlz,isel")
-	    (and (eq_attr "type" "add,logical,shift,exts")
-		 (eq_attr "dot" "no")))
+  (and (eq_attr "type" "integer,insert_word,insert_dword,shift,trap,\
+                        var_shift_rotate,cntlz,exts,isel")
        (eq_attr "cpu" "mpccore"))
   "iu_mpc")
 
@@ -58,20 +58,19 @@
   "iu_mpc,iu_mpc,iu_mpc")
 
 (define_insn_reservation "mpccore-imul" 2
-  (and (eq_attr "type" "mul")
+  (and (eq_attr "type" "imul,imul2,imul3,imul_compare")
        (eq_attr "cpu" "mpccore"))
   "mciu_mpc")
 
 ; Divide latency varies greatly from 2-11, use 6 as average
 (define_insn_reservation "mpccore-idiv" 6
-  (and (eq_attr "type" "div")
+  (and (eq_attr "type" "idiv")
        (eq_attr "cpu" "mpccore"))
   "mciu_mpc*6")
 
 (define_insn_reservation "mpccore-compare" 3
-  (and (ior (eq_attr "type" "cmp,compare")
-	    (and (eq_attr "type" "add,logical,shift,exts")
-		 (eq_attr "dot" "yes")))
+  (and (eq_attr "type" "cmp,fast_compare,compare,delayed_compare,\
+                        var_delayed_compare")
        (eq_attr "cpu" "mpccore"))
   "iu_mpc,nothing,bpu_mpc")
 

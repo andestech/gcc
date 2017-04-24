@@ -142,7 +142,7 @@ and warnings}.
 @gccoptlist{-Waliasing -Wall -Wampersand -Warray-bounds
 -Wc-binding-type -Wcharacter-truncation @gol
 -Wconversion -Wfunction-elimination -Wimplicit-interface @gol
--Wimplicit-procedure -Wintrinsic-shadow -Wuse-without-only -Wintrinsics-std @gol
+-Wimplicit-procedure -Wintrinsic-shadow -Wintrinsics-std @gol
 -Wline-truncation -Wno-align-commons -Wno-tabs -Wreal-q-constant @gol
 -Wsurprising -Wunderflow -Wunused-parameter -Wrealloc-lhs -Wrealloc-lhs-all @gol
 -Wtarget-lifetime -fmax-errors=@var{n} -fsyntax-only -pedantic -pedantic-errors
@@ -402,7 +402,7 @@ language standard, and warnings are given for the Fortran 77 features
 that are permitted but obsolescent in later standards. @samp{-std=f2008ts}
 allows the Fortran 2008 standard including the additions of the 
 Technical Specification (TS) 29113 on Further Interoperability of Fortran
-with C and TS 18508 on Additional Parallel Features in Fortran.
+with C.
 
 @end table
 
@@ -896,13 +896,6 @@ intrinsic; in this case, an explicit interface or @code{EXTERNAL} or
 @code{INTRINSIC} declaration might be needed to get calls later resolved to
 the desired intrinsic/procedure.  This option is implied by @option{-Wall}.
 
-@item -Wuse-without-only
-@opindex @code{Wuse-without-only}
-@cindex warnings, use statements
-@cindex intrinsic
-Warn if a @code{USE} statement has no @code{ONLY} qualifier and 
-thus implicitly imports all public entities of the used module.
-
 @item -Wunused-dummy-argument
 @opindex @code{Wunused-dummy-argument}
 @cindex warnings, unused dummy argument
@@ -918,8 +911,7 @@ Contrary to @command{gcc}'s meaning of @option{-Wunused-parameter},
 @command{gfortran}'s implementation of this option does not warn
 about unused dummy arguments (see @option{-Wunused-dummy-argument}),
 but about unused @code{PARAMETER} values. @option{-Wunused-parameter}
-is implied by @option{-Wextra} if also @option{-Wunused} or
-@option{-Wall} is used.
+is not included in @option{-Wall} but is implied by @option{-Wall -Wextra}.
 
 @item -Walign-commons
 @opindex @code{Walign-commons}
@@ -1272,9 +1264,10 @@ experimenting with issues such as integration of GNU Fortran into
 existing system environments (vis-@`{a}-vis existing libraries, tools,
 and so on).
 
-For example, with @option{-funderscoring}, and assuming that @code{j()} and
-@code{max_count()} are external functions while @code{my_var} and
-@code{lvar} are local variables, a statement like
+For example, with @option{-funderscoring}, and assuming other defaults like
+@option{-fcase-lower} and that @code{j()} and @code{max_count()} are
+external functions while @code{my_var} and @code{lvar} are local variables,
+a statement like
 @smallexample
 I = J() + MAX_COUNT (MY_VAR, LVAR)
 @end smallexample

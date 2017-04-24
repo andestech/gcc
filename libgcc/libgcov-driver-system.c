@@ -83,105 +83,118 @@ create_file_directory (char *filename)
 }
 
 static void
-allocate_filename_struct (struct gcov_filename *gf)
+allocate_filename_struct (struct gcov_filename_aux *gf)
 {
   const char *gcov_prefix;
+  int gcov_prefix_strip = 0;
   size_t prefix_length;
-  int strip = 0;
+  char *gi_filename_up;
 
+  gcc_assert (gf);
   {
     /* Check if the level of dirs to strip off specified. */
     char *tmp = getenv("GCOV_PREFIX_STRIP");
     if (tmp)
       {
-        strip = atoi (tmp);
+        gcov_prefix_strip = atoi (tmp);
         /* Do not consider negative values. */
-        if (strip < 0)
-          strip = 0;
+        if (gcov_prefix_strip < 0)
+          gcov_prefix_strip = 0;
       }
   }
-  gf->strip = strip;
 
   /* Get file name relocation prefix.  Non-absolute values are ignored. */
   gcov_prefix = getenv("GCOV_PREFIX");
-  prefix_length = gcov_prefix ? strlen (gcov_prefix) : 0;
-  
-  /* Remove an unnecessary trailing '/' */
-  if (prefix_length && IS_DIR_SEPARATOR (gcov_prefix[prefix_length - 1]))
-    prefix_length--;
+  if (gcov_prefix)
+    {
+      prefix_length = strlen(gcov_prefix);
+
+      /* Remove an unnecessary trailing '/' */
+      if (IS_DIR_SEPARATOR (gcov_prefix[prefix_length - 1]))
+        prefix_length--;
+    }
+  else
+    prefix_length = 0;
 
   /* If no prefix was specified and a prefix stip, then we assume
      relative.  */
-  if (!prefix_length && gf->strip)
+  if (gcov_prefix_strip != 0 && prefix_length == 0)
     {
       gcov_prefix = ".";
       prefix_length = 1;
     }
-  gf->prefix = prefix_length;
-
-  /* Allocate and initialize the filename scratch space.  */
-  gf->filename = (char *) xmalloc (gf->max_length + prefix_length + 2);
+  /* Allocate and initialize the filename scratch space plus one.  */
+  gi_filename = (char *) xmalloc (prefix_length + gcov_max_filename + 2);
   if (prefix_length)
-    memcpy (gf->filename, gcov_prefix, prefix_length);
+    memcpy (gi_filename, gcov_prefix, prefix_length);
+  gi_filename_up = gi_filename + prefix_length;
+
+  gf->gi_filename_up = gi_filename_up;
+  gf->prefix_length = prefix_length;
+  gf->gcov_prefix_strip = gcov_prefix_strip;
 }
 
 /* Open a gcda file specified by GI_FILENAME.
    Return -1 on error.  Return 0 on success.  */
 
 static int
-gcov_exit_open_gcda_file (struct gcov_info *gi_ptr,
-			  struct gcov_filename *gf)
+gcov_exit_open_gcda_file (struct gcov_info *gi_ptr, struct gcov_filename_aux *gf)
 {
-  const char *fname = gi_ptr->filename;
-  char *dst = gf->filename + gf->prefix;
+  int gcov_prefix_strip;
+  size_t prefix_length;
+  char *gi_filename_up;
+  const char *fname, *s;
 
+  gcov_prefix_strip = gf->gcov_prefix_strip;
+  gi_filename_up = gf->gi_filename_up;
+  prefix_length = gf->prefix_length;
   fname = gi_ptr->filename;
+
+  /* Avoid to add multiple drive letters into combined path.  */
+  if (prefix_length != 0 && HAS_DRIVE_SPEC(fname))
+    fname += 2;
 
   /* Build relocated filename, stripping off leading
      directories from the initial filename if requested. */
-  if (gf->strip > 0)
+  if (gcov_prefix_strip > 0)
     {
-      const char *probe = fname;
-      int level;
+      int level = 0;
 
-      /* Remove a leading separator, without counting it.  */
-      if (IS_DIR_SEPARATOR (*probe))
-	probe++;
+      s = fname;
+      if (IS_DIR_SEPARATOR(*s))
+        ++s;
 
-      /* Skip selected directory levels.  If we fall off the end, we
-	 keep the final part.  */
-      for (level = gf->strip; *probe && level; probe++)
-        if (IS_DIR_SEPARATOR (*probe))
+      /* Skip selected directory levels. */
+      for (; (*s != '\0') && (level < gcov_prefix_strip); s++)
+        if (IS_DIR_SEPARATOR(*s))
           {
-            fname = probe;
-            level--;
+            fname = s;
+            level++;
           }
     }
 
   /* Update complete filename with stripped original. */
-  if (gf->prefix)
+  if (prefix_length != 0 && !IS_DIR_SEPARATOR (*fname))
     {
-      /* Avoid to add multiple drive letters into combined path.  */
-      if (HAS_DRIVE_SPEC(fname))
-	fname += 2;
-
-      if (!IS_DIR_SEPARATOR (*fname))
-	*dst++ = '/';
+      /* If prefix is given, add directory separator.  */
+      strcpy (gi_filename_up, "/");
+      strcpy (gi_filename_up + 1, fname);
     }
-  strcpy (dst, fname);
+  else
+    strcpy (gi_filename_up, fname);
 
-  if (!gcov_open (gf->filename))
+  if (!gcov_open (gi_filename))
     {
       /* Open failed likely due to missed directory.
          Create directory and retry to open file. */
-      if (create_file_directory (gf->filename))
+      if (create_file_directory (gi_filename))
         {
-          fprintf (stderr, "profiling:%s:Skip\n", gf->filename);
+          fprintf (stderr, "profiling:%s:Skip\n", gi_filename);
           return -1;
         }
-      if (!gcov_open (gf->filename))
+      if (!gcov_open (gi_filename))
         {
-          fprintf (stderr, "profiling:%s:Cannot open\n", gf->filename);
+          fprintf (stderr, "profiling:%s:Cannot open\n", gi_filename);
           return -1;
         }
     }

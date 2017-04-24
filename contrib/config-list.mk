@@ -17,7 +17,7 @@ LIST = aarch64-elf aarch64-linux-gnu \
   arc-elf32OPT-with-cpu=arc600 arc-elf32OPT-with-cpu=arc700 \
   arc-linux-uclibcOPT-with-cpu=arc700 arceb-linux-uclibcOPT-with-cpu=arc700 \
   arm-wrs-vxworks arm-netbsdelf \
-  arm-linux-androideabi arm-uclinux_eabi arm-eabi arm-rtems \
+  arm-linux-androideabi arm-uclinux_eabi arm-eabi \
   arm-symbianelf avr-rtems avr-elf \
   bfin-elf bfin-uclinux bfin-linux-uclibc bfin-rtems bfin-openbsd \
   c6x-elf c6x-uclinux cr16-elf cris-elf cris-linux crisv32-elf crisv32-linux \
@@ -48,16 +48,15 @@ LIST = aarch64-elf aarch64-linux-gnu \
   moxie-uclinux moxie-rtems \
   msp430-elf \
   nds32le-elf nds32be-elf \
-  nios2-elf nios2-linux-gnu nios2-rtems \
-  pdp11-aout \
+  nios2-elf nios2-linux-gnu \
+  pdp11-aout picochip-elfOPT-enable-obsolete \
   powerpc-darwin8 \
   powerpc-darwin7 powerpc64-darwin powerpc-freebsd6 powerpc-netbsd \
   powerpc-eabispe powerpc-eabisimaltivec powerpc-eabisim ppc-elf \
   powerpc-eabialtivec powerpc-xilinx-eabi powerpc-eabi \
-  powerpc-rtems powerpc-linux_spe \
+  powerpc-rtems4.11OPT-enable-threads=yes powerpc-linux_spe \
   powerpc-linux_paired powerpc64-linux_altivec \
-  powerpc-wrs-vxworks powerpc-wrs-vxworksae powerpc-wrs-vxworksmils \
-  powerpc-lynxos powerpcle-elf \
+  powerpc-wrs-vxworks powerpc-wrs-vxworksae powerpc-lynxos powerpcle-elf \
   powerpcle-eabisim powerpcle-eabi rs6000-ibm-aix4.3 rs6000-ibm-aix5.1.0 \
   rs6000-ibm-aix5.2.0 rs6000-ibm-aix5.3.0 rs6000-ibm-aix6.0 \
   rl78-elf rx-elf s390-linux-gnu s390x-linux-gnu s390x-ibm-tpf sh-elf \
@@ -76,15 +75,14 @@ LIST = aarch64-elf aarch64-linux-gnu \
   x86_64-knetbsd-gnu x86_64-w64-mingw32 \
   x86_64-mingw32OPT-enable-sjlj-exceptions=yes xstormy16-elf xtensa-elf \
   xtensa-linux \
-  i686-interix3OPT-enable-obsolete
+  sparc-sun-solaris2.9OPT-enable-obsolete i686-solaris2.9OPT-enable-obsolete \
+  i686-interix3OPT-enable-obsolete score-elfOPT-enable-obsolete
 
 LOGFILES = $(patsubst %,log/%-make.out,$(LIST))
 all: $(LOGFILES)
 config: $(LIST)
-show:
-	@echo $(LIST)
 
-.PHONY: make-log-dir all config show
+.PHONY: make-log-dir all config
 
 empty=
 
@@ -95,24 +93,11 @@ make-log-dir: ../gcc/MAINTAINERS
 
 $(LIST): make-log-dir
 	-mkdir $@
-	(											\
-		cd $@ &&									\
-		echo $@ &&									\
-		TGT=`echo $@ | sed -e 's/^\(.*\)OPT.*$$/\1/'` &&				\
-		TGT=`../../gcc/config.sub $$TGT` &&						\
-		case $$TGT in									\
-			*-*-darwin* | *-*-cygwin* | *-*-mingw* | *-*-aix*)			\
-				ADDITIONAL_LANGUAGES="";					\
-				;;								\
-			*)									\
-				ADDITIONAL_LANGUAGES=",go";					\
-				;;								\
-		esac &&										\
-		../../gcc/configure								\
-			--target=$(subst SCRIPTS,`pwd`/../scripts/,$(subst OPT,$(empty) -,$@))	\
-			--enable-werror-always ${host_options}					\
-			--enable-languages=all,ada$$ADDITIONAL_LANGUAGES;			\
-	) > log/$@-config.out 2>&1
+	(cd $@ && \
+	../../gcc/configure \
+	--target=$(subst SCRIPTS,`pwd`/../scripts/,$(subst OPT,$(empty) -,$@)) \
+	--enable-werror-always ${host_options} --enable-languages=all,ada,go) \
+	> log/$@-config.out 2>&1
 
 $(LOGFILES) : log/%-make.out : %
 	-$(MAKE) -C $< $(TEST) > $@ 2>&1 && rm -rf $<

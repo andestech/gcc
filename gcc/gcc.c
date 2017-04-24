@@ -253,7 +253,6 @@ static void init_gcc_specs (struct obstack *, const char *, const char *,
 static const char *convert_filename (const char *, int, int);
 #endif
 
-static void try_generate_repro (const char **argv);
 static const char *getenv_spec_function (int, const char **);
 static const char *if_exists_spec_function (int, const char **);
 static const char *if_exists_else_spec_function (int, const char **);
@@ -604,31 +603,6 @@ proper position among the other output files.  */
 #endif
 #endif
 
-/* Linker options for compressed debug sections.  */
-#if HAVE_LD_COMPRESS_DEBUG == 0
-/* No linker support.  */
-#define LINK_COMPRESS_DEBUG_SPEC \
-	" %{gz*:%e-gz is not supported in this configuration} "
-#elif HAVE_LD_COMPRESS_DEBUG == 1
-/* GNU style on input, GNU ld options.  Reject, not useful.  */
-#define LINK_COMPRESS_DEBUG_SPEC \
-	" %{gz*:%e-gz is not supported in this configuration} "
-#elif HAVE_LD_COMPRESS_DEBUG == 2
-/* GNU style, GNU gold options.  */
-#define LINK_COMPRESS_DEBUG_SPEC \
-	" %{gz|gz=zlib-gnu:" LD_COMPRESS_DEBUG_OPTION "=zlib}" \
-	" %{gz=none:"        LD_COMPRESS_DEBUG_OPTION "=none}" \
-	" %{gz=zlib:%e-gz=zlib is not supported in this configuration} "
-#elif HAVE_LD_COMPRESS_DEBUG == 3
-/* ELF gABI style.  */
-#define LINK_COMPRESS_DEBUG_SPEC \
-	" %{gz|gz=zlib:"  LD_COMPRESS_DEBUG_OPTION "=zlib}" \
-	" %{gz=none:"	  LD_COMPRESS_DEBUG_OPTION "=none}" \
-	" %{gz=zlib-gnu:" LD_COMPRESS_DEBUG_OPTION "=zlib-gnu} "
-#else
-#error Unknown value for HAVE_LD_COMPRESS_DEBUG.
-#endif
-
 /* config.h can define LIBGCC_SPEC to override how and when libgcc.a is
    included.  */
 #ifndef LIBGCC_SPEC
@@ -662,33 +636,6 @@ proper position among the other output files.  */
 #else
 #define ASM_MAP ""
 #endif
-
-/* Assembler options for compressed debug sections.  */
-#if HAVE_LD_COMPRESS_DEBUG < 2
-/* Reject if the linker cannot write compressed debug sections.  */
-#define ASM_COMPRESS_DEBUG_SPEC \
-	" %{gz*:%e-gz is not supported in this configuration} "
-#else /* HAVE_LD_COMPRESS_DEBUG >= 2 */
-#if HAVE_AS_COMPRESS_DEBUG == 0
-/* No assembler support.  Ignore silently.  */
-#define ASM_COMPRESS_DEBUG_SPEC \
-	" %{gz*:} "
-#elif HAVE_AS_COMPRESS_DEBUG == 1
-/* GNU style, GNU as options.  */
-#define ASM_COMPRESS_DEBUG_SPEC \
-	" %{gz|gz=zlib-gnu:" AS_COMPRESS_DEBUG_OPTION "}" \
-	" %{gz=none:"        AS_NO_COMPRESS_DEBUG_OPTION "}" \
-	" %{gz=zlib:%e-gz=zlib is not supported in this configuration} "
-#elif HAVE_AS_COMPRESS_DEBUG == 2
-/* ELF gABI style.  */
-#define ASM_COMPRESS_DEBUG_SPEC \
-	" %{gz|gz=zlib:"  AS_COMPRESS_DEBUG_OPTION "=zlib}" \
-	" %{gz=none:"	  AS_COMPRESS_DEBUG_OPTION "=none}" \
-	" %{gz=zlib-gnu:" AS_COMPRESS_DEBUG_OPTION "=zlib-gnu} "
-#else
-#error Unknown value for HAVE_AS_COMPRESS_DEBUG.
-#endif
-#endif /* HAVE_LD_COMPRESS_DEBUG >= 2 */
 
 /* Define ASM_DEBUG_SPEC to be a spec suitable for translating '-g'
    to the assembler.  */
@@ -820,8 +767,8 @@ proper position among the other output files.  */
     LINK_PLUGIN_SPEC \
    "%{flto|flto=*:%<fcompare-debug*} \
     %{flto} %{fno-lto} %{flto=*} %l " LINK_PIE_SPEC \
-   "%{fuse-ld=*:-fuse-ld=%*} " LINK_COMPRESS_DEBUG_SPEC \
-   "%X %{o*} %{e*} %{N} %{n} %{r}\
+   "%{fuse-ld=*:-fuse-ld=%*}\
+    %X %{o*} %{e*} %{N} %{n} %{r}\
     %{s} %{t} %{u*} %{z} %{Z} %{!nostdlib:%{!nostartfiles:%S}} " VTABLE_VERIFICATION_SPEC " \
     %{static:} %{L*} %(mfwrap) %(link_libgcc) " SANITIZER_EARLY_SPEC " %o\
     %{fopenmp|ftree-parallelize-loops=*:%:include(libgomp.spec)%(link_gomp)}\
@@ -854,6 +801,14 @@ proper position among the other output files.  */
 # define SYSROOT_HEADERS_SUFFIX_SPEC ""
 #endif
 
+#ifndef STARTFILE_CXX_SPEC
+#define STARTFILE_CXX_SPEC STARTFILE_SPEC
+#endif
+
+#ifndef ENDFILE_CXX_SPEC
+#define ENDFILE_CXX_SPEC ENDFILE_SPEC
+#endif
+
 static const char *asm_debug = ASM_DEBUG_SPEC;
 static const char *cpp_spec = CPP_SPEC;
 static const char *cc1_spec = CC1_SPEC;
@@ -879,6 +834,9 @@ static const char *sysroot_spec = SYSROOT_SPEC;
 static const char *sysroot_suffix_spec = SYSROOT_SUFFIX_SPEC;
 static const char *sysroot_hdrs_suffix_spec = SYSROOT_HEADERS_SUFFIX_SPEC;
 static const char *self_spec = "";
+
+static const char *startfile_cxx_spec = STARTFILE_CXX_SPEC;
+static const char *endfile_cxx_spec = ENDFILE_CXX_SPEC;
 
 /* Standard options to cpp, cc1, and as, to reduce duplication in specs.
    There should be no need to override these in target dependent files,
@@ -944,7 +902,6 @@ static const char *asm_options =
    to the assembler equivalents.  */
 "%{v} %{w:-W} %{I*} "
 #endif
-ASM_COMPRESS_DEBUG_SPEC
 "%a %Y %{c:%W{o*}%{!o*:-o %w%b%O}}%{!c:-o %d%w%u%O}";
 
 static const char *invoke_as =
@@ -1089,7 +1046,7 @@ static const struct compiler default_compilers[] =
   {".zip", "#Java", 0, 0, 0}, {".jar", "#Java", 0, 0, 0},
   {".go", "#Go", 0, 1, 0},
   /* Next come the entries for C.  */
-  {".c", "@c", 0, 0, 1},
+  {".c", "@nds32_c", 0, 0, 1},
   {"@c",
    /* cc1 has an integrated ISO C preprocessor.  We should invoke the
       external preprocessor if -save-temps is given.  */
@@ -1104,6 +1061,38 @@ static const struct compiler default_compilers[] =
       %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
 	  cc1 %(cpp_unique_options) %(cc1_options)}}}\
       %{!fsyntax-only:%(invoke_as)}}}}", 0, 0, 1},
+  {"@nds32_c",
+   /* cc1 has an integrated ISO C preprocessor.  We should invoke the
+      external preprocessor if -save-temps is given.  */
+     "%{E|M|MM:%(trad_capable_cpp) %(cpp_options) %(cpp_debug_options)}\
+      %{mace:\
+	  %{!E:%{!M:%{!MM:\
+	      %{traditional:\
+%eGNU C no longer supports -traditional without -E}\
+	  %{save-temps*|traditional-cpp|no-integrated-cpp:%(trad_capable_cpp) \
+	      %(cpp_options) -o %{save-temps*:%b.i} %{!save-temps*:%g.i} \n\
+		cs2 %{mace-s2s*} %{save-temps*:%b.i} %{!save-temps*:%g.i} \
+		    -o %{save-temps*:%b.ace.i} %{!save-temps*:%g.ace.i} --\n\
+		cc1 -fpreprocessed %{save-temps*:%b.ace.i} %{!save-temps*:%g.ace.i} \
+	      %(cc1_options)}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      %(trad_capable_cpp) %(cpp_options) -o %u.i\n}}}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cs2 %{mace-s2s*} %U.i -o %u.ace.i --\n}}}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cc1 -fpreprocessed %U.ace.i %(cc1_options)}}}\
+	  %{!fsyntax-only:%(invoke_as)}}}}}\
+      %{!mace:\
+	  %{!E:%{!M:%{!MM:\
+	      %{traditional:\
+%eGNU C no longer supports -traditional without -E}\
+	  %{save-temps*|traditional-cpp|no-integrated-cpp:%(trad_capable_cpp) \
+	      %(cpp_options) -o %{save-temps*:%b.i} %{!save-temps*:%g.i} \n\
+		cc1 -fpreprocessed %{save-temps*:%b.i} %{!save-temps*:%g.i} \
+	      %(cc1_options)}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cc1 %(cpp_unique_options) %(cc1_options)}}}\
+	  %{!fsyntax-only:%(invoke_as)}}}}}", 0, 0, 1},
   {"-",
    "%{!E:%e-E or -x required when input is from standard input}\
     %(trad_capable_cpp) %(cpp_options) %(cpp_debug_options)", 0, 0, 0},
@@ -1380,6 +1369,9 @@ static struct spec_list static_specs[] =
   INIT_STATIC_SPEC ("sysroot_suffix_spec",	&sysroot_suffix_spec),
   INIT_STATIC_SPEC ("sysroot_hdrs_suffix_spec",	&sysroot_hdrs_suffix_spec),
   INIT_STATIC_SPEC ("self_spec",		&self_spec),
+
+  INIT_STATIC_SPEC ("startfile_cxx",		&startfile_cxx_spec),
+  INIT_STATIC_SPEC ("endfile_cxx",		&endfile_cxx_spec),
 };
 
 #ifdef EXTRA_SPECS		/* additional specs needed */
@@ -2857,7 +2849,7 @@ execute (void)
 	    }
 	}
 
-      if (i && string != commands[i].prog)
+      if (string != commands[i].prog)
 	free (CONST_CAST (char *, string));
     }
 
@@ -2910,15 +2902,6 @@ execute (void)
 	else if (WIFEXITED (status)
 		 && WEXITSTATUS (status) >= MIN_FATAL_STATUS)
 	  {
-	    /* For ICEs in cc1, cc1obj, cc1plus see if it is
-	       reproducible or not.  */
-	    const char *p;
-	    if (flag_report_bug
-		&& WEXITSTATUS (status) == ICE_EXIT_CODE
-		&& i == 0
-		&& (p = strrchr (commands[0].argv[0], DIR_SEPARATOR))
-		&& ! strncmp (p + 1, "cc1", 3))
-	      try_generate_repro (commands[0].argv);
 	    if (WEXITSTATUS (status) > greatest_status)
 	      greatest_status = WEXITSTATUS (status);
 	    ret_code = -1;
@@ -2975,9 +2958,6 @@ execute (void)
 	      }
 	  }
       }
-
-   if (commands[0].argv[0] != commands[0].prog)
-     free (CONST_CAST (char *, commands[0].argv[0]));
 
     return ret_code;
   }
@@ -4914,7 +4894,7 @@ do_spec_1 (const char *spec, int inswitch, const char *soft_matched_part)
 		      {
 			saved_suffix
 			  = XNEWVEC (char, suffix_length
-				     + strlen (TARGET_OBJECT_SUFFIX) + 1);
+				     + strlen (TARGET_OBJECT_SUFFIX));
 			strncpy (saved_suffix, suffix, suffix_length);
 			strcpy (saved_suffix + suffix_length,
 				TARGET_OBJECT_SUFFIX);
@@ -5322,7 +5302,11 @@ do_spec_1 (const char *spec, int inswitch, const char *soft_matched_part)
 	    break;
 
 	  case 'E':
-	    value = do_spec_1 (endfile_spec, 0, NULL);
+	    if (lang_specific_is_c_plus_plus ())
+	      value = do_spec_1 (endfile_cxx_spec, 0, NULL);
+	    else
+	      value = do_spec_1 (endfile_spec, 0, NULL);
+
 	    if (value != 0)
 	      return value;
 	    break;
@@ -5367,7 +5351,11 @@ do_spec_1 (const char *spec, int inswitch, const char *soft_matched_part)
 	    break;
 
 	  case 'S':
-	    value = do_spec_1 (startfile_spec, 0, NULL);
+	    if (lang_specific_is_c_plus_plus ())
+	      value = do_spec_1 (startfile_cxx_spec, 0, NULL);
+	    else
+	      value = do_spec_1 (startfile_spec, 0, NULL);
+
 	    if (value != 0)
 	      return value;
 	    break;
@@ -6170,348 +6158,6 @@ give_switch (int switchnum, int omit_first_word)
   switches[switchnum].validated = true;
 }
 
-/* Print GCC configuration (e.g. version, thread model, target,
-   configuration_arguments) to a given FILE.  */
-
-static void
-print_configuration (FILE *file)
-{
-  int n;
-  const char *thrmod;
-
-  fnotice (file, "Target: %s\n", spec_machine);
-  fnotice (file, "Configured with: %s\n", configuration_arguments);
-
-#ifdef THREAD_MODEL_SPEC
-  /* We could have defined THREAD_MODEL_SPEC to "%*" by default,
-  but there's no point in doing all this processing just to get
-  thread_model back.  */
-  obstack_init (&obstack);
-  do_spec_1 (THREAD_MODEL_SPEC, 0, thread_model);
-  obstack_1grow (&obstack, '\0');
-  thrmod = XOBFINISH (&obstack, const char *);
-#else
-  thrmod = thread_model;
-#endif
-
-  fnotice (file, "Thread model: %s\n", thrmod);
-
-  /* compiler_version is truncated at the first space when initialized
-  from version string, so truncate version_string at the first space
-  before comparing.  */
-  for (n = 0; version_string[n]; n++)
-    if (version_string[n] == ' ')
-      break;
-
-  if (! strncmp (version_string, compiler_version, n)
-      && compiler_version[n] == 0)
-    fnotice (file, "gcc version %s %s\n\n", version_string,
-	     pkgversion_string);
-  else
-    fnotice (file, "gcc driver version %s %sexecuting gcc version %s\n\n",
-	     version_string, pkgversion_string, compiler_version);
-
-}
-
-#define RETRY_ICE_ATTEMPTS 3
-
-/* Returns true if FILE1 and FILE2 contain equivalent data, 0 otherwise.  */
-
-static bool
-files_equal_p (char *file1, char *file2)
-{
-  struct stat st1, st2;
-  off_t n, len;
-  int fd1, fd2;
-  const int bufsize = 8192;
-  char *buf = XNEWVEC (char, bufsize);
-
-  fd1 = open (file1, O_RDONLY);
-  fd2 = open (file2, O_RDONLY);
-
-  if (fd1 < 0 || fd2 < 0)
-    goto error;
-
-  if (fstat (fd1, &st1) < 0 || fstat (fd2, &st2) < 0)
-    goto error;
-
-  if (st1.st_size != st2.st_size)
-    goto error;
-
-  for (n = st1.st_size; n; n -= len)
-    {
-      len = n;
-      if ((int) len > bufsize / 2)
-	len = bufsize / 2;
-
-      if (read (fd1, buf, len) != (int) len
-	  || read (fd2, buf + bufsize / 2, len) != (int) len)
-	{
-	  goto error;
-	}
-
-      if (memcmp (buf, buf + bufsize / 2, len) != 0)
-	goto error;
-    }
-
-  free (buf);
-  close (fd1);
-  close (fd2);
-
-  return 1;
-
-error:
-  free (buf);
-  close (fd1);
-  close (fd2);
-  return 0;
-}
-
-/* Check that compiler's output doesn't differ across runs.
-   TEMP_STDOUT_FILES and TEMP_STDERR_FILES are arrays of files, containing
-   stdout and stderr for each compiler run.  Return true if all of
-   TEMP_STDOUT_FILES and TEMP_STDERR_FILES are equivalent.  */
-
-static bool
-check_repro (char **temp_stdout_files, char **temp_stderr_files)
-{
-  int i;
-  for (i = 0; i < RETRY_ICE_ATTEMPTS - 2; ++i)
-    {
-     if (!files_equal_p (temp_stdout_files[i], temp_stdout_files[i + 1])
-	 || !files_equal_p (temp_stderr_files[i], temp_stderr_files[i + 1]))
-       {
-	 fnotice (stderr, "The bug is not reproducible, so it is"
-		  " likely a hardware or OS problem.\n");
-	 break;
-       }
-    }
-  return i == RETRY_ICE_ATTEMPTS - 2;
-}
-
-enum attempt_status {
-  ATTEMPT_STATUS_FAIL_TO_RUN,
-  ATTEMPT_STATUS_SUCCESS,
-  ATTEMPT_STATUS_ICE
-};
-
-
-/* Run compiler with arguments NEW_ARGV to reproduce the ICE, storing stdout
-   to OUT_TEMP and stderr to ERR_TEMP.  If APPEND is TRUE, append to OUT_TEMP
-   and ERR_TEMP instead of truncating.  If EMIT_SYSTEM_INFO is TRUE, also write
-   GCC configuration into to ERR_TEMP.  Return ATTEMPT_STATUS_FAIL_TO_RUN if
-   compiler failed to run, ATTEMPT_STATUS_ICE if compiled ICE-ed and
-   ATTEMPT_STATUS_SUCCESS otherwise.  */
-
-static enum attempt_status
-run_attempt (const char **new_argv, const char *out_temp,
-	     const char *err_temp, int emit_system_info, int append)
-{
-
-  if (emit_system_info)
-    {
-      FILE *file_out = fopen (err_temp, "a");
-      print_configuration (file_out);
-      fclose (file_out);
-    }
-
-  int exit_status;
-  const char *errmsg;
-  struct pex_obj *pex;
-  int err;
-  int pex_flags = PEX_USE_PIPES | PEX_LAST;
-  enum attempt_status status = ATTEMPT_STATUS_FAIL_TO_RUN;
-
-  if (append)
-    pex_flags |= PEX_STDOUT_APPEND | PEX_STDERR_APPEND;
-
-  pex = pex_init (PEX_USE_PIPES, new_argv[0], NULL);
-  if (!pex)
-    fatal_error ("pex_init failed: %m");
-
-  errmsg = pex_run (pex, pex_flags, new_argv[0],
-		    CONST_CAST2 (char *const *, const char **, &new_argv[1]), out_temp,
-		    err_temp, &err);
-  if (errmsg != NULL)
-    {
-      if (err == 0)
-	fatal_error (errmsg);
-      else
-	{
-	  errno = err;
-	  pfatal_with_name (errmsg);
-	}
-    }
-
-  if (!pex_get_status (pex, 1, &exit_status))
-    goto out;
-
-  switch (WEXITSTATUS (exit_status))
-    {
-      case ICE_EXIT_CODE:
-	status = ATTEMPT_STATUS_ICE;
-	break;
-
-      case SUCCESS_EXIT_CODE:
-	status = ATTEMPT_STATUS_SUCCESS;
-	break;
-
-      default:
-	;
-    }
-
-out:
-  pex_free (pex);
-  return status;
-}
-
-/* This routine adds preprocessed source code into the given ERR_FILE.
-   To do this, it adds "-E" to NEW_ARGV and execute RUN_ATTEMPT routine to
-   add information in report file.  RUN_ATTEMPT should return
-   ATTEMPT_STATUS_SUCCESS, in other case we cannot generate the report.  */
-
-static void
-do_report_bug (const char **new_argv, const int nargs,
-	       char **out_file, char **err_file)
-{
-  int i, status;
-  int fd = open (*out_file, O_RDWR | O_APPEND);
-  if (fd < 0)
-    return;
-  write (fd, "\n//", 3);
-  for (i = 0; i < nargs; i++)
-    {
-      write (fd, " ", 1);
-      write (fd, new_argv[i], strlen (new_argv[i]));
-    }
-  write (fd, "\n\n", 2);
-  close (fd);
-  new_argv[nargs] = "-E";
-  new_argv[nargs + 1] = NULL;
-
-  status = run_attempt (new_argv, *out_file, *err_file, 0, 1);
-
-  if (status == ATTEMPT_STATUS_SUCCESS)
-    {
-      fnotice (stderr, "Preprocessed source stored into %s file,"
-	       " please attach this to your bugreport.\n", *out_file);
-      /* Make sure it is not deleted.  */
-      free (*out_file);
-      *out_file = NULL;
-    }
-}
-
-/* Append string STR to file FILE.  */
-
-static void
-append_text (char *file, const char *str)
-{
-  int fd = open (file, O_RDWR | O_APPEND);
-  if (fd < 0)
-    return;
-
-  write (fd, str, strlen (str));
-  close (fd);
-}
-
-/* Try to reproduce ICE.  If bug is reproducible, generate report .err file
-   containing GCC configuration, backtrace, compiler's command line options
-   and preprocessed source code.  */
-
-static void
-try_generate_repro (const char **argv)
-{
-  int i, nargs, out_arg = -1, quiet = 0, attempt;
-  const char **new_argv;
-  char *temp_files[RETRY_ICE_ATTEMPTS * 2];
-  char **temp_stdout_files = &temp_files[0];
-  char **temp_stderr_files = &temp_files[RETRY_ICE_ATTEMPTS];
-
-  if (gcc_input_filename == NULL || ! strcmp (gcc_input_filename, "-"))
-    return;
-
-  for (nargs = 0; argv[nargs] != NULL; ++nargs)
-    /* Only retry compiler ICEs, not preprocessor ones.  */
-    if (! strcmp (argv[nargs], "-E"))
-      return;
-    else if (argv[nargs][0] == '-' && argv[nargs][1] == 'o')
-      {
-	if (out_arg == -1)
-	  out_arg = nargs;
-	else
-	  return;
-      }
-    /* If the compiler is going to output any time information,
-       it might varry between invocations.  */
-    else if (! strcmp (argv[nargs], "-quiet"))
-      quiet = 1;
-    else if (! strcmp (argv[nargs], "-ftime-report"))
-      return;
-
-  if (out_arg == -1 || !quiet)
-    return;
-
-  memset (temp_files, '\0', sizeof (temp_files));
-  new_argv = XALLOCAVEC (const char *, nargs + 4);
-  memcpy (new_argv, argv, (nargs + 1) * sizeof (const char *));
-  new_argv[nargs++] = "-frandom-seed=0";
-  new_argv[nargs++] = "-fdump-noaddr";
-  new_argv[nargs] = NULL;
-  if (new_argv[out_arg][2] == '\0')
-    new_argv[out_arg + 1] = "-";
-  else
-    new_argv[out_arg] = "-o-";
-
-  int status;
-  for (attempt = 0; attempt < RETRY_ICE_ATTEMPTS; ++attempt)
-    {
-      int emit_system_info = 0;
-      int append = 0;
-      temp_stdout_files[attempt] = make_temp_file (".out");
-      temp_stderr_files[attempt] = make_temp_file (".err");
-
-      if (attempt == RETRY_ICE_ATTEMPTS - 1)
-	{
-	  append = 1;
-	  emit_system_info = 1;
-	}
-
-      if (emit_system_info)
-	append_text (temp_stderr_files[attempt], "/*\n");
-
-      status = run_attempt (new_argv, temp_stdout_files[attempt],
-			    temp_stderr_files[attempt], emit_system_info,
-			    append);
-
-      if (emit_system_info)
-	append_text (temp_stderr_files[attempt], "*/\n");
-
-      if (status != ATTEMPT_STATUS_ICE)
-	{
-	  fnotice (stderr, "The bug is not reproducible, so it is"
-		   " likely a hardware or OS problem.\n");
-	  goto out;
-	}
-    }
-
-  if (!check_repro (temp_stdout_files, temp_stderr_files))
-    goto out;
-
-  /* In final attempt we append compiler options and preprocesssed code to last
-     generated .err file with configuration and backtrace.  */
-  do_report_bug (new_argv, nargs,
-		 &temp_stderr_files[RETRY_ICE_ATTEMPTS - 1],
-		 &temp_stdout_files[RETRY_ICE_ATTEMPTS - 1]);
-
-out:
-  for (i = 0; i < RETRY_ICE_ATTEMPTS * 2; i++)
-    if (temp_files[i])
-      {
-	unlink (temp_stdout_files[i]);
-	free (temp_stdout_files[i]);
-      }
-}
-
 /* Search for a file named NAME trying various prefixes including the
    user's -B prefix and some standard ones.
    Return the absolute file name found.  If nothing is found, return NAME.  */
@@ -6724,132 +6370,49 @@ compare_files (char *cmpfile[])
   return ret;
 }
 
-/* The top-level "main" within the driver would be ~1000 lines long.
-   This class breaks it up into smaller functions and contains some
-   state shared by them.  */
-
-class driver
-{
- public:
-  int main (int argc, char **argv);
-
- private:
-  void set_progname (const char *argv0) const;
-  void expand_at_files (int *argc, char ***argv) const;
-  void decode_argv (int argc, const char **argv);
-  void global_initializations ();
-  void build_multilib_strings () const;
-  void set_up_specs () const;
-  void putenv_COLLECT_GCC (const char *argv0) const;
-  void maybe_putenv_COLLECT_LTO_WRAPPER () const;
-  void handle_unrecognized_options () const;
-  int maybe_print_and_exit () const;
-  bool prepare_infiles ();
-  void do_spec_on_infiles () const;
-  void maybe_run_linker (const char *argv0) const;
-  void final_actions () const;
-  int get_exit_code () const;
-
- private:
-  char *explicit_link_files;
-  struct cl_decoded_option *decoded_options;
-  unsigned int decoded_options_count;
-};
-
-/* Implement the top-level "main" within the driver in terms of
-   driver::main.  */
-
 extern int main (int, char **);
 
 int
 main (int argc, char **argv)
 {
-  driver d;
+  size_t i;
+  int value;
+  int linker_was_run = 0;
+  int lang_n_infiles = 0;
+  int num_linker_inputs = 0;
+  char *explicit_link_files;
+  char *specs_file;
+  char *lto_wrapper_file;
+  const char *p;
+  struct user_specs *uptr;
+  char **old_argv = argv;
+  struct cl_decoded_option *decoded_options;
+  unsigned int decoded_options_count;
 
-  return d.main (argc, argv);
-}
-
-/* driver::main is implemented as a series of driver:: method calls.  */
-
-int
-driver::main (int argc, char **argv)
-{
-  bool early_exit;
-
-  set_progname (argv[0]);
-  expand_at_files (&argc, &argv);
-  decode_argv (argc, const_cast <const char **> (argv));
-  global_initializations ();
-  build_multilib_strings ();
-  set_up_specs ();
-  putenv_COLLECT_GCC (argv[0]);
-  maybe_putenv_COLLECT_LTO_WRAPPER ();
-  handle_unrecognized_options ();
-
-  if (!maybe_print_and_exit ())
-    return 0;
-
-  early_exit = prepare_infiles ();
-  if (early_exit)
-    return get_exit_code ();
-
-  do_spec_on_infiles ();
-  maybe_run_linker (argv[0]);
-  final_actions ();
-  return get_exit_code ();
-}
-
-/* Locate the final component of argv[0] after any leading path, and set
-   the program name accordingly.  */
-
-void
-driver::set_progname (const char *argv0) const
-{
-  const char *p = argv0 + strlen (argv0);
-  while (p != argv0 && !IS_DIR_SEPARATOR (p[-1]))
+  p = argv[0] + strlen (argv[0]);
+  while (p != argv[0] && !IS_DIR_SEPARATOR (p[-1]))
     --p;
   progname = p;
 
   xmalloc_set_program_name (progname);
-}
 
-/* Expand any @ files within the command-line args,
-   setting at_file_supplied if any were expanded.  */
-
-void
-driver::expand_at_files (int *argc, char ***argv) const
-{
-  char **old_argv = *argv;
-
-  expandargv (argc, argv);
+  expandargv (&argc, &argv);
 
   /* Determine if any expansions were made.  */
-  if (*argv != old_argv)
+  if (argv != old_argv)
     at_file_supplied = true;
-}
 
-/* Decode the command-line arguments from argc/argv into the
-   decoded_options array.  */
-
-void
-driver::decode_argv (int argc, const char **argv)
-{
   /* Register the language-independent parameters.  */
   global_init_params ();
   finish_params ();
 
   init_options_struct (&global_options, &global_options_set);
 
-  decode_cmdline_options_to_array (argc, argv,
+  decode_cmdline_options_to_array (argc, CONST_CAST2 (const char **, char **,
+						      argv),
 				   CL_DRIVER,
 				   &decoded_options, &decoded_options_count);
-}
 
-/* Perform various initializations and setup.  */
-
-void
-driver::global_initializations ()
-{
   /* Unlock the stdio streams.  */
   unlock_std_streams ();
 
@@ -6891,16 +6454,10 @@ driver::global_initializations ()
   alloc_args ();
 
   obstack_init (&obstack);
-}
 
-/* Build multilib_select, et. al from the separate lines that make up each
-   multilib selection.  */
-
-void
-driver::build_multilib_strings () const
-{
+  /* Build multilib_select, et. al from the separate lines that make up each
+     multilib selection.  */
   {
-    const char *p;
     const char *const *q = multilib_raw;
     int need_space;
 
@@ -6933,7 +6490,7 @@ driver::build_multilib_strings () const
     multilib_reuse = XOBFINISH (&multilib_obstack, const char *);
 
     need_space = FALSE;
-    for (size_t i = 0; i < ARRAY_SIZE (multilib_defaults_raw); i++)
+    for (i = 0; i < ARRAY_SIZE (multilib_defaults_raw); i++)
       {
 	if (need_space)
 	  obstack_1grow (&multilib_obstack, ' ');
@@ -6946,15 +6503,6 @@ driver::build_multilib_strings () const
     obstack_1grow (&multilib_obstack, 0);
     multilib_defaults = XOBFINISH (&multilib_obstack, const char *);
   }
-}
-
-/* Set up the spec-handling machinery.  */
-
-void
-driver::set_up_specs () const
-{
-  char *specs_file;
-  size_t i;
 
 #ifdef INIT_ENVIRONMENT
   /* Set up any other necessary machine specific environment variables.  */
@@ -7114,7 +6662,7 @@ driver::set_up_specs () const
 
   /* Process any user specified specs in the order given on the command
      line.  */
-  for (struct user_specs *uptr = user_specs_head; uptr; uptr = uptr->next)
+  for (uptr = user_specs_head; uptr; uptr = uptr->next)
     {
       char *filename = find_a_file (&startfile_prefixes, uptr->filename,
 				    R_OK, true);
@@ -7186,27 +6734,16 @@ driver::set_up_specs () const
   /* Now that we have the switches and the specs, set
      the subdirectory based on the options.  */
   set_multilib_dir ();
-}
 
-/* Set up to remember the pathname of gcc and any options
-   needed for collect.  We use argv[0] instead of progname because
-   we need the complete pathname.  */
-
-void
-driver::putenv_COLLECT_GCC (const char *argv0) const
-{
+  /* Set up to remember the pathname of gcc and any options
+     needed for collect.  We use argv[0] instead of progname because
+     we need the complete pathname.  */
   obstack_init (&collect_obstack);
   obstack_grow (&collect_obstack, "COLLECT_GCC=", sizeof ("COLLECT_GCC=") - 1);
-  obstack_grow (&collect_obstack, argv0, strlen (argv0) + 1);
+  obstack_grow (&collect_obstack, argv[0], strlen (argv[0]) + 1);
   xputenv (XOBFINISH (&collect_obstack, char *));
-}
 
-/* Set up to remember the pathname of the lto wrapper. */
-
-void
-driver::maybe_putenv_COLLECT_LTO_WRAPPER () const
-{
-  char *lto_wrapper_file;
+  /* Set up to remember the pathname of the lto wrapper. */
 
   if (have_c)
     lto_wrapper_file = NULL;
@@ -7225,24 +6762,14 @@ driver::maybe_putenv_COLLECT_LTO_WRAPPER () const
       xputenv (XOBFINISH (&collect_obstack, char *));
     }
 
-}
+  /* Reject switches that no pass was interested in.  */
 
-/* Reject switches that no pass was interested in.  */
-
-void
-driver::handle_unrecognized_options () const
-{
-  for (size_t i = 0; (int) i < n_switches; i++)
+  for (i = 0; (int) i < n_switches; i++)
     if (! switches[i].validated)
       error ("unrecognized command line option %<-%s%>", switches[i].part1);
-}
 
-/* Handle the various -print-* options, returning 0 if the driver
-   should exit, or nonzero if the driver should continue.  */
+  /* Obey some of the options.  */
 
-int
-driver::maybe_print_and_exit () const
-{
   if (print_search_dirs)
     {
       printf (_("install: %s%s\n"),
@@ -7384,7 +6911,7 @@ driver::maybe_print_and_exit () const
     {
       printf (_("%s %s%s\n"), progname, pkgversion_string,
 	      version_string);
-      printf ("Copyright %s 2014 Free Software Foundation, Inc.\n",
+      printf ("Copyright %s 2015 Free Software Foundation, Inc.\n",
 	      _("(C)"));
       fputs (_("This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"),
@@ -7400,29 +6927,50 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
 
   if (verbose_flag)
     {
-      print_configuration (stderr);
+      int n;
+      const char *thrmod;
+
+      fnotice (stderr, "Target: %s\n", spec_machine);
+      fnotice (stderr, "Configured with: %s\n", configuration_arguments);
+
+#ifdef THREAD_MODEL_SPEC
+      /* We could have defined THREAD_MODEL_SPEC to "%*" by default,
+	 but there's no point in doing all this processing just to get
+	 thread_model back.  */
+      obstack_init (&obstack);
+      do_spec_1 (THREAD_MODEL_SPEC, 0, thread_model);
+      obstack_1grow (&obstack, '\0');
+      thrmod = XOBFINISH (&obstack, const char *);
+#else
+      thrmod = thread_model;
+#endif
+
+      fnotice (stderr, "Thread model: %s\n", thrmod);
+
+      /* compiler_version is truncated at the first space when initialized
+	 from version string, so truncate version_string at the first space
+	 before comparing.  */
+      for (n = 0; version_string[n]; n++)
+	if (version_string[n] == ' ')
+	  break;
+
+      if (! strncmp (version_string, compiler_version, n)
+	  && compiler_version[n] == 0)
+	fnotice (stderr, "gcc version %s %s\n", version_string,
+		 pkgversion_string);
+      else
+	fnotice (stderr, "gcc driver version %s %sexecuting gcc version %s\n",
+		 version_string, pkgversion_string, compiler_version);
+
       if (n_infiles == 0)
 	return (0);
     }
-
-  return 1;
-}
-
-/* Figure out what to do with each input file.
-   Return true if we need to exit early from "main", false otherwise.  */
-
-bool
-driver::prepare_infiles ()
-{
-  size_t i;
-  int lang_n_infiles = 0;
 
   if (n_infiles == added_libraries)
     fatal_error ("no input files");
 
   if (seen_error ())
-    /* Early exit needed from main.  */
-    return true;
+    goto out;
 
   /* Make a place to record the compiler output file names
      that correspond to the input files.  */
@@ -7470,17 +7018,6 @@ driver::prepare_infiles ()
   if (!combine_inputs && have_c && have_o && lang_n_infiles > 1)
     fatal_error ("cannot specify -o with -c, -S or -E with multiple files");
 
-  /* No early exit needed from main; we can continue.  */
-  return false;
-}
-
-/* Run the spec machinery on each input file.  */
-
-void
-driver::do_spec_on_infiles () const
-{
-  size_t i;
-
   for (i = 0; (int) i < n_infiles; i++)
     {
       int this_file_error = 0;
@@ -7515,8 +7052,6 @@ driver::do_spec_on_infiles () const
 	    }
 	  else
 	    {
-	      int value;
-
 	      if (compare_debug)
 		{
 		  free (debug_check_temp_file[0]);
@@ -7618,16 +7153,6 @@ driver::do_spec_on_infiles () const
       if (lang_specific_pre_link ())
 	errorcount++;
     }
-}
-
-/* If we have to run the linker, do it now.  */
-
-void
-driver::maybe_run_linker (const char *argv0) const
-{
-  size_t i;
-  int linker_was_run = 0;
-  int num_linker_inputs;
 
   /* Determine if there are any linker input files.  */
   num_linker_inputs = 0;
@@ -7679,7 +7204,7 @@ driver::maybe_run_linker (const char *argv0) const
 	      linker_plugin_file_spec = convert_white_space (temp_spec);
 	    }
 #endif
-	  lto_gcc_spec = argv0;
+	  lto_gcc_spec = argv[0];
 	}
 
       /* Rebuild the COMPILER_PATH and LIBRARY_PATH environment variables
@@ -7694,7 +7219,7 @@ driver::maybe_run_linker (const char *argv0) const
 		    " to the linker.\n\n"));
 	  fflush (stdout);
 	}
-      int value = do_spec (link_command_spec);
+      value = do_spec (link_command_spec);
       if (value < 0)
 	errorcount = 1;
       linker_was_run = (tmp != execution_count);
@@ -7709,13 +7234,7 @@ driver::maybe_run_linker (const char *argv0) const
 	  && !(infiles[i].language && infiles[i].language[0] == '*'))
 	warning (0, "%s: linker input file unused because linking not done",
 		 outfiles[i]);
-}
 
-/* The end of "main".  */
-
-void
-driver::final_actions () const
-{
   /* Delete some or all of the temporary files we made.  */
 
   if (seen_error ())
@@ -7727,13 +7246,8 @@ driver::final_actions () const
       printf (("\nFor bug reporting instructions, please see:\n"));
       printf ("%s\n", bug_report_url);
     }
-}
 
-/* Determine what the exit code of the driver should be.  */
-
-int
-driver::get_exit_code () const
-{
+ out:
   return (signal_count != 0 ? 2
 	  : seen_error () ? (pass_exit_codes ? greatest_status : 1)
 	  : 0);
@@ -8336,15 +7850,10 @@ set_multilib_dir (void)
 		q2++;
 	      if (*q2 == ':')
 		ml_end = q2;
-	      if (ml_end - q == 1)
-		multilib_os_dir = xstrdup (".");
-	      else
-		{
-		  new_multilib_os_dir = XNEWVEC (char, ml_end - q);
-		  memcpy (new_multilib_os_dir, q + 1, ml_end - q - 1);
-		  new_multilib_os_dir[ml_end - q - 1] = '\0';
-		  multilib_os_dir = new_multilib_os_dir;
-		}
+	      new_multilib_os_dir = XNEWVEC (char, ml_end - q);
+	      memcpy (new_multilib_os_dir, q + 1, ml_end - q - 1);
+	      new_multilib_os_dir[ml_end - q - 1] = '\0';
+	      multilib_os_dir = *new_multilib_os_dir ? new_multilib_os_dir : ".";
 
 	      if (q2 < end && *q2 == ':')
 		{
@@ -8723,8 +8232,7 @@ sanitize_spec_function (int argc, const char **argv)
   if (strcmp (argv[0], "thread") == 0)
     return (flag_sanitize & SANITIZE_THREAD) ? "" : NULL;
   if (strcmp (argv[0], "undefined") == 0)
-    return ((flag_sanitize & (SANITIZE_UNDEFINED | SANITIZE_NONDEFAULT))
-	    && !flag_sanitize_undefined_trap_on_error) ? "" : NULL;
+    return (flag_sanitize & SANITIZE_UNDEFINED) ? "" : NULL;
   if (strcmp (argv[0], "leak") == 0)
     return ((flag_sanitize
 	     & (SANITIZE_ADDRESS | SANITIZE_LEAK | SANITIZE_THREAD))

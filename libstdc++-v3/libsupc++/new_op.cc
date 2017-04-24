@@ -46,13 +46,14 @@ operator new (std::size_t sz) _GLIBCXX_THROW (std::bad_alloc)
   /* malloc (0) is unpredictable; avoid it.  */
   if (sz == 0)
     sz = 1;
-
-  while (__builtin_expect ((p = malloc (sz)) == 0, false))
+  p = (void *) malloc (sz);
+  while (p == 0)
     {
       new_handler handler = std::get_new_handler ();
       if (! handler)
 	_GLIBCXX_THROW_OR_ABORT(bad_alloc());
       handler ();
+      p = (void *) malloc (sz);
     }
 
   return p;

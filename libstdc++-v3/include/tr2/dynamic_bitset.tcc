@@ -195,11 +195,14 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       }
 
   /**
-   *  @brief Stream input operator for dynamic_bitset.
-   *  @ingroup dynamic_bitset
+   *  @defgroup Global I/O operators for bitsets.
+   *  @{
+   *  @brief Global I/O operators for bitsets.
    *
-   *  Input will skip whitespace and only accept '0' and '1' characters.
-   *  The %dynamic_bitset will grow as necessary to hold the string of bits.
+   *  Direct I/O between streams and bitsets is supported.  Output is
+   *  straightforward.  Input will skip whitespace and only accept '0'
+   *  and '1' characters.  The %dynamic_bitset will grow as necessary
+   *  to hold the string of bits.
    */
   template<typename _CharT, typename _Traits,
 	   typename _WordT, typename _Alloc>
@@ -272,6 +275,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	__is.setstate(__state);
       return __is;
     }
+  /**
+   *  @}
+   */
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // tr2

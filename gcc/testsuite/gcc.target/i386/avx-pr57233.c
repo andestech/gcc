@@ -4,8 +4,6 @@
 
 #include "avx-check.h"
 
-int do_main (void);
-
 static void
 avx_test (void)
 {

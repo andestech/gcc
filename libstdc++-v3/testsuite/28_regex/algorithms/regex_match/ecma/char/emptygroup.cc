@@ -50,7 +50,6 @@ test01()
     const char s[] = "";
     VERIFY( regex_match_debug(s, m, re) );
   }
-  VERIFY(regex_match_debug("", regex("(?:)*")));
 }
 
 int

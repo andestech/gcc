@@ -1,7 +1,7 @@
 /* Test -funsigned-bitfields works.  */
 /* Origin: Joseph Myers <jsm@polyomino.org.uk> */
 /* { dg-do run } */
-/* { dg-options "-funsigned-bitfields -fsigned-char -std=gnu89" } */
+/* { dg-options "-funsigned-bitfields -fsigned-char" } */
 
 typedef char c;
 typedef signed char sc;

@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-fshow-column -std=gnu89" } */
+/* { dg-options "-fshow-column" } */
 /* test redeclarations with void and implicit int */
 extern foo1(); /* { dg-message "8:note: previous declaration" } */
 extern void foo1(); /* { dg-error "13:conflicting types" } */

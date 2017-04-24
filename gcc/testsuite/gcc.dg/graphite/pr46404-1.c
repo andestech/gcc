@@ -1,7 +1,5 @@
 /* { dg-options "-O -fgraphite-identity -fno-tree-scev-cprop" } */
 
-int foo (void);
-
 int
 huft_build (unsigned *b)
 {

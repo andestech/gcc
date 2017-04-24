@@ -3,7 +3,6 @@
 
 // { dg-do compile }
 // { dg-final { scan-assembler-not "globl.*_ZN.*1fEv" } }
-// { dg-xfail-if "" { powerpc-ibm-aix* } { "*" } { "" } }
 
 namespace
 {

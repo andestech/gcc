@@ -24,11 +24,11 @@ load_lib ubsan-dg.exp
 
 # Initialize `dg'.
 dg-init
-ubsan_init
+if [ubsan_init] {
 
 # Main loop.
-if [check_effective_target_fsanitize_undefined] {
-  gcc-dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/*.c $srcdir/c-c++-common/ubsan/*.c]] "" ""
+gcc-dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/*.c $srcdir/c-c++-common/ubsan/*.c]] ""
+
 }
 
 # All done.

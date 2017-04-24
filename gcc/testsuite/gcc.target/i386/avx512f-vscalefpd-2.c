@@ -10,7 +10,6 @@
 #include "avx512f-mask-type.h"
 #include <math.h>
 
-void static
 CALC (double *r, double *s1, double *s2)
 {
   int i;
@@ -20,7 +19,7 @@ CALC (double *r, double *s1, double *s2)
     }
 }
 
-void
+void static
 TEST (void)
 {
   int i, sign;

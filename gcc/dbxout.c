@@ -86,22 +86,12 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm_p.h"
 #include "ggc.h"
 #include "debug.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
 #include "function.h"
 #include "target.h"
 #include "common/common-target.h"
 #include "langhooks.h"
 #include "obstack.h"
 #include "expr.h"
-#include "hash-map.h"
-#include "is-a.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
 
 #ifdef XCOFF_DEBUGGING_INFO
@@ -381,9 +371,9 @@ const struct gcc_debug_hooks dbx_debug_hooks =
   debug_nothing_tree_tree_tree_bool,	 /* imported_module_or_decl */
   debug_nothing_tree,		         /* deferred_inline_function */
   debug_nothing_tree,		         /* outlining_inline_function */
-  debug_nothing_rtx_code_label,	         /* label */
+  debug_nothing_rtx,		         /* label */
   dbxout_handle_pch,		         /* handle_pch */
-  debug_nothing_rtx_insn,	         /* var_location */
+  debug_nothing_rtx,		         /* var_location */
   debug_nothing_void,                    /* switch_text_section */
   debug_nothing_tree_tree,		 /* set_name */
   0,                                     /* start_end_main_source_file */
@@ -417,9 +407,9 @@ const struct gcc_debug_hooks xcoff_debug_hooks =
   debug_nothing_tree_tree_tree_bool,	 /* imported_module_or_decl */
   debug_nothing_tree,		         /* deferred_inline_function */
   debug_nothing_tree,		         /* outlining_inline_function */
-  debug_nothing_rtx_code_label,	         /* label */
+  debug_nothing_rtx,		         /* label */
   dbxout_handle_pch,		         /* handle_pch */
-  debug_nothing_rtx_insn,	         /* var_location */
+  debug_nothing_rtx,		         /* var_location */
   debug_nothing_void,                    /* switch_text_section */
   debug_nothing_tree_tree,	         /* set_name */
   0,                                     /* start_end_main_source_file */
@@ -702,39 +692,88 @@ stabstr_U (unsigned HOST_WIDE_INT num)
 static void
 stabstr_O (tree cst)
 {
-  int prec = TYPE_PRECISION (TREE_TYPE (cst));
-  int res_pres = prec % 3;
-  int i;
-  unsigned int digit;
+  unsigned HOST_WIDE_INT high = TREE_INT_CST_HIGH (cst);
+  unsigned HOST_WIDE_INT low = TREE_INT_CST_LOW (cst);
+
+  char buf[128];
+  char *p = buf + sizeof buf;
+
+  /* GDB wants constants with no extra leading "1" bits, so
+     we need to remove any sign-extension that might be
+     present.  */
+  {
+    const unsigned int width = TYPE_PRECISION (TREE_TYPE (cst));
+    if (width == HOST_BITS_PER_DOUBLE_INT)
+      ;
+    else if (width > HOST_BITS_PER_WIDE_INT)
+      high &= (((HOST_WIDE_INT) 1 << (width - HOST_BITS_PER_WIDE_INT)) - 1);
+    else if (width == HOST_BITS_PER_WIDE_INT)
+      high = 0;
+    else
+      high = 0, low &= (((HOST_WIDE_INT) 1 << width) - 1);
+  }
 
   /* Leading zero for base indicator.  */
   stabstr_C ('0');
 
   /* If the value is zero, the base indicator will serve as the value
      all by itself.  */
-  if (wi::eq_p (cst, 0))
+  if (high == 0 && low == 0)
     return;
 
-  /* GDB wants constants with no extra leading "1" bits, so
-     we need to remove any sign-extension that might be
-     present.  */
-  if (res_pres == 1)
+  /* If the high half is zero, we need only print the low half normally.  */
+  if (high == 0)
+    NUMBER_FMT_LOOP (p, low, 8);
+  else
     {
-      digit = wi::extract_uhwi (cst, prec - 1, 1);
-      stabstr_C ('0' + digit);
-    }
-  else if (res_pres == 2)
-    {
-      digit = wi::extract_uhwi (cst, prec - 2, 2);
-      stabstr_C ('0' + digit);
+      /* When high != 0, we need to print enough zeroes from low to
+	 give the digits from high their proper place-values.  Hence
+	 NUMBER_FMT_LOOP cannot be used.  */
+      const int n_digits = HOST_BITS_PER_WIDE_INT / 3;
+      int i;
+
+      for (i = 1; i <= n_digits; i++)
+	{
+	  unsigned int digit = low % 8;
+	  low /= 8;
+	  *--p = '0' + digit;
+	}
+
+      /* Octal digits carry exactly three bits of information.  The
+	 width of a HOST_WIDE_INT is not normally a multiple of three.
+	 Therefore, the next digit printed probably needs to carry
+	 information from both low and high.  */
+      if (HOST_BITS_PER_WIDE_INT % 3 != 0)
+	{
+	  const int n_leftover_bits = HOST_BITS_PER_WIDE_INT % 3;
+	  const int n_bits_from_high = 3 - n_leftover_bits;
+
+	  const unsigned HOST_WIDE_INT
+	    low_mask = (((unsigned HOST_WIDE_INT)1) << n_leftover_bits) - 1;
+	  const unsigned HOST_WIDE_INT
+	    high_mask = (((unsigned HOST_WIDE_INT)1) << n_bits_from_high) - 1;
+
+	  unsigned int digit;
+
+	  /* At this point, only the bottom n_leftover_bits bits of low
+	     should be set.  */
+	  gcc_assert (!(low & ~low_mask));
+
+	  digit = (low | ((high & high_mask) << n_leftover_bits));
+	  high >>= n_bits_from_high;
+
+	  *--p = '0' + digit;
+	}
+
+      /* Now we can format high in the normal manner.  However, if
+	 the only bits of high that were set were handled by the
+	 digit split between low and high, high will now be zero, and
+	 we don't want to print extra digits in that case.  */
+      if (high)
+	NUMBER_FMT_LOOP (p, high, 8);
     }
 
-  prec -= res_pres;
-  for (i = prec - 3; i >= 0; i = i - 3)
-    {
-      digit = wi::extract_uhwi (cst, i, 3);
-      stabstr_C ('0' + digit);
-    }
+  obstack_grow (&stabstr_ob, p, (buf + sizeof buf) - p);
 }
 
 /* Called whenever it is safe to break a stabs string into multiple
@@ -986,7 +1025,7 @@ dbxout_init (const char *input_file_name)
   const char *mapped_name;
 
   typevec_len = 100;
-  typevec = ggc_cleared_vec_alloc<typeinfo> (typevec_len);
+  typevec = ggc_alloc_cleared_vec_typeinfo (typevec_len);
 
   /* stabstr_ob contains one string, which will be just fine with
      1-byte alignment.  */
@@ -1628,7 +1667,7 @@ dbxout_type_methods (tree type)
 
 	  /* Also ignore abstract methods; those are only interesting to
 	     the DWARF backends.  */
-	  if (DECL_IGNORED_P (fndecl) || DECL_ABSTRACT_P (fndecl))
+	  if (DECL_IGNORED_P (fndecl) || DECL_ABSTRACT (fndecl))
 	    continue;
 
 	  /* Redundantly output the plain name, since that's what gdb
@@ -2120,12 +2159,12 @@ dbxout_type (tree type, int full)
 	       another type's definition; instead, output an xref
 	       and let the definition come when the name is defined.  */
 	    stabstr_S ((TREE_CODE (type) == RECORD_TYPE) ? "xs" : "xu");
-	    if (TYPE_IDENTIFIER (type))
-	      {
-		/* Note that the C frontend creates for anonymous variable
-		   length records/unions TYPE_NAME with DECL_NAME NULL.  */
-		dbxout_type_name (type);
-	      }
+	    if (TYPE_NAME (type) != 0
+		/* The C frontend creates for anonymous variable length
+		   records/unions TYPE_NAME with DECL_NAME NULL.  */
+		&& (TREE_CODE (TYPE_NAME (type)) != TYPE_DECL
+		    || DECL_NAME (TYPE_NAME (type))))
+	      dbxout_type_name (type);
 	    else
 	      {
 		stabstr_S ("$$");
@@ -2262,7 +2301,10 @@ dbxout_type (tree type, int full)
           if (TREE_CODE (value) == CONST_DECL)
             value = DECL_INITIAL (value);
 
-	  if (cst_and_fits_in_hwi (value))
+	  if (TREE_INT_CST_HIGH (value) == 0)
+	    stabstr_D (TREE_INT_CST_LOW (value));
+	  else if (TREE_INT_CST_HIGH (value) == -1
+		   && (HOST_WIDE_INT) TREE_INT_CST_LOW (value) < 0)
 	    stabstr_D (TREE_INT_CST_LOW (value));
 	  else
 	    stabstr_O (value);
@@ -2323,10 +2365,6 @@ dbxout_type (tree type, int full)
     case FUNCTION_TYPE:
       stabstr_C ('f');
       dbxout_type (TREE_TYPE (type), 0);
-      break;
-
-    case POINTER_BOUNDS_TYPE:
-      /* No debug info for pointer bounds type supported yet.  */
       break;
 
     default:
@@ -2443,7 +2481,7 @@ dbxout_expand_expr (tree expr)
 	  /* If this is a var that might not be actually output,
 	     return NULL, otherwise stabs might reference an undefined
 	     symbol.  */
-	  varpool_node *node = varpool_node::get (expr);
+	  varpool_node *node = varpool_get_node (expr);
 	  if (!node || !node->definition)
 	    return NULL;
 	}
@@ -2466,7 +2504,7 @@ dbxout_expand_expr (tree expr)
     case ARRAY_RANGE_REF:
     case BIT_FIELD_REF:
       {
-	machine_mode mode;
+	enum machine_mode mode;
 	HOST_WIDE_INT bitsize, bitpos;
 	tree offset, tem;
 	int volatilep = 0, unsignedp = 0;
@@ -2498,9 +2536,12 @@ dbxout_expand_expr (tree expr)
 /* Helper function for output_used_types.  Queue one entry from the
    used types hash to be output.  */
 
-bool
-output_used_types_helper (tree const &type, vec<tree> *types_p)
+static int
+output_used_types_helper (void **slot, void *data)
 {
+  tree type = (tree) *slot;
+  vec<tree> *types_p = (vec<tree> *) data;
+
   if ((TREE_CODE (type) == RECORD_TYPE
        || TREE_CODE (type) == UNION_TYPE
        || TREE_CODE (type) == QUAL_UNION_TYPE
@@ -2513,7 +2554,7 @@ output_used_types_helper (tree const &type, vec<tree> *types_p)
 	   && TREE_CODE (TYPE_NAME (type)) == TYPE_DECL)
     types_p->quick_push (TYPE_NAME (type));
 
-  return true;
+  return 1;
 }
 
 /* This is a qsort callback which sorts types and declarations into a
@@ -2555,9 +2596,8 @@ output_used_types (void)
       int i;
       tree type;
 
-      types.create (cfun->used_types_hash->elements ());
-      cfun->used_types_hash->traverse<vec<tree> *, output_used_types_helper>
-       	(&types);
+      types.create (htab_elements (cfun->used_types_hash));
+      htab_traverse (cfun->used_types_hash, output_used_types_helper, &types);
 
       /* Sort by UID to prevent dependence on hash table ordering.  */
       types.qsort (output_types_sort);
@@ -2760,7 +2800,9 @@ dbxout_symbol (tree decl, int local ATTRIBUTE_UNUSED)
 		   DBX format, and it confuses some tools such as objdump.  */
 		&& tree_fits_uhwi_p (TYPE_SIZE (type)))
 	      {
-		tree name = TYPE_IDENTIFIER (type);
+		tree name = TYPE_NAME (type);
+		if (TREE_CODE (name) == TYPE_DECL)
+		  name = DECL_NAME (name);
 
 		dbxout_begin_complex_stabs ();
 		stabstr_I (name);
@@ -2817,7 +2859,9 @@ dbxout_symbol (tree decl, int local ATTRIBUTE_UNUSED)
 	       This is what represents `struct foo' with no typedef.  */
 	    /* In C++, the name of a type is the corresponding typedef.
 	       In C, it is an IDENTIFIER_NODE.  */
-	    tree name = TYPE_IDENTIFIER (type);
+	    tree name = TYPE_NAME (type);
+	    if (TREE_CODE (name) == TYPE_DECL)
+	      name = DECL_NAME (name);
 
 	    dbxout_begin_complex_stabs ();
 	    stabstr_I (name);
@@ -2901,8 +2945,7 @@ dbxout_symbol (tree decl, int local ATTRIBUTE_UNUSED)
       if (!decl_rtl)
 	DBXOUT_DECR_NESTING_AND_RETURN (0);
 
-      if (!is_global_var (decl))
-	decl_rtl = eliminate_regs (decl_rtl, VOIDmode, NULL_RTX);
+      decl_rtl = eliminate_regs (decl_rtl, VOIDmode, NULL_RTX);
 #ifdef LEAF_REG_REMAP
       if (crtl->uses_only_leaf_regs)
 	leaf_renumber_regs_insn (decl_rtl);

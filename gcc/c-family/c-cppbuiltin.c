@@ -72,7 +72,7 @@ static void builtin_define_float_constants (const char *,
    point types.  */
 
 static bool
-mode_has_fma (machine_mode mode)
+mode_has_fma (enum machine_mode mode)
 {
   switch (mode)
     {
@@ -270,14 +270,21 @@ builtin_define_float_constants (const char *name_prefix,
       sprintf (buf, "0x1p%d", 1 - fmt->p);
   builtin_define_with_hex_fp_value (name, type, decimal_dig, buf, fp_suffix, fp_cast);
 
-  /* For C++ std::numeric_limits<T>::denorm_min and C11 *_TRUE_MIN.
-     The minimum denormalized positive floating-point number, b**(emin-p).
-     The minimum normalized positive floating-point number for formats
-     that don't support denormals.  */
+  /* For C++ std::numeric_limits<T>::denorm_min.  The minimum denormalized
+     positive floating-point number, b**(emin-p).  Zero for formats that
+     don't support denormals.  */
   sprintf (name, "__%s_DENORM_MIN__", name_prefix);
-  sprintf (buf, "0x1p%d", fmt->emin - (fmt->has_denorm ? fmt->p : 1));
-  builtin_define_with_hex_fp_value (name, type, decimal_dig,
-				    buf, fp_suffix, fp_cast);
+  if (fmt->has_denorm)
+    {
+      sprintf (buf, "0x1p%d", fmt->emin - fmt->p);
+      builtin_define_with_hex_fp_value (name, type, decimal_dig,
+					buf, fp_suffix, fp_cast);
+    }
+  else
+    {
+      sprintf (buf, "0.0%s", fp_suffix);
+      builtin_define_with_value (name, buf, 0);
+    }
 
   sprintf (name, "__%s_HAS_DENORM__", name_prefix);
   builtin_define_with_value (name, fmt->has_denorm ? "1" : "0", 0);
@@ -671,7 +678,7 @@ cpp_atomic_builtins (cpp_reader *pfile)
 
   /* ptr_type_node can't be used here since ptr_mode is only set when
      toplev calls backend_init which is not done with -E  or pch.  */
-  psize = POINTER_SIZE_UNITS;
+  psize = POINTER_SIZE / BITS_PER_UNIT;
   if (psize >= SWAP_LIMIT)
     psize = 0;
   builtin_define_with_int_value ("__GCC_ATOMIC_POINTER_LOCK_FREE", 
@@ -771,8 +778,6 @@ cpp_iec_559_complex_value (void)
 void
 c_cpp_builtins (cpp_reader *pfile)
 {
-  int i;
-
   /* -undef turns off target-specific built-ins.  */
   if (flag_undef)
     return;
@@ -830,7 +835,6 @@ c_cpp_builtins (cpp_reader *pfile)
 	  cpp_define (pfile, "__cpp_rvalue_reference=200610");
 	  cpp_define (pfile, "__cpp_variadic_templates=200704");
 	  cpp_define (pfile, "__cpp_alias_templates=200704");
-	  cpp_define (pfile, "__cpp_attribute_deprecated=201309");
 	}
       if (cxx_dialect > cxx11)
 	{
@@ -841,9 +845,10 @@ c_cpp_builtins (cpp_reader *pfile)
 	  //cpp_undef (pfile, "__cpp_constexpr");
 	  //cpp_define (pfile, "__cpp_constexpr=201304");
 	  cpp_define (pfile, "__cpp_decltype_auto=201304");
-	  cpp_define (pfile, "__cpp_aggregate_nsdmi=201304");
-	  cpp_define (pfile, "__cpp_variable_templates=201304");
+	  //cpp_define (pfile, "__cpp_aggregate_nsdmi=201304");
+	  //cpp_define (pfile, "__cpp_variable_templates=201304");
 	  cpp_define (pfile, "__cpp_digit_separators=201309");
+	  cpp_define (pfile, "__cpp_attribute_deprecated=201309");
 	  //cpp_define (pfile, "__cpp_sized_deallocation=201309");
 	  /* We'll have to see where runtime arrays wind up.
 	     Let's put it in C++14 for now.  */
@@ -890,24 +895,6 @@ c_cpp_builtins (cpp_reader *pfile)
   builtin_define_type_minmax ("__WINT_MIN__", "__WINT_MAX__", wint_type_node);
   builtin_define_type_max ("__PTRDIFF_MAX__", ptrdiff_type_node);
   builtin_define_type_max ("__SIZE_MAX__", size_type_node);
-
-  if (c_dialect_cxx ())
-    for (i = 0; i < NUM_INT_N_ENTS; i ++)
-      if (int_n_enabled_p[i])
-	{
-	  char buf[35+20+20];
-
-	  /* These are used to configure the C++ library.  */
-
-	  if (!flag_iso || int_n_data[i].bitsize == POINTER_SIZE)
-	    {
-	      sprintf (buf, "__GLIBCXX_TYPE_INT_N_%d=__int%d", i, int_n_data[i].bitsize);
-	      cpp_define (parse_in, buf);
-
-	      sprintf (buf, "__GLIBCXX_BITSIZE_INT_N_%d=%d", i, int_n_data[i].bitsize);
-	      cpp_define (parse_in, buf);
-	    }
-	}
 
   /* stdint.h and the testsuite need to know these.  */
   builtin_define_stdint_macros ();
@@ -1004,141 +991,9 @@ c_cpp_builtins (cpp_reader *pfile)
 
   /* For libgcc-internal use only.  */
   if (flag_building_libgcc)
-    {
-      /* Properties of floating-point modes for libgcc2.c.  */
-      for (machine_mode mode = GET_CLASS_NARROWEST_MODE (MODE_FLOAT);
-	   mode != VOIDmode;
-	   mode = GET_MODE_WIDER_MODE (mode))
-	{
-	  const char *name = GET_MODE_NAME (mode);
-	  char *macro_name
-	    = (char *) alloca (strlen (name)
-			       + sizeof ("__LIBGCC__MANT_DIG__"));
-	  sprintf (macro_name, "__LIBGCC_%s_MANT_DIG__", name);
-	  builtin_define_with_int_value (macro_name,
-					 REAL_MODE_FORMAT (mode)->p);
-	  if (!targetm.scalar_mode_supported_p (mode)
-	      || !targetm.libgcc_floating_mode_supported_p (mode))
-	    continue;
-	  macro_name = (char *) alloca (strlen (name)
-					+ sizeof ("__LIBGCC_HAS__MODE__"));
-	  sprintf (macro_name, "__LIBGCC_HAS_%s_MODE__", name);
-	  cpp_define (pfile, macro_name);
-	  macro_name = (char *) alloca (strlen (name)
-					+ sizeof ("__LIBGCC__FUNC_EXT__"));
-	  sprintf (macro_name, "__LIBGCC_%s_FUNC_EXT__", name);
-	  const char *suffix;
-	  if (mode == TYPE_MODE (double_type_node))
-	    suffix = "";
-	  else if (mode == TYPE_MODE (float_type_node))
-	    suffix = "f";
-	  else if (mode == TYPE_MODE (long_double_type_node))
-	    suffix = "l";
-	  /* ??? The following assumes the built-in functions (defined
-	     in target-specific code) match the suffixes used for
-	     constants.  Because in fact such functions are not
-	     defined for the 'w' suffix, 'l' is used there
-	     instead.  */
-	  else if (mode == targetm.c.mode_for_suffix ('q'))
-	    suffix = "q";
-	  else if (mode == targetm.c.mode_for_suffix ('w'))
-	    suffix = "l";
-	  else
-	    gcc_unreachable ();
-	  builtin_define_with_value (macro_name, suffix, 0);
-	  bool excess_precision = false;
-	  if (TARGET_FLT_EVAL_METHOD != 0
-	      && mode != TYPE_MODE (long_double_type_node)
-	      && (mode == TYPE_MODE (float_type_node)
-		  || mode == TYPE_MODE (double_type_node)))
-	    switch (TARGET_FLT_EVAL_METHOD)
-	      {
-	      case -1:
-	      case 2:
-		excess_precision = true;
-		break;
-
-	      case 1:
-		excess_precision = mode == TYPE_MODE (float_type_node);
-		break;
-
-	      default:
-		gcc_unreachable ();
-	      }
-	  macro_name = (char *) alloca (strlen (name)
-					+ sizeof ("__LIBGCC__EXCESS_"
-						  "PRECISION__"));
-	  sprintf (macro_name, "__LIBGCC_%s_EXCESS_PRECISION__", name);
-	  builtin_define_with_int_value (macro_name, excess_precision);
-	}
-
-      /* For libgcc crtstuff.c and libgcc2.c.  */
-      builtin_define_with_int_value ("__LIBGCC_EH_TABLES_CAN_BE_READ_ONLY__",
-				     EH_TABLES_CAN_BE_READ_ONLY);
-#ifdef EH_FRAME_SECTION_NAME
-      builtin_define_with_value ("__LIBGCC_EH_FRAME_SECTION_NAME__",
-				 EH_FRAME_SECTION_NAME, 1);
-#endif
-#ifdef JCR_SECTION_NAME
-      builtin_define_with_value ("__LIBGCC_JCR_SECTION_NAME__",
-				 JCR_SECTION_NAME, 1);
-#endif
-#ifdef CTORS_SECTION_ASM_OP
-      builtin_define_with_value ("__LIBGCC_CTORS_SECTION_ASM_OP__",
-				 CTORS_SECTION_ASM_OP, 1);
-#endif
-#ifdef DTORS_SECTION_ASM_OP
-      builtin_define_with_value ("__LIBGCC_DTORS_SECTION_ASM_OP__",
-				 DTORS_SECTION_ASM_OP, 1);
-#endif
-#ifdef TEXT_SECTION_ASM_OP
-      builtin_define_with_value ("__LIBGCC_TEXT_SECTION_ASM_OP__",
-				 TEXT_SECTION_ASM_OP, 1);
-#endif
-#ifdef INIT_SECTION_ASM_OP
-      builtin_define_with_value ("__LIBGCC_INIT_SECTION_ASM_OP__",
-				 INIT_SECTION_ASM_OP, 1);
-#endif
-#ifdef INIT_ARRAY_SECTION_ASM_OP
-      /* Despite the name of this target macro, the expansion is not
-	 actually used, and may be empty rather than a string
-	 constant.  */
-      cpp_define (pfile, "__LIBGCC_INIT_ARRAY_SECTION_ASM_OP__");
-#endif
-
-      /* For libgcc enable-execute-stack.c.  */
-      builtin_define_with_int_value ("__LIBGCC_TRAMPOLINE_SIZE__",
-				     TRAMPOLINE_SIZE);
-
-      /* For libgcc generic-morestack.c and unwinder code.  */
-#ifdef STACK_GROWS_DOWNWARD
-      cpp_define (pfile, "__LIBGCC_STACK_GROWS_DOWNWARD__");
-#endif
-
-      /* For libgcc unwinder code.  */
-#ifdef DONT_USE_BUILTIN_SETJMP
-      cpp_define (pfile, "__LIBGCC_DONT_USE_BUILTIN_SETJMP__");
-#endif
-#ifdef DWARF_ALT_FRAME_RETURN_COLUMN
-      builtin_define_with_int_value ("__LIBGCC_DWARF_ALT_FRAME_RETURN_COLUMN__",
-				     DWARF_ALT_FRAME_RETURN_COLUMN);
-#endif
-      builtin_define_with_int_value ("__LIBGCC_DWARF_FRAME_REGISTERS__",
-				     DWARF_FRAME_REGISTERS);
-#ifdef EH_RETURN_STACKADJ_RTX
-      cpp_define (pfile, "__LIBGCC_EH_RETURN_STACKADJ_RTX__");
-#endif
-#ifdef JMP_BUF_SIZE
-      builtin_define_with_int_value ("__LIBGCC_JMP_BUF_SIZE__",
-				     JMP_BUF_SIZE);
-#endif
-      builtin_define_with_int_value ("__LIBGCC_STACK_POINTER_REGNUM__",
-				     STACK_POINTER_REGNUM);
-
-      /* For libgcov.  */
-      builtin_define_with_int_value ("__LIBGCC_VTABLE_USES_DESCRIPTORS__",
-				     TARGET_VTABLE_USES_DESCRIPTORS);
-    }
+    /* For libgcc enable-execute-stack.c.  */
+    builtin_define_with_int_value ("__LIBGCC_TRAMPOLINE_SIZE__",
+				   TRAMPOLINE_SIZE);
 
   /* For use in assembly language.  */
   builtin_define_with_value ("__REGISTER_PREFIX__", REGISTER_PREFIX, 0);
@@ -1189,14 +1044,9 @@ c_cpp_builtins (cpp_reader *pfile)
   if (flag_openmp)
     cpp_define (pfile, "_OPENMP=201307");
 
-  for (i = 0; i < NUM_INT_N_ENTS; i ++)
-    if (int_n_enabled_p[i])
-      {
-	char buf[15+20];
-	sprintf(buf, "__SIZEOF_INT%d__", int_n_data[i].bitsize);
-	builtin_define_type_sizeof (buf,
-				    int_n_trees[i].signed_type);
-      }
+  if (int128_integer_type_node != NULL_TREE)
+    builtin_define_type_sizeof ("__SIZEOF_INT128__",
+			        int128_integer_type_node);
   builtin_define_type_sizeof ("__SIZEOF_WCHAR_T__", wchar_type_node);
   builtin_define_type_sizeof ("__SIZEOF_WINT_T__", wint_type_node);
   builtin_define_type_sizeof ("__SIZEOF_PTRDIFF_T__",
@@ -1285,49 +1135,7 @@ builtin_define_with_value (const char *macro, const char *expansion, int is_str)
   size_t extra = 2;  /* space for an = and a NUL */
 
   if (is_str)
-    {
-      char *quoted_expansion = (char *) alloca (elen * 4 + 1);
-      const char *p;
-      char *q;
-      extra += 2;  /* space for two quote marks */
-      for (p = expansion, q = quoted_expansion; *p; p++)
-	{
-	  switch (*p)
-	    {
-	    case '\n':
-	      *q++ = '\\';
-	      *q++ = 'n';
-	      break;
-
-	    case '\t':
-	      *q++ = '\\';
-	      *q++ = 't';
-	      break;
-
-	    case '\\':
-	      *q++ = '\\';
-	      *q++ = '\\';
-	      break;
-
-	    case '"':
-	      *q++ = '\\';
-	      *q++ = '"';
-	      break;
-
-	    default:
-	      if (ISPRINT ((unsigned char) *p))
-		*q++ = *p;
-	      else
-		{
-		  sprintf (q, "\\%03o", (unsigned char) *p);
-		  q += 4;
-		}
-	    }
-	}
-      *q = '\0';
-      expansion = quoted_expansion;
-      elen = q - expansion;
-    }
+    extra += 2;  /* space for two quote marks */
 
   buf = (char *) alloca (mlen + elen + extra);
   if (is_str)
@@ -1364,7 +1172,7 @@ struct GTY(()) lazy_hex_fp_value_struct
 {
   const char *hex_str;
   cpp_macro *macro;
-  machine_mode mode;
+  enum machine_mode mode;
   int digits;
   const char *fp_suffix;
 };
@@ -1470,15 +1278,12 @@ type_suffix (tree type)
   static const char *const suffixes[] = { "", "U", "L", "UL", "LL", "ULL" };
   int unsigned_suffix;
   int is_long;
-  int tp = TYPE_PRECISION (type);
 
   if (type == long_long_integer_type_node
-      || type == long_long_unsigned_type_node
-      || tp > TYPE_PRECISION (long_integer_type_node))
+      || type == long_long_unsigned_type_node)
     is_long = 2;
   else if (type == long_integer_type_node
-	   || type == long_unsigned_type_node
-	   || tp > TYPE_PRECISION (integer_type_node))
+	   || type == long_unsigned_type_node)
     is_long = 1;
   else if (type == integer_type_node
 	   || type == unsigned_type_node
@@ -1531,50 +1336,6 @@ builtin_define_type_max (const char *macro, tree type)
   builtin_define_type_minmax (NULL, macro, type);
 }
 
-/* Given a value with COUNT LSBs set, fill BUF with a hexidecimal
-   representation of that value.  For example, a COUNT of 10 would
-   return "0x3ff".  */
-
-static void
-print_bits_of_hex (char *buf, int bufsz, int count)
-{
-  gcc_assert (bufsz > 3);
-  *buf++ = '0';
-  *buf++ = 'x';
-  bufsz -= 2;
-
-  gcc_assert (count > 0);
-
-  switch (count % 4) {
-  case 0:
-    break;
-  case 1:
-    *buf++ = '1';
-    bufsz --;
-    count -= 1;
-    break;
-  case 2:
-    *buf++ = '3';
-    bufsz --;
-    count -= 2;
-    break;
-  case 3:
-    *buf++ = '7';
-    bufsz --;
-    count -= 3;
-    break;
-  }
-  while (count >= 4)
-    {
-      gcc_assert (bufsz > 1);
-      *buf++ = 'f';
-      bufsz --;
-      count -= 4;
-    }
-  gcc_assert (bufsz > 0);
-  *buf++ = 0;
-}
-
 /* Define MIN_MACRO (if not NULL) and MAX_MACRO for TYPE based on the
    precision of the type.  */
 
@@ -1582,17 +1343,32 @@ static void
 builtin_define_type_minmax (const char *min_macro, const char *max_macro,
 			    tree type)
 {
-#define PBOH_SZ (MAX_BITSIZE_MODE_ANY_INT/4+4)
-  char value[PBOH_SZ];
+  static const char *const values[]
+    = { "127", "255",
+	"32767", "65535",
+	"2147483647", "4294967295",
+	"9223372036854775807", "18446744073709551615",
+	"170141183460469231731687303715884105727",
+	"340282366920938463463374607431768211455" };
 
-  const char *suffix;
+  const char *value, *suffix;
   char *buf;
-  int bits;
+  size_t idx;
 
-  bits = TYPE_PRECISION (type) + (TYPE_UNSIGNED (type) ? 0 : -1);
+  /* Pre-rendering the values mean we don't have to futz with printing a
+     multi-word decimal value.  There are also a very limited number of
+     precisions that we support, so it's really a waste of time.  */
+  switch (TYPE_PRECISION (type))
+    {
+    case 8:	idx = 0; break;
+    case 16:	idx = 2; break;
+    case 32:	idx = 4; break;
+    case 64:	idx = 6; break;
+    case 128:	idx = 8; break;
+    default:    gcc_unreachable ();
+    }
 
-  print_bits_of_hex (value, PBOH_SZ, bits);
-
+  value = values[idx + TYPE_UNSIGNED (type)];
   suffix = type_suffix (type);
 
   buf = (char *) alloca (strlen (max_macro) + 1 + strlen (value)

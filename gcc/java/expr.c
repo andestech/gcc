@@ -46,7 +46,6 @@ The Free Software Foundation is independent of Sun Microsystems, Inc.  */
 #include "ggc.h"
 #include "tree-iterator.h"
 #include "target.h"
-#include "wide-int.h"
 
 static void flush_quick_stack (void);
 static void push_value (tree);
@@ -398,19 +397,22 @@ pop_type (tree type)
 
 /* Return true if two type assertions are equal.  */
 
-bool
-type_assertion_hasher::equal (type_assertion *k1, type_assertion *k2)
+static int
+type_assertion_eq (const void * k1_p, const void * k2_p)
 {
-  return (k1->assertion_code == k2->assertion_code
-          && k1->op1 == k2->op1
-	  && k1->op2 == k2->op2);
+  const type_assertion k1 = *(const type_assertion *)k1_p;
+  const type_assertion k2 = *(const type_assertion *)k2_p;
+  return (k1.assertion_code == k2.assertion_code
+          && k1.op1 == k2.op1
+	  && k1.op2 == k2.op2);
 }
 
 /* Hash a type assertion.  */
 
-hashval_t
-type_assertion_hasher::hash (type_assertion *k_p)
+static hashval_t
+type_assertion_hash (const void *p)
 {
+  const type_assertion *k_p = (const type_assertion *) p;
   hashval_t hash = iterative_hash (&k_p->assertion_code, sizeof
 				   k_p->assertion_code, 0);
 
@@ -446,14 +448,15 @@ type_assertion_hasher::hash (type_assertion *k_p)
 void
 add_type_assertion (tree klass, int assertion_code, tree op1, tree op2)
 {
-  hash_table<type_assertion_hasher> *assertions_htab;
+  htab_t assertions_htab;
   type_assertion as;
-  type_assertion **as_pp;
+  void **as_pp;
 
   assertions_htab = TYPE_ASSERTIONS (klass);
   if (assertions_htab == NULL)
     {
-      assertions_htab = hash_table<type_assertion_hasher>::create_ggc (7);
+      assertions_htab = htab_create_ggc (7, type_assertion_hash, 
+					 type_assertion_eq, NULL);
       TYPE_ASSERTIONS (current_class) = assertions_htab;
     }
 
@@ -461,14 +464,14 @@ add_type_assertion (tree klass, int assertion_code, tree op1, tree op2)
   as.op1 = op1;
   as.op2 = op2;
 
-  as_pp = assertions_htab->find_slot (&as, INSERT);
+  as_pp = htab_find_slot (assertions_htab, &as, INSERT);
 
   /* Don't add the same assertion twice.  */
   if (*as_pp)
     return;
 
-  *as_pp = ggc_alloc<type_assertion> ();
-  **as_pp = as;
+  *as_pp = ggc_alloc_type_assertion ();
+  **(type_assertion **)as_pp = as;
 }
 
 
@@ -1048,7 +1051,7 @@ build_newarray (int atype_value, tree length)
   tree prim_type = decode_newarray_type (atype_value);
   tree type
     = build_java_array_type (prim_type,
-			     tree_fits_shwi_p (length)
+			     tree_fits_shwi_p (length) == INTEGER_CST
 			     ? tree_to_shwi (length) : -1);
 
   /* Pass a reference to the primitive type class and save the runtime
@@ -1257,7 +1260,7 @@ expand_java_pushc (int ival, tree type)
   else if (type == float_type_node || type == double_type_node)
     {
       REAL_VALUE_TYPE x;
-      real_from_integer (&x, TYPE_MODE (type), ival, SIGNED);
+      REAL_VALUE_FROM_INT (x, ival, 0, TYPE_MODE (type));
       value = build_real (type, x);
     }
   else
@@ -1714,7 +1717,7 @@ build_field_ref (tree self_value, tree self_class, tree name)
 	  tree field_offset = byte_position (field_decl);
 	  if (! page_size)
 	    page_size = size_int (4096); 	      
-	  check = !tree_int_cst_lt (field_offset, page_size);
+	  check = ! INT_CST_LT_UNSIGNED (field_offset, page_size);
 	}
 
       if (base_type != TREE_TYPE (self_value))
@@ -1942,9 +1945,10 @@ pop_arguments (tree method_type)
 /* Attach to PTR (a block) the declaration found in ENTRY. */
 
 int
-attach_init_test_initialization_flags (treetreehash_entry **slot, tree block)
+attach_init_test_initialization_flags (void **entry, void *ptr)
 {
-  treetreehash_entry *ite = *slot;
+  tree block = (tree)ptr;
+  struct treetreehash_entry *ite = (struct treetreehash_entry *) *entry;
 
   if (block != error_mark_node)
     {

@@ -7,7 +7,7 @@ int get_val (void)
 {
   return val;
 }
-__attribute__ ((__noinline__)) void
+__attribute__ ((__noinline__))
 do_nothing ()
 {
   asm volatile ("":::"memory");

@@ -36,15 +36,11 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 
 #else /* __cplusplus */
 
-/* Supporting _Bool in C++ is a GCC extension.  */
+/* Supporting <stdbool.h> in C++ is a GCC extension.  */
 #define _Bool	bool
-
-#if __cplusplus < 201103L
-/* Defining these macros in C++98 is a GCC extension.  */
 #define bool	bool
 #define false	false
 #define true	true
-#endif
 
 #endif /* __cplusplus */
 

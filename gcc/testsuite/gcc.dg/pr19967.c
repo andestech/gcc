@@ -4,7 +4,7 @@
    be const char *.  */
 
 /* { dg-do compile } */
-/* { dg-options "-pedantic -std=c99" } */
+/* { dg-options "-pedantic" } */
 
 char *strchr(const char *, int);
 char *strrchr(const char *, int);

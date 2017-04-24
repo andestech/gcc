@@ -18,7 +18,6 @@ union tree_node
   struct tree_common common;
   struct tree_list list;
 };
-void c_simplify_stmt (tree *);
 void
 simplify_condition (cond_p)
      tree *cond_p;

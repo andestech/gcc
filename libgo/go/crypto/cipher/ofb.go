@@ -8,7 +8,6 @@ package cipher
 
 type ofb struct {
 	b       Block
-	cipher  []byte
 	out     []byte
 	outUsed int
 }
@@ -21,46 +20,25 @@ func NewOFB(b Block, iv []byte) Stream {
 	if len(iv) != blockSize {
 		return nil
 	}
-	bufSize := streamBufferSize
-	if bufSize < blockSize {
-		bufSize = blockSize
-	}
+
 	x := &ofb{
 		b:       b,
-		cipher:  make([]byte, blockSize),
-		out:     make([]byte, 0, bufSize),
+		out:     make([]byte, blockSize),
 		outUsed: 0,
 	}
+	b.Encrypt(x.out, iv)
 
-	copy(x.cipher, iv)
 	return x
 }
 
-func (x *ofb) refill() {
-	bs := x.b.BlockSize()
-	remain := len(x.out) - x.outUsed
-	if remain > x.outUsed {
-		return
-	}
-	copy(x.out, x.out[x.outUsed:])
-	x.out = x.out[:cap(x.out)]
-	for remain < len(x.out)-bs {
-		x.b.Encrypt(x.cipher, x.cipher)
-		copy(x.out[remain:], x.cipher)
-		remain += bs
-	}
-	x.out = x.out[:remain]
-	x.outUsed = 0
-}
-
 func (x *ofb) XORKeyStream(dst, src []byte) {
-	for len(src) > 0 {
-		if x.outUsed >= len(x.out)-x.b.BlockSize() {
-			x.refill()
+	for i, s := range src {
+		if x.outUsed == len(x.out) {
+			x.b.Encrypt(x.out, x.out)
+			x.outUsed = 0
 		}
-		n := xorBytes(dst, src, x.out[x.outUsed:])
-		dst = dst[n:]
-		src = src[n:]
-		x.outUsed += n
+
+		dst[i] = s ^ x.out[x.outUsed]
+		x.outUsed++
 	}
 }

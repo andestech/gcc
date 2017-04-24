@@ -244,7 +244,7 @@
   [(const_int 0)]
 {
   rtx dest = operands[0];
-  machine_mode mode = GET_MODE (operands[0]);
+  enum machine_mode mode = GET_MODE (operands[0]);
   rtvec v;
   int i, num_elements;
 
@@ -273,7 +273,7 @@
 {
   rtx dup = gen_easy_altivec_constant (operands[1]);
   rtx const_vec;
-  machine_mode op_mode = <MODE>mode;
+  enum machine_mode op_mode = <MODE>mode;
 
   /* Divide the operand of the resulting VEC_DUPLICATE, and use
      simplify_rtx to make a CONST_VECTOR.  */
@@ -2453,7 +2453,7 @@
     }
 })
 
-(define_insn "*altivec_lvx_<mode>_internal"
+(define_insn "altivec_lvx_<mode>_internal"
   [(parallel
     [(set (match_operand:VM2 0 "register_operand" "=v")
 	  (match_operand:VM2 1 "memory_operand" "Z"))
@@ -2476,7 +2476,7 @@
     }
 })
 
-(define_insn "*altivec_stvx_<mode>_internal"
+(define_insn "altivec_stvx_<mode>_internal"
   [(parallel
     [(set (match_operand:VM2 0 "memory_operand" "=Z")
 	  (match_operand:VM2 1 "register_operand" "v"))

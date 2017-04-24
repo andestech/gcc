@@ -171,8 +171,7 @@ extern GTY(()) int darwin_ms_struct;
     LINK_PLUGIN_SPEC \
     "%{flto*:%<fcompare-debug*} \
     %{flto*} \
-    %l " LINK_COMPRESS_DEBUG_SPEC \
-   "%X %{s} %{t} %{Z} %{u*} \
+    %l %X %{s} %{t} %{Z} %{u*} \
     %{e*} %{r} \
     %{o*}%{!o:-o a.out} \
     %{!nostdlib:%{!nostartfiles:%S}} \
@@ -499,7 +498,7 @@ extern GTY(()) int darwin_ms_struct;
 #define NO_PROFILE_COUNTERS	1
 
 #undef	INIT_SECTION_ASM_OP
-#define INIT_SECTION_ASM_OP ""
+#define INIT_SECTION_ASM_OP
 
 #undef	INVOKE__main
 

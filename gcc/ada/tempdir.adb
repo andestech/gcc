@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 2003-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2003-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -25,6 +25,7 @@
 
 with GNAT.Directory_Operations; use GNAT.Directory_Operations;
 
+with Hostparm; use Hostparm;
 with Opt;      use Opt;
 with Output;   use Output;
 
@@ -32,8 +33,9 @@ package body Tempdir is
 
    Tmpdir_Needs_To_Be_Displayed : Boolean := True;
 
-   Tmpdir   : constant String := "TMPDIR";
-   Temp_Dir : String_Access   := new String'("");
+   Tmpdir    : constant String := "TMPDIR";
+   Gnutmpdir : constant String := "GNUTMPDIR";
+   Temp_Dir  : String_Access   := new String'("");
 
    ----------------------
    -- Create_Temp_File --
@@ -116,7 +118,21 @@ package body Tempdir is
 
    begin
       if Status then
-         Dir := Getenv (Tmpdir);
+
+         --  On VMS, if GNUTMPDIR is defined, use it
+
+         if OpenVMS then
+            Dir := Getenv (Gnutmpdir);
+
+            --  Otherwise, if GNUTMPDIR is not defined, try TMPDIR
+
+            if Dir'Length = 0 then
+               Dir := Getenv (Tmpdir);
+            end if;
+
+         else
+            Dir := Getenv (Tmpdir);
+         end if;
       end if;
 
       Free (Temp_Dir);

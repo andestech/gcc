@@ -2,7 +2,6 @@
 /* { dg-options "-O1 -fdump-tree-dce2" } */
 
 int t() __attribute__ ((const));
-void
 q()
 {
   int i = t();

@@ -785,16 +785,6 @@ func TestMap(t *testing.T) {
 	if string(m) != expect {
 		t.Errorf("drop: expected %q got %q", expect, m)
 	}
-
-	// 6. Invalid rune
-	invalidRune := func(r rune) rune {
-		return utf8.MaxRune + 1
-	}
-	m = Map(invalidRune, []byte("x"))
-	expect = "\uFFFD"
-	if string(m) != expect {
-		t.Errorf("invalidRune: expected %q got %q", expect, m)
-	}
 }
 
 func TestToUpper(t *testing.T) { runStringTests(t, ToUpper, "ToUpper", upperTests) }
@@ -1083,8 +1073,6 @@ var TitleTests = []TitleTest{
 	{"123a456", "123a456"},
 	{"double-blind", "Double-Blind"},
 	{"ÿøû", "Ÿøû"},
-	{"with_underscore", "With_underscore"},
-	{"unicode \xe2\x80\xa8 line separator", "Unicode \xe2\x80\xa8 Line Separator"},
 }
 
 func TestTitle(t *testing.T) {
@@ -1144,7 +1132,7 @@ func TestEqualFold(t *testing.T) {
 func TestBufferGrowNegative(t *testing.T) {
 	defer func() {
 		if err := recover(); err == nil {
-			t.Fatal("Grow(-1) should have panicked")
+			t.Fatal("Grow(-1) should have paniced")
 		}
 	}()
 	var b Buffer
@@ -1154,7 +1142,7 @@ func TestBufferGrowNegative(t *testing.T) {
 func TestBufferTruncateNegative(t *testing.T) {
 	defer func() {
 		if err := recover(); err == nil {
-			t.Fatal("Truncate(-1) should have panicked")
+			t.Fatal("Truncate(-1) should have paniced")
 		}
 	}()
 	var b Buffer
@@ -1164,30 +1152,12 @@ func TestBufferTruncateNegative(t *testing.T) {
 func TestBufferTruncateOutOfRange(t *testing.T) {
 	defer func() {
 		if err := recover(); err == nil {
-			t.Fatal("Truncate(20) should have panicked")
+			t.Fatal("Truncate(20) should have paniced")
 		}
 	}()
 	var b Buffer
 	b.Write(make([]byte, 10))
 	b.Truncate(20)
-}
-
-var containsTests = []struct {
-	b, subslice []byte
-	want        bool
-}{
-	{[]byte("hello"), []byte("hel"), true},
-	{[]byte("日本語"), []byte("日本"), true},
-	{[]byte("hello"), []byte("Hello, world"), false},
-	{[]byte("東京"), []byte("京東"), false},
-}
-
-func TestContains(t *testing.T) {
-	for _, tt := range containsTests {
-		if got := Contains(tt.b, tt.subslice); got != tt.want {
-			t.Errorf("Contains(%q, %q) = %v, want %v", tt.b, tt.subslice, got, tt.want)
-		}
-	}
 }
 
 var makeFieldsInput = func() []byte {

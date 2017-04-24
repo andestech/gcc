@@ -109,6 +109,8 @@ along with GCC; see the file COPYING3.  If not see
 #define CPP_CPU64_DEFAULT_SPEC ""
 #undef ASM_CPU32_DEFAULT_SPEC
 #define ASM_CPU32_DEFAULT_SPEC "-xarch=v8plus"
+#undef ASM_CPU_DEFAULT_SPEC
+#define ASM_CPU_DEFAULT_SPEC ASM_CPU32_DEFAULT_SPEC
 #endif
 
 #if TARGET_CPU_DEFAULT == TARGET_CPU_ultrasparc
@@ -118,6 +120,8 @@ along with GCC; see the file COPYING3.  If not see
 #define ASM_CPU32_DEFAULT_SPEC "-xarch=v8plusa"
 #undef ASM_CPU64_DEFAULT_SPEC
 #define ASM_CPU64_DEFAULT_SPEC "-xarch=v9a"
+#undef ASM_CPU_DEFAULT_SPEC
+#define ASM_CPU_DEFAULT_SPEC ASM_CPU32_DEFAULT_SPEC
 #endif
 
 #if TARGET_CPU_DEFAULT == TARGET_CPU_ultrasparc3
@@ -127,6 +131,8 @@ along with GCC; see the file COPYING3.  If not see
 #define ASM_CPU32_DEFAULT_SPEC "-xarch=v8plusb"
 #undef ASM_CPU64_DEFAULT_SPEC
 #define ASM_CPU64_DEFAULT_SPEC "-xarch=v9b"
+#undef ASM_CPU_DEFAULT_SPEC
+#define ASM_CPU_DEFAULT_SPEC ASM_CPU32_DEFAULT_SPEC
 #endif
 
 #if TARGET_CPU_DEFAULT == TARGET_CPU_niagara
@@ -136,6 +142,8 @@ along with GCC; see the file COPYING3.  If not see
 #define ASM_CPU32_DEFAULT_SPEC "-xarch=v8plusb"
 #undef ASM_CPU64_DEFAULT_SPEC
 #define ASM_CPU64_DEFAULT_SPEC "-xarch=v9b"
+#undef ASM_CPU_DEFAULT_SPEC
+#define ASM_CPU_DEFAULT_SPEC ASM_CPU32_DEFAULT_SPEC
 #endif
 
 #if TARGET_CPU_DEFAULT == TARGET_CPU_niagara2
@@ -145,6 +153,8 @@ along with GCC; see the file COPYING3.  If not see
 #define ASM_CPU32_DEFAULT_SPEC "-xarch=v8plusb"
 #undef ASM_CPU64_DEFAULT_SPEC
 #define ASM_CPU64_DEFAULT_SPEC "-xarch=v9b"
+#undef ASM_CPU_DEFAULT_SPEC
+#define ASM_CPU_DEFAULT_SPEC ASM_CPU32_DEFAULT_SPEC
 #endif
 
 #if TARGET_CPU_DEFAULT == TARGET_CPU_niagara3
@@ -154,6 +164,8 @@ along with GCC; see the file COPYING3.  If not see
 #define ASM_CPU32_DEFAULT_SPEC "-xarch=v8plus" AS_NIAGARA3_FLAG
 #undef ASM_CPU64_DEFAULT_SPEC
 #define ASM_CPU64_DEFAULT_SPEC "-xarch=v9" AS_NIAGARA3_FLAG
+#undef ASM_CPU_DEFAULT_SPEC
+#define ASM_CPU_DEFAULT_SPEC ASM_CPU32_DEFAULT_SPEC
 #endif
 
 #if TARGET_CPU_DEFAULT == TARGET_CPU_niagara4
@@ -163,6 +175,8 @@ along with GCC; see the file COPYING3.  If not see
 #define ASM_CPU32_DEFAULT_SPEC AS_SPARC32_FLAG AS_NIAGARA4_FLAG
 #undef ASM_CPU64_DEFAULT_SPEC
 #define ASM_CPU64_DEFAULT_SPEC AS_SPARC64_FLAG AS_NIAGARA4_FLAG
+#undef ASM_CPU_DEFAULT_SPEC
+#define ASM_CPU_DEFAULT_SPEC ASM_CPU32_DEFAULT_SPEC
 #endif
 
 #undef CPP_CPU_SPEC
@@ -347,23 +361,6 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
     }									\
   while (0)
 
-/* Solaris as has a bug: a .common directive in .tbss or .tdata section
-   behaves as .tls_common rather than normal non-TLS .common.  */
-#undef  ASM_OUTPUT_ALIGNED_COMMON
-#define ASM_OUTPUT_ALIGNED_COMMON(FILE, NAME, SIZE, ALIGN)		\
-  do									\
-    {									\
-      if (TARGET_SUN_TLS						\
-	  && in_section							\
-	  && ((in_section->common.flags & SECTION_TLS) == SECTION_TLS))	\
-	switch_to_section (bss_section);				\
-      fprintf ((FILE), "%s", COMMON_ASM_OP);				\
-      assemble_name ((FILE), (NAME));					\
-      fprintf ((FILE), ","HOST_WIDE_INT_PRINT_UNSIGNED",%u\n",		\
-	       (SIZE), (ALIGN) / BITS_PER_UNIT);			\
-    }									\
-  while (0)
-
 #ifndef USE_GAS
 /* This is how to output an assembler line that says to advance
    the location counter to a multiple of 2**LOG bytes using the
@@ -379,6 +376,7 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
 
 /* Sun as requires doublequoted section names on SPARC.  While GNU as
    supports that, too, we prefer the standard variant.  */
+#undef SECTION_NAME_FORMAT
 #define SECTION_NAME_FORMAT	"\"%s\""
 #endif /* !USE_GAS */
 

@@ -175,15 +175,13 @@ location_adhoc_data_fini (struct line_maps *set)
 /* Initialize a line map set.  */
 
 void
-linemap_init (struct line_maps *set,
-	      source_location builtin_location)
+linemap_init (struct line_maps *set)
 {
   memset (set, 0, sizeof (struct line_maps));
   set->highest_location = RESERVED_LOCATION_COUNT - 1;
   set->highest_line = RESERVED_LOCATION_COUNT - 1;
   set->location_adhoc_data_map.htab =
       htab_create (100, location_adhoc_data_hash, location_adhoc_data_eq, NULL);
-  set->builtin_location = builtin_location;
 }
 
 /* Check for and warn about line_maps entered but not exited.  */
@@ -484,7 +482,7 @@ linemap_enter_macro (struct line_maps *set, struct cpp_hashnode *macro_node,
    (which is a virtual location or a source location if the caller is
    itself a macro expansion or not).
 
-   ORIG_PARM_REPLACEMENT_LOC is the location in the macro definition,
+   MACRO_DEFINITION_LOC is the location in the macro definition,
    either of the token itself or of a macro parameter that it
    replaces.  */
 
@@ -529,10 +527,10 @@ linemap_line_start (struct line_maps *set, linenum_type to_line,
 	  && line_delta * ORDINARY_MAP_NUMBER_OF_COLUMN_BITS (map) > 1000)
       || (max_column_hint >= (1U << ORDINARY_MAP_NUMBER_OF_COLUMN_BITS (map)))
       || (max_column_hint <= 80
-	  && ORDINARY_MAP_NUMBER_OF_COLUMN_BITS (map) >= 10))
-    {
-      add_map = true;
-    }
+	  && ORDINARY_MAP_NUMBER_OF_COLUMN_BITS (map) >= 10)
+      || (highest > 0x60000000
+	  && (set->max_column_hint || highest > 0x70000000)))
+    add_map = true;
   else
     max_column_hint = set->max_column_hint;
   if (add_map)
@@ -543,7 +541,7 @@ linemap_line_start (struct line_maps *set, linenum_type to_line,
 	  /* If the column number is ridiculous or we've allocated a huge
 	     number of source_locations, give up on column numbers. */
 	  max_column_hint = 0;
-	  if (highest >0x70000000)
+	  if (highest > 0x70000000)
 	    return 0;
 	  column_bits = 0;
 	}
@@ -621,7 +619,7 @@ linemap_position_for_column (struct line_maps *set, unsigned int to_column)
    column.  */
 
 source_location
-linemap_position_for_line_and_column (const struct line_map *map,
+linemap_position_for_line_and_column (struct line_map *map,
 				      linenum_type line,
 				      unsigned column)
 {
@@ -772,13 +770,15 @@ linemap_macro_map_loc_to_exp_point (const struct line_map *map,
   return MACRO_MAP_EXPANSION_POINT_LOCATION (map);
 }
 
-/* LOCATION is the source location of a token that belongs to a macro
-   replacement-list as part of the macro expansion denoted by MAP.
+/* If LOCATION is the source location of a token that belongs to a
+   macro replacement-list -- as part of a macro expansion -- then
+   return the location of the token at the definition point of the
+   macro.  Otherwise, return LOCATION.  SET is the set of maps
+   location come from.  ORIGINAL_MAP is an output parm. If non NULL,
+   the function sets *ORIGINAL_MAP to the ordinary (non-macro) map the
+   returned location comes from.  */
 
-   Return the location of the token at the definition point of the
-   macro.  */
-
-static source_location
+source_location
 linemap_macro_map_loc_to_def_point (const struct line_map *map,
 				    source_location location)
 {
@@ -938,7 +938,7 @@ linemap_location_in_system_header_p (struct line_maps *set,
    otherwise.  */
 
 bool
-linemap_location_from_macro_expansion_p (const struct line_maps *set,
+linemap_location_from_macro_expansion_p (struct line_maps *set,
 					 source_location location)
 {
   if (IS_ADHOC_LOC (location))
@@ -1231,9 +1231,9 @@ linemap_macro_loc_to_exp_point (struct line_maps *set,
    function-like macro, then the function behaves as if LRK was set to
    LRK_SPELLING_LOCATION.
 
-   If MAP is not NULL, *MAP is set to the map encoding the
+   If LOC_MAP is not NULL, *LOC_MAP is set to the map encoding the
    returned location.  Note that if the returned location wasn't originally
-   encoded by a map, then *MAP is set to NULL.  This can happen if LOC
+   encoded by a map, the *MAP is set to NULL.  This can happen if LOC
    resolves to a location reserved for the client code, like
    UNKNOWN_LOCATION or BUILTINS_LOCATION in GCC.  */
 

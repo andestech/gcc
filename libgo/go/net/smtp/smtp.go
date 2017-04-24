@@ -264,8 +264,6 @@ func (c *Client) Data() (io.WriteCloser, error) {
 	return &dataCloser{c, c.Text.DotWriter()}, nil
 }
 
-var testHookStartTLS func(*tls.Config) // nil, except for tests
-
 // SendMail connects to the server at addr, switches to TLS if
 // possible, authenticates with the optional mechanism a if possible,
 // and then sends an email from address from, to addresses to, with
@@ -280,11 +278,7 @@ func SendMail(addr string, a Auth, from string, to []string, msg []byte) error {
 		return err
 	}
 	if ok, _ := c.Extension("STARTTLS"); ok {
-		config := &tls.Config{ServerName: c.serverName}
-		if testHookStartTLS != nil {
-			testHookStartTLS(config)
-		}
-		if err = c.StartTLS(config); err != nil {
+		if err = c.StartTLS(nil); err != nil {
 			return err
 		}
 	}

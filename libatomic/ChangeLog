@@ -1,23 +1,23 @@
-2014-08-19  Yaakov Selkowitz  <yselkowi@redhat.com>
+2015-06-26  Release Manager
 
-	* configure.tgt: Add cygwin to supported targets.
+	* GCC 4.9.3 released.
 
-2014-07-18  Uros Bizjak  <ubizjak@gmail.com>
+2015-01-21  Andrew Waterman <waterman@cs.berkeley.edu>
 
-	* configure.tgt (alpha*): Add -mfp-trap-mode=sui to XCFLAGS.
+	* fop_n.c (libat_fetch_op): Align address to word boundary.
+	(libat_op_fetch): Likewise.
 
-2014-06-17  Kai Tietz  <ktietz@redhat.com>
+2014-10-30  Release Manager
 
-	* Makefile.am (libatomic_la_LDFLAGS): Add lt_host_flags.
-	* configure.ac (ACX_LT_HOST_FLAGS): New.
-	(target_thread_file): New.
-	* configure.tgt (mingw): Add mingw support.
-	* config/mingw/host-config.h: New file.
-	* config/mingw/lock.c: Likewise.
-	* Makefile.in: Regenerated.
-	* configure: Likewise.
-	* aclocal.m4: Likewise.
-	* testsuite/Makefile.in: Likewise.
+	* GCC 4.9.2 released.
+
+2014-07-16  Release Manager
+
+	* GCC 4.9.1 released.
+
+2014-04-22  Release Manager
+
+	* GCC 4.9.0 released.
 
 2014-02-20  Richard Henderson <rth@redhat.com>
 

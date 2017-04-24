@@ -306,12 +306,6 @@ const struct demangler_engine libiberty_demanglers[] =
   }
   ,
   {
-    DLANG_DEMANGLING_STYLE_STRING,
-    dlang_demangling,
-    "DLANG style demangling"
-  }
-  ,
-  {
     NULL, unknown_demangling, NULL
   }
 };
@@ -876,13 +870,6 @@ cplus_demangle (const char *mangled, int options)
   if (GNAT_DEMANGLING)
     return ada_demangle (mangled, options);
 
-  if (DLANG_DEMANGLING)
-    {
-      ret = dlang_demangle (mangled, options);
-      if (ret)
-	return ret;
-    }
-
   ret = internal_cplus_demangle (work, mangled);
   squangle_mop_up (work);
   return (ret);
@@ -1188,11 +1175,6 @@ internal_cplus_demangle (struct work_stuff *work, const char *mangled)
       if ((AUTO_DEMANGLING || GNU_DEMANGLING))
 	{
 	  success = gnu_special (work, &mangled, &decl);
-	  if (!success)
-	    {
-	      delete_work_stuff (work);
-	      string_delete (&decl);
-	    }
 	}
       if (!success)
 	{
@@ -1236,12 +1218,10 @@ squangle_mop_up (struct work_stuff *work)
   if (work -> btypevec != NULL)
     {
       free ((char *) work -> btypevec);
-      work->btypevec = NULL;
     }
   if (work -> ktypevec != NULL)
     {
       free ((char *) work -> ktypevec);
-      work->ktypevec = NULL;
     }
 }
 
@@ -3676,10 +3656,7 @@ do_type (struct work_stuff *work, const char **mangled, string *result)
 		    string_delete (&temp);
 		  }
 		else
-		  {
-		    string_delete (&temp);
-		    break;
-		  }
+		  break;
 	      }
 	    else if (**mangled == 'Q')
 	      {

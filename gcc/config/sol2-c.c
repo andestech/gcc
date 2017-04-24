@@ -86,7 +86,7 @@ solaris_pragma_align (cpp_reader *pfile ATTRIBUTE_UNUSED)
 {
   tree t, x;
   enum cpp_ttype ttype;
-  unsigned HOST_WIDE_INT low;
+  HOST_WIDE_INT low;
 
   if (pragma_lex (&x) != CPP_NUMBER
       || pragma_lex (&t) != CPP_OPEN_PAREN)
@@ -96,7 +96,7 @@ solaris_pragma_align (cpp_reader *pfile ATTRIBUTE_UNUSED)
     }
 
   low = TREE_INT_CST_LOW (x);
-  if (!tree_fits_uhwi_p (x)
+  if (TREE_INT_CST_HIGH (x) != 0
       || (low != 1 && low != 2 && low != 4 && low != 8 && low != 16
 	  && low != 32 && low != 64 && low != 128))
     {

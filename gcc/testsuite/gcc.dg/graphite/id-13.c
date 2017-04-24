@@ -1,5 +1,3 @@
-void bar (int);
-
 void
 foo (int N, int k, int *fb)
 {

@@ -31,8 +31,6 @@ typedef struct bitfield_s {
   ulong64 f:18;
 } bitfield_t;
 
-void foo (bitfield_t*);
-
 bitfield_t bar;
 
 NOMIPS16 void

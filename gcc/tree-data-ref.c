@@ -79,17 +79,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "expr.h"
 #include "gimple-pretty-print.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "tm.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -625,7 +614,7 @@ split_constant_offset_1 (tree type, tree op0, enum tree_code code, tree op1,
       {
 	tree base, poffset;
 	HOST_WIDE_INT pbitsize, pbitpos;
-	machine_mode pmode;
+	enum machine_mode pmode;
 	int punsignedp, pvolatilep;
 
 	op0 = TREE_OPERAND (op0, 0);
@@ -674,6 +663,9 @@ split_constant_offset_1 (tree type, tree op0, enum tree_code code, tree op1,
 
     case SSA_NAME:
       {
+	if (SSA_NAME_OCCURS_IN_ABNORMAL_PHI (op0))
+	  return false;
+
 	gimple def_stmt = SSA_NAME_DEF_STMT (op0);
 	enum tree_code subcode;
 
@@ -770,7 +762,7 @@ dr_analyze_innermost (struct data_reference *dr, struct loop *nest)
   tree ref = DR_REF (dr);
   HOST_WIDE_INT pbitsize, pbitpos;
   tree base, poffset;
-  machine_mode pmode;
+  enum machine_mode pmode;
   int punsignedp, pvolatilep;
   affine_iv base_iv, offset_iv;
   tree init, dinit, step;
@@ -794,8 +786,8 @@ dr_analyze_innermost (struct data_reference *dr, struct loop *nest)
     {
       if (!integer_zerop (TREE_OPERAND (base, 1)))
 	{
-	  offset_int moff = mem_ref_offset (base);
-	  tree mofft = wide_int_to_tree (sizetype, moff);
+	  double_int moff = mem_ref_offset (base);
+	  tree mofft = double_int_to_tree (sizetype, moff);
 	  if (!poffset)
 	    poffset = mofft;
 	  else
@@ -973,7 +965,6 @@ dr_analyze_indices (struct data_reference *dr, loop_p nest, loop_p loop)
 	  orig_type = TREE_TYPE (base);
 	  STRIP_USELESS_TYPE_CONVERSION (base);
 	  split_constant_offset (base, &base, &off);
-	  STRIP_USELESS_TYPE_CONVERSION (base);
 	  /* Fold the MEM_REF offset into the evolutions initial
 	     value to make more bases comparable.  */
 	  if (!integer_zerop (memoff))
@@ -982,6 +973,24 @@ dr_analyze_indices (struct data_reference *dr, loop_p nest, loop_p loop)
 				fold_convert (ssizetype, memoff));
 	      memoff = build_int_cst (TREE_TYPE (memoff), 0);
 	    }
+	  /* Adjust the offset so it is a multiple of the access type
+	     size and thus we separate bases that can possibly be used
+	     to produce partial overlaps (which the access_fn machinery
+	     cannot handle).  */
+	  double_int rem;
+	  if (TYPE_SIZE_UNIT (TREE_TYPE (ref))
+	      && TREE_CODE (TYPE_SIZE_UNIT (TREE_TYPE (ref))) == INTEGER_CST
+	      && !integer_zerop (TYPE_SIZE_UNIT (TREE_TYPE (ref))))
+	    rem = tree_to_double_int (off).mod
+		(tree_to_double_int (TYPE_SIZE_UNIT (TREE_TYPE (ref))), false,
+		 TRUNC_MOD_EXPR);
+	  else
+	    /* If we can't compute the remainder simply force the initial
+	       condition to zero.  */
+	    rem = tree_to_double_int (off);
+	  off = double_int_to_tree (ssizetype, tree_to_double_int (off) - rem);
+	  memoff = double_int_to_tree (TREE_TYPE (memoff), rem);
+	  /* And finally replace the initial condition.  */
 	  access_fn = chrec_replace_initial_condition
 	      (access_fn, fold_convert (orig_type, off));
 	  /* ???  This is still not a suitable base object for
@@ -994,6 +1003,7 @@ dr_analyze_indices (struct data_reference *dr, loop_p nest, loop_p loop)
 	  ref = fold_build2_loc (EXPR_LOCATION (ref),
 				 MEM_REF, TREE_TYPE (ref),
 				 base, memoff);
+	  DR_UNCONSTRAINED_BASE (dr) = true;
 	  access_fns.safe_push (access_fn);
 	}
     }
@@ -1391,10 +1401,10 @@ dr_may_alias_p (const struct data_reference *a, const struct data_reference *b,
   if (!loop_nest)
     {
       aff_tree off1, off2;
-      widest_int size1, size2;
+      double_int size1, size2;
       get_inner_reference_aff (DR_REF (a), &off1, &size1);
       get_inner_reference_aff (DR_REF (b), &off2, &size2);
-      aff_combination_scale (&off1, -1);
+      aff_combination_scale (&off1, double_int_minus_one);
       aff_combination_add (&off2, &off1);
       if (aff_comb_cannot_overlap_p (&off2, size1, size2))
 	return false;
@@ -1405,7 +1415,8 @@ dr_may_alias_p (const struct data_reference *a, const struct data_reference *b,
      offset/overlap based analysis but have to rely on points-to
      information only.  */
   if (TREE_CODE (addr_a) == MEM_REF
-      && TREE_CODE (TREE_OPERAND (addr_a, 0)) == SSA_NAME)
+      && (DR_UNCONSTRAINED_BASE (a)
+	  || TREE_CODE (TREE_OPERAND (addr_a, 0)) == SSA_NAME))
     {
       /* For true dependences we can apply TBAA.  */
       if (flag_strict_aliasing
@@ -1421,7 +1432,8 @@ dr_may_alias_p (const struct data_reference *a, const struct data_reference *b,
 				       build_fold_addr_expr (addr_b));
     }
   else if (TREE_CODE (addr_b) == MEM_REF
-	   && TREE_CODE (TREE_OPERAND (addr_b, 0)) == SSA_NAME)
+	   && (DR_UNCONSTRAINED_BASE (b)
+	       || TREE_CODE (TREE_OPERAND (addr_b, 0)) == SSA_NAME))
     {
       /* For true dependences we can apply TBAA.  */
       if (flag_strict_aliasing
@@ -1787,15 +1799,15 @@ analyze_ziv_subscript (tree chrec_a,
 static tree
 max_stmt_executions_tree (struct loop *loop)
 {
-  widest_int nit;
+  double_int nit;
 
   if (!max_stmt_executions (loop, &nit))
     return chrec_dont_know;
 
-  if (!wi::fits_to_tree_p (nit, unsigned_type_node))
+  if (!double_int_fits_to_tree_p (unsigned_type_node, nit))
     return chrec_dont_know;
 
-  return wide_int_to_tree (unsigned_type_node, nit);
+  return double_int_to_tree (unsigned_type_node, nit);
 }
 
 /* Determine whether the CHREC is always positive/negative.  If the expression
@@ -2100,7 +2112,7 @@ initialize_matrix_A (lambda_matrix A, tree chrec, unsigned index, int mult)
 	return chrec_fold_op (TREE_CODE (chrec), chrec_type (chrec), op0, op1);
       }
 
-    CASE_CONVERT:
+    case NOP_EXPR:
       {
 	tree op = initialize_matrix_A (A, TREE_OPERAND (chrec, 0), index, mult);
 	return chrec_convert (chrec_type (chrec), op, NULL);

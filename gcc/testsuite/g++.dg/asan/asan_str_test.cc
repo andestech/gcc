@@ -10,10 +10,6 @@
 //===----------------------------------------------------------------------===//
 #include "asan_test_utils.h"
 
-#if defined(__APPLE__)
-#include <AvailabilityMacros.h>  // For MAC_OS_X_VERSION_*
-#endif
-
 // Used for string functions tests
 static char global_string[] = "global";
 static size_t global_string_length = 6;
@@ -63,19 +59,7 @@ TEST(AddressSanitizer, StrLenOOBTest) {
   free(heap_string);
 }
 
-TEST(AddressSanitizer, WcsLenTest) {
-  EXPECT_EQ(0U, wcslen(Ident(L"")));
-  size_t hello_len = 13;
-  size_t hello_size = (hello_len + 1) * sizeof(wchar_t);
-  EXPECT_EQ(hello_len, wcslen(Ident(L"Hello, World!")));
-  wchar_t *heap_string = Ident((wchar_t*)malloc(hello_size));
-  memcpy(heap_string, L"Hello, World!", hello_size);
-  EXPECT_EQ(hello_len, Ident(wcslen(heap_string)));
-  EXPECT_DEATH(Ident(wcslen(heap_string + 14)), RightOOBReadMessage(0));
-  free(heap_string);
-}
-
-#if SANITIZER_TEST_HAS_STRNLEN
+#ifndef __APPLE__
 TEST(AddressSanitizer, StrNLenOOBTest) {
   size_t size = Ident(123);
   char *str = MallocAndMemsetString(size);
@@ -93,7 +77,7 @@ TEST(AddressSanitizer, StrNLenOOBTest) {
   EXPECT_DEATH(Ident(strnlen(str, size + 1)), RightOOBReadMessage(0));
   free(str);
 }
-#endif  // SANITIZER_TEST_HAS_STRNLEN
+#endif
 
 TEST(AddressSanitizer, StrDupOOBTest) {
   size_t size = Ident(42);
@@ -184,7 +168,7 @@ TEST(AddressSanitizer, StrNCpyOOBTest) {
 typedef char*(*PointerToStrChr1)(const char*, int);
 typedef char*(*PointerToStrChr2)(char*, int);
 
-UNUSED static void RunStrChrTest(PointerToStrChr1 StrChr) {
+USED static void RunStrChrTest(PointerToStrChr1 StrChr) {
   size_t size = Ident(100);
   char *str = MallocAndMemsetString(size);
   str[10] = 'q';
@@ -200,7 +184,7 @@ UNUSED static void RunStrChrTest(PointerToStrChr1 StrChr) {
   EXPECT_DEATH(Ident(StrChr(str, 'a')), RightOOBReadMessage(0));
   free(str);
 }
-UNUSED static void RunStrChrTest(PointerToStrChr2 StrChr) {
+USED static void RunStrChrTest(PointerToStrChr2 StrChr) {
   size_t size = Ident(100);
   char *str = MallocAndMemsetString(size);
   str[10] = 'q';
@@ -219,9 +203,7 @@ UNUSED static void RunStrChrTest(PointerToStrChr2 StrChr) {
 
 TEST(AddressSanitizer, StrChrAndIndexOOBTest) {
   RunStrChrTest(&strchr);
-#if !defined(_WIN32)  // no index() on Windows.
   RunStrChrTest(&index);
-#endif
 }
 
 TEST(AddressSanitizer, StrCmpAndFriendsLogicTest) {
@@ -244,7 +226,6 @@ TEST(AddressSanitizer, StrCmpAndFriendsLogicTest) {
   EXPECT_LT(0, strncmp("baa", "aaa", 1));
   EXPECT_LT(0, strncmp("zyx", "", 2));
 
-#if !defined(_WIN32)  // no str[n]casecmp on Windows.
   // strcasecmp
   EXPECT_EQ(0, strcasecmp("", ""));
   EXPECT_EQ(0, strcasecmp("zzz", "zzz"));
@@ -264,7 +245,6 @@ TEST(AddressSanitizer, StrCmpAndFriendsLogicTest) {
   EXPECT_LT(0, strncasecmp("xyz", "xyy", 10));
   EXPECT_LT(0, strncasecmp("Baa", "aaa", 1));
   EXPECT_LT(0, strncasecmp("zyx", "", 2));
-#endif
 
   // memcmp
   EXPECT_EQ(0, memcmp("a", "b", 0));
@@ -307,11 +287,9 @@ TEST(AddressSanitizer, StrCmpOOBTest) {
   RunStrCmpTest(&strcmp);
 }
 
-#if !defined(_WIN32)  // no str[n]casecmp on Windows.
 TEST(AddressSanitizer, StrCaseCmpOOBTest) {
   RunStrCmpTest(&strcasecmp);
 }
-#endif
 
 typedef int(*PointerToStrNCmp)(const char*, const char*, size_t);
 void RunStrNCmpTest(PointerToStrNCmp StrNCmp) {
@@ -344,12 +322,9 @@ TEST(AddressSanitizer, StrNCmpOOBTest) {
   RunStrNCmpTest(&strncmp);
 }
 
-#if !defined(_WIN32)  // no str[n]casecmp on Windows.
 TEST(AddressSanitizer, StrNCaseCmpOOBTest) {
   RunStrNCmpTest(&strncasecmp);
 }
-#endif
-
 TEST(AddressSanitizer, StrCatOOBTest) {
   // strcat() reads strlen(to) bytes from |to| before concatenating.
   size_t to_size = Ident(100);
@@ -531,13 +506,11 @@ void RunAtoiOOBTest(PointerToCallAtoi Atoi) {
   free(array);
 }
 
-#if !defined(_WIN32)  // FIXME: Fix and enable on Windows.
 TEST(AddressSanitizer, AtoiAndFriendsOOBTest) {
   RunAtoiOOBTest(&CallAtoi);
   RunAtoiOOBTest(&CallAtol);
   RunAtoiOOBTest(&CallAtoll);
 }
-#endif
 
 void CallStrtol(const char *nptr, char **endptr, int base) {
   Ident(strtol(nptr, endptr, base));
@@ -587,13 +560,11 @@ void RunStrtolOOBTest(PointerToCallStrtol Strtol) {
   free(array);
 }
 
-#if !defined(_WIN32)  // FIXME: Fix and enable on Windows.
 TEST(AddressSanitizer, StrtollOOBTest) {
   RunStrtolOOBTest(&CallStrtoll);
 }
 TEST(AddressSanitizer, StrtolOOBTest) {
   RunStrtolOOBTest(&CallStrtol);
 }
-#endif
 
 

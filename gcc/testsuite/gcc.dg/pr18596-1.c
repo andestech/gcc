@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-fno-unit-at-a-time -std=gnu89" } */
+/* { dg-options "-fno-unit-at-a-time" } */
 
 int f(int i)
 {

@@ -638,7 +638,7 @@
   /* Avoid search unless necessary.  */
   if (!TARGET_EXPLICIT_RELOCS || !reload_completed)
     return false;
-  return some_small_symbolic_operand_int (op);
+  return for_each_rtx (&op, some_small_symbolic_operand_int, NULL);
 })
 
 ;; Accept a register, or a memory if BWX is enabled.

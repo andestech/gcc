@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-fopenmp -std=gnu89" } */
+/* { dg-options "-fopenmp" } */
 
 struct S { int s; };
 struct T { int t; };

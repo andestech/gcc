@@ -26,22 +26,11 @@ along with GCC; see the file COPYING3.  If not see
 #include "coretypes.h"
 #include "tree.h"
 #include "stringpool.h"
-#include "hash-map.h"
-#include "is-a.h"
-#include "plugin-api.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "tm.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
 #include "tree-iterator.h"
 #include "cp-tree.h"
 #include "toplev.h"
+#include "vec.h"
 
 /* Constructor for a lambda expression.  */
 
@@ -212,6 +201,14 @@ lambda_function (tree lambda)
   return lambda;
 }
 
+static inline bool
+is_this (tree t)
+{
+  return ((TREE_CODE (t) == PARM_DECL
+	   || TREE_CODE (t) == VAR_DECL)
+	  && DECL_NAME (t) == this_identifier);
+}
+
 /* Returns the type to use for the FIELD_DECL corresponding to the
    capture of EXPR.
    The caller should add REFERENCE_TYPE for capture by reference.  */
@@ -228,7 +225,8 @@ lambda_capture_field_type (tree expr, bool explicit_init_p)
   else
     type = non_reference (unlowered_expr_type (expr));
   if (type_dependent_expression_p (expr)
-      && !is_this_parameter (tree_strip_nop_conversions (expr)))
+      && !is_this (tree_strip_nop_conversions (expr))
+      && !array_of_runtime_bound_p (type))
     {
       type = cxx_make_type (DECLTYPE_TYPE);
       DECLTYPE_TYPE_EXPR (type) = expr;
@@ -378,7 +376,10 @@ build_capture_proxy (tree member)
     object = TREE_OPERAND (object, 0);
 
   /* Remove the __ inserted by add_capture.  */
-  name = get_identifier (IDENTIFIER_POINTER (DECL_NAME (member)) + 2);
+  if (DECL_NORMAL_CAPTURE_P (member))
+    name = get_identifier (IDENTIFIER_POINTER (DECL_NAME (member)) + 2);
+  else
+    name = DECL_NAME (member);
 
   type = lambda_proxy_type (object);
 
@@ -463,10 +464,7 @@ add_capture (tree lambda, tree id, tree orig_init, bool by_reference_p,
   if (TREE_CODE (initializer) == TREE_LIST)
     initializer = build_x_compound_expr_from_list (initializer, ELK_INIT,
 						   tf_warning_or_error);
-  type = TREE_TYPE (initializer);
-  if (type == error_mark_node)
-    return error_mark_node;
-
+  type = lambda_capture_field_type (initializer, explicit_init_p);
   if (array_of_runtime_bound_p (type))
     {
       vla = true;
@@ -485,7 +483,7 @@ add_capture (tree lambda, tree id, tree orig_init, bool by_reference_p,
     }
   else if (variably_modified_type_p (type, NULL_TREE))
     {
-      error ("capture of variable-size type %qT that is not a C++14 array "
+      error ("capture of variable-size type %qT that is not a C++1y array "
 	     "of runtime bound", type);
       if (TREE_CODE (type) == ARRAY_TYPE
 	  && variably_modified_type_p (TREE_TYPE (type), NULL_TREE))
@@ -493,37 +491,31 @@ add_capture (tree lambda, tree id, tree orig_init, bool by_reference_p,
 		"variable size", TREE_TYPE (type));
       type = error_mark_node;
     }
-  else
+  else if (by_reference_p)
     {
-      type = lambda_capture_field_type (initializer, explicit_init_p);
-      if (by_reference_p)
-	{
-	  type = build_reference_type (type);
-	  if (!real_lvalue_p (initializer))
-	    error ("cannot capture %qE by reference", initializer);
-	}
-      else
-	{
-	  /* Capture by copy requires a complete type.  */
-	  type = complete_type (type);
-	  if (!dependent_type_p (type) && !COMPLETE_TYPE_P (type))
-	    {
-	      error ("capture by copy of incomplete type %qT", type);
-	      cxx_incomplete_type_inform (type);
-	      return error_mark_node;
-	    }
-	}
+      type = build_reference_type (type);
+      if (!real_lvalue_p (initializer))
+	error ("cannot capture %qE by reference", initializer);
     }
+  else
+    /* Capture by copy requires a complete type.  */
+    type = complete_type (type);
 
   /* Add __ to the beginning of the field name so that user code
      won't find the field with name lookup.  We can't just leave the name
      unset because template instantiation uses the name to find
      instantiated fields.  */
-  buf = (char *) alloca (IDENTIFIER_LENGTH (id) + 3);
-  buf[1] = buf[0] = '_';
-  memcpy (buf + 2, IDENTIFIER_POINTER (id),
-	  IDENTIFIER_LENGTH (id) + 1);
-  name = get_identifier (buf);
+  if (!explicit_init_p)
+    {
+      buf = (char *) alloca (IDENTIFIER_LENGTH (id) + 3);
+      buf[1] = buf[0] = '_';
+      memcpy (buf + 2, IDENTIFIER_POINTER (id),
+	      IDENTIFIER_LENGTH (id) + 1);
+      name = get_identifier (buf);
+    }
+  else
+    /* But captures with explicit initializers are named.  */
+    name = id;
 
   /* If TREE_TYPE isn't set, we're still in the introducer, so check
      for duplicates.  */
@@ -637,12 +629,11 @@ add_default_capture (tree lambda_stack, tree id, tree initializer)
   return var;
 }
 
-/* Return the capture pertaining to a use of 'this' in LAMBDA, in the
-   form of an INDIRECT_REF, possibly adding it through default
-   capturing, if ADD_CAPTURE_P is false.  */
+/* Return the capture pertaining to a use of 'this' in LAMBDA, in the form of an
+   INDIRECT_REF, possibly adding it through default capturing.  */
 
 tree
-lambda_expr_this_capture (tree lambda, bool add_capture_p)
+lambda_expr_this_capture (tree lambda)
 {
   tree result;
 
@@ -662,8 +653,7 @@ lambda_expr_this_capture (tree lambda, bool add_capture_p)
 
   /* Try to default capture 'this' if we can.  */
   if (!this_capture
-      && (!add_capture_p
-          || LAMBDA_EXPR_DEFAULT_CAPTURE_MODE (lambda) != CPLD_NONE))
+      && LAMBDA_EXPR_DEFAULT_CAPTURE_MODE (lambda) != CPLD_NONE)
     {
       tree lambda_stack = NULL_TREE;
       tree init = NULL_TREE;
@@ -723,20 +713,14 @@ lambda_expr_this_capture (tree lambda, bool add_capture_p)
 	}
 
       if (init)
-        {
-          if (add_capture_p)
-	    this_capture = add_default_capture (lambda_stack,
-					        /*id=*/this_identifier,
-					        init);
-          else
-	    this_capture = init;
-        }
+	this_capture = add_default_capture (lambda_stack,
+					    /*id=*/this_identifier,
+					    init);
     }
 
   if (!this_capture)
     {
-      if (add_capture_p)
-	error ("%<this%> was not captured for this lambda function");
+      error ("%<this%> was not captured for this lambda function");
       result = error_mark_node;
     }
   else
@@ -763,7 +747,7 @@ lambda_expr_this_capture (tree lambda, bool add_capture_p)
    'this' capture.  */
 
 tree
-maybe_resolve_dummy (tree object, bool add_capture_p)
+maybe_resolve_dummy (tree object)
 {
   if (!is_dummy_object (object))
     return object;
@@ -779,24 +763,13 @@ maybe_resolve_dummy (tree object, bool add_capture_p)
     {
       /* In a lambda, need to go through 'this' capture.  */
       tree lam = CLASSTYPE_LAMBDA_EXPR (current_class_type);
-      tree cap = lambda_expr_this_capture (lam, add_capture_p);
-      if (cap != error_mark_node)
+      tree cap = lambda_expr_this_capture (lam);
+      if (cap && cap != error_mark_node)
 	object = build_x_indirect_ref (EXPR_LOCATION (object), cap,
 				       RO_NULL, tf_warning_or_error);
     }
 
   return object;
-}
-
-/* Returns the innermost non-lambda function.  */
-
-tree
-current_nonlambda_function (void)
-{
-  tree fn = current_function_decl;
-  while (fn && LAMBDA_FUNCTION_P (fn))
-    fn = decl_function_context (fn);
-  return fn;
 }
 
 /* Returns the method basetype of the innermost non-lambda function, or
@@ -1063,8 +1036,9 @@ maybe_add_lambda_conv_op (tree type)
   if (DECL_ONE_ONLY (statfn))
     {
       /* Put the thunk in the same comdat group as the call op.  */
-      cgraph_node::get_create (statfn)->add_to_same_comdat_group
-	(cgraph_node::get_create (callop));
+      symtab_add_to_same_comdat_group
+	 (cgraph_get_create_node (statfn),
+          cgraph_get_create_node (callop));
     }
   tree body = begin_function_body ();
   tree compound_stmt = begin_compound_stmt (0);

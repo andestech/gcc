@@ -11,7 +11,6 @@ large_function ()
       abort ();
 }
 
-int
 main ()
 {
   large_function ();

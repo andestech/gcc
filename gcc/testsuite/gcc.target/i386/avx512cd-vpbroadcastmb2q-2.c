@@ -9,7 +9,6 @@
 
 #define SIZE (AVX512F_LEN / 64)
 
-static void
 CALC (long long *res, __mmask8 src)
 {
   int i;
@@ -18,13 +17,13 @@ CALC (long long *res, __mmask8 src)
     res[i] = src;
 }
 
-void
+static void
 TEST (void)
 {
   int i;
   UNION_TYPE (AVX512F_LEN, i_q) res;
   long long res_ref[SIZE];
-  __mmask8 src = 0;
+  __mmask8 src;
 
   for (i = 0; i < SIZE; i++)
     {

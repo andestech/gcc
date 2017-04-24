@@ -1,5 +1,5 @@
 // N3648: capture init example from paper
-// { dg-do run { target c++14 } }
+// { dg-do run { target c++1y } }
 
 int x = 4;
 auto y = [&r = x, x = x+1]()->int {

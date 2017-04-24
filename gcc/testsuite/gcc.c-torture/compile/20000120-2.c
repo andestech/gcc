@@ -1,5 +1,3 @@
-/* { dg-options "-fgnu89-inline" } */
-
 extern __inline__ int
 odd(int i)
 {

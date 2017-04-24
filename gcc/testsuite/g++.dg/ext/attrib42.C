@@ -1,4 +1,4 @@
-// { dg-do compile { target { { i?86-*-* x86_64-*-* } && ia32 } } }
+// { dg-do compile { target { i?86-*-* && ilp32 } } }
 
 struct A {
   __attribute__((fastcall))

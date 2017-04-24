@@ -21,7 +21,7 @@ CALC (long long *i1, long long *r)
       r[i] = i1[i];
 }
 
-void
+static void
 TEST (void)
 {
   long long ck[SIZE];

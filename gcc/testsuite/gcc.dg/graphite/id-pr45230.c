@@ -1,5 +1,4 @@
 unsigned char buf[10];
-int
 main ()
 {
   unsigned off1, len, i;

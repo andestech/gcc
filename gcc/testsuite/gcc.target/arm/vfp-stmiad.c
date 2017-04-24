@@ -12,4 +12,4 @@ foo (double *p, double a, double b, int n)
   while (n--);
 }
 
-/* { dg-final { scan-assembler "vstmia.64" } } */
+/* { dg-final { scan-assembler "fstmiad" } } */

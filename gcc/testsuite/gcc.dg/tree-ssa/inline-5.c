@@ -2,9 +2,6 @@
 /* { dg-options "-Os -fdump-tree-optimized" } */
 struct a {int a,b,c,d,e,f;};
 
-void do_something (struct a *);
-
-void
 do_inc (struct a *a)
 {
   a->a=a->b;
@@ -13,7 +10,6 @@ do_inc (struct a *a)
   a->e=a->f;
 }
 
-void
 test(struct a *a)
 {
   do_inc (a);

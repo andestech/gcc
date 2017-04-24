@@ -20,45 +20,25 @@ along with GCC; see the file COPYING3.  If not see
 
 #include "config.h"
 
-#ifdef HAVE_isl
+#ifdef HAVE_cloog
 #include <isl/set.h>
 #include <isl/map.h>
 #include <isl/union_map.h>
 #include <isl/constraint.h>
 #include <isl/aff.h>
-#include <isl/val.h>
-/* For C++ linkage of C functions.
-   Missing from  isl/val_gmp.h in isl 0.12 versions.
-   Appearing in isl/val_gmp.h in isl 0.13.
-   To be removed when passing to isl 0.13. */
-#if defined(__cplusplus)
-extern "C" {
-#endif
-#include <isl/val_gmp.h>
-#if defined(__cplusplus)
-}
-#endif
-#ifdef HAVE_cloog
 #include <cloog/cloog.h>
 #include <cloog/cloog.h>
 #include <cloog/isl/domain.h>
+#ifdef HAVE_ISL_SCHED_CONSTRAINTS_COMPUTE_SCHEDULE
+#include <isl/deprecated/int.h>
+#include <isl/deprecated/aff_int.h>
+#include <isl/deprecated/constraint_int.h>
 #endif
 #endif
 
 #include "system.h"
 #include "coretypes.h"
 #include "tree.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "tm.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -87,7 +67,7 @@ extern "C" {
 #include "sese.h"
 #include "tree-ssa-propagate.h"
 
-#ifdef HAVE_isl
+#ifdef HAVE_cloog
 #include "expr.h"
 #include "graphite-poly.h"
 #include "graphite-sese-to-poly.h"
@@ -98,7 +78,8 @@ extern "C" {
 static inline void
 tree_int_to_gmp (tree t, mpz_t res)
 {
-  wi::to_mpz (t, res, TYPE_SIGN (TREE_TYPE (t)));
+  double_int di = tree_to_double_int (t);
+  mpz_set_double_int (res, di, TYPE_UNSIGNED (TREE_TYPE (t)));
 }
 
 /* Returns the index of the PHI argument defined in the outermost
@@ -505,10 +486,12 @@ build_pbb_scattering_polyhedrons (isl_aff *static_sched,
   int i;
   int nb_iterators = pbb_dim_iter_domain (pbb);
   int used_scattering_dimensions = nb_iterators * 2 + 1;
-  isl_val *val;
+  isl_int val;
   isl_space *dc, *dm;
 
   gcc_assert (scattering_dimensions >= used_scattering_dimensions);
+
+  isl_int_init (val);
 
   dc = isl_set_get_space (pbb->domain);
   dm = isl_space_add_dims (isl_space_from_domain (dc),
@@ -523,10 +506,12 @@ build_pbb_scattering_polyhedrons (isl_aff *static_sched,
 	  isl_constraint *c = isl_equality_alloc
 	      (isl_local_space_from_space (isl_map_get_space (pbb->schedule)));
 
-	  val = isl_aff_get_coefficient_val (static_sched, isl_dim_in, i / 2);
+	  if (0 != isl_aff_get_coefficient (static_sched, isl_dim_in,
+					    i / 2, &val))
+	    gcc_unreachable ();
 
-	  val = isl_val_neg (val);
-	  c = isl_constraint_set_constant_val (c, val);
+	  isl_int_neg (val, val);
+	  c = isl_constraint_set_constant (c, val);
 	  c = isl_constraint_set_coefficient_si (c, isl_dim_out, i, 1);
 	  pbb->schedule = isl_map_add_constraint (pbb->schedule, c);
 	}
@@ -539,6 +524,8 @@ build_pbb_scattering_polyhedrons (isl_aff *static_sched,
 					  isl_dim_out, i);
 	}
     }
+
+  isl_int_clear (val);
 
   pbb->transformed = isl_map_copy (pbb->schedule);
 }
@@ -718,12 +705,12 @@ extract_affine_gmp (mpz_t g, __isl_take isl_space *space)
   isl_local_space *ls = isl_local_space_from_space (isl_space_copy (space));
   isl_aff *aff = isl_aff_zero_on_domain (ls);
   isl_set *dom = isl_set_universe (space);
-  isl_val *v;
-  isl_ctx *ct;
+  isl_int v;
 
-  ct = isl_aff_get_ctx (aff);
-  v = isl_val_int_from_gmp (ct, g);
-  aff = isl_aff_add_constant_val (aff, v);
+  isl_int_init (v);
+  isl_int_set_gmp (v, g);
+  aff = isl_aff_add_constant (aff, v);
+  isl_int_clear (v);
 
   return isl_pw_aff_alloc (dom, aff);
 }
@@ -746,16 +733,18 @@ extract_affine_int (tree e, __isl_take isl_space *space)
 
 /* Compute pwaff mod 2^width.  */
 
-extern isl_ctx *the_isl_ctx;
-
 static isl_pw_aff *
 wrap (isl_pw_aff *pwaff, unsigned width)
 {
-  isl_val *mod;
+  isl_int mod;
 
-  mod = isl_val_int_from_ui(the_isl_ctx, width);
-  mod = isl_val_2exp (mod);
-  pwaff = isl_pw_aff_mod_val (pwaff, mod);
+  isl_int_init (mod);
+  isl_int_set_si (mod, 1);
+  isl_int_mul_2exp (mod, mod, width);
+
+  pwaff = isl_pw_aff_mod (pwaff, mod);
+
+  isl_int_clear (mod);
 
   return pwaff;
 }
@@ -1011,10 +1000,11 @@ build_loop_iteration_domains (scop_p scop, struct loop *loop,
   isl_space *space;
   isl_constraint *c;
   int pos = isl_set_dim (outer, isl_dim_set);
-  isl_val *v;
+  isl_int v;
   mpz_t g;
 
   mpz_init (g);
+  isl_int_init (v);
 
   inner = isl_set_add_dims (inner, isl_dim_set, 1);
   space = isl_set_get_space (inner);
@@ -1032,15 +1022,15 @@ build_loop_iteration_domains (scop_p scop, struct loop *loop,
 	  (isl_local_space_from_space (isl_space_copy (space)));
       c = isl_constraint_set_coefficient_si (c, isl_dim_set, pos, -1);
       tree_int_to_gmp (nb_iters, g);
-      v = isl_val_int_from_gmp (the_isl_ctx, g);
-      c = isl_constraint_set_constant_val (c, v);
+      isl_int_set_gmp (v, g);
+      c = isl_constraint_set_constant (c, v);
       inner = isl_set_add_constraint (inner, c);
     }
 
   /* loop_i <= expr_nb_iters */
   else if (!chrec_contains_undetermined (nb_iters))
     {
-      widest_int nit;
+      double_int nit;
       isl_pw_aff *aff;
       isl_set *valid;
       isl_local_space *ls;
@@ -1076,7 +1066,7 @@ build_loop_iteration_domains (scop_p scop, struct loop *loop,
 	  isl_constraint *c;
 
 	  mpz_init (g);
-	  wi::to_mpz (nit, g, SIGNED);
+	  mpz_set_double_int (g, nit, false);
 	  mpz_sub_ui (g, g, 1);
 	  approx = extract_affine_gmp (g, isl_set_get_space (inner));
 	  x = isl_pw_aff_ge_set (approx, aff);
@@ -1087,9 +1077,9 @@ build_loop_iteration_domains (scop_p scop, struct loop *loop,
 	  c = isl_inequality_alloc
 	      (isl_local_space_from_space (isl_space_copy (space)));
 	  c = isl_constraint_set_coefficient_si (c, isl_dim_set, pos, -1);
-	  v = isl_val_int_from_gmp (the_isl_ctx, g);
+	  isl_int_set_gmp (v, g);
 	  mpz_clear (g);
-	  c = isl_constraint_set_constant_val (c, v);
+	  c = isl_constraint_set_constant (c, v);
 	  inner = isl_set_add_constraint (inner, c);
 	}
       else
@@ -1112,6 +1102,7 @@ build_loop_iteration_domains (scop_p scop, struct loop *loop,
 
   isl_set_free (outer);
   isl_space_free (space);
+  isl_int_clear (v);
   mpz_clear (g);
 }
 
@@ -1345,15 +1336,17 @@ add_param_constraints (scop_p scop, graphite_dim_t p)
       isl_space *space = isl_set_get_space (scop->context);
       isl_constraint *c;
       mpz_t g;
-      isl_val *v;
+      isl_int v;
 
       c = isl_inequality_alloc (isl_local_space_from_space (space));
       mpz_init (g);
+      isl_int_init (v);
       tree_int_to_gmp (lb, g);
-      v = isl_val_int_from_gmp (the_isl_ctx, g);
-      v = isl_val_neg (v);
+      isl_int_set_gmp (v, g);
+      isl_int_neg (v, v);
       mpz_clear (g);
-      c = isl_constraint_set_constant_val (c, v);
+      c = isl_constraint_set_constant (c, v);
+      isl_int_clear (v);
       c = isl_constraint_set_coefficient_si (c, isl_dim_param, p, 1);
 
       scop->context = isl_set_add_constraint (scop->context, c);
@@ -1364,15 +1357,17 @@ add_param_constraints (scop_p scop, graphite_dim_t p)
       isl_space *space = isl_set_get_space (scop->context);
       isl_constraint *c;
       mpz_t g;
-      isl_val *v;
+      isl_int v;
 
       c = isl_inequality_alloc (isl_local_space_from_space (space));
 
       mpz_init (g);
+      isl_int_init (v);
       tree_int_to_gmp (ub, g);
-      v = isl_val_int_from_gmp (the_isl_ctx, g);
+      isl_int_set_gmp (v, g);
       mpz_clear (g);
-      c = isl_constraint_set_constant_val (c, v);
+      c = isl_constraint_set_constant (c, v);
+      isl_int_clear (v);
       c = isl_constraint_set_coefficient_si (c, isl_dim_param, p, -1);
 
       scop->context = isl_set_add_constraint (scop->context, c);
@@ -2055,8 +2050,6 @@ new_pbb_from_pbb (scop_p scop, poly_bb_p pbb, basic_block bb)
       break;
 
   pbb1->domain = isl_set_copy (pbb->domain);
-  pbb1->domain = isl_set_set_tuple_id (pbb1->domain,
-				       isl_id_for_pbb (scop, pbb1));
 
   GBB_PBB (gbb1) = pbb1;
   GBB_CONDITIONS (gbb1) = GBB_CONDITIONS (gbb).copy ();
@@ -2482,7 +2475,7 @@ rewrite_cross_bb_scalar_deps (scop_p scop, gimple_stmt_iterator *gsi)
 	    gsi_next (gsi);
 	  }
 
-	rewrite_cross_bb_scalar_dependence (scop, unshare_expr (zero_dim_array),
+	rewrite_cross_bb_scalar_dependence (scop, zero_dim_array,
 					    def, use_stmt);
       }
 

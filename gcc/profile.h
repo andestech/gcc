@@ -23,7 +23,7 @@ along with GCC; see the file COPYING3.  If not see
 #define PROFILE_H
 
 /* Additional information about edges. */
-struct edge_profile_info
+struct edge_info
 {
   unsigned int count_valid:1;
 
@@ -35,11 +35,7 @@ struct edge_profile_info
   unsigned int ignore:1;
 };
 
-#define EDGE_INFO(e)  ((struct edge_profile_info *) (e)->aux)
-
-typedef struct gcov_working_set_info gcov_working_set_t;
-extern gcov_working_set_t *find_working_set (unsigned pct_times_10);
-extern void add_working_set (gcov_working_set_t *);
+#define EDGE_INFO(e)  ((struct edge_info *) (e)->aux)
 
 /* Smoothes the initial assigned basic block and edge counts using
    a minimum cost flow algorithm. */
@@ -52,8 +48,8 @@ extern void del_node_map (void);
 
 extern void get_working_sets (void);
 
-/* Counter summary from the last set of coverage counts read by
-   profile.c.  */
-extern const struct gcov_ctr_summary *profile_info;
+/* In predict.c.  */
+extern gcov_type get_hot_bb_threshold (void);
+extern void set_hot_bb_threshold (gcov_type);
 
 #endif /* PROFILE_H */

@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 2004-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2004-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -95,11 +95,7 @@ package body System.Soft_Links.Tasking is
 
    function Get_Sec_Stack_Addr return  Address is
    begin
-      return Result : constant Address :=
-        STPO.Self.Common.Compiler_Data.Sec_Stack_Addr
-      do
-         pragma Assert (Result /= Null_Address);
-      end return;
+      return STPO.Self.Common.Compiler_Data.Sec_Stack_Addr;
    end Get_Sec_Stack_Addr;
 
    function Get_Stack_Info return Stack_Checking.Stack_Access is
@@ -226,8 +222,6 @@ package body System.Soft_Links.Tasking is
          SSL.Set_Sec_Stack_Addr     (SSL.Get_Sec_Stack_Addr_NT);
          SSL.Set_Jmpbuf_Address     (SSL.Get_Jmpbuf_Address_NT);
       end if;
-
-      pragma Assert (Get_Sec_Stack_Addr /= Null_Address);
    end Init_Tasking_Soft_Links;
 
 end System.Soft_Links.Tasking;

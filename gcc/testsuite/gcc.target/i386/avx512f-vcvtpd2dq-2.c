@@ -11,7 +11,7 @@
 #define DST_SIZE ((AVX512F_LEN_HALF) / 32)
 
 static void
-CALC (double *s, int *r)
+CALC (double *s, unsigned *r)
 {
   int i;
 
@@ -22,7 +22,7 @@ CALC (double *s, int *r)
     }
 }
 
-void
+static void
 TEST (void)
 {
   UNION_TYPE (AVX512F_LEN, d) s;

@@ -20,7 +20,12 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef GCC_INTERNAL_FN_H
 #define GCC_INTERNAL_FN_H
 
-#include "coretypes.h"
+enum internal_fn {
+#define DEF_INTERNAL_FN(CODE, FLAGS, FNSPEC) IFN_##CODE,
+#include "internal-fn.def"
+#undef DEF_INTERNAL_FN
+  IFN_LAST
+};
 
 /* Initialize internal function tables.  */
 

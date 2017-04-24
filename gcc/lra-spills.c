@@ -67,17 +67,8 @@ along with GCC; see the file COPYING3.	If not see
 #include "regs.h"
 #include "hard-reg-set.h"
 #include "flags.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "input.h"
 #include "function.h"
 #include "expr.h"
-#include "predict.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfgrtl.h"
 #include "basic-block.h"
 #include "except.h"
 #include "timevar.h"
@@ -141,7 +132,7 @@ static void
 assign_mem_slot (int i)
 {
   rtx x = NULL_RTX;
-  machine_mode mode = GET_MODE (regno_reg_rtx[i]);
+  enum machine_mode mode = GET_MODE (regno_reg_rtx[i]);
   unsigned int inherent_size = PSEUDO_REGNO_BYTES (i);
   unsigned int inherent_align = GET_MODE_ALIGNMENT (mode);
   unsigned int max_ref_width = GET_MODE_SIZE (lra_reg_info[i].biggest_mode);
@@ -246,7 +237,7 @@ pseudo_reg_slot_compare (const void *v1p, const void *v2p)
   slot_num2 = pseudo_slots[regno2].slot_num;
   if ((diff = slot_num1 - slot_num2) != 0)
     return (frame_pointer_needed
-	    || (!FRAME_GROWS_DOWNWARD) == STACK_GROWS_DOWNWARD ? diff : -diff);
+	    || !FRAME_GROWS_DOWNWARD == STACK_GROWS_DOWNWARD ? diff : -diff);
   total_size1 = GET_MODE_SIZE (lra_reg_info[regno1].biggest_mode);
   total_size2 = GET_MODE_SIZE (lra_reg_info[regno2].biggest_mode);
   if ((diff = total_size2 - total_size1) != 0)
@@ -263,10 +254,9 @@ assign_spill_hard_regs (int *pseudo_regnos, int n)
 {
   int i, k, p, regno, res, spill_class_size, hard_regno, nr;
   enum reg_class rclass, spill_class;
-  machine_mode mode;
+  enum machine_mode mode;
   lra_live_range_t r;
-  rtx_insn *insn;
-  rtx set;
+  rtx insn, set;
   basic_block bb;
   HARD_REG_SET conflict_hard_regs;
   bitmap_head ok_insn_bitmap;
@@ -421,7 +411,7 @@ assign_stack_slot_num_and_sort_pseudos (int *pseudo_regnos, int n)
    corresponding memory or spilled hard reg.  Ignore spilled pseudos
    created from the scratches.	*/
 static void
-remove_pseudos (rtx *loc, rtx_insn *insn)
+remove_pseudos (rtx *loc, rtx insn)
 {
   int i;
   rtx hard_reg;
@@ -473,7 +463,7 @@ static void
 spill_pseudos (void)
 {
   basic_block bb;
-  rtx_insn *insn;
+  rtx insn;
   int i;
   bitmap_head spilled_pseudos, changed_insns;
 
@@ -689,7 +679,7 @@ lra_final_code_change (void)
 {
   int i, hard_regno;
   basic_block bb;
-  rtx_insn *insn, *curr;
+  rtx insn, curr;
   int max_regno = max_reg_num ();
 
   for (i = FIRST_PSEUDO_REGISTER; i < max_regno; i++)

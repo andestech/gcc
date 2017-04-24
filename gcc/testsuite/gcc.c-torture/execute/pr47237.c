@@ -1,4 +1,3 @@
-/* { dg-xfail-if "can cause stack underflow" { nios2-*-* } "*" "" } */
 #define INTEGER_ARG  5
 
 extern void abort(void);

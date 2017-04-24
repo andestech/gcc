@@ -12,9 +12,6 @@
 #endif
 #endif
 
-void foo (int);
-void bar (int);
-
 static inline int source(void)
 {
   register int hardreg __asm__(REGISTER);

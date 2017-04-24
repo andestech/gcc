@@ -21,7 +21,6 @@ func encryptBlock(xk []uint32, dst, src []byte) {
 		encryptBlockGo(xk, dst, src)
 	}
 }
-
 func decryptBlock(xk []uint32, dst, src []byte) {
 	if useAsm {
 		decryptBlockAsm(len(xk)/4-1, &xk[0], &dst[0], &src[0])
@@ -29,7 +28,6 @@ func decryptBlock(xk []uint32, dst, src []byte) {
 		decryptBlockGo(xk, dst, src)
 	}
 }
-
 func expandKey(key []byte, enc, dec []uint32) {
 	if useAsm {
 		rounds := 10

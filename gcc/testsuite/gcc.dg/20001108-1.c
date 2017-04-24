@@ -25,7 +25,6 @@ long bar (long i, double x)
   return foo (x);
 }
 
-int
 main()
 {
   if (bar (0, 2.0) != 26)

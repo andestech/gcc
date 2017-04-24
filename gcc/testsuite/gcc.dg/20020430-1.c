@@ -105,11 +105,6 @@ typedef struct _RectObjRec {
 typedef struct _RectObjRec *RectObj;
 
 SmeObject DoGetEventEntry();
-int XtWidgetToApplicationContext();
-void XtAppError();
-void Unhighlight();
-void XtMoveWidget();
-void XWarpPointer();
 
 SmeObject
 GetEventEntry(Widget w, XEvent *event)

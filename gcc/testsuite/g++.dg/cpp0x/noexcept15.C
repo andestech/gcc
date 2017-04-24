@@ -23,10 +23,12 @@ template<class Tp>
     return single<typename std::decay<Tp>::type>(x);
   }
 
-class Blob;  // { dg-message "forward declaration" }
+class Blob;  // { dg-error "forward declaration" }
 
 void
 foo(Blob *b)
 {
   make_single(*b);
 }
+
+// { dg-prune-output "include" }

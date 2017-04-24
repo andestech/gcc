@@ -84,7 +84,7 @@ CALC (float *r, float *s, int interv, int signctrl)
     }
 }
 
-void
+void static
 TEST (void)
 {
   int i, sign;

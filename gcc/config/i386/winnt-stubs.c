@@ -33,19 +33,19 @@ along with GCC; see the file COPYING3.  If not see
 #include "hashtab.h"
 
 bool
-i386_pe_type_dllimport_p (tree)
+i386_pe_type_dllimport_p (tree decl ATTRIBUTE_UNUSED)
 {
   return false;
 }
 
 
 bool
-i386_pe_type_dllexport_p (tree)
+i386_pe_type_dllexport_p (tree decl ATTRIBUTE_UNUSED)
 {
   return false;
 }
 
 
 void
-i386_pe_adjust_class_at_definition (tree)
+i386_pe_adjust_class_at_definition (tree t ATTRIBUTE_UNUSED)
 { }

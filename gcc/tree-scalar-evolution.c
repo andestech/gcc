@@ -259,17 +259,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "expr.h"
 #include "gimple-pretty-print.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "tm.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -291,6 +280,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-ssa.h"
 #include "cfgloop.h"
 #include "tree-chrec.h"
+#include "pointer-set.h"
 #include "tree-affine.h"
 #include "tree-scalar-evolution.h"
 #include "dumpfile.h"
@@ -342,7 +332,7 @@ new_scev_info_str (basic_block instantiated_below, tree var)
 {
   struct scev_info_str *res;
 
-  res = ggc_alloc<scev_info_str> ();
+  res = ggc_alloc_scev_info_str ();
   res->name_version = SSA_NAME_VERSION (var);
   res->chrec = chrec_not_analyzed_yet;
   res->instantiated_below = instantiated_below->index;
@@ -1413,7 +1403,7 @@ simplify_peeled_chrec (struct loop *loop, tree arg, tree init_cond)
 {
   aff_tree aff1, aff2;
   tree ev, left, right, type, step_val;
-  hash_map<tree, name_expansion *> *peeled_chrec_map = NULL;
+  pointer_map_t *peeled_chrec_map = NULL;
 
   ev = instantiate_parameters (loop, analyze_scalar_evolution (loop, arg));
   if (ev == NULL_TREE || TREE_CODE (ev) != POLYNOMIAL_CHREC)
@@ -1438,7 +1428,7 @@ simplify_peeled_chrec (struct loop *loop, tree arg, tree init_cond)
   tree_to_aff_combination_expand (left, type, &aff1, &peeled_chrec_map);
   tree_to_aff_combination_expand (step_val, type, &aff2, &peeled_chrec_map);
   free_affine_expand_cache (&peeled_chrec_map);
-  aff_combination_scale (&aff2, -1);
+  aff_combination_scale (&aff2, double_int_minus_one);
   aff_combination_add (&aff1, &aff2);
 
   /* Transform (init, {left, right}_LOOP)_LOOP to {init, right}_LOOP
@@ -1733,7 +1723,7 @@ interpret_rhs_expr (struct loop *loop, gimple at_stmt,
       if (TREE_CODE (TREE_OPERAND (rhs1, 0)) == MEM_REF
 	  || handled_component_p (TREE_OPERAND (rhs1, 0)))
         {
-	  machine_mode mode;
+	  enum machine_mode mode;
 	  HOST_WIDE_INT bitsize, bitpos;
 	  int unsignedp;
 	  int volatilep = 0;
@@ -3206,6 +3196,9 @@ scev_reset (void)
   struct loop *loop;
 
   scev_reset_htab ();
+
+  if (!current_loops)
+    return;
 
   FOR_EACH_LOOP (loop, 0)
     {

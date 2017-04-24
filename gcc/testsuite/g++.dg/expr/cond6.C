@@ -1,11 +1,10 @@
 // { dg-do run }
 
 extern "C" void abort ();
-bool ok = false;
 
 struct B {
   B() {}
-  B(const B& b) { ok = true; }
+  B(const B& b) { abort (); }
 };
 
 struct D : public B {
@@ -22,5 +21,4 @@ D f() {
 
 int main () {
   b = (true ? f() : b);
-  return !ok;
 }

@@ -17,7 +17,7 @@
 
 // 25.2.11 [alg.equal]
 
-// { dg-options "-std=gnu++14" }
+// { dg-options "-std=gnu++1y" }
 
 #include <algorithm>
 #include <testsuite_hooks.h>

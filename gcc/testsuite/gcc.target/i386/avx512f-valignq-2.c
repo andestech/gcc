@@ -27,7 +27,7 @@ CALC (long long *s1, long long *s2, long long *r)
     r[i] = s[i + N];
 }
 
-void
+void static
 TEST (void)
 {
   UNION_TYPE (AVX512F_LEN, i_q) res1, res2, res3, s1, s2;

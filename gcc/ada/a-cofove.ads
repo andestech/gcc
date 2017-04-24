@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 2004-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2004-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- This specification is derived from the Ada Reference Manual for use with --
 -- GNAT. The copyright notice above, and the license provisions that follow --
@@ -35,19 +35,38 @@
 --  unit compatible with SPARK 2014. Note that the API of this unit may be
 --  subject to incompatible changes as SPARK 2014 evolves.
 
+--  The modifications are:
+
+--    A parameter for the container is added to every function reading the
+--    content of a container: Element, Next, Query_Element, Previous, Iterate,
+--    Has_Element, Reverse_Iterate. This change is motivated by the need
+--    to have cursors which are valid on different containers (typically a
+--    container C and its previous version C'Old) for expressing properties,
+--    which is not possible if cursors encapsulate an access to the underlying
+--    container.
+
+--    There are three new functions:
+
+--      function Strict_Equal (Left, Right : Vector) return Boolean;
+--      function First_To_Previous  (Container : Vector; Current : Cursor)
+--         return Vector;
+--      function Current_To_Last (Container : Vector; Current : Cursor)
+--         return Vector;
+
+--    See detailed specifications for these subprograms
+
+with Ada.Containers;
+use Ada.Containers;
+
 generic
    type Index_Type is range <>;
    type Element_Type is private;
 
    with function "=" (Left, Right : Element_Type) return Boolean is <>;
 
-   Bounded : Boolean := True;
-   --  If True, the containers are bounded; the initial capacity is the maximum
-   --  size, and heap allocation will be avoided. If False, the containers can
-   --  grow via heap allocation.
-
 package Ada.Containers.Formal_Vectors is
    pragma Annotate (GNATprove, External_Axiomatization);
+   pragma Pure;
 
    subtype Extended_Index is Index_Type'Base
    range Index_Type'First - 1 ..
@@ -58,68 +77,104 @@ package Ada.Containers.Formal_Vectors is
    subtype Capacity_Range is
      Count_Type range 0 .. Count_Type (Index_Type'Last - Index_Type'First + 1);
 
-   type Vector (Capacity : Capacity_Range) is limited private with
-     Default_Initial_Condition;
-   --  In the bounded case, Capacity is the capacity of the container, which
-   --  never changes. In the unbounded case, Capacity is the initial capacity
-   --  of the container, and operations such as Reserve_Capacity and Append can
-   --  increase the capacity. The capacity never shrinks, except in the case of
-   --  Clear.
-   --
-   --  Note that all objects of type Vector are constrained, including in the
-   --  unbounded case; you can't assign from one object to another if the
-   --  Capacity is different.
+   type Vector (Capacity : Capacity_Range) is private with
+     Iterable => (First       => First,
+                  Next        => Next,
+                  Has_Element => Has_Element,
+                  Element     => Element);
 
-   function Empty_Vector return Vector;
+   type Cursor is private;
+   pragma Preelaborable_Initialization (Cursor);
+
+   Empty_Vector : constant Vector;
+
+   No_Element : constant Cursor;
 
    function "=" (Left, Right : Vector) return Boolean with
      Global => null;
 
    function To_Vector
      (New_Item : Element_Type;
-      Length   : Capacity_Range) return Vector
+      Length   : Count_Type) return Vector
    with
      Global => null;
 
-   function Capacity (Container : Vector) return Capacity_Range with
+   function "&" (Left, Right : Vector) return Vector with
+     Global => null,
+     Pre    => Capacity_Range'Last - Length (Left) >= Length (Right);
+
+   function "&" (Left : Vector; Right : Element_Type) return Vector with
+     Global => null,
+     Pre    => Length (Left) < Capacity_Range'Last;
+
+   function "&" (Left : Element_Type; Right : Vector) return Vector with
+     Global => null,
+     Pre    => Length (Right) < Capacity_Range'Last;
+
+   function "&" (Left, Right : Element_Type) return Vector with
+     Global => null,
+     Pre    => Capacity_Range'Last >= 2;
+
+   function Capacity (Container : Vector) return Count_Type with
      Global => null;
 
    procedure Reserve_Capacity
      (Container : in out Vector;
-      Capacity  : Capacity_Range)
+      Capacity  : Count_Type)
    with
      Global => null,
-     Pre    => (if Bounded then Capacity <= Container.Capacity);
+     Pre    => Capacity <= Container.Capacity;
 
-   function Length (Container : Vector) return Capacity_Range with
+   function Length (Container : Vector) return Count_Type with
      Global => null;
+
+   procedure Set_Length
+     (Container : in out Vector;
+      New_Length    : Count_Type)
+   with
+     Global => null,
+     Pre    => New_Length <= Length (Container);
 
    function Is_Empty (Container : Vector) return Boolean with
      Global => null;
 
    procedure Clear (Container : in out Vector) with
      Global => null;
-   --  Note that this reclaims storage in the unbounded case. You need to call
-   --  this before a container goes out of scope in order to avoid storage
-   --  leaks. In addition, "X := ..." can leak unless you Clear(X) first.
 
    procedure Assign (Target : in out Vector; Source : Vector) with
      Global => null,
-     Pre    => (if Bounded then Length (Source) <= Target.Capacity);
+     Pre    => Length (Source) <= Target.Capacity;
 
    function Copy
      (Source   : Vector;
-      Capacity : Capacity_Range := 0) return Vector
+      Capacity : Count_Type := 0) return Vector
    with
      Global => null,
-     Pre    => (if Bounded then Length (Source) <= Capacity);
+     Pre    => Length (Source) <= Capacity and then Capacity in Capacity_Range;
+
+   function To_Cursor
+     (Container : Vector;
+      Index     : Extended_Index) return Cursor
+   with
+     Global => null;
+
+   function To_Index (Position : Cursor) return Extended_Index with
+     Global => null;
 
    function Element
      (Container : Vector;
       Index     : Index_Type) return Element_Type
    with
      Global => null,
-     Pre    => Index in First_Index (Container) .. Last_Index (Container);
+     Pre    => First_Index (Container) <= Index
+                 and then Index <= Last_Index (Container);
+
+   function Element
+     (Container : Vector;
+      Position  : Cursor) return Element_Type
+   with
+     Global => null,
+     Pre    => Has_Element (Container, Position);
 
    procedure Replace_Element
      (Container : in out Vector;
@@ -127,26 +182,142 @@ package Ada.Containers.Formal_Vectors is
       New_Item  : Element_Type)
    with
      Global => null,
-     Pre    => Index in First_Index (Container) .. Last_Index (Container);
+     Pre    => First_Index (Container) <= Index
+                 and then Index <= Last_Index (Container);
+
+   procedure Replace_Element
+     (Container : in out Vector;
+      Position  : Cursor;
+      New_Item  : Element_Type)
+   with
+     Global => null,
+     Pre    => Has_Element (Container, Position);
+
+   procedure Move (Target : in out Vector; Source : in out Vector) with
+     Global => null,
+     Pre    => Length (Source) <= Target.Capacity;
+
+   procedure Insert
+     (Container : in out Vector;
+      Before    : Extended_Index;
+      New_Item  : Vector)
+   with
+     Global => null,
+     Pre    => First_Index (Container) <= Before
+                 and then Before <= Last_Index (Container) + 1
+                 and then Length (Container) < Container.Capacity;
+
+   procedure Insert
+     (Container : in out Vector;
+      Before    : Cursor;
+      New_Item  : Vector)
+   with
+     Global => null,
+     Pre    => Length (Container) < Container.Capacity
+                 and then (Has_Element (Container, Before)
+                            or else Before = No_Element);
+
+   procedure Insert
+     (Container : in out Vector;
+      Before    : Cursor;
+      New_Item  : Vector;
+      Position  : out Cursor)
+   with
+     Global => null,
+     Pre    => Length (Container) < Container.Capacity
+                 and then (Has_Element (Container, Before)
+                            or else Before = No_Element);
+
+   procedure Insert
+     (Container : in out Vector;
+      Before    : Extended_Index;
+      New_Item  : Element_Type;
+      Count     : Count_Type := 1)
+   with
+     Global => null,
+     Pre    => First_Index (Container) <= Before
+                 and then Before <= Last_Index (Container) + 1
+                 and then Length (Container) + Count <= Container.Capacity;
+
+   procedure Insert
+     (Container : in out Vector;
+      Before    : Cursor;
+      New_Item  : Element_Type;
+      Count     : Count_Type := 1)
+   with
+     Global => null,
+     Pre    => Length (Container) + Count <= Container.Capacity
+                 and then (Has_Element (Container, Before)
+                            or else Before = No_Element);
+
+   procedure Insert
+     (Container : in out Vector;
+      Before    : Cursor;
+      New_Item  : Element_Type;
+      Position  : out Cursor;
+      Count     : Count_Type := 1)
+   with
+     Global => null,
+     Pre    => Length (Container) + Count <= Container.Capacity
+                 and then (Has_Element (Container, Before)
+                            or else Before = No_Element);
+
+   procedure Prepend
+     (Container : in out Vector;
+      New_Item  : Vector)
+   with
+     Global => null,
+     Pre    => Length (Container) < Container.Capacity;
+
+   procedure Prepend
+     (Container : in out Vector;
+      New_Item  : Element_Type;
+      Count     : Count_Type := 1)
+   with
+     Global => null,
+     Pre    => Length (Container) + Count <= Container.Capacity;
 
    procedure Append
      (Container : in out Vector;
       New_Item  : Vector)
    with
      Global => null,
-     Pre    => (if Bounded then
-                 Length (Container) + Length (New_Item) <= Container.Capacity);
+     Pre    => Length (Container) < Container.Capacity;
 
    procedure Append
      (Container : in out Vector;
-      New_Item  : Element_Type)
+      New_Item  : Element_Type;
+      Count     : Count_Type := 1)
    with
      Global => null,
-     Pre    => (if Bounded then
-                  Length (Container) < Container.Capacity);
+     Pre    => Length (Container) + Count <= Container.Capacity;
+
+   procedure Delete
+     (Container : in out Vector;
+      Index     : Extended_Index;
+      Count     : Count_Type := 1)
+   with
+     Global => null,
+     Pre    => First_Index (Container) <= Index
+                 and then Index <= Last_Index (Container) + 1;
+
+   procedure Delete
+     (Container : in out Vector;
+      Position  : in out Cursor;
+      Count     : Count_Type := 1)
+   with
+     Global => null,
+     Pre    => Has_Element (Container, Position);
+
+   procedure Delete_First
+     (Container : in out Vector;
+      Count     : Count_Type := 1)
+   with
+     Global => null;
 
    procedure Delete_Last
-     (Container : in out Vector)
+     (Container : in out Vector;
+      Count     : Count_Type := 1)
    with
      Global => null;
 
@@ -155,10 +326,19 @@ package Ada.Containers.Formal_Vectors is
 
    procedure Swap (Container : in out Vector; I, J : Index_Type) with
      Global => null,
-     Pre    => I in First_Index (Container) .. Last_Index (Container)
-      and then J in First_Index (Container) .. Last_Index (Container);
+     Pre    => First_Index (Container) <= I
+                 and then I <= Last_Index (Container)
+                 and then First_Index (Container) <= J
+                 and then J <= Last_Index (Container);
+
+   procedure Swap (Container : in out Vector; I, J : Cursor) with
+     Global => null,
+     Pre    => Has_Element (Container, I) and then Has_Element (Container, J);
 
    function First_Index (Container : Vector) return Index_Type with
+     Global => null;
+
+   function First (Container : Vector) return Cursor with
      Global => null;
 
    function First_Element (Container : Vector) return Element_Type with
@@ -168,9 +348,28 @@ package Ada.Containers.Formal_Vectors is
    function Last_Index (Container : Vector) return Extended_Index with
      Global => null;
 
+   function Last (Container : Vector) return Cursor with
+     Global => null;
+
    function Last_Element (Container : Vector) return Element_Type with
      Global => null,
      Pre    => not Is_Empty (Container);
+
+   function Next (Container : Vector; Position : Cursor) return Cursor with
+     Global => null,
+     Pre    => Has_Element (Container, Position) or else Position = No_Element;
+
+   procedure Next (Container : Vector; Position : in out Cursor) with
+     Global => null,
+     Pre    => Has_Element (Container, Position) or else Position = No_Element;
+
+   function Previous (Container : Vector; Position : Cursor) return Cursor with
+     Global => null,
+     Pre    => Has_Element (Container, Position) or else Position = No_Element;
+
+   procedure Previous (Container : Vector; Position : in out Cursor) with
+     Global => null,
+     Pre    => Has_Element (Container, Position) or else Position = No_Element;
 
    function Find_Index
      (Container : Vector;
@@ -179,6 +378,14 @@ package Ada.Containers.Formal_Vectors is
    with
      Global => null;
 
+   function Find
+     (Container : Vector;
+      Item      : Element_Type;
+      Position  : Cursor := No_Element) return Cursor
+   with
+     Global => null,
+     Pre    => Has_Element (Container, Position) or else Position = No_Element;
+
    function Reverse_Find_Index
      (Container : Vector;
       Item      : Element_Type;
@@ -186,14 +393,22 @@ package Ada.Containers.Formal_Vectors is
    with
      Global => null;
 
+   function Reverse_Find
+     (Container : Vector;
+      Item      : Element_Type;
+      Position  : Cursor := No_Element) return Cursor
+   with
+     Global => null,
+     Pre    => Has_Element (Container, Position) or else Position = No_Element;
+
    function Contains
      (Container : Vector;
       Item      : Element_Type) return Boolean
    with
      Global => null;
 
-   function Has_Element
-     (Container : Vector; Position : Extended_Index) return Boolean with
+   function Has_Element (Container : Vector; Position : Cursor) return Boolean
+   with
      Global => null;
 
    generic
@@ -206,21 +421,29 @@ package Ada.Containers.Formal_Vectors is
       procedure Sort (Container : in out Vector) with
         Global => null;
 
+      procedure Merge (Target : in out Vector; Source : in out Vector) with
+        Global => null;
+
    end Generic_Sorting;
+
+   function Strict_Equal (Left, Right : Vector) return Boolean with
+     Global => null;
+   --  Strict_Equal returns True if the containers are physically equal, i.e.
+   --  they are structurally equal (function "=" returns True) and that they
+   --  have the same set of cursors.
 
    function First_To_Previous
      (Container : Vector;
-      Current : Index_Type) return Vector
+      Current : Cursor) return Vector
    with
-     Ghost,
-     Global => null;
-
+     Global => null,
+     Pre    => Has_Element (Container, Current) or else Current = No_Element;
    function Current_To_Last
      (Container : Vector;
-      Current : Index_Type) return Vector
+      Current : Cursor) return Vector
    with
-     Ghost,
-     Global => null;
+     Global => null,
+     Pre    => Has_Element (Container, Current) or else Current = No_Element;
    --  First_To_Previous returns a container containing all elements preceding
    --  Current (excluded) in Container. Current_To_Last returns a container
    --  containing all elements following Current (included) in Container.
@@ -238,33 +461,24 @@ private
    pragma Inline (Last_Element);
    pragma Inline (Replace_Element);
    pragma Inline (Contains);
+   pragma Inline (Next);
+   pragma Inline (Previous);
 
-   type Elements_Array is array (Capacity_Range range <>) of Element_Type;
+   type Elements_Array is array (Count_Type range <>) of Element_Type;
    function "=" (L, R : Elements_Array) return Boolean is abstract;
 
-   type Elements_Array_Ptr is access all Elements_Array;
-
-   type Vector (Capacity : Capacity_Range) is limited record
-      --  In the bounded case, the elements are stored in Elements. In the
-      --  unbounded case, the elements are initially stored in Elements, until
-      --  we run out of room, then we switch to Elements_Ptr.
-      Elements     : aliased Elements_Array (1 .. Capacity);
-      Last         : Extended_Index := No_Index;
-      Elements_Ptr : Elements_Array_Ptr := null;
+   type Vector (Capacity : Capacity_Range) is record
+      Elements : Elements_Array (1 .. Capacity);
+      Last     : Extended_Index := No_Index;
    end record;
 
-   --  The primary reason Vector is limited is that in the unbounded case, once
-   --  Elements_Ptr is in use, assignment statements won't work. "X := Y;" will
-   --  cause X and Y to share state; that is, X.Elements_Ptr = Y.Elements_Ptr,
-   --  so for example "Append (X, ...);" will modify BOTH X and Y. That would
-   --  allow SPARK to "prove" things that are false. We could fix that by
-   --  making Vector a controlled type, and override Adjust to make a deep
-   --  copy, but finalization is not allowed in SPARK.
-   --
-   --  Note that (unfortunately) this means that 'Old and 'Loop_Entry are not
-   --  allowed on Vectors.
+   type Cursor is record
+      Valid : Boolean    := True;
+      Index : Index_Type := Index_Type'First;
+   end record;
 
-   function Empty_Vector return Vector is
-     ((Capacity => 0, others => <>));
+   Empty_Vector : constant Vector := (Capacity => 0, others => <>);
+
+   No_Element : constant Cursor := (Valid => False, Index => Index_Type'First);
 
 end Ada.Containers.Formal_Vectors;

@@ -3,7 +3,6 @@ typedef struct regnode
   char flags;
 } regnode;
 extern const unsigned char A[];
-int bar (regnode *);
 
 char *foo (regnode *c, char *s, int norun)
 {

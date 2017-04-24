@@ -1,4 +1,4 @@
-// { dg-options "-std=gnu++14" }
+// { dg-options "-std=gnu++1y" }
 // { dg-require-string-conversions "" }
 
 // Copyright (C) 2013-2014 Free Software Foundation, Inc.

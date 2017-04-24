@@ -19,14 +19,14 @@ CALC (int *s1, int *s2, long long int *r)
     r[i] = s1[i * 2] * s2[i * 2];
 }
 
-void
+static void
 TEST (void)
 {
   UNION_TYPE (AVX512F_LEN, i_d) s1, s2;
   UNION_TYPE (AVX512F_LEN, i_q) res1, res2, res3;
   MASK_TYPE mask = MASK_VALUE;
   long long res_ref[DST_SIZE];
-  int i;
+  int i, sign = 1;
 
   for (i = 0; i < SRC_SIZE; i++)
     {

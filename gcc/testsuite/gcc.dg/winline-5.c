@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-Winline -O2 --param inline-unit-growth=0 --param large-unit-insns=0 -fgnu89-inline" } */
+/* { dg-options "-Winline -O2 --param inline-unit-growth=0 --param large-unit-insns=0" } */
 
 void big (void);
 inline int q(void) /* { dg-warning "inline-unit-growth" } */

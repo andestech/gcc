@@ -47,7 +47,6 @@ int try (int num) {
   return -1;
 }
 
-int
 main()
 {
   int i;

@@ -1,4 +1,4 @@
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 // { dg-require-string-conversions "" }
 
 // 2007-10-16  Paolo Carlini  <pcarlini@suse.de>

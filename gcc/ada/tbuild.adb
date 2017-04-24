@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -24,7 +24,6 @@
 ------------------------------------------------------------------------------
 
 with Atree;    use Atree;
-with Csets;    use Csets;
 with Einfo;    use Einfo;
 with Elists;   use Elists;
 with Lib;      use Lib;
@@ -241,24 +240,6 @@ package body Tbuild is
       end if;
    end Make_Float_Literal;
 
-   -------------
-   -- Make_Id --
-   -------------
-
-   function Make_Id (Str : Text_Buffer) return Node_Id is
-   begin
-      Name_Len := 0;
-
-      for J in Str'Range loop
-         Name_Len := Name_Len + 1;
-         Name_Buffer (Name_Len) := Fold_Lower (Str (J));
-      end loop;
-
-      return
-        Make_Identifier (System_Location,
-          Chars => Name_Find);
-   end Make_Id;
-
    -------------------------------------
    -- Make_Implicit_Exception_Handler --
    -------------------------------------
@@ -434,11 +415,12 @@ package body Tbuild is
       Reason    : RT_Exception_Code) return Node_Id
    is
    begin
-      pragma Assert (Rkind (Reason) = CE_Reason);
+      pragma Assert (Reason in RT_CE_Exceptions);
       return
         Make_Raise_Constraint_Error (Sloc,
           Condition => Condition,
-          Reason    => UI_From_Int (RT_Exception_Code'Pos (Reason)));
+          Reason =>
+            UI_From_Int (RT_Exception_Code'Pos (Reason)));
    end Make_Raise_Constraint_Error;
 
    ------------------------------
@@ -451,11 +433,12 @@ package body Tbuild is
       Reason    : RT_Exception_Code) return Node_Id
    is
    begin
-      pragma Assert (Rkind (Reason) = PE_Reason);
+      pragma Assert (Reason in RT_PE_Exceptions);
       return
         Make_Raise_Program_Error (Sloc,
           Condition => Condition,
-          Reason    => UI_From_Int (RT_Exception_Code'Pos (Reason)));
+          Reason =>
+            UI_From_Int (RT_Exception_Code'Pos (Reason)));
    end Make_Raise_Program_Error;
 
    ------------------------------
@@ -468,24 +451,13 @@ package body Tbuild is
       Reason    : RT_Exception_Code) return Node_Id
    is
    begin
-      pragma Assert (Rkind (Reason) = SE_Reason);
+      pragma Assert (Reason in RT_SE_Exceptions);
       return
         Make_Raise_Storage_Error (Sloc,
           Condition => Condition,
-          Reason    => UI_From_Int (RT_Exception_Code'Pos (Reason)));
+          Reason =>
+            UI_From_Int (RT_Exception_Code'Pos (Reason)));
    end Make_Raise_Storage_Error;
-
-   -------------
-   -- Make_SC --
-   -------------
-
-   function  Make_SC (Pre, Sel : Node_Id) return Node_Id is
-   begin
-      return
-        Make_Selected_Component (System_Location,
-          Prefix        => Pre,
-          Selector_Name => Sel);
-   end Make_SC;
 
    -------------------------
    -- Make_String_Literal --
@@ -498,7 +470,9 @@ package body Tbuild is
    begin
       Start_String;
       Store_String_Chars (Strval);
-      return Make_String_Literal (Sloc, Strval => End_String);
+      return
+        Make_String_Literal (Sloc,
+          Strval => End_String);
    end Make_String_Literal;
 
    --------------------
@@ -511,7 +485,8 @@ package body Tbuild is
       Related_Node : Node_Id := Empty) return Entity_Id
    is
       Temp : constant Entity_Id :=
-               Make_Defining_Identifier (Loc, Chars => New_Internal_Name (Id));
+               Make_Defining_Identifier (Loc,
+                 Chars => New_Internal_Name (Id));
    begin
       Set_Related_Expression (Temp, Related_Node);
       return Temp;
@@ -688,10 +663,6 @@ package body Tbuild is
          Set_Etype (Occurrence, Etype (Def_Id));
       end if;
 
-      if Ekind (Def_Id) = E_Enumeration_Literal then
-         Set_Is_Static_Expression (Occurrence, True);
-      end if;
-
       return Occurrence;
    end New_Occurrence_Of;
 
@@ -777,15 +748,6 @@ package body Tbuild is
       Set_Etype (Result, Typ);
       return Result;
    end OK_Convert_To;
-
-   -------------
-   -- Set_RND --
-   -------------
-
-   procedure Set_RND (Unit : Node_Id) is
-   begin
-      Set_Restriction_No_Dependence (Unit, Warn => False);
-   end Set_RND;
 
    --------------------------
    -- Unchecked_Convert_To --

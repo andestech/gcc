@@ -26,24 +26,12 @@ along with GCC; see the file COPYING3.  If not see
 #include "diagnostic.h"
 #include "tree.h"
 #include "stor-layout.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
 #include "gimple-expr.h"
 #include "is-a.h"
 #include "gimple.h"
-#include "hash-map.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
-#include "cgraph.h"
 #include "tree-streamer.h"
 #include "data-streamer.h"
 #include "streamer-hooks.h"
@@ -139,11 +127,8 @@ pack_ts_base_value_fields (struct bitpack_d *bp, tree expr)
 static void
 pack_ts_int_cst_value_fields (struct bitpack_d *bp, tree expr)
 {
-  int i;
-  /* Note that the number of elements has already been written out in
-     streamer_write_tree_header.  */
-  for (i = 0; i < TREE_INT_CST_EXT_NUNITS (expr); i++)
-    bp_pack_var_len_int (bp, TREE_INT_CST_ELT (expr, i));
+  bp_pack_var_len_unsigned (bp, TREE_INT_CST_LOW (expr));
+  bp_pack_var_len_int (bp, TREE_INT_CST_HIGH (expr));
 }
 
 
@@ -190,7 +175,7 @@ pack_ts_decl_common_value_fields (struct bitpack_d *bp, tree expr)
   bp_pack_value (bp, DECL_NONLOCAL (expr), 1);
   bp_pack_value (bp, DECL_VIRTUAL_P (expr), 1);
   bp_pack_value (bp, DECL_IGNORED_P (expr), 1);
-  bp_pack_value (bp, DECL_ABSTRACT_P (expr), 1);
+  bp_pack_value (bp, DECL_ABSTRACT (expr), 1);
   bp_pack_value (bp, DECL_ARTIFICIAL (expr), 1);
   bp_pack_value (bp, DECL_USER_ALIGN (expr), 1);
   bp_pack_value (bp, DECL_PRESERVE_P (expr), 1);
@@ -260,6 +245,7 @@ pack_ts_decl_with_vis_value_fields (struct bitpack_d *bp, tree expr)
       bp_pack_value (bp, DECL_HARD_REGISTER (expr), 1);
       /* DECL_IN_TEXT_SECTION is set during final asm output only. */
       bp_pack_value (bp, DECL_IN_CONSTANT_POOL (expr), 1);
+      bp_pack_value (bp, DECL_TLS_MODEL (expr),  3);
     }
 
   if (TREE_CODE (expr) == FUNCTION_DECL)
@@ -268,6 +254,8 @@ pack_ts_decl_with_vis_value_fields (struct bitpack_d *bp, tree expr)
       bp_pack_value (bp, DECL_CXX_CONSTRUCTOR_P (expr), 1);
       bp_pack_value (bp, DECL_CXX_DESTRUCTOR_P (expr), 1);
     }
+  if (VAR_OR_FUNCTION_DECL_P (expr))
+    bp_pack_var_len_unsigned (bp, DECL_INIT_PRIORITY (expr));
 }
 
 
@@ -301,6 +289,8 @@ pack_ts_function_decl_value_fields (struct bitpack_d *bp, tree expr)
   bp_pack_value (bp, DECL_LOOPING_CONST_OR_PURE_P (expr), 1);
   if (DECL_BUILT_IN_CLASS (expr) != NOT_BUILT_IN)
     bp_pack_value (bp, DECL_FUNCTION_CODE (expr), 11);
+  if (DECL_STATIC_DESTRUCTOR (expr))
+    bp_pack_var_len_unsigned (bp, DECL_FINI_PRIORITY (expr));
 }
 
 
@@ -536,11 +526,11 @@ streamer_write_chain (struct output_block *ob, tree t, bool ref_p)
       /* We avoid outputting external vars or functions by reference
 	 to the global decls section as we do not want to have them
 	 enter decl merging.  This is, of course, only for the call
-	 for streaming BLOCK_VARS, but other callers are safe.
-	 See also lto-streamer-out.c:DFS_write_tree_body.  */
+	 for streaming BLOCK_VARS, but other callers are safe.  */
+      /* ???  FIXME wrt SCC streaming.  Drop these for now.  */
       if (VAR_OR_FUNCTION_DECL_P (t)
 	  && DECL_EXTERNAL (t))
-	stream_write_tree_shallow_non_ref (ob, t, ref_p);
+	; /* stream_write_tree_shallow_non_ref (ob, t, ref_p); */
       else
 	stream_write_tree (ob, t, ref_p);
 
@@ -650,6 +640,7 @@ write_ts_decl_non_common_tree_pointers (struct output_block *ob, tree expr,
 {
   if (TREE_CODE (expr) == TYPE_DECL)
     stream_write_tree (ob, DECL_ORIGINAL_TYPE (expr), ref_p);
+  stream_write_tree (ob, DECL_VINDEX (expr), ref_p);
 }
 
 
@@ -666,6 +657,9 @@ write_ts_decl_with_vis_tree_pointers (struct output_block *ob, tree expr,
     stream_write_tree (ob, DECL_ASSEMBLER_NAME (expr), ref_p);
   else
     stream_write_tree (ob, NULL_TREE, false);
+
+  stream_write_tree (ob, DECL_SECTION_NAME (expr), ref_p);
+  stream_write_tree (ob, DECL_COMDAT_GROUP (expr), ref_p);
 }
 
 
@@ -693,7 +687,6 @@ static void
 write_ts_function_decl_tree_pointers (struct output_block *ob, tree expr,
 				      bool ref_p)
 {
-  stream_write_tree (ob, DECL_VINDEX (expr), ref_p);
   /* DECL_STRUCT_FUNCTION is handled by lto_output_function.  FIXME lto,
      maybe it should be handled here?  */
   stream_write_tree (ob, DECL_FUNCTION_PERSONALITY (expr), ref_p);
@@ -995,8 +988,8 @@ streamer_write_tree_header (struct output_block *ob, tree expr)
      and the writer do not agree on a streamed node, the pointer
      value for EXPR can be used to track down the differences in
      the debugger.  */
-  gcc_assert ((HOST_WIDE_INT) (intptr_t) expr == (intptr_t) expr);
-  streamer_write_hwi (ob, (HOST_WIDE_INT) (intptr_t) expr);
+  gcc_assert ((HOST_WIDEST_INT) (intptr_t) expr == (intptr_t) expr);
+  streamer_write_hwi (ob, (HOST_WIDEST_INT) (intptr_t) expr);
 #endif
 
   /* The text in strings and identifiers are completely emitted in
@@ -1015,12 +1008,6 @@ streamer_write_tree_header (struct output_block *ob, tree expr)
     streamer_write_uhwi (ob, call_expr_nargs (expr));
   else if (TREE_CODE (expr) == OMP_CLAUSE)
     streamer_write_uhwi (ob, OMP_CLAUSE_CODE (expr));
-  else if (CODE_CONTAINS_STRUCT (code, TS_INT_CST))
-    {
-      gcc_checking_assert (TREE_INT_CST_NUNITS (expr));
-      streamer_write_uhwi (ob, TREE_INT_CST_NUNITS (expr));
-      streamer_write_uhwi (ob, TREE_INT_CST_EXT_NUNITS (expr));
-    }
 }
 
 
@@ -1030,16 +1017,9 @@ streamer_write_tree_header (struct output_block *ob, tree expr)
 void
 streamer_write_integer_cst (struct output_block *ob, tree cst, bool ref_p)
 {
-  int i;
-  int len = TREE_INT_CST_NUNITS (cst);
   gcc_assert (!TREE_OVERFLOW (cst));
   streamer_write_record_start (ob, LTO_integer_cst);
   stream_write_tree (ob, TREE_TYPE (cst), ref_p);
-  /* We're effectively streaming a non-sign-extended wide_int here,
-     so there's no need to stream TREE_INT_CST_EXT_NUNITS or any
-     array members beyond LEN.  We'll recreate the tree from the
-     wide_int and the type.  */
-  streamer_write_uhwi (ob, len);
-  for (i = 0; i < len; i++)
-    streamer_write_hwi (ob, TREE_INT_CST_ELT (cst, i));
+  streamer_write_uhwi (ob, TREE_INT_CST_LOW (cst));
+  streamer_write_hwi (ob, TREE_INT_CST_HIGH (cst));
 }

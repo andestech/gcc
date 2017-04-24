@@ -31,22 +31,10 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-iterator.h"
 #include "diagnostic.h"
 #include "gimple-pretty-print.h" /* FIXME */
-#include "hash-map.h"
-#include "is-a.h"
-#include "plugin-api.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
 #include "tree-cfg.h"
 #include "tree-dump.h"
 #include "dumpfile.h"
-#include "wide-int-print.h"
 
 /* Define the hash table of nodes already seen.
    Such nodes are not repeated; brief cross-references are used.  */
@@ -137,7 +125,16 @@ print_node_brief (FILE *file, const char *prefix, const_tree node, int indent)
 	fprintf (file, " overflow");
 
       fprintf (file, " ");
-      print_dec (node, file, TYPE_SIGN (TREE_TYPE (node)));
+      if (TREE_INT_CST_HIGH (node) == 0)
+	fprintf (file, HOST_WIDE_INT_PRINT_UNSIGNED, TREE_INT_CST_LOW (node));
+      else if (TREE_INT_CST_HIGH (node) == -1
+	       && TREE_INT_CST_LOW (node) != 0)
+	fprintf (file, "-" HOST_WIDE_INT_PRINT_UNSIGNED,
+		 -TREE_INT_CST_LOW (node));
+      else
+	fprintf (file, HOST_WIDE_INT_PRINT_DOUBLE_HEX,
+		 (unsigned HOST_WIDE_INT) TREE_INT_CST_HIGH (node),
+		 (unsigned HOST_WIDE_INT) TREE_INT_CST_LOW (node));
     }
   if (TREE_CODE (node) == REAL_CST)
     {
@@ -194,7 +191,7 @@ print_node (FILE *file, const char *prefix, tree node, int indent)
 {
   int hash;
   struct bucket *b;
-  machine_mode mode;
+  enum machine_mode mode;
   enum tree_code_class tclass;
   int len;
   int i;
@@ -344,7 +341,7 @@ print_node (FILE *file, const char *prefix, tree node, int indent)
   if (TREE_VISITED (node))
     fputs (" visited", file);
 
-  if (code != TREE_VEC && code != INTEGER_CST && code != SSA_NAME)
+  if (code != TREE_VEC && code != SSA_NAME)
     {
       if (TREE_LANG_FLAG_0 (node))
 	fputs (" tree_0", file);
@@ -373,7 +370,7 @@ print_node (FILE *file, const char *prefix, tree node, int indent)
 	    fputs (" unsigned", file);
 	  if (DECL_IGNORED_P (node))
 	    fputs (" ignored", file);
-	  if (DECL_ABSTRACT_P (node))
+	  if (DECL_ABSTRACT (node))
 	    fputs (" abstract", file);
 	  if (DECL_EXTERNAL (node))
 	    fputs (" external", file);
@@ -429,8 +426,24 @@ print_node (FILE *file, const char *prefix, tree node, int indent)
 	fputs (" common", file);
       if (code == VAR_DECL && DECL_THREAD_LOCAL_P (node))
 	{
-	  fputs (" ", file);
-	  fputs (tls_model_names[DECL_TLS_MODEL (node)], file);
+	  enum tls_model kind = DECL_TLS_MODEL (node);
+	  switch (kind)
+	    {
+	      case TLS_MODEL_GLOBAL_DYNAMIC:
+		fputs (" tls-global-dynamic", file);
+		break;
+	      case TLS_MODEL_LOCAL_DYNAMIC:
+		fputs (" tls-local-dynamic", file);
+		break;
+	      case TLS_MODEL_INITIAL_EXEC:
+		fputs (" tls-initial-exec", file);
+		break;
+	      case TLS_MODEL_LOCAL_EXEC:
+		fputs (" tls-local-exec", file);
+		break;
+	      default:
+		gcc_unreachable ();
+	    }
 	}
 
       if (CODE_CONTAINS_STRUCT (code, TS_DECL_COMMON))
@@ -525,6 +538,7 @@ print_node (FILE *file, const char *prefix, tree node, int indent)
 	}
       if (CODE_CONTAINS_STRUCT (code, TS_DECL_NON_COMMON))
 	{
+	  print_node (file, "arguments", DECL_ARGUMENT_FLD (node), indent + 4);
 	  print_node (file, "result", DECL_RESULT_FLD (node), indent + 4);
 	}
 
@@ -550,7 +564,6 @@ print_node (FILE *file, const char *prefix, tree node, int indent)
       else if (code == FUNCTION_DECL
 	       && DECL_STRUCT_FUNCTION (node) != 0)
 	{
-	  print_node (file, "arguments", DECL_ARGUMENTS (node), indent + 4);
 	  indent_to (file, indent + 4);
 	  dump_addr (file, "struct-function ", DECL_STRUCT_FUNCTION (node));
 	}
@@ -730,7 +743,17 @@ print_node (FILE *file, const char *prefix, tree node, int indent)
 	    fprintf (file, " overflow");
 
 	  fprintf (file, " ");
-	  print_dec (node, file, TYPE_SIGN (TREE_TYPE (node)));
+	  if (TREE_INT_CST_HIGH (node) == 0)
+	    fprintf (file, HOST_WIDE_INT_PRINT_UNSIGNED,
+		     TREE_INT_CST_LOW (node));
+	  else if (TREE_INT_CST_HIGH (node) == -1
+		   && TREE_INT_CST_LOW (node) != 0)
+	    fprintf (file, "-" HOST_WIDE_INT_PRINT_UNSIGNED,
+		     -TREE_INT_CST_LOW (node));
+	  else
+	    fprintf (file, HOST_WIDE_INT_PRINT_DOUBLE_HEX,
+		     (unsigned HOST_WIDE_INT) TREE_INT_CST_HIGH (node),
+		     (unsigned HOST_WIDE_INT) TREE_INT_CST_LOW (node));
 	  break;
 
 	case REAL_CST:

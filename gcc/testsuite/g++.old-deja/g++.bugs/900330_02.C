@@ -25,6 +25,7 @@ struct D : public B {
 void h(D* pd)
 {
   pd->f(1);		// { dg-error "no matching" } D::f(struct B) hides B::f(int)
+  // { dg-message "candidate" "candidate note" { target *-*-* } 27 }
 }
 
 int main () { return 0; }

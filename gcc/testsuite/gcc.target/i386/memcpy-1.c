@@ -11,7 +11,7 @@
 
 char a[2048];
 char b[2048];
-void t(void)
+t()
 {
   __builtin_memcpy (a,b,2048);
 }

@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---                     Copyright (C) 1999-2014, AdaCore                     --
+--                     Copyright (C) 1999-2012, AdaCore                     --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,9 +29,8 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Interfaces.C.Extensions;
-
 package body GNAT.Calendar is
+
    use Ada.Calendar;
    use Interfaces;
 
@@ -342,12 +341,12 @@ package body GNAT.Calendar is
 
       procedure timeval_to_duration
         (T    : not null access timeval;
-         sec  : not null access C.Extensions.long_long;
+         sec  : not null access C.long;
          usec : not null access C.long);
       pragma Import (C, timeval_to_duration, "__gnat_timeval_to_duration");
 
       Micro : constant := 10**6;
-      sec   : aliased C.Extensions.long_long;
+      sec   : aliased C.long;
       usec  : aliased C.long;
 
    begin
@@ -362,14 +361,14 @@ package body GNAT.Calendar is
    function To_Timeval (D : Duration) return timeval is
 
       procedure duration_to_timeval
-        (Sec  : C.Extensions.long_long;
+        (Sec  : C.long;
          Usec : C.long;
          T : not null access timeval);
       pragma Import (C, duration_to_timeval, "__gnat_duration_to_timeval");
 
       Micro  : constant := 10**6;
       Result : aliased timeval;
-      sec    : C.Extensions.long_long;
+      sec    : C.long;
       usec   : C.long;
 
    begin
@@ -377,7 +376,7 @@ package body GNAT.Calendar is
          sec  := 0;
          usec := 0;
       else
-         sec  := C.Extensions.long_long (D - 0.5);
+         sec  := C.long (D - 0.5);
          usec := C.long ((D - Duration (sec)) * Micro - 0.5);
       end if;
 

@@ -6,7 +6,7 @@
 --                                                                          --
 --                                  B o d y                                 --
 --                                                                          --
---          Copyright (C) 1998-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 1998-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNARL is free software; you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -86,8 +86,8 @@ package body System.Interrupts is
       Interrupt   : Interrupt_ID;
       Static      : Boolean;
       Restoration : Boolean);
-   --  This internal procedure is needed to finalize protected objects that
-   --  contain interrupt handlers.
+   --  This internal procedure is needed to finalize protected objects
+   --  that contain interrupt handlers.
 
    procedure Signal_Handler (Sig : Interrupt_ID);
    pragma Convention (C, Signal_Handler);
@@ -157,7 +157,7 @@ package body System.Interrupts is
    begin
       if Is_Reserved (Interrupt) then
          raise Program_Error with
-           "interrupt" & Interrupt_ID'Image (Interrupt) & " is reserved";
+           "Interrupt" & Interrupt_ID'Image (Interrupt) & " is reserved";
       end if;
 
       return Descriptors (Interrupt).T /= Null_Task;
@@ -171,7 +171,7 @@ package body System.Interrupts is
    begin
       if Is_Reserved (Interrupt) then
          raise Program_Error with
-           "interrupt" & Interrupt_ID'Image (Interrupt) & " is reserved";
+           "Interrupt" & Interrupt_ID'Image (Interrupt) & " is reserved";
       else
          return Descriptors (Interrupt).Kind /= Unknown;
       end if;
@@ -329,8 +329,7 @@ package body System.Interrupts is
    procedure Attach_Handler
      (New_Handler : Parameterless_Handler;
       Interrupt   : Interrupt_ID;
-      Static      : Boolean := False)
-   is
+      Static      : Boolean := False) is
    begin
       Attach_Handler (New_Handler, Interrupt, Static, False);
    end Attach_Handler;
@@ -360,8 +359,8 @@ package body System.Interrupts is
              or else not Is_Registered (New_Handler))
       then
          raise Program_Error with
-           "trying to overwrite a static interrupt handler with a " &
-           "dynamic handler";
+           "Trying to overwrite a static Interrupt Handler with a " &
+           "dynamic Handler";
       end if;
 
       if Handlers (Interrupt) = null then
@@ -406,10 +405,10 @@ package body System.Interrupts is
 
       if Descriptors (Interrupt).Kind = Task_Entry then
 
-         --  In case we have an Interrupt Entry already installed, raise a
-         --  program error (propagate it to the caller).
+         --  In case we have an Interrupt Entry already installed.
+         --  raise a program error. (propagate it to the caller).
 
-         raise Program_Error with "an interrupt is already installed";
+         raise Program_Error with "An interrupt is already installed";
 
       else
          Old_Handler := Current_Handler (Interrupt);
@@ -431,12 +430,12 @@ package body System.Interrupts is
       end if;
 
       if Descriptors (Interrupt).Kind = Task_Entry then
-         raise Program_Error with "trying to detach an interrupt entry";
+         raise Program_Error with "Trying to detach an Interrupt Entry";
       end if;
 
       if not Static and then Descriptors (Interrupt).Static then
          raise Program_Error with
-           "trying to detach a static interrupt handler";
+           "Trying to detach a static Interrupt Handler";
       end if;
 
       Descriptors (Interrupt) :=
@@ -505,6 +504,7 @@ package body System.Interrupts is
       Fat := To_Fat_Ptr (Handler);
 
       while Ptr /= null loop
+
          if Ptr.H = Fat.Handler_Addr then
             return True;
          end if;
@@ -536,7 +536,7 @@ package body System.Interrupts is
 
       if Descriptors (Interrupt).Kind /= Unknown then
          raise Program_Error with
-           "a binding for this interrupt is already present";
+           "A binding for this interrupt is already present";
       end if;
 
       if Handlers (Interrupt) = null then
@@ -616,13 +616,13 @@ package body System.Interrupts is
    end Is_Blocked;
 
    task body Server_Task is
-      Ignore : constant Boolean := Utilities.Make_Independent;
-
       Desc    : Handler_Desc renames Descriptors (Interrupt);
       Self_Id : constant Task_Id := STPO.Self;
       Temp    : Parameterless_Handler;
 
    begin
+      Utilities.Make_Independent;
+
       loop
          while Interrupt_Count (Interrupt) > 0 loop
             Interrupt_Count (Interrupt) := Interrupt_Count (Interrupt) - 1;

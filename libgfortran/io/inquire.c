@@ -80,10 +80,10 @@ inquire_via_unit (st_parameter_inquire *iqp, gfc_unit * u)
 		memset (&iqp->name[tmplen], ' ', iqp->name_len - tmplen);
 	    }
 	  else /* If ttyname does not work, go with the default.  */
-	    cf_strcpy (iqp->name, iqp->name_len, u->filename);
+	    fstrcpy (iqp->name, iqp->name_len, u->file, u->file_len);
 	}
       else
-	cf_strcpy (iqp->name, iqp->name_len, u->filename);
+	fstrcpy (iqp->name, iqp->name_len, u->file, u->file_len);
 #elif defined __MINGW32__
       if (u->unit_number == options.stdin_unit)
 	fstrcpy (iqp->name, iqp->name_len, "CONIN$", sizeof("CONIN$"));
@@ -92,9 +92,9 @@ inquire_via_unit (st_parameter_inquire *iqp, gfc_unit * u)
       else if (u->unit_number == options.stderr_unit)
 	fstrcpy (iqp->name, iqp->name_len, "CONERR$", sizeof("CONERR$"));
       else
-	cf_strcpy (iqp->name, iqp->name_len, u->filename);
+	fstrcpy (iqp->name, iqp->name_len, u->file, u->file_len);
 #else
-      cf_strcpy (iqp->name, iqp->name_len, u->filename);
+    fstrcpy (iqp->name, iqp->name_len, u->file, u->file_len);
 #endif
     }
 

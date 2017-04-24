@@ -11,7 +11,7 @@ AC_INIT(package-unused, version-unused,, libgo)
 AC_CONFIG_SRCDIR(Makefile.am)
 AC_CONFIG_HEADER(config.h)
 
-libtool_VERSION=6:0:0
+libtool_VERSION=5:0:0
 AC_SUBST(libtool_VERSION)
 
 AM_ENABLE_MULTILIB(, ..)
@@ -88,7 +88,7 @@ else
   nover_glibgo_toolexecdir='${libdir}/gcc/${host_alias}'
   nover_glibgo_toolexeclibdir='${libdir}'
 fi
-multi_os_directory=`$GOC -print-multi-os-directory`
+multi_os_directory=`$CC -print-multi-os-directory`
 case $multi_os_directory in
   .) ;; # Avoid trailing /.
   *) nover_glibgo_toolexeclibdir=${nover_glibgo_toolexeclibdir}/${multi_os_directory} ;;
@@ -121,21 +121,6 @@ if test "$with_libffi" != no; then
 fi
 AC_SUBST(LIBFFI)
 AC_SUBST(LIBFFIINCS)
-
-# See if the user wants to configure without libatomic. This is useful if we are
-# on an architecture for which libgo does not need an atomic support library and
-# libatomic does not support our C compiler.
-AC_ARG_WITH(libatomic,
-  AS_HELP_STRING([--without-libatomic],
-                 [don't use libatomic]),
-  [:],
-  [with_libatomic=${with_libatomic_default-yes}])
-
-LIBATOMIC=
-if test "$with_libatomic" != no; then
-   LIBATOMIC=../libatomic/libatomic_convenience.la
-fi
-AC_SUBST(LIBATOMIC)
 
 # Used to tell GNU make to include a file without telling automake to
 # include it.
@@ -194,8 +179,7 @@ is_m68k=no
 mips_abi=unknown
 is_ppc=no
 is_ppc64=no
-is_s390=no
-is_s390x=no
+is_ppc64le=no
 is_sparc=no
 is_sparc64=no
 is_x86_64=no
@@ -266,23 +250,18 @@ changequote([,])dnl
 #ifdef _ARCH_PPC64
 #error 64-bit
 #endif],
-[is_ppc=yes], [is_ppc64=yes])
+[is_ppc=yes],
+    [AC_COMPILE_IFELSE([
+#if defined(_BIG_ENDIAN) || defined(__BIG_ENDIAN__)
+#error 64be
+#endif],
+[is_ppc64le=yes],[is_ppc64=yes])])
     if test "$is_ppc" = "yes"; then
       GOARCH=ppc
-    else
+    elif test "$is_ppc64" = "yes"; then
       GOARCH=ppc64
-    fi
-    ;;
-  s390*-*-*)
-    AC_COMPILE_IFELSE([
-#if defined(__s390x__)
-#error 64-bit
-#endif],
-[is_s390=yes], [is_s390x=yes])
-    if test "$is_s390" = "yes"; then
-      GOARCH=s390
     else
-      GOARCH=s390x
+      GOARCH=ppc64le
     fi
     ;;
   sparc*-*-*)
@@ -310,8 +289,7 @@ AM_CONDITIONAL(LIBGO_IS_MIPSN64, test $mips_abi = n64)
 AM_CONDITIONAL(LIBGO_IS_MIPSO64, test $mips_abi = o64)
 AM_CONDITIONAL(LIBGO_IS_PPC, test $is_ppc = yes)
 AM_CONDITIONAL(LIBGO_IS_PPC64, test $is_ppc64 = yes)
-AM_CONDITIONAL(LIBGO_IS_S390, test $is_s390 = yes)
-AM_CONDITIONAL(LIBGO_IS_S390X, test $is_s390x = yes)
+AM_CONDITIONAL(LIBGO_IS_PPC64LE, test $is_ppc64le = yes)
 AM_CONDITIONAL(LIBGO_IS_SPARC, test $is_sparc = yes)
 AM_CONDITIONAL(LIBGO_IS_SPARC64, test $is_sparc64 = yes)
 AM_CONDITIONAL(LIBGO_IS_X86_64, test $is_x86_64 = yes)
@@ -322,17 +300,17 @@ GO_LIBCALL_OS_FILE=
 GO_LIBCALL_OS_ARCH_FILE=
 GO_SYSCALL_OS_FILE=
 GO_SYSCALL_OS_ARCH_FILE=
-if test -f "${srcdir}/go/syscall/libcall_${GOOS}.go"; then
-  GO_LIBCALL_OS_FILE="go/syscall/libcall_${GOOS}.go"
+if test -f ${srcdir}/go/syscall/libcall_${GOOS}.go; then
+  GO_LIBCALL_OS_FILE=go/syscall/libcall_${GOOS}.go
 fi
-if test -f "${srcdir}/go/syscall/libcall_${GOOS}_${GOARCH}.go"; then
-  GO_LIBCALL_OS_ARCH_FILE="go/syscall/libcall_${GOOS}_${GOARCH}.go"
+if test -f ${srcdir}/go/syscall/libcall_${GOOS}_${GOARCH}.go; then
+  GO_LIBCALL_OS_ARCH_FILE=go/syscall/libcall_${GOOS}_${GOARCH}.go
 fi
-if test -f "${srcdir}/go/syscall/syscall_${GOOS}.go"; then
-  GO_SYSCALL_OS_FILE="go/syscall/syscall_${GOOS}.go"
+if test -f ${srcdir}/go/syscall/syscall_${GOOS}.go; then
+  GO_SYSCALL_OS_FILE=go/syscall/syscall_${GOOS}.go
 fi
-if test -f "${srcdir}/go/syscall/syscall_${GOOS}_${GOARCH}.go"; then
-  GO_SYSCALL_OS_ARCH_FILE="go/syscall/syscall_${GOOS}_${GOARCH}.go"
+if test -f ${srcdir}/go/syscall/syscall_${GOOS}_${GOARCH}.go; then
+  GO_SYSCALL_OS_ARCH_FILE=go/syscall/syscall_${GOOS}_${GOARCH}.go
 fi
 AC_SUBST(GO_LIBCALL_OS_FILE)
 AC_SUBST(GO_LIBCALL_OS_ARCH_FILE)
@@ -346,6 +324,11 @@ case "$target" in
 	# IRIX 6 needs _XOPEN_SOURCE=500 for the XPG5 version of struct
 	# msghdr in <sys/socket.h>.
 	OSCFLAGS="$OSCFLAGS -D_XOPEN_SOURCE=500"
+	;;
+    *-*-solaris2.[[89]])
+	# Solaris 8/9 need this so struct msghdr gets the msg_control
+	# etc. fields in <sys/socket.h> (_XPG4_2).
+	OSCFLAGS="$OSCFLAGS -D_XOPEN_SOURCE=500 -D_XOPEN_SOURCE_EXTENDED -D__EXTENSIONS__"
 	;;
     *-*-solaris2.1[[01]])
 	# Solaris 10+ needs this so struct msghdr gets the msg_control
@@ -688,6 +671,21 @@ if test "$libgo_has_struct_exception" = "yes"; then
             [Define to 1 if <math.h> defines struct exception])
 fi
 
+dnl Check if makecontext expects the uc_stack member of ucontext to point
+dnl to the top of the stack.
+case "$target" in
+  sparc*-*-solaris2.[[89]]*)
+    libgo_cv_lib_makecontext_stack_top=yes
+    ;;
+  *)
+    libgo_cv_lib_makecontext_stack_top=no
+    ;;
+esac
+if test "$libgo_cv_lib_makecontext_stack_top" = "yes"; then
+  AC_DEFINE(MAKECONTEXT_STACK_TOP, 1,
+	    [Define if makecontext expects top of stack in uc_stack.])
+fi
+
 dnl See whether setcontext changes the value of TLS variables.
 AC_CACHE_CHECK([whether setcontext clobbers TLS variables],
 [libgo_cv_lib_setcontext_clobbers_tls],
@@ -801,28 +799,14 @@ else
 	    [Define to the flags needed for the .section .eh_frame directive.])
 fi
 
-AC_CACHE_CHECK([if compiler supports -Qunused-arguments],
-[libgo_cv_c_unused_arguments],
-[CFLAGS_hold=$CFLAGS
-CFLAGS="$CFLAGS -Qunused-arguments"
-AC_COMPILE_IFELSE([[int i;]],
-[libgo_cv_c_unused_arguments=yes],
-[libgo_cv_c_unused_arguments=no])
-CFLAGS=$CFLAGS_hold])
-
 AC_CACHE_CHECK([if assembler supports GNU comdat group syntax],
 libgo_cv_as_comdat_gnu, [
 echo '.section .text,"axG",@progbits,.foo,comdat' > conftest.s
-CFLAGS_hold=$CFLAGS
-if test "$libgo_cv_c_unused_arguments" = yes; then
-  CFLAGS="$CFLAGS -Qunused-arguments"
-fi
 if $CC $CFLAGS -c conftest.s > /dev/null 2>&1; then
   libgo_cv_as_comdat_gnu=yes
 else
   libgo_cv_as_comdat_gnu=no
 fi
-CFLAGS=$CFLAGS_hold
 ])
 if test "x$libgo_cv_as_comdat_gnu" = xyes; then
   AC_DEFINE(HAVE_AS_COMDAT_GAS, 1,
@@ -833,14 +817,9 @@ AC_CACHE_CHECK([assembler supports pc related relocs],
 libgo_cv_as_x86_pcrel, [
 libgo_cv_as_x86_pcrel=yes
 echo '.text; foo: nop; .data; .long foo-.; .text' > conftest.s
-CFLAGS_hold=$CFLAGS
-if test "$libgo_cv_c_unused_arguments" = yes; then
-  CFLAGS="$CFLAGS -Qunused-arguments"
-fi
 if $CC $CFLAGS -c conftest.s 2>&1 | $EGREP -i 'illegal|warning' > /dev/null; then
     libgo_cv_as_x86_pcrel=no
 fi
-CFLAGS=$CFLAGS_hold
 ])
 if test "x$libgo_cv_as_x86_pcrel" = xyes; then
   AC_DEFINE(HAVE_AS_X86_PCREL, 1,
@@ -851,14 +830,9 @@ AC_CACHE_CHECK([assembler supports unwind section type],
 libgo_cv_as_x86_64_unwind_section_type, [
 libgo_cv_as_x86_64_unwind_section_type=yes
 echo '.section .eh_frame,"a",@unwind' > conftest.s
-CFLAGS_hold=$CFLAGS
-if test "$libgo_cv_c_unused_arguments" = yes; then
-  CFLAGS="$CFLAGS -Qunused-arguments"
-fi
 if $CC $CFLAGS -c conftest.s 2>&1 | grep -i warning > /dev/null; then
     libgo_cv_as_x86_64_unwind_section_type=no
 fi
-CFLAGS=$CFLAGS_hold
 ])
 if test "x$libgo_cv_as_x86_64_unwind_section_type" = xyes; then
   AC_DEFINE(HAVE_AS_X86_64_UNWIND_SECTION_TYPE, 1,

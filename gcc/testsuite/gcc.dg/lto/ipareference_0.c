@@ -5,9 +5,8 @@
    modify anything.  This needs streaming cross file boundary summaries.  */
 extern int get_val (void);
 extern int set_val (void);
-extern void do_nothing (void);
+extern do_nothing (void);
 void abort (void);
-int
 main()
 {
   int a;

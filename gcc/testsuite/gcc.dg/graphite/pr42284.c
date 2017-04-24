@@ -1,7 +1,5 @@
 /* { dg-options "-O2 -fgraphite-identity" } */
 
-int foo (void);
-
 int
 huft_build (unsigned *b)
 {

@@ -17,16 +17,16 @@ struct B
 
 struct C
 {
-  friend int C ();
+  friend int C ();		// { dg-error "return type|in friend decl" }
   friend int ~C ();		// { dg-error "return type|in friend decl" }
-  friend int C (const C &);
+  friend int C (const C &);	// { dg-error "return type|in friend decl" }
 };
 
 struct D
 {
-  friend int D () {}
+  friend int D () {}		// { dg-error "return type|in friend decl" }
   friend int ~D () {}		// { dg-error "return type|in friend decl" }
-  friend int D (const D &) {}
+  friend int D (const D &) {}	// { dg-error "return type|in friend decl" }
 };
 
 struct E

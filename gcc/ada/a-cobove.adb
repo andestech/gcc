@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 2004-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2004-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -315,24 +315,6 @@ package body Ada.Containers.Bounded_Vectors is
    end "=";
 
    ------------
-   -- Adjust --
-   ------------
-
-   procedure Adjust (Control : in out Reference_Control_Type) is
-   begin
-      if Control.Container /= null then
-         declare
-            C : Vector renames Control.Container.all;
-            B : Natural renames C.Busy;
-            L : Natural renames C.Lock;
-         begin
-            B := B + 1;
-            L := L + 1;
-         end;
-      end if;
-   end Adjust;
-
-   ------------
    -- Assign --
    ------------
 
@@ -436,16 +418,8 @@ package body Ada.Containers.Bounded_Vectors is
       declare
          A : Elements_Array renames Container.Elements;
          I : constant Count_Type := To_Array_Index (Position.Index);
-         B : Natural renames Position.Container.Busy;
-         L : Natural renames Position.Container.Lock;
       begin
-         return R : constant Constant_Reference_Type :=
-           (Element => A (I)'Access,
-            Control => (Controlled with Container'Unrestricted_Access))
-         do
-            B := B + 1;
-            L := L + 1;
-         end return;
+         return (Element => A (I)'Access);
       end;
    end Constant_Reference;
 
@@ -462,13 +436,7 @@ package body Ada.Containers.Bounded_Vectors is
          A : Elements_Array renames Container.Elements;
          I : constant Count_Type := To_Array_Index (Index);
       begin
-         return R : constant Constant_Reference_Type :=
-           (Element => A (I)'Access,
-            Control => (Controlled with Container'Unrestricted_Access))
-         do
-            R.Control.Container.Busy := R.Control.Container.Busy + 1;
-            R.Control.Container.Lock := R.Control.Container.Lock + 1;
-         end return;
+         return (Element => A (I)'Access);
       end;
    end Constant_Reference;
 
@@ -761,22 +729,6 @@ package body Ada.Containers.Bounded_Vectors is
       B : Natural renames Object.Container.Busy;
    begin
       B := B - 1;
-   end Finalize;
-
-   procedure Finalize (Control : in out Reference_Control_Type) is
-   begin
-      if Control.Container /= null then
-         declare
-            C : Vector renames Control.Container.all;
-            B : Natural renames C.Busy;
-            L : Natural renames C.Lock;
-         begin
-            B := B - 1;
-            L := L - 1;
-         end;
-
-         Control.Container := null;
-      end if;
    end Finalize;
 
    ----------
@@ -2365,14 +2317,9 @@ package body Ada.Containers.Bounded_Vectors is
 
       declare
          A : Elements_Array renames Container.Elements;
-         B : Natural        renames Container.Busy;
-         L : Natural        renames Container.Lock;
          J : constant Count_Type := To_Array_Index (Position.Index);
       begin
-         B := B + 1;
-         L := L + 1;
-         return (Element => A (J)'Access,
-                 Control => (Controlled with Container'Unrestricted_Access));
+         return (Element => A (J)'Access);
       end;
    end Reference;
 
@@ -2387,14 +2334,9 @@ package body Ada.Containers.Bounded_Vectors is
 
       declare
          A : Elements_Array renames Container.Elements;
-         B : Natural        renames Container.Busy;
-         L : Natural        renames Container.Lock;
          J : constant Count_Type := To_Array_Index (Index);
       begin
-         B := B + 1;
-         L := L + 1;
-         return (Element => A (J)'Access,
-                 Control => (Controlled with Container'Unrestricted_Access));
+         return (Element => A (J)'Access);
       end;
    end Reference;
 

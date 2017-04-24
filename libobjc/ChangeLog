@@ -1,6 +1,16 @@
-2014-11-05  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+2015-06-26  Release Manager
 
-	* thr.c (_XOPEN_SOURCE): Define as 600.
+	* GCC 4.9.3 released.
+
+2014-10-30  Release Manager
+
+	* GCC 4.9.2 released.
+
+2014-07-28  Ulrich Weigand  <uweigand@de.ibm.com>
+
+	PR libobjc/61920
+	* encoding.c (rs6000_special_adjust_field_align_p): Use definition
+	that matches the 4.9 branch ABI.
 
 2014-07-27  Alan Modra  <amodra@gmail.com>
 	    Matthias Klose  <doko@ubuntu.com>
@@ -8,6 +18,14 @@
 	PR libobjc/61920
 
 	* encoding.c: Define rs6000_special_adjust_field_align_p.
+
+2014-07-16  Release Manager
+
+	* GCC 4.9.1 released.
+
+2014-04-22  Release Manager
+
+	* GCC 4.9.0 released.
 
 2014-01-02  Richard Sandiford  <rdsandiford@googlemail.com>
 

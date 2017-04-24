@@ -29,21 +29,10 @@ along with GCC; see the file COPYING3.  If not see
 #include "obstack.h"
 #include "insn-config.h"
 #include "flags.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "input.h"
 #include "function.h"
 #include "expr.h"
-#include "insn-codes.h"
 #include "optabs.h"
 #include "regs.h"
-#include "predict.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfgrtl.h"
-#include "cfgbuild.h"
-#include "cfgcleanup.h"
 #include "basic-block.h"
 #include "reload.h"
 #include "recog.h"
@@ -57,23 +46,23 @@ along with GCC; see the file COPYING3.  If not see
 #include "dbgcnt.h"
 
 static int reload_cse_noop_set_p (rtx);
-static bool reload_cse_simplify (rtx_insn *, rtx);
+static bool reload_cse_simplify (rtx, rtx);
 static void reload_cse_regs_1 (void);
-static int reload_cse_simplify_set (rtx, rtx_insn *);
-static int reload_cse_simplify_operands (rtx_insn *, rtx);
+static int reload_cse_simplify_set (rtx, rtx);
+static int reload_cse_simplify_operands (rtx, rtx);
 
 static void reload_combine (void);
-static void reload_combine_note_use (rtx *, rtx_insn *, int, rtx);
+static void reload_combine_note_use (rtx *, rtx, int, rtx);
 static void reload_combine_note_store (rtx, const_rtx, void *);
 
-static bool reload_cse_move2add (rtx_insn *);
+static bool reload_cse_move2add (rtx);
 static void move2add_note_store (rtx, const_rtx, void *);
 
 /* Call cse / combine like post-reload optimization phases.
    FIRST is the first instruction.  */
 
 static void
-reload_cse_regs (rtx_insn *first ATTRIBUTE_UNUSED)
+reload_cse_regs (rtx first ATTRIBUTE_UNUSED)
 {
   bool moves_converted;
   reload_cse_regs_1 ();
@@ -99,7 +88,7 @@ reload_cse_noop_set_p (rtx set)
 
 /* Try to simplify INSN.  Return true if the CFG may have changed.  */
 static bool
-reload_cse_simplify (rtx_insn *insn, rtx testreg)
+reload_cse_simplify (rtx insn, rtx testreg)
 {
   rtx body = PATTERN (insn);
   basic_block insn_bb = BLOCK_FOR_INSN (insn);
@@ -218,7 +207,7 @@ reload_cse_regs_1 (void)
 {
   bool cfg_changed = false;
   basic_block bb;
-  rtx_insn *insn;
+  rtx insn;
   rtx testreg = gen_rtx_REG (VOIDmode, -1);
 
   cselib_init (CSELIB_RECORD_MEMORY);
@@ -247,7 +236,7 @@ reload_cse_regs_1 (void)
    and change the set into a register copy.  */
 
 static int
-reload_cse_simplify_set (rtx set, rtx_insn *insn)
+reload_cse_simplify_set (rtx set, rtx insn)
 {
   int did_change = 0;
   int dreg;
@@ -306,27 +295,27 @@ reload_cse_simplify_set (rtx set, rtx_insn *insn)
 #ifdef LOAD_EXTEND_OP
 	  if (extend_op != UNKNOWN)
 	    {
-	      wide_int result;
+	      HOST_WIDE_INT this_val;
 
-	      if (!CONST_SCALAR_INT_P (this_rtx))
+	      /* ??? I'm lazy and don't wish to handle CONST_DOUBLE.  Other
+		 constants, such as SYMBOL_REF, cannot be extended.  */
+	      if (!CONST_INT_P (this_rtx))
 		continue;
 
+	      this_val = INTVAL (this_rtx);
 	      switch (extend_op)
 		{
 		case ZERO_EXTEND:
-		  result = wide_int::from (std::make_pair (this_rtx,
-							   GET_MODE (src)),
-					   BITS_PER_WORD, UNSIGNED);
+		  this_val &= GET_MODE_MASK (GET_MODE (src));
 		  break;
 		case SIGN_EXTEND:
-		  result = wide_int::from (std::make_pair (this_rtx,
-							   GET_MODE (src)),
-					   BITS_PER_WORD, SIGNED);
-		  break;
+		  /* ??? In theory we're already extended.  */
+		  if (this_val == trunc_int_for_mode (this_val, GET_MODE (src)))
+		    break;
 		default:
 		  gcc_unreachable ();
 		}
-	      this_rtx = immed_wide_int_const (result, word_mode);
+	      this_rtx = GEN_INT (this_val);
 	    }
 #endif
 	  this_cost = set_src_cost (this_rtx, speed);
@@ -391,7 +380,7 @@ reload_cse_simplify_set (rtx set, rtx_insn *insn)
    hard registers.  */
 
 static int
-reload_cse_simplify_operands (rtx_insn *insn, rtx testreg)
+reload_cse_simplify_operands (rtx insn, rtx testreg)
 {
   int i, j;
 
@@ -412,10 +401,14 @@ reload_cse_simplify_operands (rtx_insn *insn, rtx testreg)
   /* Array of alternatives, sorted in order of decreasing desirability.  */
   int *alternative_order;
 
-  extract_constrain_insn (insn);
+  extract_insn (insn);
 
   if (recog_data.n_alternatives == 0 || recog_data.n_operands == 0)
     return 0;
+
+  /* Figure out which alternative currently matches.  */
+  if (! constrain_operands (1))
+    fatal_insn_not_found (insn);
 
   alternative_reject = XALLOCAVEC (int, recog_data.n_alternatives);
   alternative_nregs = XALLOCAVEC (int, recog_data.n_alternatives);
@@ -504,10 +497,9 @@ reload_cse_simplify_operands (rtx_insn *insn, rtx testreg)
 	  SET_HARD_REG_BIT (equiv_regs[i], REGNO (l->loc));
     }
 
-  alternative_mask preferred = get_preferred_alternatives (insn);
   for (i = 0; i < recog_data.n_operands; i++)
     {
-      machine_mode mode;
+      enum machine_mode mode;
       int regno;
       const char *p;
 
@@ -561,15 +553,29 @@ reload_cse_simplify_operands (rtx_insn *insn, rtx testreg)
 
 	      switch (c)
 		{
-		case 'g':
-		  rclass = reg_class_subunion[rclass][GENERAL_REGS];
+		case '=':  case '+':  case '?':
+		case '#':  case '&':  case '!':
+		case '*':  case '%':
+		case '0':  case '1':  case '2':  case '3':  case '4':
+		case '5':  case '6':  case '7':  case '8':  case '9':
+		case '<':  case '>':  case 'V':  case 'o':
+		case 'E':  case 'F':  case 'G':  case 'H':
+		case 's':  case 'i':  case 'n':
+		case 'I':  case 'J':  case 'K':  case 'L':
+		case 'M':  case 'N':  case 'O':  case 'P':
+		case 'p':  case 'X':  case TARGET_MEM_CONSTRAINT:
+		  /* These don't say anything we care about.  */
+		  break;
+
+		case 'g': case 'r':
+		  rclass = reg_class_subunion[(int) rclass][(int) GENERAL_REGS];
 		  break;
 
 		default:
 		  rclass
 		    = (reg_class_subunion
-		       [rclass]
-		       [reg_class_for_constraint (lookup_constraint (p))]);
+		       [(int) rclass]
+		       [(int) REG_CLASS_FROM_CONSTRAINT ((unsigned char) c, p)]);
 		  break;
 
 		case ',': case '\0':
@@ -578,7 +584,7 @@ reload_cse_simplify_operands (rtx_insn *insn, rtx testreg)
 		     alternative yet and the operand being replaced is not
 		     a cheap CONST_INT.  */
 		  if (op_alt_regno[i][j] == -1
-		      && TEST_BIT (preferred, j)
+		      && recog_data.alternative_enabled_p[j]
 		      && reg_fits_class_p (testreg, rclass, 0, mode)
 		      && (!CONST_INT_P (recog_data.operand[i])
 			  || (set_src_cost (recog_data.operand[i],
@@ -644,7 +650,7 @@ reload_cse_simplify_operands (rtx_insn *insn, rtx testreg)
 
   for (i = 0; i < recog_data.n_operands; i++)
     {
-      machine_mode mode = recog_data.operand_mode[i];
+      enum machine_mode mode = recog_data.operand_mode[i];
       if (op_alt_regno[i][j] == -1)
 	continue;
 
@@ -655,7 +661,7 @@ reload_cse_simplify_operands (rtx_insn *insn, rtx testreg)
   for (i = recog_data.n_dups - 1; i >= 0; i--)
     {
       int op = recog_data.dup_num[i];
-      machine_mode mode = recog_data.operand_mode[op];
+      enum machine_mode mode = recog_data.operand_mode[op];
 
       if (op_alt_regno[op][j] == -1)
 	continue;
@@ -680,7 +686,7 @@ reload_cse_simplify_operands (rtx_insn *insn, rtx testreg)
 struct reg_use
 {
   /* The insn where a register has been used.  */
-  rtx_insn *insn;
+  rtx insn;
   /* Points to the memory reference enclosing the use, if any, NULL_RTX
      otherwise.  */
   rtx containing_mem;
@@ -778,7 +784,7 @@ reload_combine_split_ruids (int split_ruid)
    information about uses in that particular insn.  */
 
 static void
-reload_combine_purge_insn_uses (rtx_insn *insn)
+reload_combine_purge_insn_uses (rtx insn)
 {
   unsigned i;
 
@@ -863,9 +869,9 @@ reload_combine_closest_single_use (unsigned regno, int ruid_limit)
    should make this change on debug insns.  */
 
 static void
-fixup_debug_insns (rtx reg, rtx replacement, rtx_insn *from, rtx_insn *to)
+fixup_debug_insns (rtx reg, rtx replacement, rtx from, rtx to)
 {
-  rtx_insn *insn;
+  rtx insn;
   for (insn = from; insn != to; insn = NEXT_INSN (insn))
     {
       rtx t;
@@ -886,7 +892,7 @@ fixup_debug_insns (rtx reg, rtx replacement, rtx_insn *from, rtx_insn *to)
 static bool
 try_replace_in_use (struct reg_use *use, rtx reg, rtx src)
 {
-  rtx_insn *use_insn = use->insn;
+  rtx use_insn = use->insn;
   rtx mem = use->containing_mem;
   bool speed = optimize_bb_for_speed_p (BLOCK_FOR_INSN (use_insn));
 
@@ -941,14 +947,14 @@ try_replace_in_use (struct reg_use *use, rtx reg, rtx src)
    recognized and should be handled normally.  */
 
 static bool
-reload_combine_recognize_const_pattern (rtx_insn *insn)
+reload_combine_recognize_const_pattern (rtx insn)
 {
   int from_ruid = reload_combine_ruid;
   rtx set, pat, reg, src, addreg;
   unsigned int regno;
   struct reg_use *use;
   bool must_move_add;
-  rtx_insn *add_moved_after_insn = NULL;
+  rtx add_moved_after_insn = NULL_RTX;
   int add_moved_after_ruid = 0;
   int clobbered_regno = -1;
 
@@ -1004,7 +1010,7 @@ reload_combine_recognize_const_pattern (rtx_insn *insn)
       if (use && GET_MODE (*use->usep) == Pmode)
 	{
 	  bool delete_add = false;
-	  rtx_insn *use_insn = use->insn;
+	  rtx use_insn = use->insn;
 	  int use_ruid = use->ruid;
 
 	  /* Avoid moving the add insn past a jump.  */
@@ -1085,7 +1091,7 @@ reload_combine_recognize_const_pattern (rtx_insn *insn)
    INSN; false if it wasn't recognized and should be handled normally.  */
 
 static bool
-reload_combine_recognize_pattern (rtx_insn *insn)
+reload_combine_recognize_pattern (rtx insn)
 {
   rtx set, reg, src;
   unsigned int regno;
@@ -1127,7 +1133,7 @@ reload_combine_recognize_pattern (rtx_insn *insn)
       && last_label_ruid < reg_state[regno].use_ruid)
     {
       rtx base = XEXP (src, 1);
-      rtx_insn *prev = prev_nonnote_nondebug_insn (insn);
+      rtx prev = prev_nonnote_nondebug_insn (insn);
       rtx prev_set = prev ? single_set (prev) : NULL_RTX;
       rtx index_reg = NULL_RTX;
       rtx reg_sum = NULL_RTX;
@@ -1236,7 +1242,7 @@ reload_combine_recognize_pattern (rtx_insn *insn)
 static void
 reload_combine (void)
 {
-  rtx_insn *insn, *prev;
+  rtx insn, prev;
   basic_block bb;
   unsigned int r;
   int min_labelno, n_labels;
@@ -1431,7 +1437,7 @@ reload_combine_note_store (rtx dst, const_rtx set, void *data ATTRIBUTE_UNUSED)
 {
   int regno = 0;
   int i;
-  machine_mode mode = GET_MODE (dst);
+  enum machine_mode mode = GET_MODE (dst);
 
   if (GET_CODE (dst) == SUBREG)
     {
@@ -1501,7 +1507,7 @@ reload_combine_note_store (rtx dst, const_rtx set, void *data ATTRIBUTE_UNUSED)
    *XP is the pattern of INSN, or a part of it.
    Called from reload_combine, and recursively by itself.  */
 static void
-reload_combine_note_use (rtx *xp, rtx_insn *insn, int ruid, rtx containing_mem)
+reload_combine_note_use (rtx *xp, rtx insn, int ruid, rtx containing_mem)
 {
   rtx x = *xp;
   enum rtx_code code = x->code;
@@ -1658,7 +1664,7 @@ static int reg_set_luid[FIRST_PSEUDO_REGISTER];
 static HOST_WIDE_INT reg_offset[FIRST_PSEUDO_REGISTER];
 static int reg_base_reg[FIRST_PSEUDO_REGISTER];
 static rtx reg_symbol_ref[FIRST_PSEUDO_REGISTER];
-static machine_mode reg_mode[FIRST_PSEUDO_REGISTER];
+static enum machine_mode reg_mode[FIRST_PSEUDO_REGISTER];
 
 /* move2add_luid is linearly increased while scanning the instructions
    from first to last.  It is used to set reg_set_luid in
@@ -1682,7 +1688,7 @@ static void
 move2add_record_mode (rtx reg)
 {
   int regno, nregs;
-  machine_mode mode = GET_MODE (reg);
+  enum machine_mode mode = GET_MODE (reg);
 
   if (GET_CODE (reg) == SUBREG)
     {
@@ -1718,7 +1724,7 @@ move2add_record_sym_value (rtx reg, rtx sym, rtx off)
 /* Check if REGNO contains a valid value in MODE.  */
 
 static bool
-move2add_valid_value_p (int regno, machine_mode mode)
+move2add_valid_value_p (int regno, enum machine_mode mode)
 {
   if (reg_set_luid[regno] <= move2add_last_label_luid)
     return false;
@@ -1755,7 +1761,7 @@ move2add_valid_value_p (int regno, machine_mode mode)
    Return true if we made a change.  */
 
 static bool
-move2add_use_add2_insn (rtx reg, rtx sym, rtx off, rtx_insn *insn)
+move2add_use_add2_insn (rtx reg, rtx sym, rtx off, rtx insn)
 {
   rtx pat = PATTERN (insn);
   rtx src = SET_SRC (pat);
@@ -1795,7 +1801,7 @@ move2add_use_add2_insn (rtx reg, rtx sym, rtx off, rtx_insn *insn)
 	changed = validate_change (insn, &SET_SRC (pat), tem, 0);	
       else if (sym == NULL_RTX && GET_MODE (reg) != BImode)
 	{
-	  machine_mode narrow_mode;
+	  enum machine_mode narrow_mode;
 	  for (narrow_mode = GET_CLASS_NARROWEST_MODE (MODE_INT);
 	       narrow_mode != VOIDmode
 		 && narrow_mode != GET_MODE (reg);
@@ -1813,14 +1819,10 @@ move2add_use_add2_insn (rtx reg, rtx sym, rtx off, rtx_insn *insn)
 				   gen_rtx_STRICT_LOW_PART (VOIDmode,
 							    narrow_reg),
 				   narrow_src);
-		  get_full_set_rtx_cost (new_set, &newcst);
-		  if (costs_lt_p (&newcst, &oldcst, speed))
-		    {
-		      changed = validate_change (insn, &PATTERN (insn),
-						 new_set, 0);
-		      if (changed)
-			break;
-		    }
+		  changed = validate_change (insn, &PATTERN (insn),
+					     new_set, 0);
+		  if (changed)
+		    break;
 		}
 	    }
 	}
@@ -1840,7 +1842,7 @@ move2add_use_add2_insn (rtx reg, rtx sym, rtx off, rtx_insn *insn)
    Return true iff we made a change.  */
 
 static bool
-move2add_use_add3_insn (rtx reg, rtx sym, rtx off, rtx_insn *insn)
+move2add_use_add3_insn (rtx reg, rtx sym, rtx off, rtx insn)
 {
   rtx pat = PATTERN (insn);
   rtx src = SET_SRC (pat);
@@ -1914,10 +1916,10 @@ move2add_use_add3_insn (rtx reg, rtx sym, rtx off, rtx_insn *insn)
 /* Convert move insns with constant inputs to additions if they are cheaper.
    Return true if any changes were made.  */
 static bool
-reload_cse_move2add (rtx_insn *first)
+reload_cse_move2add (rtx first)
 {
   int i;
-  rtx_insn *insn;
+  rtx insn;
   bool changed = false;
 
   for (i = FIRST_PSEUDO_REGISTER - 1; i >= 0; i--)
@@ -1997,7 +1999,7 @@ reload_cse_move2add (rtx_insn *first)
 		       && reg_base_reg[regno] == reg_base_reg[REGNO (src)]
 		       && move2add_valid_value_p (REGNO (src), GET_MODE (reg)))
 		{
-		  rtx_insn *next = next_nonnote_nondebug_insn (insn);
+		  rtx next = next_nonnote_nondebug_insn (insn);
 		  rtx set = NULL_RTX;
 		  if (next)
 		    set = single_set (next);
@@ -2165,9 +2167,9 @@ reload_cse_move2add (rtx_insn *first)
 static void
 move2add_note_store (rtx dst, const_rtx set, void *data)
 {
-  rtx_insn *insn = (rtx_insn *) data;
+  rtx insn = (rtx) data;
   unsigned int regno = 0;
-  machine_mode mode = GET_MODE (dst);
+  enum machine_mode mode = GET_MODE (dst);
 
   /* Some targets do argument pushes without adding REG_INC notes.  */
 
@@ -2313,6 +2315,30 @@ move2add_note_store (rtx dst, const_rtx set, void *data)
     }
 }
 
+static bool
+gate_handle_postreload (void)
+{
+  return (optimize > 0 && reload_completed);
+}
+
+
+static unsigned int
+rest_of_handle_postreload (void)
+{
+  if (!dbg_cnt (postreload_cse))
+    return 0;
+
+  /* Do a very simple CSE pass over just the hard registers.  */
+  reload_cse_regs (get_insns ());
+  /* Reload_cse_regs can eliminate potentially-trapping MEMs.
+     Remove any EH edges associated with them.  */
+  if (cfun->can_throw_non_call_exceptions
+      && purge_all_dead_edges ())
+    cleanup_cfg (0);
+
+  return 0;
+}
+
 namespace {
 
 const pass_data pass_data_postreload_cse =
@@ -2320,12 +2346,14 @@ const pass_data pass_data_postreload_cse =
   RTL_PASS, /* type */
   "postreload", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_RELOAD_CSE_REGS, /* tv_id */
   0, /* properties_required */
   0, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  TODO_df_finish, /* todo_flags_finish */
+  ( TODO_df_finish | TODO_verify_rtl_sharing | 0 ), /* todo_flags_finish */
 };
 
 class pass_postreload_cse : public rtl_opt_pass
@@ -2336,28 +2364,10 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *) { return (optimize > 0 && reload_completed); }
-
-  virtual unsigned int execute (function *);
+  bool gate () { return gate_handle_postreload (); }
+  unsigned int execute () { return rest_of_handle_postreload (); }
 
 }; // class pass_postreload_cse
-
-unsigned int
-pass_postreload_cse::execute (function *fun)
-{
-  if (!dbg_cnt (postreload_cse))
-    return 0;
-
-  /* Do a very simple CSE pass over just the hard registers.  */
-  reload_cse_regs (get_insns ());
-  /* Reload_cse_regs can eliminate potentially-trapping MEMs.
-     Remove any EH edges associated with them.  */
-  if (fun->can_throw_non_call_exceptions
-      && purge_all_dead_edges ())
-    cleanup_cfg (0);
-
-  return 0;
-}
 
 } // anon namespace
 

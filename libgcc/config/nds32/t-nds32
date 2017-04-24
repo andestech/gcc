@@ -1,5 +1,5 @@
 # Rules of libgcc and crtstuff of Andes NDS32 cpu for GNU compiler
-# Copyright (C) 2012-2014 Free Software Foundation, Inc.
+# Copyright (C) 2012-2015 Free Software Foundation, Inc.
 # Contributed by Andes Technology Corporation.
 #
 # This file is part of GCC.
@@ -26,33 +26,22 @@
 #   Make sure the linker script include these two objects
 #   for building .ctors/.dtors sections.
 
-# Use -DCRT_BEGIN to create beginning parts of .init and .fini content
-# Make sure you are building crtbegin1.o with -O0 optimization,
-# otherwise the static function will be optimized out
+# Use -DCRT_BEGIN to create beginning parts of .init and .fini content.
 crtbegin1.o: $(srcdir)/config/nds32/initfini.c $(GCC_PASSES) $(CONFIG_H)
 	$(GCC_FOR_TARGET) $(INCLUDES) \
 	$(CFLAGS) \
 	-DCRT_BEGIN \
 	-finhibit-size-directive -fno-inline-functions \
-	-O0 -c $(srcdir)/config/nds32/initfini.c -o crtbegin1.o
+	-fno-toplevel-reorder \
+	-Os -c $(srcdir)/config/nds32/initfini.c -o crtbegin1.o
 
-# Use -DCRT_END to create ending parts of .init and .fini content
-# Make sure you are building crtend1.o with -O0 optimization,
-# otherwise the static function will be optimized out
+# Use -DCRT_END to create ending parts of .init and .fini content.
 crtend1.o: $(srcdir)/config/nds32/initfini.c $(GCC_PASSES) $(CONFIG_H)
 	$(GCC_FOR_TARGET) $(INCLUDES) \
 	$(CFLAGS) \
 	-DCRT_END \
 	-finhibit-size-directive -fno-inline-functions \
-	-O0 -c $(srcdir)/config/nds32/initfini.c -o crtend1.o
-
-# Use this rule if and only if your crt0.o does not come from library
-# Also, be sure to add 'crtzero.o' in extra_parts in libgcc/config.host
-# and change STARTFILE_SPEC in nds32.h
-#
-#crtzero.o: $(srcdir)/config/nds32/crtzero.S $(GCC_PASSES) $(CONFIG_H)
-#	$(GCC_FOR_TARGET) $(INCLUDES) \
-#	-c $(srcdir)/config/nds32/crtzero.S -o crtzero.o
-
+	-fno-toplevel-reorder \
+	-Os -c $(srcdir)/config/nds32/initfini.c -o crtend1.o
 
 # ------------------------------------------------------------------------

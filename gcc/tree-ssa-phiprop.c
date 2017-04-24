@@ -24,16 +24,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm.h"
 #include "tree.h"
 #include "tm_p.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "gimple-pretty-print.h"
 #include "tree-ssa-alias.h"
@@ -384,36 +374,8 @@ next:;
 
 /* Main entry for phiprop pass.  */
 
-namespace {
-
-const pass_data pass_data_phiprop =
-{
-  GIMPLE_PASS, /* type */
-  "phiprop", /* name */
-  OPTGROUP_NONE, /* optinfo_flags */
-  TV_TREE_PHIPROP, /* tv_id */
-  ( PROP_cfg | PROP_ssa ), /* properties_required */
-  0, /* properties_provided */
-  0, /* properties_destroyed */
-  0, /* todo_flags_start */
-  TODO_update_ssa, /* todo_flags_finish */
-};
-
-class pass_phiprop : public gimple_opt_pass
-{
-public:
-  pass_phiprop (gcc::context *ctxt)
-    : gimple_opt_pass (pass_data_phiprop, ctxt)
-  {}
-
-  /* opt_pass methods: */
-  virtual bool gate (function *) { return flag_tree_phiprop; }
-  virtual unsigned int execute (function *);
-
-}; // class pass_phiprop
-
-unsigned int
-pass_phiprop::execute (function *fun)
+static unsigned int
+tree_ssa_phiprop (void)
 {
   vec<basic_block> bbs;
   struct phiprop_d *phivn;
@@ -431,7 +393,7 @@ pass_phiprop::execute (function *fun)
 
   /* Walk the dominator tree in preorder.  */
   bbs = get_all_dominated_blocks (CDI_DOMINATORS,
-				  single_succ (ENTRY_BLOCK_PTR_FOR_FN (fun)));
+				  single_succ (ENTRY_BLOCK_PTR_FOR_FN (cfun)));
   FOR_EACH_VEC_ELT (bbs, i, bb)
     for (gsi = gsi_start_phis (bb); !gsi_end_p (gsi); gsi_next (&gsi))
       did_something |= propagate_with_phi (bb, gsi_stmt (gsi), phivn, n);
@@ -446,6 +408,42 @@ pass_phiprop::execute (function *fun)
 
   return 0;
 }
+
+static bool
+gate_phiprop (void)
+{
+  return flag_tree_phiprop;
+}
+
+namespace {
+
+const pass_data pass_data_phiprop =
+{
+  GIMPLE_PASS, /* type */
+  "phiprop", /* name */
+  OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
+  TV_TREE_PHIPROP, /* tv_id */
+  ( PROP_cfg | PROP_ssa ), /* properties_required */
+  0, /* properties_provided */
+  0, /* properties_destroyed */
+  0, /* todo_flags_start */
+  ( TODO_update_ssa | TODO_verify_ssa ), /* todo_flags_finish */
+};
+
+class pass_phiprop : public gimple_opt_pass
+{
+public:
+  pass_phiprop (gcc::context *ctxt)
+    : gimple_opt_pass (pass_data_phiprop, ctxt)
+  {}
+
+  /* opt_pass methods: */
+  bool gate () { return gate_phiprop (); }
+  unsigned int execute () { return tree_ssa_phiprop (); }
+
+}; // class pass_phiprop
 
 } // anon namespace
 

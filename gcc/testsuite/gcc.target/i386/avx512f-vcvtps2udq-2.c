@@ -9,7 +9,6 @@
 #define SIZE (AVX512F_LEN / 32)
 #include "avx512f-mask-type.h"
 
-static void
 CALC (unsigned *r, float *s)
 {
   int i;
@@ -17,11 +16,11 @@ CALC (unsigned *r, float *s)
     r[i] = (unsigned) (s[i] + 0.5);
 }
 
-void
+void static
 TEST (void)
 {
-  int i;
-  UNION_TYPE (AVX512F_LEN, i_ud) res1, res2, res3;
+  int i, sign;
+  UNION_TYPE (AVX512F_LEN, i_d) res1, res2, res3;
   UNION_TYPE (AVX512F_LEN,) src;
   MASK_TYPE mask = MASK_VALUE;
   unsigned res_ref[SIZE];
@@ -38,14 +37,14 @@ TEST (void)
 
   CALC (res_ref, src.a);
 
-  if (UNION_CHECK (AVX512F_LEN, i_ud) (res1, res_ref))
+  if (UNION_CHECK (AVX512F_LEN, i_d) (res1, res_ref))
     abort ();
 
-  MASK_MERGE (i_ud) (res_ref, mask, SIZE);
-  if (UNION_CHECK (AVX512F_LEN, i_ud) (res2, res_ref))
+  MASK_MERGE (i_d) (res_ref, mask, SIZE);
+  if (UNION_CHECK (AVX512F_LEN, i_d) (res2, res_ref))
     abort ();
 
-  MASK_ZERO (i_ud) (res_ref, mask, SIZE);
-  if (UNION_CHECK (AVX512F_LEN, i_ud) (res3, res_ref))
+  MASK_ZERO (i_d) (res_ref, mask, SIZE);
+  if (UNION_CHECK (AVX512F_LEN, i_d) (res3, res_ref))
     abort ();
 }

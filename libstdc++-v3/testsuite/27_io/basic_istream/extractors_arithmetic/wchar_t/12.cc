@@ -17,7 +17,10 @@
 
 // 27.6.1.2.2 arithmetic extractors
 
-// { dg-do run { xfail { lax_strtofp } } }
+// XXX This test fails on Solaris 9 because of a bug in libc
+// XXX sscanf for very long input.  See:
+// XXX http://gcc.gnu.org/ml/gcc/2002-12/msg01422.html
+// { dg-do run { xfail { { *-*-solaris2.9 } || lax_strtofp } } }
 
 #include <istream>
 #include <sstream>

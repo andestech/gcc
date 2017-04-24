@@ -11,7 +11,6 @@ typedef struct teststruct
   int i2;
 } teststruct;
 
-void link_error (void);
 
 void cow (int i)
 {

@@ -26,7 +26,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "arith.h"
 #include "match.h"
 #include "parse.h"
-#include "hash-set.h"
+#include "pointer-set.h"
 
 /* Match an end of OpenMP directive.  End of OpenMP directive is optional
    whitespace, followed by '\n' or comment '!'.  */
@@ -3015,12 +3015,12 @@ resolve_omp_atomic (gfc_code *code)
 }
 
 
-struct fortran_omp_context
+struct omp_context
 {
   gfc_code *code;
-  hash_set<gfc_symbol *> *sharing_clauses;
-  hash_set<gfc_symbol *> *private_iterators;
-  struct fortran_omp_context *previous;
+  struct pointer_set_t *sharing_clauses;
+  struct pointer_set_t *private_iterators;
+  struct omp_context *previous;
 } *omp_current_ctx;
 static gfc_code *omp_current_do_code;
 static int omp_current_do_collapse;
@@ -3056,14 +3056,14 @@ gfc_resolve_omp_do_blocks (gfc_code *code, gfc_namespace *ns)
 void
 gfc_resolve_omp_parallel_blocks (gfc_code *code, gfc_namespace *ns)
 {
-  struct fortran_omp_context ctx;
+  struct omp_context ctx;
   gfc_omp_clauses *omp_clauses = code->ext.omp_clauses;
   gfc_omp_namelist *n;
   int list;
 
   ctx.code = code;
-  ctx.sharing_clauses = new hash_set<gfc_symbol *>;
-  ctx.private_iterators = new hash_set<gfc_symbol *>;
+  ctx.sharing_clauses = pointer_set_create ();
+  ctx.private_iterators = pointer_set_create ();
   ctx.previous = omp_current_ctx;
   omp_current_ctx = &ctx;
 
@@ -3077,7 +3077,7 @@ gfc_resolve_omp_parallel_blocks (gfc_code *code, gfc_namespace *ns)
       case OMP_LIST_REDUCTION:
       case OMP_LIST_LINEAR:
 	for (n = omp_clauses->lists[list]; n; n = n->next)
-	  ctx.sharing_clauses->add (n->sym);
+	  pointer_set_insert (ctx.sharing_clauses, n->sym);
 	break;
       default:
 	break;
@@ -3102,8 +3102,8 @@ gfc_resolve_omp_parallel_blocks (gfc_code *code, gfc_namespace *ns)
     }
 
   omp_current_ctx = ctx.previous;
-  delete ctx.sharing_clauses;
-  delete ctx.private_iterators;
+  pointer_set_destroy (ctx.sharing_clauses);
+  pointer_set_destroy (ctx.private_iterators);
 }
 
 
@@ -3126,7 +3126,7 @@ gfc_omp_save_and_clear_state (struct gfc_omp_saved_state *state)
 void
 gfc_omp_restore_state (struct gfc_omp_saved_state *state)
 {
-  omp_current_ctx = (struct fortran_omp_context *) state->ptrs[0];
+  omp_current_ctx = (struct omp_context *) state->ptrs[0];
   omp_current_do_code = (gfc_code *) state->ptrs[1];
   omp_current_do_collapse = state->ints[0];
 }
@@ -3159,10 +3159,10 @@ gfc_resolve_do_iterator (gfc_code *code, gfc_symbol *sym)
   if (omp_current_ctx == NULL)
     return;
 
-  if (omp_current_ctx->sharing_clauses->contains (sym))
+  if (pointer_set_contains (omp_current_ctx->sharing_clauses, sym))
     return;
 
-  if (! omp_current_ctx->private_iterators->add (sym))
+  if (! pointer_set_insert (omp_current_ctx->private_iterators, sym))
     {
       gfc_omp_clauses *omp_clauses = omp_current_ctx->code->ext.omp_clauses;
       gfc_omp_namelist *p;

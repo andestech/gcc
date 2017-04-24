@@ -1,8 +1,3 @@
-/* { dg-options "-fgnu89-inline" } */
-
-extern void abort (void);
-extern void exit (int);
-
 inline int
 f (int x)
 {

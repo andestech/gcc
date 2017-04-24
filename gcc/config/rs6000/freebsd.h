@@ -73,7 +73,6 @@
 #define RELOCATABLE_NEEDS_FIXUP \
   (rs6000_isa_flags & rs6000_isa_flags_explicit & OPTION_MASK_RELOCATABLE)
 
-/* Use standard DWARF numbering for DWARF debugging information.  */
-#define RS6000_USE_DWARF_NUMBERING
+#define DBX_REGISTER_NUMBER(REGNO) rs6000_dbx_register_number (REGNO)
 
 #define POWERPC_FREEBSD

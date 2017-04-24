@@ -32,17 +32,6 @@ Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
 #include "tree.h"
 #include "varasm.h"
 #include "stor-layout.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfganal.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -53,9 +42,6 @@ Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
 #include "gimple-iterator.h"
 #include "gimplify-me.h"
 #include "gimple-ssa.h"
-#include "hash-map.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
 #include "tree-cfg.h"
 #include "tree-phinodes.h"
@@ -71,7 +57,6 @@ Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
 
 /* Need to include expr.h and optabs.h for lshift_cheap_p.  */
 #include "expr.h"
-#include "insn-codes.h"
 #include "optabs.h"
 
 /* Maximum number of case bit tests.
@@ -140,6 +125,38 @@ hoist_edge_and_branch_if_true (gimple_stmt_iterator *gsip,
 }
 
 
+/* Determine whether "1 << x" is relatively cheap in word_mode.  */
+/* FIXME: This is the function that we need rtl.h and optabs.h for.
+   This function (and similar RTL-related cost code in e.g. IVOPTS) should
+   be moved to some kind of interface file for GIMPLE/RTL interactions.  */
+static bool
+lshift_cheap_p (void)
+{
+  /* FIXME: This should be made target dependent via this "this_target"
+     mechanism, similar to e.g. can_copy_init_p in gcse.c.  */
+  static bool init[2] = {false, false};
+  static bool cheap[2] = {true, true};
+  bool speed_p;
+
+  /* If the targer has no lshift in word_mode, the operation will most
+     probably not be cheap.  ??? Does GCC even work for such targets?  */
+  if (optab_handler (ashl_optab, word_mode) == CODE_FOR_nothing)
+    return false;
+
+  speed_p = optimize_insn_for_speed_p ();
+
+  if (!init[speed_p])
+    {
+      rtx reg = gen_raw_REG (word_mode, 10000);
+      int cost = set_src_cost (gen_rtx_ASHIFT (word_mode, const1_rtx, reg),
+			       speed_p);
+      cheap[speed_p] = cost < COSTS_N_INSNS (MAX_CASE_BIT_TESTS);
+      init[speed_p] = true;
+    }
+
+  return cheap[speed_p];
+}
+
 /* Return true if a switch should be expanded as a bit test.
    RANGE is the difference between highest and lowest case.
    UNIQ is number of unique case node targets, not counting the default case.
@@ -148,12 +165,12 @@ hoist_edge_and_branch_if_true (gimple_stmt_iterator *gsip,
 static bool
 expand_switch_using_bit_tests_p (tree range,
 				 unsigned int uniq,
-				 unsigned int count, bool speed_p)
+				 unsigned int count)
 {
   return (((uniq == 1 && count >= 3)
 	   || (uniq == 2 && count >= 5)
 	   || (uniq == 3 && count >= 6))
-	  && lshift_cheap_p (speed_p)
+	  && lshift_cheap_p ()
 	  && compare_tree_int (range, GET_MODE_BITSIZE (word_mode)) < 0
 	  && compare_tree_int (range, 0) > 0);
 }
@@ -232,7 +249,8 @@ This transformation was contributed by Roger Sayle, see this e-mail:
 
 struct case_bit_test
 {
-  wide_int mask;
+  HOST_WIDE_INT hi;
+  HOST_WIDE_INT lo;
   edge target_edge;
   tree label;
   int bits;
@@ -279,14 +297,13 @@ case_bit_test_cmp (const void *p1, const void *p2)
     are not guaranteed to be of the same type as INDEX_EXPR
     (the gimplifier doesn't change the type of case label values,
     and MINVAL and RANGE are derived from those values).
-    MAXVAL is MINVAL + RANGE.
 
     There *MUST* be MAX_CASE_BIT_TESTS or less unique case
     node targets.  */
 
 static void
 emit_case_bit_tests (gimple swtch, tree index_expr,
-		     tree minval, tree range, tree maxval)
+		     tree minval, tree range)
 {
   struct case_bit_test test[MAX_CASE_BIT_TESTS];
   unsigned int i, j, k;
@@ -310,8 +327,6 @@ emit_case_bit_tests (gimple swtch, tree index_expr,
   tree word_type_node = lang_hooks.types.type_for_mode (word_mode, 1);
   tree word_mode_zero = fold_convert (word_type_node, integer_zero_node);
   tree word_mode_one = fold_convert (word_type_node, integer_one_node);
-  int prec = TYPE_PRECISION (word_type_node);
-  wide_int wone = wi::one (prec);
 
   memset (&test, 0, sizeof (test));
 
@@ -336,7 +351,8 @@ emit_case_bit_tests (gimple swtch, tree index_expr,
       if (k == count)
 	{
 	  gcc_checking_assert (count < MAX_CASE_BIT_TESTS);
-	  test[k].mask = wi::zero (prec);
+	  test[k].hi = 0;
+	  test[k].lo = 0;
 	  test[k].target_edge = e;
 	  test[k].label = label;
 	  test[k].bits = 1;
@@ -354,38 +370,13 @@ emit_case_bit_tests (gimple swtch, tree index_expr,
 					    CASE_HIGH (cs), minval));
 
       for (j = lo; j <= hi; j++)
-	test[k].mask |= wi::lshift (wone, j);
+        if (j >= HOST_BITS_PER_WIDE_INT)
+	  test[k].hi |= (HOST_WIDE_INT) 1 << (j - HOST_BITS_PER_INT);
+	else
+	  test[k].lo |= (HOST_WIDE_INT) 1 << j;
     }
 
   qsort (test, count, sizeof (*test), case_bit_test_cmp);
-
-  /* If all values are in the 0 .. BITS_PER_WORD-1 range, we can get rid of
-     the minval subtractions, but it might make the mask constants more
-     expensive.  So, compare the costs.  */
-  if (compare_tree_int (minval, 0) > 0
-      && compare_tree_int (maxval, GET_MODE_BITSIZE (word_mode)) < 0)
-    {
-      int cost_diff;
-      HOST_WIDE_INT m = tree_to_uhwi (minval);
-      rtx reg = gen_raw_REG (word_mode, 10000);
-      bool speed_p = optimize_bb_for_speed_p (gimple_bb (swtch));
-      cost_diff = set_rtx_cost (gen_rtx_PLUS (word_mode, reg,
-					      GEN_INT (-m)), speed_p);
-      for (i = 0; i < count; i++)
-	{
-	  rtx r = immed_wide_int_const (test[i].mask, word_mode);
-	  cost_diff += set_src_cost (gen_rtx_AND (word_mode, reg, r), speed_p);
-	  r = immed_wide_int_const (wi::lshift (test[i].mask, m), word_mode);
-	  cost_diff -= set_src_cost (gen_rtx_AND (word_mode, reg, r), speed_p);
-	}
-      if (cost_diff > 0)
-	{
-	  for (i = 0; i < count; i++)
-	    test[i].mask = wi::lshift (test[i].mask, m);
-	  minval = build_zero_cst (TREE_TYPE (minval));
-	  range = maxval;
-	}
-    }
 
   /* We generate two jumps to the default case label.
      Split the default edge, so that we don't have to do any PHI node
@@ -458,7 +449,7 @@ emit_case_bit_tests (gimple swtch, tree index_expr,
         if (const & csui) goto target  */
   for (k = 0; k < count; k++)
     {
-      tmp = wide_int_to_tree (word_type_node, test[k].mask);
+      tmp = build_int_cst_wide (word_type_node, test[k].lo, test[k].hi);
       tmp = fold_build2 (BIT_AND_EXPR, word_type_node, csui, tmp);
       tmp = force_gimple_operand_gsi (&gsi, tmp,
 				      /*simple=*/true, NULL_TREE,
@@ -646,16 +637,15 @@ collect_switch_conv_info (gimple swtch, struct switch_conv_info *info)
       info->other_count += e->count;
 
   /* See if there is one common successor block for all branch
-     targets.  If it exists, record it in FINAL_BB.
-     Start with the destination of the default case as guess
-     or its destination in case it is a forwarder block.  */
-  if (! single_pred_p (e_default->dest))
-    info->final_bb = e_default->dest;
-  else if (single_succ_p (e_default->dest)
-	   && ! single_pred_p (single_succ (e_default->dest)))
-    info->final_bb = single_succ (e_default->dest);
-  /* Require that all switch destinations are either that common
-     FINAL_BB or a forwarder to it.  */
+     targets.  If it exists, record it in FINAL_BB.  */
+  FOR_EACH_EDGE (e, ei, info->switch_bb->succs)
+    {
+      if (! single_pred_p (e->dest))
+	{
+	  info->final_bb = e->dest;
+	  break;
+	}
+    }
   if (info->final_bb)
     FOR_EACH_EDGE (e, ei, info->switch_bb->succs)
       {
@@ -899,8 +889,7 @@ build_constructors (gimple swtch, struct switch_conv_info *info)
 	      info->constructors[k]->quick_push (elt);
 	    }
 
-	  pos = int_const_binop (PLUS_EXPR, pos,
-				 build_int_cst (TREE_TYPE (pos), 1));
+	  pos = int_const_binop (PLUS_EXPR, pos, integer_one_node);
 	}
       gcc_assert (tree_int_cst_equal (pos, CASE_LOW (cs)));
 
@@ -925,8 +914,7 @@ build_constructors (gimple swtch, struct switch_conv_info *info)
 	      elt.value = unshare_expr_without_location (val);
 	      info->constructors[j]->quick_push (elt);
 
-	      pos = int_const_binop (PLUS_EXPR, pos,
-				     build_int_cst (TREE_TYPE (pos), 1));
+	      pos = int_const_binop (PLUS_EXPR, pos, integer_one_node);
 	    } while (!tree_int_cst_lt (high, pos)
 		     && tree_int_cst_lt (low, pos));
 	  j++;
@@ -965,7 +953,7 @@ array_value_type (gimple swtch, tree type, int num,
 {
   unsigned int i, len = vec_safe_length (info->constructors[num]);
   constructor_elt *elt;
-  machine_mode mode;
+  enum machine_mode mode;
   int sign = 0;
   tree smaller_type;
 
@@ -981,26 +969,26 @@ array_value_type (gimple swtch, tree type, int num,
 
   FOR_EACH_VEC_SAFE_ELT (info->constructors[num], i, elt)
     {
-      wide_int cst;
+      double_int cst;
 
       if (TREE_CODE (elt->value) != INTEGER_CST)
 	return type;
 
-      cst = elt->value;
+      cst = TREE_INT_CST (elt->value);
       while (1)
 	{
 	  unsigned int prec = GET_MODE_BITSIZE (mode);
 	  if (prec > HOST_BITS_PER_WIDE_INT)
 	    return type;
 
-	  if (sign >= 0 && cst == wi::zext (cst, prec))
+	  if (sign >= 0 && cst == cst.zext (prec))
 	    {
-	      if (sign == 0 && cst == wi::sext (cst, prec))
+	      if (sign == 0 && cst == cst.sext (prec))
 		break;
 	      sign = 1;
 	      break;
 	    }
-	  if (sign <= 0 && cst == wi::sext (cst, prec))
+	  if (sign <= 0 && cst == cst.sext (prec))
 	    {
 	      sign = -1;
 	      break;
@@ -1080,7 +1068,7 @@ build_one_array (gimple swtch, int num, tree arr_index_type, gimple phi,
       DECL_ARTIFICIAL (decl) = 1;
       TREE_CONSTANT (decl) = 1;
       TREE_READONLY (decl) = 1;
-      varpool_node::finalize_decl (decl);
+      varpool_finalize_decl (decl);
 
       fetch = build4 (ARRAY_REF, value_type, decl, tidx, NULL_TREE,
 		      NULL_TREE);
@@ -1369,15 +1357,14 @@ process_switch (gimple swtch)
   if (info.uniq <= MAX_CASE_BIT_TESTS)
     {
       if (expand_switch_using_bit_tests_p (info.range_size,
-					   info.uniq, info.count,
-					   optimize_bb_for_speed_p
-					     (gimple_bb (swtch))))
+					   info.uniq, info.count))
 	{
 	  if (dump_file)
 	    fputs ("  expanding as bit test is preferable\n", dump_file);
-	  emit_case_bit_tests (swtch, info.index_expr, info.range_min,
-			       info.range_size, info.range_max);
-	  loops_state_set (LOOPS_NEED_FIXUP);
+	  emit_case_bit_tests (swtch, info.index_expr,
+			       info.range_min, info.range_size);
+	  if (current_loops)
+	    loops_state_set (LOOPS_NEED_FIXUP);
 	  return NULL;
 	}
 
@@ -1428,40 +1415,12 @@ process_switch (gimple swtch)
 /* The main function of the pass scans statements for switches and invokes
    process_switch on them.  */
 
-namespace {
-
-const pass_data pass_data_convert_switch =
-{
-  GIMPLE_PASS, /* type */
-  "switchconv", /* name */
-  OPTGROUP_NONE, /* optinfo_flags */
-  TV_TREE_SWITCH_CONVERSION, /* tv_id */
-  ( PROP_cfg | PROP_ssa ), /* properties_required */
-  0, /* properties_provided */
-  0, /* properties_destroyed */
-  0, /* todo_flags_start */
-  TODO_update_ssa, /* todo_flags_finish */
-};
-
-class pass_convert_switch : public gimple_opt_pass
-{
-public:
-  pass_convert_switch (gcc::context *ctxt)
-    : gimple_opt_pass (pass_data_convert_switch, ctxt)
-  {}
-
-  /* opt_pass methods: */
-  virtual bool gate (function *) { return flag_tree_switch_conversion != 0; }
-  virtual unsigned int execute (function *);
-
-}; // class pass_convert_switch
-
-unsigned int
-pass_convert_switch::execute (function *fun)
+static unsigned int
+do_switchconv (void)
 {
   basic_block bb;
 
-  FOR_EACH_BB_FN (bb, fun)
+  FOR_EACH_BB_FN (bb, cfun)
   {
     const char *failure_reason;
     gimple stmt = last_stmt (bb);
@@ -1506,6 +1465,46 @@ pass_convert_switch::execute (function *fun)
 
   return 0;
 }
+
+/* The pass gate. */
+
+static bool
+switchconv_gate (void)
+{
+  return flag_tree_switch_conversion != 0;
+}
+
+namespace {
+
+const pass_data pass_data_convert_switch =
+{
+  GIMPLE_PASS, /* type */
+  "switchconv", /* name */
+  OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
+  TV_TREE_SWITCH_CONVERSION, /* tv_id */
+  ( PROP_cfg | PROP_ssa ), /* properties_required */
+  0, /* properties_provided */
+  0, /* properties_destroyed */
+  0, /* todo_flags_start */
+  ( TODO_update_ssa | TODO_verify_ssa
+    | TODO_verify_stmts
+    | TODO_verify_flow ), /* todo_flags_finish */
+};
+
+class pass_convert_switch : public gimple_opt_pass
+{
+public:
+  pass_convert_switch (gcc::context *ctxt)
+    : gimple_opt_pass (pass_data_convert_switch, ctxt)
+  {}
+
+  /* opt_pass methods: */
+  bool gate () { return switchconv_gate (); }
+  unsigned int execute () { return do_switchconv (); }
+
+}; // class pass_convert_switch
 
 } // anon namespace
 

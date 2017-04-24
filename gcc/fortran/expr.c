@@ -1955,7 +1955,7 @@ scalarize_intrinsic_call (gfc_expr *e)
   for (; a; a = a->next)
     {
       n++;
-      if (!a->expr || a->expr->expr_type != EXPR_ARRAY)
+      if (a->expr->expr_type != EXPR_ARRAY)
 	continue;
       array_arg = n;
       expr = gfc_copy_expr (a->expr);
@@ -2460,23 +2460,9 @@ gfc_check_init_expr (gfc_expr *e)
 
       {
 	gfc_intrinsic_sym* isym;
-	gfc_symbol* sym = e->symtree->n.sym;
+	gfc_symbol* sym;
 
-	/* Special case for IEEE_SELECTED_REAL_KIND from the intrinsic
-	   module IEEE_ARITHMETIC, which is allowed in initialization
-	   expressions.  */
-	if (!strcmp(sym->name, "ieee_selected_real_kind")
-	    && sym->from_intmod == INTMOD_IEEE_ARITHMETIC)
-	  {
-	    gfc_expr *new_expr = gfc_simplify_ieee_selected_real_kind (e);
-	    if (new_expr)
-	      {
-		gfc_replace_expr (e, new_expr);
-		t = true;
-		break;
-	      }
-	  }
-
+	sym = e->symtree->n.sym;
 	if (!gfc_is_intrinsic (sym, 0, e->where)
 	    || (m = gfc_intrinsic_func_interface (e, 0)) != MATCH_YES)
 	  {
@@ -4560,7 +4546,7 @@ gfc_is_simply_contiguous (gfc_expr *expr, bool strict)
   for (ref = expr->ref; ref; ref = ref->next)
     {
       if (ar)
-	return false; /* Array shall be last part-ref.  */
+	return false; /* Array shall be last part-ref. */
 
       if (ref->type == REF_COMPONENT)
 	part_ref  = ref;
@@ -4970,11 +4956,10 @@ gfc_check_vardef_context (gfc_expr* e, bool pointer, bool alloc_obj,
 			  en = n->expr;
 			  if (gfc_dep_compare_expr (ec, en) == 0)
 			    {
-			      if (context)
-				gfc_error_now ("Elements with the same value at %L"
-					       " and %L in vector subscript"
-					       " in a variable definition"
-					       " context (%s)", &(ec->where),
+			      gfc_error_now ("Elements with the same value at %L"
+					     " and %L in vector subscript"
+					     " in a variable definition"
+					     " context (%s)", &(ec->where),
 					     &(en->where), context);
 			      return false;
 			    }

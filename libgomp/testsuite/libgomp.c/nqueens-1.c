@@ -5,7 +5,6 @@
 #include <omp.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
 int cnt;
 #pragma omp threadprivate (cnt)

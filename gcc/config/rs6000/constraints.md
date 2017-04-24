@@ -232,8 +232,7 @@ usually better to use @samp{m} or @samp{es} in @code{asm} statements)"
 
 (define_constraint "S"
   "Constant that can be placed into a 64-bit mask operand"
-  (and (match_test "TARGET_POWERPC64")
-       (match_operand 0 "mask64_operand")))
+  (match_operand 0 "mask64_operand"))
 
 (define_constraint "T"
   "Constant that can be placed into a 32-bit mask operand"

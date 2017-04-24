@@ -1,5 +1,4 @@
 /* PR tree-optimization/37573 */
-/* { dg-require-effective-target int32plus } */
 
 struct S
 {

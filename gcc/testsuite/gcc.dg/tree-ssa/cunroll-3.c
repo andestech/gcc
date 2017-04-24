@@ -1,7 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -fdump-tree-cunrolli-details" } */
 int a[1];
-void
 test(int c)
 { 
   int i;

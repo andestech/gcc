@@ -75,10 +75,4 @@
 
 #include <adxintrin.h>
 
-#include <clflushoptintrin.h>
-
-#include <xsavesintrin.h>
-
-#include <xsavecintrin.h>
-
 #endif /* _X86INTRIN_H_INCLUDED */

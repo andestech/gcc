@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -126,32 +126,13 @@ package body Styleg is
    -- Check_Arrow --
    -----------------
 
-   --  In check tokens mode (-gnatys), arrow must be surrounded by spaces,
-   --  except that within the argument of a Depends macro the required format
-   --  is =>+ rather than => +).
+   --  In check tokens mode (-gnatys), arrow must be surrounded by spaces
 
-   procedure Check_Arrow (Inside_Depends : Boolean := False) is
+   procedure Check_Arrow is
    begin
       if Style_Check_Tokens then
          Require_Preceding_Space;
-
-         if not Inside_Depends then
-            Require_Following_Space;
-
-         --  Special handling for Inside_Depends
-
-         else
-            if Source (Scan_Ptr) = ' '
-              and then Source (Scan_Ptr + 1) = '+'
-            then
-               Error_Space_Not_Allowed (Scan_Ptr);
-
-            elsif Source (Scan_Ptr) /= ' '
-              and then Source (Scan_Ptr) /= '+'
-            then
-               Require_Following_Space;
-            end if;
-         end if;
+         Require_Following_Space;
       end if;
    end Check_Arrow;
 
@@ -1022,9 +1003,9 @@ package body Styleg is
    -- Check_Then --
    ----------------
 
-   --  In check if then layout mode (-gnatyi), we expect a THEN keyword to
-   --  appear either on the same line as the IF, or on a separate line if
-   --  the IF statement extends for more than one line.
+   --  In check if then layout mode (-gnatyi), we expect a THEN keyword
+   --  to appear either on the same line as the IF, or on a separate line
+   --  if the IF statement extends for more than one line.
 
    procedure Check_Then (If_Loc : Source_Ptr) is
    begin
@@ -1051,17 +1032,10 @@ package body Styleg is
    --  In check token mode (-gnatyt), unary plus or minus must not be
    --  followed by a space.
 
-   --  Annoying exception: if we have the sequence =>+ within a Depends pragma
-   --  or aspect, then we insist on a space rather than forbidding it.
-
-   procedure Check_Unary_Plus_Or_Minus (Inside_Depends : Boolean := False) is
+   procedure Check_Unary_Plus_Or_Minus is
    begin
       if Style_Check_Tokens then
-         if not Inside_Depends then
-            Check_No_Space_After;
-         else
-            Require_Following_Space;
-         end if;
+         Check_No_Space_After;
       end if;
    end Check_Unary_Plus_Or_Minus;
 
@@ -1087,7 +1061,7 @@ package body Styleg is
    begin
       if Style_Check_Xtra_Parens then
          Error_Msg -- CODEFIX
-           ("(style) redundant parentheses", Loc);
+           ("redundant parentheses?", Loc);
       end if;
    end Check_Xtra_Parens;
 

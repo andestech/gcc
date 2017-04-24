@@ -1,9 +1,6 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target vect_int } */
 
-int posix_memalign(void **memptr, __SIZE_TYPE__ alignment, __SIZE_TYPE__ size);
-void bar (int *);
-
 int *foo (int n)
 {
   int *p;

@@ -36,26 +36,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "prefix.h"
 #include "c-family/c-target.h"
 #include "c-family/c-target-def.h"
-#include "predict.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfgrtl.h"
-#include "cfganal.h"
-#include "lcm.h"
-#include "cfgbuild.h"
-#include "cfgcleanup.h"
-#include "basic-block.h"
-#include "hash-map.h"
-#include "is-a.h"
-#include "plugin-api.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
 #include "../../libcpp/internal.h"
 
@@ -764,7 +744,7 @@ darwin_objc_declare_unresolved_class_reference (const char *name)
   gcc_checking_assert (!strncmp (name, ".objc_class_name_", 17));
 
   snprintf (buf, len, "%s%s", reference, name);
-  symtab->finalize_toplevel_asm (build_string (strlen (buf), buf));
+  add_asm_node (build_string (strlen (buf), buf));
 }
 
 static void
@@ -779,10 +759,10 @@ darwin_objc_declare_class_definition (const char *name)
 
   /* Mimic default_globalize_label.  */
   snprintf (buf, len, ".globl\t%s", xname);
-  symtab->finalize_toplevel_asm (build_string (strlen (buf), buf));
+  add_asm_node (build_string (strlen (buf), buf));
 
   snprintf (buf, len, "%s = 0", xname);
-  symtab->finalize_toplevel_asm (build_string (strlen (buf), buf));
+  add_asm_node (build_string (strlen (buf), buf));
 }
 
 #undef  TARGET_HANDLE_C_OPTION

@@ -36,7 +36,6 @@ assemble_variable (struct tree_decl decl)
   return decl.u1.a.align;
 }
 
-int
 main ()
 {
   struct tree_decl decl;

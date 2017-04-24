@@ -1,4 +1,4 @@
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 
 // 2007-05-02  Benjamin Kosnik  <bkoz@redhat.com>
 //

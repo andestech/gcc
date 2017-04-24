@@ -26,8 +26,8 @@ along with GCC; see the file COPYING3.  If not see
 #include "stringpool.h"
 #include "stor-layout.h"
 #include "ggc.h"
-#include "gfortran.h"
 #include "diagnostic-core.h"	/* For internal_error.  */
+#include "gfortran.h"
 #include "trans.h"
 #include "trans-stmt.h"
 #include "trans-array.h"
@@ -467,7 +467,7 @@ gfc_build_io_library_fndecls (void)
   iocall[IOCALL_SET_NML_VAL] = gfc_build_library_function_decl_with_spec (
 	get_identifier (PREFIX("st_set_nml_var")), ".w.R",
 	void_type_node, 6, dt_parm_type, pvoid_type_node, pvoid_type_node,
-	gfc_int4_type_node, gfc_charlen_type_node, gfc_int4_type_node);
+	void_type_node, gfc_charlen_type_node, gfc_int4_type_node);
 
   iocall[IOCALL_SET_NML_VAL_DIM] = gfc_build_library_function_decl_with_spec (
 	get_identifier (PREFIX("st_set_nml_var_dim")), ".w",
@@ -1452,10 +1452,10 @@ gfc_trans_wait (gfc_code * code)
 
 
 /* nml_full_name builds up the fully qualified name of a
-   derived type component. '+' is used to denote a type extension.  */
+   derived type component.  */
 
 static char*
-nml_full_name (const char* var_name, const char* cmp_name, bool parent)
+nml_full_name (const char* var_name, const char* cmp_name)
 {
   int full_name_length;
   char * full_name;
@@ -1463,7 +1463,7 @@ nml_full_name (const char* var_name, const char* cmp_name, bool parent)
   full_name_length = strlen (var_name) + strlen (cmp_name) + 1;
   full_name = XCNEWVEC (char, full_name_length + 1);
   strcpy (full_name, var_name);
-  full_name = strcat (full_name, parent ? "+" : "%");
+  full_name = strcat (full_name, "%");
   full_name = strcat (full_name, cmp_name);
   return full_name;
 }
@@ -1557,7 +1557,6 @@ transfer_namelist_element (stmtblock_t * block, const char * var_name,
   tree dtype;
   tree dt_parm_addr;
   tree decl = NULL_TREE;
-  tree gfc_int4_type_node = gfc_get_int_type (4);
   int n_dim;
   int itype;
   int rank = 0;
@@ -1606,8 +1605,7 @@ transfer_namelist_element (stmtblock_t * block, const char * var_name,
   tmp = build_call_expr_loc (input_location,
 			 iocall[IOCALL_SET_NML_VAL], 6,
 			 dt_parm_addr, addr_expr, string,
-			 build_int_cst (gfc_int4_type_node, ts->kind),
-			 tmp, dtype);
+			 IARG (ts->kind), tmp, dtype);
   gfc_add_expr_to_block (block, tmp);
 
   /* If the object is an array, transfer rank times:
@@ -1618,7 +1616,7 @@ transfer_namelist_element (stmtblock_t * block, const char * var_name,
       tmp = build_call_expr_loc (input_location,
 			     iocall[IOCALL_SET_NML_VAL_DIM], 5,
 			     dt_parm_addr,
-			     build_int_cst (gfc_int4_type_node, n_dim),
+			     IARG (n_dim),
 			     gfc_conv_array_stride (decl, n_dim),
 			     gfc_conv_array_lbound (decl, n_dim),
 			     gfc_conv_array_ubound (decl, n_dim));
@@ -1636,8 +1634,7 @@ transfer_namelist_element (stmtblock_t * block, const char * var_name,
 
       for (cmp = ts->u.derived->components; cmp; cmp = cmp->next)
 	{
-	  char *full_name = nml_full_name (var_name, cmp->name,
-					   ts->u.derived->attr.extension);
+	  char *full_name = nml_full_name (var_name, cmp->name);
 	  transfer_namelist_element (block,
 				     full_name,
 				     NULL, cmp, expr);
@@ -2135,7 +2132,7 @@ transfer_expr (gfc_se * se, gfc_typespec * ts, tree addr_expr, gfc_code * code)
 	  gfc_add_block_to_block (&se->pre, &se->post);
 	  return;
 	}
-      /* Fall through.  */
+      /* Fall through. */
     case BT_HOLLERITH:
       if (se->string_length)
 	arg2 = se->string_length;

@@ -9,7 +9,6 @@ struct UNewTrie
   int index[(0x110000 >> 1)];
 };
 typedef struct UNewTrie UNewTrie;
-void
 utrie_open_3_4 ()
 {
   UNewTrie *trie;

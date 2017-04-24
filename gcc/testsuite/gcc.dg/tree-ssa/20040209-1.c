@@ -22,8 +22,6 @@ union tree_node
 };
 
 int pedantic;
-void foo (tree);
-void bar1 (tree *);
 
 void
 finish_struct (tree t, tree fieldlist, tree attributes)

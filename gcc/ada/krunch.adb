@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2009, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,11 +29,15 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
+with Hostparm;
+
 procedure Krunch
   (Buffer        : in out String;
    Len           : in out Natural;
    Maxlen        : Natural;
-   No_Predef     : Boolean)
+   No_Predef     : Boolean;
+   VMS_On_Target : Boolean := False)
+
 is
    pragma Assert (Buffer'First = 1);
    --  This is a documented requirement; the assert turns off index warnings
@@ -116,15 +120,36 @@ begin
    --  Special case of a child unit whose parent unit is a single letter that
    --  is A, G, I, or S. In order to prevent confusion with krunched names
    --  of predefined units use a tilde rather than a minus as the second
-   --  character of the file name.
+   --  character of the file name.  On VMS a tilde is an illegal character
+   --  in a file name, two consecutive underlines ("__") are used instead.
 
    elsif Len > 1
      and then Buffer (2) = '-'
      and then (B1 = 'a' or else B1 = 'g' or else B1 = 'i' or else B1 = 's')
      and then Len <= Maxlen
    then
-      Buffer (2) := '~';
-      return;
+      --  When VMS is the host, it is always also the target
+
+      if Hostparm.OpenVMS or else VMS_On_Target then
+         Len := Len + 1;
+         Buffer (4 .. Len) := Buffer (3 .. Len - 1);
+         Buffer (2) := '_';
+         Buffer (3) := '_';
+      else
+         Buffer (2) := '~';
+      end if;
+
+      if Len <= Maxlen then
+         return;
+
+      else
+         --  Case of VMS when the buffer had exactly the length Maxlen and now
+         --  has the length Maxlen + 1: krunching after "__" is needed.
+
+         Startloc := 4;
+         Curlen   := Len;
+         Krlen    := Maxlen;
+      end if;
 
    --  Normal case, not a predefined file
 
@@ -236,4 +261,5 @@ begin
    end loop;
 
    return;
+
 end Krunch;

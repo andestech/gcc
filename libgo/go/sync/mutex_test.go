@@ -9,6 +9,7 @@ package sync_test
 import (
 	"runtime"
 	. "sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -89,34 +90,63 @@ func BenchmarkMutexUncontended(b *testing.B) {
 		Mutex
 		pad [128]uint8
 	}
-	b.RunParallel(func(pb *testing.PB) {
-		var mu PaddedMutex
-		for pb.Next() {
-			mu.Lock()
-			mu.Unlock()
-		}
-	})
+	const CallsPerSched = 1000
+	procs := runtime.GOMAXPROCS(-1)
+	N := int32(b.N / CallsPerSched)
+	c := make(chan bool, procs)
+	for p := 0; p < procs; p++ {
+		go func() {
+			var mu PaddedMutex
+			for atomic.AddInt32(&N, -1) >= 0 {
+				runtime.Gosched()
+				for g := 0; g < CallsPerSched; g++ {
+					mu.Lock()
+					mu.Unlock()
+				}
+			}
+			c <- true
+		}()
+	}
+	for p := 0; p < procs; p++ {
+		<-c
+	}
 }
 
 func benchmarkMutex(b *testing.B, slack, work bool) {
-	var mu Mutex
+	const (
+		CallsPerSched  = 1000
+		LocalWork      = 100
+		GoroutineSlack = 10
+	)
+	procs := runtime.GOMAXPROCS(-1)
 	if slack {
-		b.SetParallelism(10)
+		procs *= GoroutineSlack
 	}
-	b.RunParallel(func(pb *testing.PB) {
-		foo := 0
-		for pb.Next() {
-			mu.Lock()
-			mu.Unlock()
-			if work {
-				for i := 0; i < 100; i++ {
-					foo *= 2
-					foo /= 2
+	N := int32(b.N / CallsPerSched)
+	c := make(chan bool, procs)
+	var mu Mutex
+	for p := 0; p < procs; p++ {
+		go func() {
+			foo := 0
+			for atomic.AddInt32(&N, -1) >= 0 {
+				runtime.Gosched()
+				for g := 0; g < CallsPerSched; g++ {
+					mu.Lock()
+					mu.Unlock()
+					if work {
+						for i := 0; i < LocalWork; i++ {
+							foo *= 2
+							foo /= 2
+						}
+					}
 				}
 			}
-		}
-		_ = foo
-	})
+			c <- foo == 42
+		}()
+	}
+	for p := 0; p < procs; p++ {
+		<-c
+	}
 }
 
 func BenchmarkMutex(b *testing.B) {

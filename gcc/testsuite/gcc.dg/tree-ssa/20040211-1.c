@@ -4,7 +4,6 @@
 struct rtx_def;
 typedef struct rtx_def *rtx;
 extern const char rtx_class[];
-void foo (void);
 union rtunion_def
 {
   rtx rtx;

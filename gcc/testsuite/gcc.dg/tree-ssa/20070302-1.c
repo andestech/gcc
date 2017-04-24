@@ -1,8 +1,6 @@
 /* { dg-do link } */
 /* { dg-options "-O2" } */
 
-void link_error (void);
-
 struct A
 {
   int x;
@@ -41,7 +39,6 @@ float foo (int i)
     link_error ();
 }
 
-int
 main(int argc, char **argv)
 {
   foo (argc);

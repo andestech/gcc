@@ -8,7 +8,6 @@ foo (void)
   return 10;
 }
 
-int
 main ()
 {
   int A = 0;

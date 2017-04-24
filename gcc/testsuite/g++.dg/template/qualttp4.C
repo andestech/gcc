@@ -7,7 +7,7 @@ struct A
 	template <class T> struct B {};
 };
 
-template <template <class, class> class TT> // { dg-message "provided for" }
+template <template <class, class> class TT> // { dg-error "provided" }
 struct X
 {
 	TT<int> y; // { dg-error "number" }

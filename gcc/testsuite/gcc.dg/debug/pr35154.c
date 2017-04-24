@@ -2,7 +2,6 @@
    proper structure.  These should be lettered G for the struct that gives
    the name to the .comm, and should be V or S for .lcomm symbols.  */
 
-__attribute__ ((used))
 static char i_outer;
 struct {
    char f1;
@@ -16,7 +15,7 @@ struct {
 int
 main()
 {
-   static char i_inner[2] __attribute__ ((used));
+   static char i_inner[2];
    i_inner[0] = 'a'; i_inner[1] = 'b';
    opta.f1 = 'c';
    opta.f2 = 'd';

@@ -198,7 +198,7 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
   /* By default, we throw on the math library if we have one.  */
   int need_math = (MATH_LIBRARY[0] != '\0');
 
-  /* Whether we should link a static libgfortran.  */
+  /* Whether we should link a static libgfortran. */
   int static_lib = 0; 
 
   /* Whether we need to link statically.  */
@@ -276,7 +276,7 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
 
 	case OPT__version:
 	  printf ("GNU Fortran %s%s\n", pkgversion_string, version_string);
-	  printf ("Copyright %s 2014 Free Software Foundation, Inc.\n\n",
+	  printf ("Copyright %s 2015 Free Software Foundation, Inc.\n\n",
 		  _("(C)"));
 	  printf (_("GNU Fortran comes with NO WARRANTY, to the extent permitted by law.\n\
 You may redistribute copies of GNU Fortran\n\

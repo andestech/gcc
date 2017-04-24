@@ -1,4 +1,3 @@
-/* { dg-require-effective-target int32plus } */
 extern void exit (int);
 extern void abort ();
 

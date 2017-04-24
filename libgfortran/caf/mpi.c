@@ -34,8 +34,6 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 /* Define GFC_CAF_CHECK to enable run-time checking.  */
 /* #define GFC_CAF_CHECK  1  */
 
-typedef void ** mpi_token_t;
-#define TOKEN(X) ((mpi_token_t) (X))
 
 static void error_stop (int error) __attribute__ ((noreturn));
 
@@ -75,7 +73,7 @@ caf_runtime_error (const char *message, ...)
    libaray is initialized.  */
 
 void
-_gfortran_caf_init (int *argc, char ***argv)
+_gfortran_caf_init (int *argc, char ***argv, int *this_image, int *num_images)
 {
   if (caf_num_images == 0)
     {
@@ -89,6 +87,11 @@ _gfortran_caf_init (int *argc, char ***argv)
       MPI_Comm_rank (MPI_COMM_WORLD, &caf_this_image);
       caf_this_image++;
     }
+
+  if (this_image)
+    *this_image = caf_this_image;
+  if (num_images)
+    *num_images = caf_num_images;
 }
 
 
@@ -101,8 +104,8 @@ _gfortran_caf_finalize (void)
     {
       caf_static_t *tmp = caf_static_list->prev;
 
-      free (TOKEN (caf_static_list->token)[caf_this_image-1]);
-      free (TOKEN (caf_static_list->token));
+      free (caf_static_list->token[caf_this_image-1]);
+      free (caf_static_list->token);
       free (caf_static_list);
       caf_static_list = tmp;
     }
@@ -114,23 +117,8 @@ _gfortran_caf_finalize (void)
 }
 
 
-int
-_gfortran_caf_this_image (int distance __attribute__ ((unused)))
-{
-  return caf_this_image;
-}
-
-
-int
-_gfortran_caf_num_images (int distance __attribute__ ((unused)),
-			  int failed __attribute__ ((unused)))
-{
-  return caf_num_images;
-}
-
-
 void *
-_gfortran_caf_register (size_t size, caf_register_t type, caf_token_t *token,
+_gfortran_caf_register (ptrdiff_t size, caf_register_t type, void ***token,
 			int *stat, char *errmsg, int errmsg_len)
 {
   void *local;
@@ -141,17 +129,17 @@ _gfortran_caf_register (size_t size, caf_register_t type, caf_token_t *token,
 
   /* Start MPI if not already started.  */
   if (caf_num_images == 0)
-    _gfortran_caf_init (NULL, NULL);
+    _gfortran_caf_init (NULL, NULL, NULL, NULL);
 
   /* Token contains only a list of pointers.  */
   local = malloc (size);
-  *token = malloc (sizeof (mpi_token_t) * caf_num_images);
+  *token = malloc (sizeof (void*) * caf_num_images);
 
   if (unlikely (local == NULL || *token == NULL))
     goto error;
 
   /* token[img-1] is the address of the token in image "img".  */
-  err = MPI_Allgather (&local, sizeof (void*), MPI_BYTE, TOKEN (*token),
+  err = MPI_Allgather (&local, sizeof (void*), MPI_BYTE, *token,
 		       sizeof (void*), MPI_BYTE, MPI_COMM_WORLD);
 
   if (unlikely (err))
@@ -204,7 +192,7 @@ error:
 
 
 void
-_gfortran_caf_deregister (caf_token_t *token, int *stat, char *errmsg, int errmsg_len)
+_gfortran_caf_deregister (void ***token, int *stat, char *errmsg, int errmsg_len)
 {
   if (unlikely (caf_is_finalized))
     {
@@ -232,7 +220,7 @@ _gfortran_caf_deregister (caf_token_t *token, int *stat, char *errmsg, int errms
   if (stat)
     *stat = 0;
 
-  free (TOKEN (*token)[caf_this_image-1]);
+  free ((*token)[caf_this_image-1]);
   free (*token);
 }
 

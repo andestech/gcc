@@ -5,7 +5,6 @@
 int a,a1;
 double b;
 float b1;
-void
 t()
 {
 	a=b;

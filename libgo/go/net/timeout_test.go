@@ -120,9 +120,6 @@ func TestReadTimeout(t *testing.T) {
 			t.Fatalf("Read: expected err %v, got %v", errClosing, err)
 		}
 	default:
-		if err == io.EOF && runtime.GOOS == "nacl" { // close enough; golang.org/issue/8044
-			break
-		}
 		if err != errClosing {
 			t.Fatalf("Read: expected err %v, got %v", errClosing, err)
 		}
@@ -351,8 +348,7 @@ func TestReadWriteDeadline(t *testing.T) {
 	go func() {
 		c, err := ln.Accept()
 		if err != nil {
-			t.Errorf("Accept: %v", err)
-			return
+			t.Fatalf("Accept: %v", err)
 		}
 		defer c.Close()
 		lnquit <- true
@@ -497,7 +493,10 @@ func testVariousDeadlines(t *testing.T, maxProcs int) {
 				clientc <- copyRes{n, err, d}
 			}()
 
-			tooLong := 5 * time.Second
+			tooLong := 2 * time.Second
+			if runtime.GOOS == "windows" {
+				tooLong = 5 * time.Second
+			}
 			select {
 			case res := <-clientc:
 				if isTimeout(res.err) {
@@ -537,8 +536,7 @@ func TestReadDeadlineDataAvailable(t *testing.T) {
 	go func() {
 		c, err := ln.Accept()
 		if err != nil {
-			t.Errorf("Accept: %v", err)
-			return
+			t.Fatalf("Accept: %v", err)
 		}
 		defer c.Close()
 		n, err := c.Write([]byte(msg))
@@ -576,8 +574,7 @@ func TestWriteDeadlineBufferAvailable(t *testing.T) {
 	go func() {
 		c, err := ln.Accept()
 		if err != nil {
-			t.Errorf("Accept: %v", err)
-			return
+			t.Fatalf("Accept: %v", err)
 		}
 		defer c.Close()
 		c.SetWriteDeadline(time.Now().Add(-5 * time.Second)) // in the past
@@ -613,8 +610,7 @@ func TestAcceptDeadlineConnectionAvailable(t *testing.T) {
 	go func() {
 		c, err := Dial("tcp", ln.Addr().String())
 		if err != nil {
-			t.Errorf("Dial: %v", err)
-			return
+			t.Fatalf("Dial: %v", err)
 		}
 		defer c.Close()
 		var buf [1]byte
@@ -673,8 +669,7 @@ func TestProlongTimeout(t *testing.T) {
 		s, err := ln.Accept()
 		connected <- true
 		if err != nil {
-			t.Errorf("ln.Accept: %v", err)
-			return
+			t.Fatalf("ln.Accept: %v", err)
 		}
 		defer s.Close()
 		s.SetDeadline(time.Now().Add(time.Hour))
@@ -711,7 +706,7 @@ func TestProlongTimeout(t *testing.T) {
 
 func TestDeadlineRace(t *testing.T) {
 	switch runtime.GOOS {
-	case "nacl", "plan9":
+	case "plan9":
 		t.Skipf("skipping test on %q", runtime.GOOS)
 	}
 

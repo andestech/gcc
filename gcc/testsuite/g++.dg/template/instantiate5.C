@@ -19,6 +19,7 @@ struct B
 template <typename T> struct C
 {
   virtual void bar() const { T::foo(); } // { dg-error "no matching function" }
+  // { dg-message "candidate" "candidate note" { target *-*-* } 21 }
 };
 
 C<B> c;				// { dg-message "required" }

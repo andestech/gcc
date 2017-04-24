@@ -1674,7 +1674,7 @@ gfc_resolve_intrinsic (gfc_symbol *sym, locus *loc)
       return false;
     }
 
-  gfc_copy_formal_args_intr (sym, isym, NULL);
+  gfc_copy_formal_args_intr (sym, isym);
 
   sym->attr.pure = isym->pure;
   sym->attr.elemental = isym->elemental;
@@ -2943,8 +2943,6 @@ resolve_function (gfc_expr *expr)
   else if (expr->value.function.actual != NULL
 	   && expr->value.function.isym != NULL
 	   && GENERIC_ID != GFC_ISYM_LBOUND
-	   && GENERIC_ID != GFC_ISYM_LCOBOUND
-	   && GENERIC_ID != GFC_ISYM_UCOBOUND
 	   && GENERIC_ID != GFC_ISYM_LEN
 	   && GENERIC_ID != GFC_ISYM_LOC
 	   && GENERIC_ID != GFC_ISYM_C_LOC
@@ -4731,50 +4729,6 @@ done:
 }
 
 
-static void
-add_caf_get_intrinsic (gfc_expr *e)
-{
-  gfc_expr *wrapper, *tmp_expr;
-  gfc_ref *ref;
-  int n;
-
-  for (ref = e->ref; ref; ref = ref->next)
-    if (ref->type == REF_ARRAY && ref->u.ar.codimen > 0)
-      break;
-  if (ref == NULL)
-    return;
-
-  for (n = ref->u.ar.dimen; n < ref->u.ar.dimen + ref->u.ar.codimen; n++)
-    if (ref->u.ar.dimen_type[n] != DIMEN_ELEMENT)
-      return;
-
-  tmp_expr = XCNEW (gfc_expr);
-  *tmp_expr = *e;
-  wrapper = gfc_build_intrinsic_call (gfc_current_ns, GFC_ISYM_CAF_GET,
-				      "caf_get", tmp_expr->where, 1, tmp_expr);
-  wrapper->ts = e->ts;
-  wrapper->rank = e->rank;
-  if (e->rank)
-    wrapper->shape = gfc_copy_shape (e->shape, e->rank);
-  *e = *wrapper;
-  free (wrapper);
-}
-
-
-static void
-remove_caf_get_intrinsic (gfc_expr *e)
-{
-  gcc_assert (e->expr_type == EXPR_FUNCTION && e->value.function.isym
-	      && e->value.function.isym->id == GFC_ISYM_CAF_GET);
-  gfc_expr *e2 = e->value.function.actual->expr;
-  e->value.function.actual->expr = NULL;
-  gfc_free_actual_arglist (e->value.function.actual);
-  gfc_free_shape (&e->shape, e->rank);
-  *e = *e2;
-  free (e2);
-}
-
-
 /* Resolve a variable expression.  */
 
 static bool
@@ -5054,12 +5008,6 @@ resolve_procedure:
 	}
     }
 
-  if (t)
-    expression_rank (e);
-
-  if (t && gfc_option.coarray == GFC_FCOARRAY_LIB && gfc_is_coindexed (e))
-    add_caf_get_intrinsic (e);
-
   return t;
 }
 
@@ -5114,7 +5062,7 @@ check_host_association (gfc_expr *e)
   	    {
 	      /* Original was function so point to the new symbol, since
 		 the actual argument list is already attached to the
-		 expression.  */
+		 expression. */
 	      e->value.function.esym = NULL;
 	      e->symtree = st;
 	    }
@@ -5642,7 +5590,7 @@ success:
 /* Resolve a call to a type-bound subroutine.  */
 
 static bool
-resolve_typebound_call (gfc_code* c, const char **name)
+resolve_typebound_call (gfc_code* c, const char **name, bool *overridable)
 {
   gfc_actual_arglist* newactual;
   gfc_symtree* target;
@@ -5665,6 +5613,10 @@ resolve_typebound_call (gfc_code* c, const char **name)
 
   if (!resolve_typebound_generic_call (c->expr1, name))
     return false;
+
+  /* Pass along the NON_OVERRIDABLE attribute of the specific TBP. */
+  if (overridable)
+    *overridable = !c->expr1->value.compcall.tbp->non_overridable;
 
   /* Transform into an ordinary EXEC_CALL for now.  */
 
@@ -5925,7 +5877,7 @@ resolve_typebound_subroutine (gfc_code *code)
       if (c->ts.u.derived == NULL)
 	c->ts.u.derived = gfc_find_derived_vtab (declared);
 
-      if (!resolve_typebound_call (code, &name))
+      if (!resolve_typebound_call (code, &name, NULL))
 	return false;
 
       /* Use the generic name if it is there.  */
@@ -5957,7 +5909,7 @@ resolve_typebound_subroutine (gfc_code *code)
     }
 
   if (st == NULL)
-    return resolve_typebound_call (code, NULL);
+    return resolve_typebound_call (code, NULL, NULL);
 
   if (!resolve_ref (code->expr1))
     return false;
@@ -5970,10 +5922,10 @@ resolve_typebound_subroutine (gfc_code *code)
 	 || (!class_ref && st->n.sym->ts.type != BT_CLASS))
     {
       gfc_free_ref_list (new_ref);
-      return resolve_typebound_call (code, NULL);
+      return resolve_typebound_call (code, NULL, NULL);
     }
 
-  if (!resolve_typebound_call (code, &name))
+  if (!resolve_typebound_call (code, &name, &overridable))
     {
       gfc_free_ref_list (new_ref);
       return false;
@@ -6143,7 +6095,11 @@ gfc_resolve_expr (gfc_expr *e)
       if (check_host_association (e))
 	t = resolve_function (e);
       else
-	t = resolve_variable (e);
+	{
+	  t = resolve_variable (e);
+	  if (t)
+	    expression_rank (e);
+	}
 
       if (e->ts.type == BT_CHARACTER && e->ts.u.cl == NULL && e->ref
 	  && e->ref->type != REF_SUBSTRING)
@@ -6943,9 +6899,12 @@ resolve_allocate_expr (gfc_expr *e, gfc_code *code)
     {
       /* Default initialization via MOLD (non-polymorphic).  */
       gfc_expr *rhs = gfc_default_initializer (&code->expr3->ts);
-      gfc_resolve_expr (rhs);
-      gfc_free_expr (code->expr3);
-      code->expr3 = rhs;
+      if (rhs != NULL)
+	{
+	  gfc_resolve_expr (rhs);
+	  gfc_free_expr (code->expr3);
+	  code->expr3 = rhs;
+	}
     }
 
   if (e->ts.type == BT_CLASS && !unlimited && !UNLIMITED_POLY (code->expr3))
@@ -7761,7 +7720,7 @@ resolve_select (gfc_code *code, bool select_type)
 	/* Strip all other unreachable cases.  */
 	if (body->ext.block.case_list)
 	  {
-	    for (cp = body->ext.block.case_list; cp && cp->next; cp = cp->next)
+	    for (cp = body->ext.block.case_list; cp->next; cp = cp->next)
 	      {
 		if (cp->next->unreachable)
 		  {
@@ -7912,7 +7871,10 @@ resolve_assoc_var (gfc_symbol* sym, bool resolve_target)
       sym->as = gfc_get_array_spec ();
       sym->as->rank = target->rank;
       sym->as->type = AS_DEFERRED;
-      sym->as->corank = gfc_get_corank (target);
+
+      /* Target must not be coindexed, thus the associate-variable
+	 has no corank.  */
+      sym->as->corank = 0;
     }
 
   /* Mark this as an associate variable.  */
@@ -8422,11 +8384,6 @@ find_reachable_labels (gfc_code *block)
 static void
 resolve_lock_unlock (gfc_code *code)
 {
-  if (code->expr1->expr_type == EXPR_FUNCTION
-      && code->expr1->value.function.isym
-      && code->expr1->value.function.isym->id == GFC_ISYM_CAF_GET)
-    remove_caf_get_intrinsic (code->expr1);
-
   if (code->expr1->ts.type != BT_DERIVED
       || code->expr1->expr_type != EXPR_VARIABLE
       || code->expr1->ts.u.derived->from_intmod != INTMOD_ISO_FORTRAN_ENV
@@ -8471,53 +8428,6 @@ resolve_lock_unlock (gfc_code *code)
       && !gfc_check_vardef_context (code->expr4, false, false, false,
 				    _("ACQUIRED_LOCK variable")))
     return;
-}
-
-
-static void
-resolve_critical (gfc_code *code)
-{
-  gfc_symtree *symtree;
-  gfc_symbol *lock_type;
-  char name[GFC_MAX_SYMBOL_LEN];
-  static int serial = 0;
-
-  if (gfc_option.coarray != GFC_FCOARRAY_LIB)
-    return;
-
-  symtree = gfc_find_symtree (gfc_current_ns->sym_root,
-			      GFC_PREFIX ("lock_type"));
-  if (symtree)
-    lock_type = symtree->n.sym;
-  else
-    {
-      if (gfc_get_sym_tree (GFC_PREFIX ("lock_type"), gfc_current_ns, &symtree,
-			    false) != 0)
-	gcc_unreachable ();
-      lock_type = symtree->n.sym;
-      lock_type->attr.flavor = FL_DERIVED;
-      lock_type->attr.zero_comp = 1;
-      lock_type->from_intmod = INTMOD_ISO_FORTRAN_ENV;
-      lock_type->intmod_sym_id = ISOFORTRAN_LOCK_TYPE;
-    }
-
-  sprintf(name, GFC_PREFIX ("lock_var") "%d",serial++);
-  if (gfc_get_sym_tree (name, gfc_current_ns, &symtree, false) != 0)
-    gcc_unreachable ();
-
-  code->resolved_sym = symtree->n.sym;
-  symtree->n.sym->attr.flavor = FL_VARIABLE;
-  symtree->n.sym->attr.referenced = 1;
-  symtree->n.sym->attr.artificial = 1;
-  symtree->n.sym->attr.codimension = 1;
-  symtree->n.sym->ts.type = BT_DERIVED;
-  symtree->n.sym->ts.u.derived = lock_type;
-  symtree->n.sym->as = gfc_get_array_spec ();
-  symtree->n.sym->as->corank = 1;
-  symtree->n.sym->as->type = AS_EXPLICIT;
-  symtree->n.sym->as->cotype = AS_EXPLICIT;
-  symtree->n.sym->as->lower[0] = gfc_get_int_expr (gfc_default_integer_kind,
-						   NULL, 1);
 }
 
 
@@ -9329,10 +9239,8 @@ resolve_ordinary_assign (gfc_code *code, gfc_namespace *ns)
       return false;
     }
 
-  bool lhs_coindexed = gfc_is_coindexed (lhs);
-
   /* F2008, Section 7.2.1.2.  */
-  if (lhs_coindexed && gfc_has_ultimate_allocatable (lhs))
+  if (gfc_is_coindexed (lhs) && gfc_has_ultimate_allocatable (lhs))
     {
       gfc_error ("Coindexed variable must not have an allocatable ultimate "
 		 "component in assignment at %L", &lhs->where);
@@ -9340,47 +9248,6 @@ resolve_ordinary_assign (gfc_code *code, gfc_namespace *ns)
     }
 
   gfc_check_assign (lhs, rhs, 1);
-
-  /* Assign the 'data' of a class object to a derived type.  */
-  if (lhs->ts.type == BT_DERIVED
-      && rhs->ts.type == BT_CLASS)
-    gfc_add_data_component (rhs);
-
-  /* Insert a GFC_ISYM_CAF_SEND intrinsic, when the LHS is a coindexed variable.
-     Additionally, insert this code when the RHS is a CAF as we then use the
-     GFC_ISYM_CAF_SEND intrinsic just to avoid a temporary; but do not do so if
-     the LHS is (re)allocatable or has a vector subscript.  If the LHS is a
-     noncoindexed array and the RHS is a coindexed scalar, use the normal code
-     path.  */
-  if (gfc_option.coarray == GFC_FCOARRAY_LIB
-      && (lhs_coindexed
-	  || (code->expr2->expr_type == EXPR_FUNCTION
-	      && code->expr2->value.function.isym
-	      && code->expr2->value.function.isym->id == GFC_ISYM_CAF_GET
-	      && (code->expr1->rank == 0 || code->expr2->rank != 0)
-	      && !gfc_expr_attr (rhs).allocatable
-              && !gfc_has_vector_subscript (rhs))))
-    {
-      if (code->expr2->expr_type == EXPR_FUNCTION
-	  && code->expr2->value.function.isym
-	  && code->expr2->value.function.isym->id == GFC_ISYM_CAF_GET)
-	remove_caf_get_intrinsic (code->expr2);
-      code->op = EXEC_CALL;
-      gfc_get_sym_tree (GFC_PREFIX ("caf_send"), ns, &code->symtree, true);
-      code->resolved_sym = code->symtree->n.sym;
-      code->resolved_sym->attr.flavor = FL_PROCEDURE;
-      code->resolved_sym->attr.intrinsic = 1;
-      code->resolved_sym->attr.subroutine = 1;
-      code->resolved_isym = gfc_intrinsic_subroutine_by_id (GFC_ISYM_CAF_SEND);
-      gfc_commit_symbol (code->resolved_sym);
-      code->ext.actual = gfc_get_actual_arglist ();
-      code->ext.actual->expr = lhs;
-      code->ext.actual->next = gfc_get_actual_arglist ();
-      code->ext.actual->next->expr = rhs;
-      code->expr1 = NULL;
-      code->expr2 = NULL;
-    }
-
   return false;
 }
 
@@ -9965,10 +9832,7 @@ gfc_resolve_code (gfc_code *code, gfc_namespace *ns)
 	case EXEC_CONTINUE:
 	case EXEC_DT_END:
 	case EXEC_ASSIGN_CALL:
-	  break;
-
 	case EXEC_CRITICAL:
-	  resolve_critical (code);
 	  break;
 
 	case EXEC_SYNC_ALL:
@@ -10021,13 +9885,6 @@ gfc_resolve_code (gfc_code *code, gfc_namespace *ns)
 	  if (!t)
 	    break;
 
-	  /* Remove a GFC_ISYM_CAF_GET inserted for a coindexed variable on
-	     the LHS.  */
-	  if (code->expr1->expr_type == EXPR_FUNCTION
-	      && code->expr1->value.function.isym
-	      && code->expr1->value.function.isym->id == GFC_ISYM_CAF_GET)
-	    remove_caf_get_intrinsic (code->expr1);
-
 	  if (!gfc_check_vardef_context (code->expr1, false, false, false,
 					 _("assignment")))
 	    break;
@@ -10041,7 +9898,7 @@ gfc_resolve_code (gfc_code *code, gfc_namespace *ns)
 	    }
 
 	  /* F03 7.4.1.3 for non-allocatable, non-pointer components.  */
-	  if (code->op != EXEC_CALL && code->expr1->ts.type == BT_DERIVED
+	  if (code->expr1->ts.type == BT_DERIVED
 	      && code->expr1->ts.u.derived->attr.defined_assign_comp)
 	    generate_component_assignments (&code, ns);
 
@@ -10785,7 +10642,6 @@ apply_default_init_local (gfc_symbol *sym)
      result variable, which are also nonstatic.  */
   if (sym->attr.save || sym->ns->save_all
       || (gfc_option.flag_max_stack_var_size == 0 && !sym->attr.result
-	  && !sym->ns->proc_name->attr.recursive
 	  && (!sym->attr.dimension || !is_non_constant_shape_array (sym))))
     {
       /* Don't clobber an existing initializer!  */
@@ -11201,6 +11057,30 @@ resolve_fl_procedure (gfc_symbol *sym, int mp_flag)
 		}
 	     }
 	}
+
+      /* PUBLIC interfaces may expose PRIVATE procedures that take types
+	 PRIVATE to the containing module.  */
+      for (iface = sym->generic; iface; iface = iface->next)
+	{
+	  for (arg = gfc_sym_get_dummy_args (iface->sym); arg; arg = arg->next)
+	    {
+	      if (arg->sym
+		  && arg->sym->ts.type == BT_DERIVED
+		  && !arg->sym->ts.u.derived->attr.use_assoc
+		  && !gfc_check_symbol_access (arg->sym->ts.u.derived)
+		  && !gfc_notify_std (GFC_STD_F2003, "Procedure '%s' in "
+				      "PUBLIC interface '%s' at %L takes "
+				      "dummy arguments of '%s' which is "
+				      "PRIVATE", iface->sym->name,
+				      sym->name, &iface->sym->declared_at,
+				      gfc_typename(&arg->sym->ts)))
+		{
+		  /* Stop this message from recurring.  */
+		  arg->sym->ts.u.derived->attr.access = ACCESS_PUBLIC;
+		  return false;
+		}
+	     }
+	}
     }
 
   if (sym->attr.function && sym->value && sym->attr.proc != PROC_ST_FUNCTION
@@ -11271,11 +11151,11 @@ resolve_fl_procedure (gfc_symbol *sym, int mp_flag)
 	}
 
       /* Appendix B.2 of the standard.  Contained functions give an
-	 error anyway.  Deferred character length is an F2003 feature.
-	 Don't warn on intrinsic conversion functions, which start
-	 with two underscores.  */
-      if (!sym->attr.contained && !sym->ts.deferred
-	  && (sym->name[0] != '_' || sym->name[1] != '_'))
+	 error anyway.  Fixed-form is likely to be F77/legacy. Deferred
+	 character length is an F2003 feature.  */
+      if (!sym->attr.contained
+	    && gfc_current_form != FORM_FIXED
+	    && !sym->ts.deferred)
 	gfc_notify_std (GFC_STD_F95_OBS,
 			"CHARACTER(*) function '%s' at %L",
 			sym->name, &sym->declared_at);
@@ -11398,10 +11278,6 @@ gfc_resolve_finalizers (gfc_symbol* derived, bool *finalizable)
   bool seen_scalar = false;
   gfc_symbol *vtab;
   gfc_component *c;
-  gfc_symbol *parent = gfc_get_derived_super_type (derived);
-
-  if (parent)
-    gfc_resolve_finalizers (parent, finalizable);
 
   /* Return early when not finalizable. Additionally, ensure that derived-type
      components have a their finalizables resolved.  */
@@ -12295,7 +12171,7 @@ resolve_fl_derived0 (gfc_symbol *sym)
 
   super_type = gfc_get_derived_super_type (sym);
 
-  /* F2008, C432.  */
+  /* F2008, C432. */
   if (super_type && sym->attr.coarray_comp && !super_type->attr.coarray_comp)
     {
       gfc_error ("As extending type '%s' at %L has a coarray component, "
@@ -12988,10 +12864,13 @@ resolve_symbol (gfc_symbol *sym)
 	    {
 	      this_symtree = gfc_find_symtree (gfc_current_ns->sym_root,
 					       sym->name);
-	      gfc_release_symbol (sym);
-	      symtree->n.sym->refs++;
-	      this_symtree->n.sym = symtree->n.sym;
-	      return;
+	      if (this_symtree->n.sym == sym)
+		{
+		  symtree->n.sym->refs++;
+		  gfc_release_symbol (sym);
+		  this_symtree->n.sym = symtree->n.sym;
+		  return;
+		}
 	    }
 	}
 
@@ -13105,7 +12984,7 @@ resolve_symbol (gfc_symbol *sym)
       as = sym->as;
     }
 
-  /* F2008, C530.  */
+  /* F2008, C530. */
   if (sym->attr.contiguous
       && (!class_attr.dimension
 	  || (as->type != AS_ASSUMED_SHAPE && as->type != AS_ASSUMED_RANK

@@ -24,8 +24,6 @@ typedef union
   long int a;
 } T;
 
-void test (T *);
-
 void
 foo (void)
 {

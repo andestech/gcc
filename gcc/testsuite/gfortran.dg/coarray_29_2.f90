@@ -1,6 +1,8 @@
 ! { dg-do compile }
 ! { dg-options "-fcoarray=single" }
-! { dg-compile-aux-modules "coarray_29_1.f90" }
+
+! Requires that coarray_29.f90 has been compiled before
+! and that, thus, co_sum_module is available
 
 ! PR fortran/55272
 !

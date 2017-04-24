@@ -1,19 +1,18 @@
-2014-10-23  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+2015-06-26  Release Manager
 
-	* include/gc.h [(sparc || __sparc) && sun] (GC_INIT): Remove
-	comment and definition.
+	* GCC 4.9.3 released.
 
-2014-10-06  Marek Polacek  <polacek@redhat.com>
+2014-10-30  Release Manager
 
-	* testsuite/boehm-gc.c/gctest.c: Fix defaulting to int.
+	* GCC 4.9.2 released.
 
-2014-05-13  Bernd Edlinger  <bernd.edlinger@hotmail.de>
+2014-07-16  Release Manager
 
-	Fix current cygwin-64 build problems.
-	* include/gc_config_macros.h (GC_PTHREADS): Use __CYGWIN__ instead
-	of __CYGWIN32__ here.
-	* win32_threads.c (GC_push_all_stacks): Push all X86_64 registers.
-	(GC_get_thread_stack_base): Get the stack base for X86_64.
+	* GCC 4.9.1 released.
+
+2014-04-22  Release Manager
+
+	* GCC 4.9.0 released.
 
 2014-04-22  Jakub Jelinek  <jakub@redhat.com>
 

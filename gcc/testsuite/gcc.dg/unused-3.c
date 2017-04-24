@@ -5,7 +5,6 @@
 /* { dg-options "-Wunused" } */
 
 typedef short unused_type __attribute__ ((unused));
-int
 main ()
 {
   short

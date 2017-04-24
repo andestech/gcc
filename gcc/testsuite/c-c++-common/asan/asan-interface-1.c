@@ -2,6 +2,7 @@
 
 /* { dg-do run { target { *-*-linux* } } } */
 
+#include <stdbool.h>
 #include <sanitizer/asan_interface.h>
 
 int main() {

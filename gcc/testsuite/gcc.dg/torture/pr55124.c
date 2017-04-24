@@ -2,7 +2,6 @@
 
 int a, b;
 long c;
-void foo(int);
 
 void f2(void)
 {

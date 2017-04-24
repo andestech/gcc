@@ -5,10 +5,6 @@
 /* { dg-require-profiling "-fprofile-generate" } */
 /* { dg-options "-O2 -fprofile-generate" } */
 
-void lookup ();
-int hash ();
-void error ();
-
 char *
 test(char *ret, int *counter, void *schema,
      const char* name, const char *namespace,

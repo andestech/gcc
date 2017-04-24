@@ -4,7 +4,6 @@
 int *a_p;
 int a[1000];
 
-void
 f(int k)
 {
         long long i;

@@ -1,7 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O3 -fmodulo-sched" } */
 
-void update_screen (char *);
 static char *place_region_bounds_x, *place_region_bounds_y;
 static void read_place () {
   char msg[300];

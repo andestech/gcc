@@ -20,7 +20,6 @@ typedef struct _ClientResource
 } ClientResourceRec;
 
 static ClientResourceRec clientTable[256];
-int Hash (int, unsigned int);
 
 void
 RebuildTable (int client)

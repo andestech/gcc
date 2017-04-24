@@ -1,8 +1,4 @@
 /* { dg-options "-ffast-math" } */
-
-extern void abort (void);
-extern void exit (int);
-
 #define min1(a,b) ((a) < (b) ? (a) : (b))
 #define max1(a,b) ((a) > (b) ? (a) : (b))
 

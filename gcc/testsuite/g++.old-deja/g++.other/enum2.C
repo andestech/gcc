@@ -5,7 +5,7 @@
 
 // We'd like the enum location to be its identifier.
 
-enum thing // { dg-message "" } previous def
+enum thing // { dg-error "" } previous def
 {
   val1
 };

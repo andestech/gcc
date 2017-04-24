@@ -1,4 +1,3 @@
-void SubMtx_blockDiagonalInfo (int **);
 double *ZV_entries (void);
 void SubMtx_fillRowZV (int irow)
 {

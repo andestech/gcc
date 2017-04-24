@@ -63,8 +63,7 @@ func TestMutexCloseUnblock(t *testing.T) {
 	for i := 0; i < 4; i++ {
 		go func() {
 			if mu.RWLock(true) {
-				t.Error("broken")
-				return
+				t.Fatal("broken")
 			}
 			c <- true
 		}()
@@ -139,44 +138,36 @@ func TestMutexStress(t *testing.T) {
 				switch r.Intn(3) {
 				case 0:
 					if !mu.Incref() {
-						t.Error("broken")
-						return
+						t.Fatal("broken")
 					}
 					if mu.Decref() {
-						t.Error("broken")
-						return
+						t.Fatal("broken")
 					}
 				case 1:
 					if !mu.RWLock(true) {
-						t.Error("broken")
-						return
+						t.Fatal("broken")
 					}
 					// Ensure that it provides mutual exclusion for readers.
 					if readState[0] != readState[1] {
-						t.Error("broken")
-						return
+						t.Fatal("broken")
 					}
 					readState[0]++
 					readState[1]++
 					if mu.RWUnlock(true) {
-						t.Error("broken")
-						return
+						t.Fatal("broken")
 					}
 				case 2:
 					if !mu.RWLock(false) {
-						t.Error("broken")
-						return
+						t.Fatal("broken")
 					}
 					// Ensure that it provides mutual exclusion for writers.
 					if writeState[0] != writeState[1] {
-						t.Error("broken")
-						return
+						t.Fatal("broken")
 					}
 					writeState[0]++
 					writeState[1]++
 					if mu.RWUnlock(false) {
-						t.Error("broken")
-						return
+						t.Fatal("broken")
 					}
 				}
 			}

@@ -1,5 +1,7 @@
 // { dg-do run }
-// { dg-options "-fsanitize=return -fno-sanitize-recover=return" }
+// { dg-options "-fsanitize=return" }
+
+#include <stdio.h>
 
 struct S { S (); ~S (); };
 
@@ -20,6 +22,12 @@ foo (int x)
 int
 main ()
 {
+  fputs ("UBSAN TEST START\n", stderr);
+
   foo (1);
   foo (14);
+
+  fputs ("UBSAN TEST END\n", stderr);
 }
+
+/* { dg-output "UBSAN TEST START(\n|\r\n|\r)UBSAN TEST END" } */

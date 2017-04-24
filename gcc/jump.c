@@ -45,24 +45,15 @@ along with GCC; see the file COPYING3.  If not see
 #include "insn-config.h"
 #include "insn-attr.h"
 #include "recog.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "input.h"
 #include "function.h"
-#include "predict.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfgrtl.h"
 #include "basic-block.h"
 #include "expr.h"
 #include "except.h"
 #include "diagnostic-core.h"
 #include "reload.h"
+#include "predict.h"
 #include "tree-pass.h"
 #include "target.h"
-#include "rtl-iter.h"
 
 /* Optimize jump y; x: ... y: jumpif... x?
    Don't know if it is worth bothering with.  */
@@ -71,18 +62,19 @@ along with GCC; see the file COPYING3.  If not see
    or even change what is live at any point.
    So perhaps let combiner do it.  */
 
-static void init_label_info (rtx_insn *);
-static void mark_all_labels (rtx_insn *);
-static void mark_jump_label_1 (rtx, rtx_insn *, bool, bool);
-static void mark_jump_label_asm (rtx, rtx_insn *);
+static void init_label_info (rtx);
+static void mark_all_labels (rtx);
+static void mark_jump_label_1 (rtx, rtx, bool, bool);
+static void mark_jump_label_asm (rtx, rtx);
 static void redirect_exp_1 (rtx *, rtx, rtx, rtx);
 static int invert_exp_1 (rtx, rtx);
+static int returnjump_p_1 (rtx *, void *);
 
 /* Worker for rebuild_jump_labels and rebuild_jump_labels_chain.  */
 static void
-rebuild_jump_labels_1 (rtx_insn *f, bool count_forced)
+rebuild_jump_labels_1 (rtx f, bool count_forced)
 {
-  rtx_insn_list *insn;
+  rtx insn;
 
   timevar_push (TV_REBUILD_JUMP);
   init_label_info (f);
@@ -93,9 +85,9 @@ rebuild_jump_labels_1 (rtx_insn *f, bool count_forced)
      count doesn't drop to zero.  */
 
   if (count_forced)
-    for (insn = forced_labels; insn; insn = insn->next ())
-      if (LABEL_P (insn->insn ()))
-	LABEL_NUSES (insn->insn ())++;
+    for (insn = forced_labels; insn; insn = XEXP (insn, 1))
+      if (LABEL_P (XEXP (insn, 0)))
+	LABEL_NUSES (XEXP (insn, 0))++;
   timevar_pop (TV_REBUILD_JUMP);
 }
 
@@ -104,7 +96,7 @@ rebuild_jump_labels_1 (rtx_insn *f, bool count_forced)
    instructions and jumping insns that have labels as operands
    (e.g. cbranchsi4).  */
 void
-rebuild_jump_labels (rtx_insn *f)
+rebuild_jump_labels (rtx f)
 {
   rebuild_jump_labels_1 (f, true);
 }
@@ -113,7 +105,7 @@ rebuild_jump_labels (rtx_insn *f)
    forced_labels.  It can be used on insn chains that aren't the 
    main function chain.  */
 void
-rebuild_jump_labels_chain (rtx_insn *chain)
+rebuild_jump_labels_chain (rtx chain)
 {
   rebuild_jump_labels_1 (chain, false);
 }
@@ -129,30 +121,42 @@ rebuild_jump_labels_chain (rtx_insn *chain)
 static unsigned int
 cleanup_barriers (void)
 {
-  rtx_insn *insn;
-  for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
+  rtx insn, next, prev;
+  for (insn = get_insns (); insn; insn = next)
     {
+      next = NEXT_INSN (insn);
       if (BARRIER_P (insn))
 	{
-	  rtx_insn *prev = prev_nonnote_insn (insn);
+	  prev = prev_nonnote_insn (insn);
 	  if (!prev)
 	    continue;
-
-	  if (CALL_P (prev))
-	    {
-	      /* Make sure we do not split a call and its corresponding
-		 CALL_ARG_LOCATION note.  */
-	      rtx_insn *next = NEXT_INSN (prev);
-
-	      if (NOTE_P (next)
-		  && NOTE_KIND (next) == NOTE_INSN_CALL_ARG_LOCATION)
-		prev = next;
-	    }
-
 	  if (BARRIER_P (prev))
 	    delete_insn (insn);
 	  else if (prev != PREV_INSN (insn))
-	    reorder_insns_nobb (insn, insn, prev);
+	    {
+	      basic_block bb = BLOCK_FOR_INSN (prev);
+	      rtx end = PREV_INSN (insn);
+	      reorder_insns_nobb (insn, insn, prev);
+	      if (bb)
+		{
+		  /* If the backend called in machine reorg compute_bb_for_insn
+		     and didn't free_bb_for_insn again, preserve basic block
+		     boundaries.  Move the end of basic block to PREV since
+		     it is followed by a barrier now, and clear BLOCK_FOR_INSN
+		     on the following notes.
+		     ???  Maybe the proper solution for the targets that have
+		     cfg around after machine reorg is not to run cleanup_barriers
+		     pass at all.  */
+		  BB_END (bb) = prev;
+		  do
+		    {
+		      prev = NEXT_INSN (prev);
+		      if (prev != insn && BLOCK_FOR_INSN (prev) == bb)
+			BLOCK_FOR_INSN (prev) = NULL;
+		    }
+		  while (prev != end);
+		}
+	    }
 	}
     }
   return 0;
@@ -165,6 +169,8 @@ const pass_data pass_data_cleanup_barriers =
   RTL_PASS, /* type */
   "barriers", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  false, /* has_gate */
+  true, /* has_execute */
   TV_NONE, /* tv_id */
   0, /* properties_required */
   0, /* properties_provided */
@@ -181,7 +187,7 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual unsigned int execute (function *) { return cleanup_barriers (); }
+  unsigned int execute () { return cleanup_barriers (); }
 
 }; // class pass_cleanup_barriers
 
@@ -199,9 +205,9 @@ make_pass_cleanup_barriers (gcc::context *ctxt)
    notes whose labels don't occur in the insn any more.  */
 
 static void
-init_label_info (rtx_insn *f)
+init_label_info (rtx f)
 {
-  rtx_insn *insn;
+  rtx insn;
 
   for (insn = f; insn; insn = NEXT_INSN (insn))
     {
@@ -237,7 +243,7 @@ init_label_info (rtx_insn *f)
    load into a jump_insn that uses it.  */
 
 static void
-maybe_propagate_label_ref (rtx_insn *jump_insn, rtx_insn *prev_nonjump_insn)
+maybe_propagate_label_ref (rtx jump_insn, rtx prev_nonjump_insn)
 {
   rtx label_note, pc, pc_src;
 
@@ -272,7 +278,7 @@ maybe_propagate_label_ref (rtx_insn *jump_insn, rtx_insn *prev_nonjump_insn)
 	     CODE_LABEL in the LABEL_REF of the "set".  We can
 	     conveniently use it for the marker function, which
 	     requires a LABEL_REF wrapping.  */
-	  gcc_assert (XEXP (label_note, 0) == LABEL_REF_LABEL (SET_SRC (label_set)));
+	  gcc_assert (XEXP (label_note, 0) == XEXP (SET_SRC (label_set), 0));
 
 	  mark_jump_label_1 (label_set, jump_insn, false, true);
 
@@ -285,9 +291,9 @@ maybe_propagate_label_ref (rtx_insn *jump_insn, rtx_insn *prev_nonjump_insn)
    Combine consecutive labels, and count uses of labels.  */
 
 static void
-mark_all_labels (rtx_insn *f)
+mark_all_labels (rtx f)
 {
-  rtx_insn *insn;
+  rtx insn;
 
   if (current_ir_type () == IR_RTL_CFGLAYOUT)
     {
@@ -299,7 +305,7 @@ mark_all_labels (rtx_insn *f)
 	     handled by other optimizers using better algorithms.  */
 	  FOR_BB_INSNS (bb, insn)
 	    {
-	      gcc_assert (! insn->deleted ());
+	      gcc_assert (! INSN_DELETED_P (insn));
 	      if (NONDEBUG_INSN_P (insn))
 	        mark_jump_label (PATTERN (insn), insn, 0);
 	    }
@@ -317,10 +323,10 @@ mark_all_labels (rtx_insn *f)
     }
   else
     {
-      rtx_insn *prev_nonjump_insn = NULL;
+      rtx prev_nonjump_insn = NULL;
       for (insn = f; insn; insn = NEXT_INSN (insn))
 	{
-	  if (insn->deleted ())
+	  if (INSN_DELETED_P (insn))
 	    ;
 	  else if (LABEL_P (insn))
 	    prev_nonjump_insn = NULL;
@@ -351,7 +357,7 @@ enum rtx_code
 reversed_comparison_code_parts (enum rtx_code code, const_rtx arg0,
 				const_rtx arg1, const_rtx insn)
 {
-  machine_mode mode;
+  enum machine_mode mode;
 
   /* If this is not actually a comparison, we can't reverse it.  */
   if (GET_RTX_CLASS (code) != RTX_COMPARE
@@ -478,7 +484,7 @@ reversed_comparison_code (const_rtx comparison, const_rtx insn)
 /* Return comparison with reversed code of EXP.
    Return NULL_RTX in case we fail to do the reversal.  */
 rtx
-reversed_comparison (const_rtx exp, machine_mode mode)
+reversed_comparison (const_rtx exp, enum machine_mode mode)
 {
   enum rtx_code reversed_code = reversed_comparison_code (exp, NULL_RTX);
   if (reversed_code == UNKNOWN)
@@ -774,7 +780,7 @@ comparison_dominates_p (enum rtx_code code1, enum rtx_code code2)
 /* Return 1 if INSN is an unconditional jump and nothing else.  */
 
 int
-simplejump_p (const rtx_insn *insn)
+simplejump_p (const_rtx insn)
 {
   return (JUMP_P (insn)
 	  && GET_CODE (PATTERN (insn)) == SET
@@ -789,7 +795,7 @@ simplejump_p (const rtx_insn *insn)
    branch and compare insns.  Use any_condjump_p instead whenever possible.  */
 
 int
-condjump_p (const rtx_insn *insn)
+condjump_p (const_rtx insn)
 {
   const_rtx x = PATTERN (insn);
 
@@ -817,7 +823,7 @@ condjump_p (const rtx_insn *insn)
    branch and compare insns.  Use any_condjump_p instead whenever possible.  */
 
 int
-condjump_in_parallel_p (const rtx_insn *insn)
+condjump_in_parallel_p (const_rtx insn)
 {
   const_rtx x = PATTERN (insn);
 
@@ -848,7 +854,7 @@ condjump_in_parallel_p (const rtx_insn *insn)
 /* Return set of PC, otherwise NULL.  */
 
 rtx
-pc_set (const rtx_insn *insn)
+pc_set (const_rtx insn)
 {
   rtx pat;
   if (!JUMP_P (insn))
@@ -869,7 +875,7 @@ pc_set (const rtx_insn *insn)
    possibly bundled inside a PARALLEL.  */
 
 int
-any_uncondjump_p (const rtx_insn *insn)
+any_uncondjump_p (const_rtx insn)
 {
   const_rtx x = pc_set (insn);
   if (!x)
@@ -889,7 +895,7 @@ any_uncondjump_p (const rtx_insn *insn)
    Note that unlike condjump_p it returns false for unconditional jumps.  */
 
 int
-any_condjump_p (const rtx_insn *insn)
+any_condjump_p (const_rtx insn)
 {
   const_rtx x = pc_set (insn);
   enum rtx_code a, b;
@@ -910,7 +916,7 @@ any_condjump_p (const rtx_insn *insn)
 /* Return the label of a conditional jump.  */
 
 rtx
-condjump_label (const rtx_insn *insn)
+condjump_label (const_rtx insn)
 {
   rtx x = pc_set (insn);
 
@@ -928,57 +934,62 @@ condjump_label (const rtx_insn *insn)
   return NULL_RTX;
 }
 
+/* Return true if INSN is a (possibly conditional) return insn.  */
+
+static int
+returnjump_p_1 (rtx *loc, void *data ATTRIBUTE_UNUSED)
+{
+  rtx x = *loc;
+
+  if (x == NULL)
+    return false;
+
+  switch (GET_CODE (x))
+    {
+    case RETURN:
+    case SIMPLE_RETURN:
+    case EH_RETURN:
+      return true;
+
+    case SET:
+      return SET_IS_RETURN_P (x);
+
+    default:
+      return false;
+    }
+}
+
 /* Return TRUE if INSN is a return jump.  */
 
 int
-returnjump_p (const rtx_insn *insn)
+returnjump_p (rtx insn)
 {
-  if (JUMP_P (insn))
-    {
-      subrtx_iterator::array_type array;
-      FOR_EACH_SUBRTX (iter, array, PATTERN (insn), NONCONST)
-	{
-	  const_rtx x = *iter;
-	  switch (GET_CODE (x))
-	    {
-	    case RETURN:
-	    case SIMPLE_RETURN:
-	    case EH_RETURN:
-	      return true;
-
-	    case SET:
-	      if (SET_IS_RETURN_P (x))
-		return true;
-	      break;
-
-	    default:
-	      break;
-	    }
-	}
-    }
-  return false;
+  if (!JUMP_P (insn))
+    return 0;
+  return for_each_rtx (&PATTERN (insn), returnjump_p_1, NULL);
 }
 
 /* Return true if INSN is a (possibly conditional) return insn.  */
 
-int
-eh_returnjump_p (rtx_insn *insn)
+static int
+eh_returnjump_p_1 (rtx *loc, void *data ATTRIBUTE_UNUSED)
 {
-  if (JUMP_P (insn))
-    {
-      subrtx_iterator::array_type array;
-      FOR_EACH_SUBRTX (iter, array, PATTERN (insn), NONCONST)
-	if (GET_CODE (*iter) == EH_RETURN)
-	  return true;
-    }
-  return false;
+  return *loc && GET_CODE (*loc) == EH_RETURN;
+}
+
+int
+eh_returnjump_p (rtx insn)
+{
+  if (!JUMP_P (insn))
+    return 0;
+  return for_each_rtx (&PATTERN (insn), eh_returnjump_p_1, NULL);
 }
 
 /* Return true if INSN is a jump that only transfers control and
    nothing more.  */
 
 int
-onlyjump_p (const rtx_insn *insn)
+onlyjump_p (const_rtx insn)
 {
   rtx set;
 
@@ -999,7 +1010,7 @@ onlyjump_p (const rtx_insn *insn)
 /* Return true iff INSN is a jump and its JUMP_LABEL is a label, not
    NULL or a return.  */
 bool
-jump_to_label_p (const rtx_insn *insn)
+jump_to_label_p (rtx insn)
 {
   return (JUMP_P (insn)
 	  && JUMP_LABEL (insn) != NULL && !ANY_RETURN_P (JUMP_LABEL (insn)));
@@ -1074,7 +1085,7 @@ sets_cc0_p (const_rtx x)
    that loop-optimization is done with.  */
 
 void
-mark_jump_label (rtx x, rtx_insn *insn, int in_mem)
+mark_jump_label (rtx x, rtx insn, int in_mem)
 {
   rtx asmop = extract_asm_operands (x);
   if (asmop)
@@ -1091,7 +1102,7 @@ mark_jump_label (rtx x, rtx_insn *insn, int in_mem)
    note.  */
 
 static void
-mark_jump_label_1 (rtx x, rtx_insn *insn, bool in_mem, bool is_target)
+mark_jump_label_1 (rtx x, rtx insn, bool in_mem, bool is_target)
 {
   RTX_CODE code = GET_CODE (x);
   int i;
@@ -1120,12 +1131,9 @@ mark_jump_label_1 (rtx x, rtx_insn *insn, bool in_mem, bool is_target)
       break;
 
     case SEQUENCE:
-      {
-	rtx_sequence *seq = as_a <rtx_sequence *> (x);
-	for (i = 0; i < seq->len (); i++)
-	  mark_jump_label (PATTERN (seq->insn (i)),
-			   seq->insn (i), 0);
-      }
+      for (i = 0; i < XVECLEN (x, 0); i++)
+	mark_jump_label (PATTERN (XVECEXP (x, 0, i)),
+			 XVECEXP (x, 0, i), 0);
       return;
 
     case SYMBOL_REF:
@@ -1149,7 +1157,7 @@ mark_jump_label_1 (rtx x, rtx_insn *insn, bool in_mem, bool is_target)
 
     case LABEL_REF:
       {
-	rtx label = LABEL_REF_LABEL (x);
+	rtx label = XEXP (x, 0);
 
 	/* Ignore remaining references to unreachable labels that
 	   have been deleted.  */
@@ -1163,8 +1171,8 @@ mark_jump_label_1 (rtx x, rtx_insn *insn, bool in_mem, bool is_target)
 	if (LABEL_REF_NONLOCAL_P (x))
 	  break;
 
-	LABEL_REF_LABEL (x) = label;
-	if (! insn || ! insn->deleted ())
+	XEXP (x, 0) = label;
+	if (! insn || ! INSN_DELETED_P (insn))
 	  ++LABEL_NUSES (label);
 
 	if (insn)
@@ -1195,12 +1203,12 @@ mark_jump_label_1 (rtx x, rtx_insn *insn, bool in_mem, bool is_target)
        ADDR_DIFF_VEC.  Don't set the JUMP_LABEL of a vector.  */
     case ADDR_VEC:
     case ADDR_DIFF_VEC:
-      if (! insn->deleted ())
+      if (! INSN_DELETED_P (insn))
 	{
 	  int eltnum = code == ADDR_DIFF_VEC ? 1 : 0;
 
 	  for (i = 0; i < XVECLEN (x, eltnum); i++)
-	    mark_jump_label_1 (XVECEXP (x, eltnum, i), NULL, in_mem,
+	    mark_jump_label_1 (XVECEXP (x, eltnum, i), NULL_RTX, in_mem,
 			       is_target);
 	}
       return;
@@ -1235,7 +1243,7 @@ mark_jump_label_1 (rtx x, rtx_insn *insn, bool in_mem, bool is_target)
    need to be considered targets.  */
 
 static void
-mark_jump_label_asm (rtx asmop, rtx_insn *insn)
+mark_jump_label_asm (rtx asmop, rtx insn)
 {
   int i;
 
@@ -1254,19 +1262,18 @@ mark_jump_label_asm (rtx asmop, rtx_insn *insn)
    Usage of this instruction is deprecated.  Use delete_insn instead and
    subsequent cfg_cleanup pass to delete unreachable code if needed.  */
 
-rtx_insn *
-delete_related_insns (rtx uncast_insn)
+rtx
+delete_related_insns (rtx insn)
 {
-  rtx_insn *insn = as_a <rtx_insn *> (uncast_insn);
   int was_code_label = (LABEL_P (insn));
   rtx note;
-  rtx_insn *next = NEXT_INSN (insn), *prev = PREV_INSN (insn);
+  rtx next = NEXT_INSN (insn), prev = PREV_INSN (insn);
 
-  while (next && next->deleted ())
+  while (next && INSN_DELETED_P (next))
     next = NEXT_INSN (next);
 
   /* This insn is already deleted => return first following nondeleted.  */
-  if (insn->deleted ())
+  if (INSN_DELETED_P (insn))
     return next;
 
   delete_insn (insn);
@@ -1285,9 +1292,9 @@ delete_related_insns (rtx uncast_insn)
 	  && GET_CODE (PATTERN (insn)) == SEQUENCE
 	  && CALL_P (XVECEXP (PATTERN (insn), 0, 0))))
     {
-      rtx_insn *p;
+      rtx p;
 
-      for (p = next && next->deleted () ? NEXT_INSN (next) : next;
+      for (p = next && INSN_DELETED_P (next) ? NEXT_INSN (next) : next;
 	   p && NOTE_P (p);
 	   p = NEXT_INSN (p))
 	if (NOTE_KIND (p) == NOTE_INSN_CALL_ARG_LOCATION)
@@ -1302,8 +1309,7 @@ delete_related_insns (rtx uncast_insn)
 
   if (jump_to_label_p (insn))
     {
-      rtx lab = JUMP_LABEL (insn);
-      rtx_jump_table_data *lab_next;
+      rtx lab = JUMP_LABEL (insn), lab_next;
 
       if (LABEL_NUSES (lab) == 0)
 	/* This can delete NEXT or PREV,
@@ -1322,16 +1328,16 @@ delete_related_insns (rtx uncast_insn)
 
   /* Likewise if we're deleting a dispatch table.  */
 
-  if (rtx_jump_table_data *table = dyn_cast <rtx_jump_table_data *> (insn))
+  if (JUMP_TABLE_DATA_P (insn))
     {
-      rtvec labels = table->get_labels ();
-      int i;
-      int len = GET_NUM_ELEM (labels);
+      rtx pat = PATTERN (insn);
+      int i, diff_vec_p = GET_CODE (pat) == ADDR_DIFF_VEC;
+      int len = XVECLEN (pat, diff_vec_p);
 
       for (i = 0; i < len; i++)
-	if (LABEL_NUSES (XEXP (RTVEC_ELT (labels, i), 0)) == 0)
-	  delete_related_insns (XEXP (RTVEC_ELT (labels, i), 0));
-      while (next && next->deleted ())
+	if (LABEL_NUSES (XEXP (XVECEXP (pat, diff_vec_p, i), 0)) == 0)
+	  delete_related_insns (XEXP (XVECEXP (pat, diff_vec_p, i), 0));
+      while (next && INSN_DELETED_P (next))
 	next = NEXT_INSN (next);
       return next;
     }
@@ -1347,7 +1353,7 @@ delete_related_insns (rtx uncast_insn)
 	if (LABEL_NUSES (XEXP (note, 0)) == 0)
 	  delete_related_insns (XEXP (note, 0));
 
-  while (prev && (prev->deleted () || NOTE_P (prev)))
+  while (prev && (INSN_DELETED_P (prev) || NOTE_P (prev)))
     prev = PREV_INSN (prev);
 
   /* If INSN was a label and a dispatch table follows it,
@@ -1370,7 +1376,7 @@ delete_related_insns (rtx uncast_insn)
 	  if (code == NOTE)
 	    next = NEXT_INSN (next);
 	  /* Keep going past other deleted labels to delete what follows.  */
-	  else if (code == CODE_LABEL && next->deleted ())
+	  else if (code == CODE_LABEL && INSN_DELETED_P (next))
 	    next = NEXT_INSN (next);
 	  /* Keep the (use (insn))s created by dbr_schedule, which needs
 	     them in order to track liveness relative to a previous
@@ -1394,7 +1400,7 @@ delete_related_insns (rtx uncast_insn)
      but I see no clean and sure alternative way
      to find the first insn after INSN that is not now deleted.
      I hope this works.  */
-  while (next && next->deleted ())
+  while (next && INSN_DELETED_P (next))
     next = NEXT_INSN (next);
   return next;
 }
@@ -1405,27 +1411,27 @@ delete_related_insns (rtx uncast_insn)
    peephole insn that will replace them.  */
 
 void
-delete_for_peephole (rtx_insn *from, rtx_insn *to)
+delete_for_peephole (rtx from, rtx to)
 {
-  rtx_insn *insn = from;
+  rtx insn = from;
 
   while (1)
     {
-      rtx_insn *next = NEXT_INSN (insn);
-      rtx_insn *prev = PREV_INSN (insn);
+      rtx next = NEXT_INSN (insn);
+      rtx prev = PREV_INSN (insn);
 
       if (!NOTE_P (insn))
 	{
-	  insn->set_deleted();
+	  INSN_DELETED_P (insn) = 1;
 
 	  /* Patch this insn out of the chain.  */
 	  /* We don't do this all at once, because we
 	     must preserve all NOTEs.  */
 	  if (prev)
-	    SET_NEXT_INSN (prev) = next;
+	    NEXT_INSN (prev) = next;
 
 	  if (next)
-	    SET_PREV_INSN (next) = prev;
+	    PREV_INSN (next) = prev;
 	}
 
       if (insn == to)
@@ -1462,7 +1468,7 @@ redirect_exp_1 (rtx *loc, rtx olabel, rtx nlabel, rtx insn)
   int i;
   const char *fmt;
 
-  if ((code == LABEL_REF && LABEL_REF_LABEL (x) == olabel)
+  if ((code == LABEL_REF && XEXP (x, 0) == olabel)
       || x == olabel)
     {
       x = redirect_target (nlabel);
@@ -1475,7 +1481,7 @@ redirect_exp_1 (rtx *loc, rtx olabel, rtx nlabel, rtx insn)
   if (code == SET && SET_DEST (x) == pc_rtx
       && ANY_RETURN_P (nlabel)
       && GET_CODE (SET_SRC (x)) == LABEL_REF
-      && LABEL_REF_LABEL (SET_SRC (x)) == olabel)
+      && XEXP (SET_SRC (x), 0) == olabel)
     {
       validate_change (insn, loc, nlabel, 1);
       return;
@@ -1608,7 +1614,11 @@ redirect_jump_2 (rtx jump, rtx olabel, rtx nlabel, int delete_unused,
      label and are now changing it into a direct conditional return.
      The jump is no longer crossing in that case.  */
   if (ANY_RETURN_P (nlabel))
-    CROSSING_JUMP_P (jump) = 0;
+    {
+      note = find_reg_note (jump, REG_CROSSING_JUMP, NULL_RTX);
+      if (note)
+	remove_note (jump, note);
+    }
 
   if (!ANY_RETURN_P (olabel)
       && --LABEL_NUSES (olabel) == 0 && delete_unused > 0
@@ -1664,7 +1674,7 @@ invert_exp_1 (rtx x, rtx insn)
    inversion and redirection.  */
 
 int
-invert_jump_1 (rtx_insn *jump, rtx nlabel)
+invert_jump_1 (rtx jump, rtx nlabel)
 {
   rtx x = pc_set (jump);
   int ochanges;
@@ -1688,7 +1698,7 @@ invert_jump_1 (rtx_insn *jump, rtx nlabel)
    NLABEL instead of where it jumps now.  Return true if successful.  */
 
 int
-invert_jump (rtx_insn *jump, rtx nlabel, int delete_unused)
+invert_jump (rtx jump, rtx nlabel, int delete_unused)
 {
   rtx olabel = JUMP_LABEL (jump);
 
@@ -1799,12 +1809,12 @@ rtx_renumbered_equal_p (const_rtx x, const_rtx y)
     case LABEL_REF:
       /* We can't assume nonlocal labels have their following insns yet.  */
       if (LABEL_REF_NONLOCAL_P (x) || LABEL_REF_NONLOCAL_P (y))
-	return LABEL_REF_LABEL (x) == LABEL_REF_LABEL (y);
+	return XEXP (x, 0) == XEXP (y, 0);
 
       /* Two label-refs are equivalent if they point at labels
 	 in the same position in the instruction stream.  */
-      return (next_real_insn (LABEL_REF_LABEL (x))
-	      == next_real_insn (LABEL_REF_LABEL (y)));
+      return (next_real_insn (XEXP (x, 0))
+	      == next_real_insn (XEXP (y, 0)));
 
     case SYMBOL_REF:
       return XSTR (x, 0) == XSTR (y, 0);

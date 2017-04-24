@@ -18,9 +18,6 @@ You should have received a copy of the GNU General Public License
 along with GCC; see the file COPYING3.  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#ifndef GCC_HW_DOLOOP_H
-#define GCC_HW_DOLOOP_H
-
 /* We need to keep a vector of loops */
 typedef struct hwloop_info_d *hwloop_info;
 
@@ -33,6 +30,9 @@ struct GTY (()) hwloop_info_d
 
   /* Next loop in the graph. */
   hwloop_info next;
+
+  /* Outermost loop in the graph.  */
+  hwloop_info outermost;
 
   /* Vector of blocks only within the loop, including those within
      inner loops.  */
@@ -69,16 +69,16 @@ struct GTY (()) hwloop_info_d
   basic_block successor;
 
   /* The last instruction in the tail.  */
-  rtx_insn *last_insn;
+  rtx last_insn;
 
   /* The loop_end insn.  */
-  rtx_insn *loop_end;
+  rtx loop_end;
 
   /* The iteration register.  */
   rtx iter_reg;
 
   /* The new label placed at the beginning of the loop. */
-  rtx_insn *start_label;
+  rtx start_label;
 
   /* The new label placed at the end of the loop. */
   rtx end_label;
@@ -93,11 +93,18 @@ struct GTY (()) hwloop_info_d
      This value is valid when the target's optimize function is called.  */
   int depth;
 
+  /* The nesting depth of the loop.  If 3 neseting depth of loop,
+     the depth form outermost to innermost is 1, 2, 3.  */
+  int real_depth;
+
   /* True if we can't optimize this loop.  */
   bool bad;
 
   /* True if we have visited this loop during the optimization phase.  */
   bool visited;
+
+  /* True if we have computed this loop real depth.  */
+  bool computed_depth;
 
   /* The following values are collected before calling the target's optimize
      function and are not valid earlier.  */
@@ -118,7 +125,7 @@ struct GTY (()) hwloop_info_d
 
   /* Hard registers set at any point in the loop, except for the loop counter
      register's set in the doloop_end instruction.  */
-  HARD_REG_SET regs_set_in_loop;
+  regset regs_set_in_loop;
 };
 
 /* A set of hooks to be defined by a target that wants to use the reorg_loops
@@ -143,7 +150,7 @@ struct hw_doloop_hooks
   /* Examine INSN.  If it is a suitable doloop_end pattern, return the
      iteration register, which should be a single hard register.
      Otherwise, return NULL_RTX.  */
-  rtx (*end_pattern_reg) (rtx_insn *insn);
+  rtx (*end_pattern_reg) (rtx insn);
   /* Optimize LOOP.  The target should perform any additional analysis
      (e.g. checking that the loop isn't too long), and then perform
      its transformations.  Return true if successful, false if the
@@ -156,5 +163,3 @@ struct hw_doloop_hooks
 };
 
 extern void reorg_loops (bool, struct hw_doloop_hooks *);
-
-#endif /* GCC_HW_DOLOOP_H */

@@ -7,20 +7,11 @@ package strings_test
 import (
 	"fmt"
 	"strings"
-	"unicode"
 )
 
 func ExampleFields() {
 	fmt.Printf("Fields are: %q", strings.Fields("  foo bar  baz   "))
 	// Output: Fields are: ["foo" "bar" "baz"]
-}
-
-func ExampleFieldsFunc() {
-	f := func(c rune) bool {
-		return !unicode.IsLetter(c) && !unicode.IsNumber(c)
-	}
-	fmt.Printf("Fields are: %q", strings.FieldsFunc("  foo1;bar2,baz3...", f))
-	// Output: Fields are: ["foo1" "bar2" "baz3"]
 }
 
 func ExampleContains() {
@@ -65,25 +56,6 @@ func ExampleIndex() {
 	fmt.Println(strings.Index("chicken", "dmr"))
 	// Output:
 	// 4
-	// -1
-}
-
-func ExampleIndexFunc() {
-	f := func(c rune) bool {
-		return unicode.Is(unicode.Han, c)
-	}
-	fmt.Println(strings.IndexFunc("Hello, 世界", f))
-	fmt.Println(strings.IndexFunc("Hello, world", f))
-	// Output:
-	// 7
-	// -1
-}
-
-func ExampleIndexAny() {
-	fmt.Println(strings.IndexAny("chicken", "aeiouy"))
-	fmt.Println(strings.IndexAny("crwth", "aeiouy"))
-	// Output:
-	// 2
 	// -1
 }
 
@@ -169,8 +141,8 @@ func ExampleToTitle() {
 }
 
 func ExampleTrim() {
-	fmt.Printf("[%q]", strings.Trim(" !!! Achtung! Achtung! !!! ", "! "))
-	// Output: ["Achtung! Achtung"]
+	fmt.Printf("[%q]", strings.Trim(" !!! Achtung !!! ", "! "))
+	// Output: ["Achtung"]
 }
 
 func ExampleMap() {

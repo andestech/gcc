@@ -23,16 +23,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "coretypes.h"
 #include "tm.h"
 #include "tree.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -41,6 +31,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "gimple.h"
 #include "gimple-iterator.h"
 #include "flags.h"
+#include "function.h"
 #include "tree-pretty-print.h"
 #include "bitmap.h"
 #include "gimple-ssa.h"
@@ -49,6 +40,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "expr.h"
 #include "tree-dfa.h"
 #include "tree-inline.h"
+#include "hashtab.h"
 #include "tree-ssa-live.h"
 #include "tree-pass.h"
 #include "langhooks.h"
@@ -307,43 +299,14 @@ copy_rename_partition_coalesce (var_map map, tree var1, tree var2, FILE *debug)
 }
 
 
-namespace {
-
-const pass_data pass_data_rename_ssa_copies =
-{
-  GIMPLE_PASS, /* type */
-  "copyrename", /* name */
-  OPTGROUP_NONE, /* optinfo_flags */
-  TV_TREE_COPY_RENAME, /* tv_id */
-  ( PROP_cfg | PROP_ssa ), /* properties_required */
-  0, /* properties_provided */
-  0, /* properties_destroyed */
-  0, /* todo_flags_start */
-  0, /* todo_flags_finish */
-};
-
-class pass_rename_ssa_copies : public gimple_opt_pass
-{
-public:
-  pass_rename_ssa_copies (gcc::context *ctxt)
-    : gimple_opt_pass (pass_data_rename_ssa_copies, ctxt)
-  {}
-
-  /* opt_pass methods: */
-  opt_pass * clone () { return new pass_rename_ssa_copies (m_ctxt); }
-  virtual bool gate (function *) { return flag_tree_copyrename != 0; }
-  virtual unsigned int execute (function *);
-
-}; // class pass_rename_ssa_copies
-
 /* This function will make a pass through the IL, and attempt to coalesce any
    SSA versions which occur in PHI's or copies.  Coalescing is accomplished by
    changing the underlying root variable of all coalesced version.  This will
    then cause the SSA->normal pass to attempt to coalesce them all to the same
    variable.  */
 
-unsigned int
-pass_rename_ssa_copies::execute (function *fun)
+static unsigned int
+rename_ssa_copies (void)
 {
   var_map map;
   basic_block bb;
@@ -362,7 +325,7 @@ pass_rename_ssa_copies::execute (function *fun)
 
   map = init_var_map (num_ssa_names);
 
-  FOR_EACH_BB_FN (bb, fun)
+  FOR_EACH_BB_FN (bb, cfun)
     {
       /* Scan for real copies.  */
       for (gsi = gsi_start_bb (bb); !gsi_end_p (gsi); gsi_next (&gsi))
@@ -378,7 +341,7 @@ pass_rename_ssa_copies::execute (function *fun)
 	}
     }
 
-  FOR_EACH_BB_FN (bb, fun)
+  FOR_EACH_BB_FN (bb, cfun)
     {
       /* Treat PHI nodes as copies between the result and each argument.  */
       for (gsi = gsi_start_phis (bb); !gsi_end_p (gsi); gsi_next (&gsi))
@@ -466,11 +429,50 @@ pass_rename_ssa_copies::execute (function *fun)
       replace_ssa_name_symbol (var, SSA_NAME_VAR (part_var));
     }
 
-  statistics_counter_event (fun, "copies coalesced",
+  statistics_counter_event (cfun, "copies coalesced",
 			    stats.coalesced);
   delete_var_map (map);
   return 0;
 }
+
+/* Return true if copy rename is to be performed.  */
+
+static bool
+gate_copyrename (void)
+{
+  return flag_tree_copyrename != 0;
+}
+
+namespace {
+
+const pass_data pass_data_rename_ssa_copies =
+{
+  GIMPLE_PASS, /* type */
+  "copyrename", /* name */
+  OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
+  TV_TREE_COPY_RENAME, /* tv_id */
+  ( PROP_cfg | PROP_ssa ), /* properties_required */
+  0, /* properties_provided */
+  0, /* properties_destroyed */
+  0, /* todo_flags_start */
+  TODO_verify_ssa, /* todo_flags_finish */
+};
+
+class pass_rename_ssa_copies : public gimple_opt_pass
+{
+public:
+  pass_rename_ssa_copies (gcc::context *ctxt)
+    : gimple_opt_pass (pass_data_rename_ssa_copies, ctxt)
+  {}
+
+  /* opt_pass methods: */
+  opt_pass * clone () { return new pass_rename_ssa_copies (m_ctxt); }
+  bool gate () { return gate_copyrename (); }
+  unsigned int execute () { return rename_ssa_copies (); }
+
+}; // class pass_rename_ssa_copies
 
 } // anon namespace
 

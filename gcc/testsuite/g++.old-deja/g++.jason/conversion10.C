@@ -1,5 +1,4 @@
 // { dg-do assemble  }
-// { dg-options "" }
 // PRMS Id: 9019
 // Bug: g++ doesn't find conversion to const char *.
 

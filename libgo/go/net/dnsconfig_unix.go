@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build darwin dragonfly freebsd linux nacl netbsd openbsd solaris
+// +build darwin dragonfly freebsd linux netbsd openbsd
 
 // Read system DNS config from /etc/resolv.conf
 
@@ -20,13 +20,14 @@ type dnsConfig struct {
 // See resolv.conf(5) on a Linux machine.
 // TODO(rsc): Supposed to call uname() and chop the beginning
 // of the host name to get the default search domain.
-func dnsReadConfig(filename string) (*dnsConfig, error) {
-	file, err := open(filename)
+// We assume it's in resolv.conf anyway.
+func dnsReadConfig() (*dnsConfig, error) {
+	file, err := open("/etc/resolv.conf")
 	if err != nil {
 		return nil, &DNSConfigError{err}
 	}
 	conf := new(dnsConfig)
-	conf.servers = make([]string, 0, 3) // small, but the standard limit
+	conf.servers = make([]string, 3)[0:0] // small, but the standard limit
 	conf.search = make([]string, 0)
 	conf.ndots = 1
 	conf.timeout = 5
@@ -75,19 +76,19 @@ func dnsReadConfig(filename string) (*dnsConfig, error) {
 			for i := 1; i < len(f); i++ {
 				s := f[i]
 				switch {
-				case hasPrefix(s, "ndots:"):
+				case len(s) >= 6 && s[0:6] == "ndots:":
 					n, _, _ := dtoi(s, 6)
 					if n < 1 {
 						n = 1
 					}
 					conf.ndots = n
-				case hasPrefix(s, "timeout:"):
+				case len(s) >= 8 && s[0:8] == "timeout:":
 					n, _, _ := dtoi(s, 8)
 					if n < 1 {
 						n = 1
 					}
 					conf.timeout = n
-				case hasPrefix(s, "attempts:"):
+				case len(s) >= 8 && s[0:9] == "attempts:":
 					n, _, _ := dtoi(s, 9)
 					if n < 1 {
 						n = 1
@@ -102,8 +103,4 @@ func dnsReadConfig(filename string) (*dnsConfig, error) {
 	file.close()
 
 	return conf, nil
-}
-
-func hasPrefix(s, prefix string) bool {
-	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
 }

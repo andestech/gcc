@@ -160,13 +160,7 @@ TEXINFO_TEX   = ../gcc/doc/include/texinfo.tex
 
 # Defines info, dvi, pdf and html targets
 MAKEINFOFLAGS = -I $(srcdir)/../gcc/doc/include
-
-if BUILD_LIBQUADMATH
 info_TEXINFOS = libquadmath.texi
-else
-info_TEXINFOS = 
-endif
-
 libquadmath_TEXINFOS = libquadmath-vers.texi
 
 libquadmath-vers.texi:

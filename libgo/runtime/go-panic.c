@@ -54,6 +54,7 @@ __go_panic (struct __go_empty_interface arg)
     {
       struct __go_defer_stack *d;
       void (*pfn) (void *);
+      M *m;
 
       d = g->defer;
       if (d == NULL)
@@ -100,8 +101,9 @@ __go_panic (struct __go_empty_interface arg)
 	 call to syscall.CgocallBackDone, in which case we will not
 	 have a memory context.  Don't try to free anything in that
 	 case--the GC will release it later.  */
-      if (runtime_m () != NULL)
-	runtime_freedefer (d);
+      m = runtime_m ();
+      if (m != NULL && m->mcache != NULL && d->__free)
+	__go_free (d);
     }
 
   /* The panic was not recovered.  */

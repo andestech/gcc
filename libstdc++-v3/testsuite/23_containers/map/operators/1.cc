@@ -1,5 +1,3 @@
-// { dg-do compile }
-
 // 2000-09-07 bgarcia@laurelnetworks.com
 
 // Copyright (C) 2000-2014 Free Software Foundation, Inc.
@@ -19,15 +17,17 @@
 // with this library; see the file COPYING3.  If not see
 // <http://www.gnu.org/licenses/>.
 
-// 23.4.4 template class map
+// 23.3.4 template class multiset
 
 #include <map>
+#include <string>
+#include <iostream>
 
 // libstdc++/737
 // http://gcc.gnu.org/ml/libstdc++/2000-11/msg00093.html
-void test01()
+void test02()
 {
-  typedef std::map<int, const int> MapInt;
+  typedef std::map<int, int> MapInt;
   
   MapInt m;
   
@@ -35,14 +35,14 @@ void test01()
     m.insert(MapInt::value_type(i,i));
   
   for (MapInt::const_iterator i = m.begin(); i != m.end(); ++i)
-    { }
+    std::cerr << i->second << ' ';
   
   for (MapInt::const_iterator i = m.begin(); m.end() != i; ++i)
-    { }
+    std::cerr << i->second << ' ';
 }
 
 int main()
 {
-  test01();
+  test02();
   return 0;
 }

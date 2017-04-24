@@ -25,14 +25,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "tree-nested.h"
 #include "calls.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -43,6 +35,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-iterator.h"
 #include "tree-inline.h"
 #include "flags.h"
+#include "function.h"
 #include "diagnostic-core.h"
 #include "tree-pass.h"
 #include "langhooks.h"
@@ -170,6 +163,8 @@ const pass_data pass_data_lower_cf =
   GIMPLE_PASS, /* type */
   "lower", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  false, /* has_gate */
+  true, /* has_execute */
   TV_NONE, /* tv_id */
   PROP_gimple_any, /* properties_required */
   PROP_gimple_lcf, /* properties_provided */
@@ -186,7 +181,7 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual unsigned int execute (function *) { return lower_function_body (); }
+  unsigned int execute () { return lower_function_body (); }
 
 }; // class pass_lower_cf
 

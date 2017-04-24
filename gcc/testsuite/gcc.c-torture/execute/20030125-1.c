@@ -1,5 +1,4 @@
 /* Verify whether math functions are simplified.  */
-/* { dg-require-effective-target c99_runtime } */
 double sin(double);
 double floor(double);
 float 

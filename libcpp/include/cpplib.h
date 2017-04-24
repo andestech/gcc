@@ -153,9 +153,6 @@ enum cpp_ttype
   TTYPE_TABLE
   N_TTYPES,
 
-  /* A token type for keywords, as opposed to ordinary identifiers.  */
-  CPP_KEYWORD,
-
   /* Positions in the table.  */
   CPP_LAST_EQ        = CPP_LSHIFT,
   CPP_FIRST_DIGRAPH  = CPP_HASH,
@@ -169,7 +166,7 @@ enum cpp_ttype
 enum c_lang {CLK_GNUC89 = 0, CLK_GNUC99, CLK_GNUC11,
 	     CLK_STDC89, CLK_STDC94, CLK_STDC99, CLK_STDC11,
 	     CLK_GNUCXX, CLK_CXX98, CLK_GNUCXX11, CLK_CXX11,
-	     CLK_GNUCXX14, CLK_CXX14, CLK_GNUCXX1Z, CLK_CXX1Z, CLK_ASM};
+	     CLK_GNUCXX1Y, CLK_CXX1Y, CLK_ASM};
 
 /* Payload of a NUMBER, STRING, CHAR or COMMENT token.  */
 struct GTY(()) cpp_string {
@@ -208,12 +205,6 @@ enum cpp_token_fld_kind {
 struct GTY(()) cpp_macro_arg {
   /* Argument number.  */
   unsigned int arg_no;
-  /* The original spelling of the macro argument token.  */
-  cpp_hashnode *
-    GTY ((nested_ptr (union tree_node,
-		"%h ? CPP_HASHNODE (GCC_IDENT_TO_HT_IDENT (%h)) : NULL",
-			"%h ? HT_IDENT_TO_GCC_IDENT (HT_NODE (%h)) : NULL")))
-       spelling;
 };
 
 /* An identifier in the cpp_token union.  */
@@ -224,12 +215,6 @@ struct GTY(()) cpp_identifier {
 		"%h ? CPP_HASHNODE (GCC_IDENT_TO_HT_IDENT (%h)) : NULL",
 			"%h ? HT_IDENT_TO_GCC_IDENT (HT_NODE (%h)) : NULL")))
        node;
-  /* The original spelling of the identifier.  */
-  cpp_hashnode *
-    GTY ((nested_ptr (union tree_node,
-		"%h ? CPP_HASHNODE (GCC_IDENT_TO_HT_IDENT (%h)) : NULL",
-			"%h ? HT_IDENT_TO_GCC_IDENT (HT_NODE (%h)) : NULL")))
-       spelling;
 };
 
 /* A preprocessing token.  This has been carefully packed and should
@@ -250,7 +235,7 @@ struct GTY(()) cpp_token {
     /* A string, or number.  */
     struct cpp_string GTY ((tag ("CPP_TOKEN_FLD_STR"))) str;
 
-    /* Argument no. (and original spelling) for a CPP_MACRO_ARG.  */
+    /* Argument no. for a CPP_MACRO_ARG.  */
     struct cpp_macro_arg GTY ((tag ("CPP_TOKEN_FLD_ARG_NO"))) macro_arg;
 
     /* Original token no. for a CPP_PASTE (from a sequence of
@@ -472,17 +457,14 @@ struct cpp_options
   const char *input_charset;
 
   /* The minimum permitted level of normalization before a warning
-     is generated.  See enum cpp_normalize_level.  */
-  int warn_normalize;
+     is generated.  */
+  enum cpp_normalize_level warn_normalize;
 
   /* True to warn about precompiled header files we couldn't use.  */
   bool warn_invalid_pch;
 
   /* True if dependencies should be restored from a precompiled header.  */
   bool restore_pch_deps;
-
-  /* True if warn about differences between C90 and C99.  */
-  signed char cpp_warn_c90_c99_compat;
 
   /* Dependency generation.  */
   struct
@@ -837,10 +819,7 @@ extern int cpp_defined (cpp_reader *, const unsigned char *, int);
 
 /* A preprocessing number.  Code assumes that any unused high bits of
    the double integer are set to zero.  */
-
-/* This type has to be equal to unsigned HOST_WIDE_INT, see
-   gcc/c-family/c-lex.c.  */
-typedef uint64_t cpp_num_part;
+typedef unsigned HOST_WIDE_INT cpp_num_part;
 typedef struct cpp_num cpp_num;
 struct cpp_num
 {
@@ -954,9 +933,7 @@ enum {
   CPP_W_INVALID_PCH,
   CPP_W_WARNING_DIRECTIVE,
   CPP_W_LITERAL_SUFFIX,
-  CPP_W_DATE_TIME,
-  CPP_W_PEDANTIC,
-  CPP_W_C90_C99_COMPAT
+  CPP_W_DATE_TIME
 };
 
 /* Output a diagnostic of some kind.  */

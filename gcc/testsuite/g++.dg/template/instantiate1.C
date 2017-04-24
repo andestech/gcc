@@ -12,7 +12,7 @@ template <class T> struct Y {
   X<T> x;			// { dg-message "required" }
 };
 
-template <class T> struct Z {	// { dg-message "declaration" }
+template <class T> struct Z {	// { dg-error "declaration" }
   Y<Z<T> > y;			// { dg-message "required" }
 };
 

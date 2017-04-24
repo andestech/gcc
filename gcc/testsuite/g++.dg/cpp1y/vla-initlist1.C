@@ -1,4 +1,4 @@
-// { dg-do run { target c++14 } }
+// { dg-do run { target c++1y } }
 
 #include <initializer_list>
 

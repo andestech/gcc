@@ -6,7 +6,6 @@ TYPE a[SIZE];
 TYPE b[SIZE];
 TYPE c[SIZE];
 volatile TYPE c_ref[SIZE];
-extern int memcmp (const void *, const void *, size_t);
 
 __attribute__ ((__noinline__))
 void

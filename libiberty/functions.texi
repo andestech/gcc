@@ -125,7 +125,7 @@ Uses @code{malloc} to allocate storage for @var{nelem} objects of
 
 @end deftypefn
 
-@c choose-temp.c:45
+@c choose-temp.c:46
 @deftypefn Extension char* choose_temp_base (void)
 
 Return a prefix for temporary file names or @code{NULL} if unable to
@@ -139,7 +139,7 @@ not recommended.
 @end deftypefn
 
 @c make-temp-file.c:96
-@deftypefn Replacement const char* choose_tmpdir ()
+@deftypefn Replacement char* choose_tmpdir ()
 
 Returns a pointer to a directory path suitable for creating temporary
 files in.
@@ -160,8 +160,9 @@ number of seconds used.
   @dots{}, @code{NULL})
 
 Concatenate zero or more of strings and return the result in freshly
-@code{xmalloc}ed memory.  The argument list is terminated by the first
-@code{NULL} pointer encountered.  Pointers to empty strings are ignored.
+@code{xmalloc}ed memory.  Returns @code{NULL} if insufficient memory is
+available.  The argument list is terminated by the first @code{NULL}
+pointer encountered.  Pointers to empty strings are ignored.
 
 @end deftypefn
 
@@ -527,7 +528,7 @@ nineteen EBCDIC varying characters is tested; exercise caution.)
 @end ftable
 @end defvr
 
-@c hashtab.c:328
+@c hashtab.c:336
 @deftypefn Supplemental htab_t htab_create_typed_alloc (size_t @var{size}, @
 htab_hash @var{hash_f}, htab_eq @var{eq_f}, htab_del @var{del_f}, @
 htab_alloc @var{alloc_tab_f}, htab_alloc @var{alloc_f}, @
@@ -1162,7 +1163,7 @@ control over the state of the random number generator.
 
 @end deftypefn
 
-@c concat.c:160
+@c concat.c:174
 @deftypefn Extension char* reconcat (char *@var{optr}, const char *@var{s1}, @
   @dots{}, @code{NULL})
 
@@ -1710,24 +1711,6 @@ to indicate bases 8 and 16, respectively, else default to base 10.
 When the base is 16 (either explicitly or implicitly), a prefix of
 @code{0x} is allowed.  The handling of @var{endptr} is as that of
 @code{strtod} above.  The @code{strtoul} function is the same, except
-that the converted value is unsigned.
-
-@end deftypefn
-
-@c strtoll.c:33
-@deftypefn Supplemental {long long int} strtoll (const char *@var{string}, @
-  char **@var{endptr}, int @var{base})
-@deftypefnx Supplemental {unsigned long long int} strtoul (@
-  const char *@var{string}, char **@var{endptr}, int @var{base})
-
-The @code{strtoll} function converts the string in @var{string} to a
-long long integer value according to the given @var{base}, which must be
-between 2 and 36 inclusive, or be the special value 0.  If @var{base}
-is 0, @code{strtoll} will look for the prefixes @code{0} and @code{0x}
-to indicate bases 8 and 16, respectively, else default to base 10.
-When the base is 16 (either explicitly or implicitly), a prefix of
-@code{0x} is allowed.  The handling of @var{endptr} is as that of
-@code{strtod} above.  The @code{strtoull} function is the same, except
 that the converted value is unsigned.
 
 @end deftypefn

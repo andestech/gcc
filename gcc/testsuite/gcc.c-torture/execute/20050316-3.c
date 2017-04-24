@@ -1,4 +1,3 @@
-/* { dg-options "-Wno-psabi" } */
 extern void abort (void);
 
 typedef int V2SI __attribute__ ((vector_size (8)));

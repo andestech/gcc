@@ -2,7 +2,7 @@
 /* { dg-options "-O2" } */
 void exit (int);
 void noreturn_autodetection_failed ();
-__attribute__ ((noinline)) int
+__attribute__ ((noinline))
 detect_noreturn ()
 {
   exit (0);

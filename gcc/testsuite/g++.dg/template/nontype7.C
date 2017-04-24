@@ -10,3 +10,6 @@ char p[] = "Vivisectionist";
 
 X<int,"Studebaker"> x1;    // { dg-error "string literal" }
 X<int, p> x2;
+
+// { dg-bogus "" "additional errors" { xfail *-*-* } 11 }
+

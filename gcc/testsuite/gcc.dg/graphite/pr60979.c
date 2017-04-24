@@ -5,7 +5,6 @@
 struct x;
 
 typedef struct x **(*a)(struct x *);
-void d (const char *);
 
 struct x {
     union {

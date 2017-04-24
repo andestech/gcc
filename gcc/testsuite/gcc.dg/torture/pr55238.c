@@ -12,8 +12,6 @@ typedef struct
 gz_state;
 
 void gz_error (gz_state *state, int err, char *msg);
-void foo (char *);
-void bar (char *, char *);
 
 static void
 gz_reset (gz_state *state)

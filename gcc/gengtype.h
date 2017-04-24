@@ -20,8 +20,8 @@
 #ifndef GCC_GENGTYPE_H
 #define GCC_GENGTYPE_H
 
-#define obstack_chunk_alloc    xmalloc
-#define obstack_chunk_free     free
+#define obstack_chunk_alloc    ((void *(*) (long)) xmalloc)
+#define obstack_chunk_free     ((void (*) (void *)) free)
 #define OBSTACK_CHUNK_SIZE     0
 
 /* Sets of accepted source languages like C, C++, Ada... are
@@ -127,15 +127,7 @@ extern type_p structures;
 extern type_p param_structs;
 extern pair_p variables;
 
-/* An enum for distinguishing GGC vs PCH.  */
 
-enum write_types_kinds
-{
-  WTK_GGC,
-  WTK_PCH,
-
-  NUM_WTK
-};
 
 /* Discrimating kind of types we can understand.  */
 
@@ -310,10 +302,6 @@ struct type {
       type_p first_subclass;
       /* The next in that list.  */
       type_p next_sibling_class;
-
-      /* Have we already written ggc/pch user func for ptr to this?
-	 (in write_user_func_for_structure_ptr).  */
-      bool wrote_user_func_for_ptr[NUM_WTK];
     } s;
 
     /* when TYPE_SCALAR: */

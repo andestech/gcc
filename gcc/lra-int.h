@@ -18,9 +18,6 @@ You should have received a copy of the GNU General Public License
 along with GCC; see the file COPYING3.	If not see
 <http://www.gnu.org/licenses/>.	 */
 
-#ifndef GCC_LRA_INT_H
-#define GCC_LRA_INT_H
-
 #include "lra.h"
 #include "bitmap.h"
 #include "recog.h"
@@ -80,10 +77,6 @@ struct lra_reg
   /* The following fields are defined only for pseudos.	 */
   /* Hard registers with which the pseudo conflicts.  */
   HARD_REG_SET conflict_hard_regs;
-  /* Call used registers with which the pseudo conflicts, taking into account
-     the registers used by functions called from calls which cross the
-     pseudo.  */
-  HARD_REG_SET actual_call_used_reg_set;
   /* We assign hard registers to reload pseudos which can occur in few
      places.  So two hard register preferences are enough for them.
      The following fields define the preferred hard registers.	If
@@ -121,7 +114,7 @@ struct lra_reg
      lra-coalesce.c.  */
   /* The biggest size mode in which each pseudo reg is referred in
      whole function (possibly via subreg).  */
-  machine_mode biggest_mode;
+  enum machine_mode biggest_mode;
   /* Live ranges of the pseudo.	 */
   lra_live_range_t live_ranges;
   /* This member is set up in lra-lives.c for subsequent
@@ -205,7 +198,7 @@ struct lra_static_insn_data
   /* Array [n_alternatives][n_operand] of static constraint info for
      given operand in given alternative.  This info can be changed if
      the target reg info is changed.  */
-  const struct operand_alternative *operand_alternative;
+  struct operand_alternative *operand_alternative;
 };
 
 /* LRA internal info about an insn (LRA internal insn
@@ -221,7 +214,7 @@ struct lra_insn_recog_data
   /* SP offset before the insn relative to one at the func start.  */
   HOST_WIDE_INT sp_offset;
   /* The insn itself.  */
-  rtx_insn *insn;
+  rtx insn;
   /* Common data for insns with the same ICODE.  Asm insns (their
      ICODE is negative) do not share such structures.  */
   struct lra_static_insn_data *insn_static_data;
@@ -233,8 +226,8 @@ struct lra_insn_recog_data
      value can be NULL or points to array of the hard register numbers
      ending with a negative value.  */
   int *arg_hard_regs;
-  /* Cached value of get_preferred_alternatives.  */
-  alternative_mask preferred_alternatives;
+  /* Alternative enabled for the insn.	NULL for debug insns.  */
+  bool *alternative_enabled_p;
   /* The following member value is always NULL for a debug insn.  */
   struct lra_insn_reg *regs;
 };
@@ -284,42 +277,42 @@ extern lra_insn_recog_data_t *lra_insn_recog_data;
 
 extern int lra_curr_reload_num;
 
-extern void lra_push_insn (rtx_insn *);
+extern void lra_push_insn (rtx);
 extern void lra_push_insn_by_uid (unsigned int);
-extern void lra_push_insn_and_update_insn_regno_info (rtx_insn *);
-extern rtx_insn *lra_pop_insn (void);
+extern void lra_push_insn_and_update_insn_regno_info (rtx);
+extern rtx lra_pop_insn (void);
 extern unsigned int lra_insn_stack_length (void);
 
-extern rtx lra_create_new_reg_with_unique_value (machine_mode, rtx,
+extern rtx lra_create_new_reg_with_unique_value (enum machine_mode, rtx,
 						 enum reg_class, const char *);
 extern void lra_set_regno_unique_value (int);
-extern void lra_invalidate_insn_data (rtx_insn *);
-extern void lra_set_insn_deleted (rtx_insn *);
-extern void lra_delete_dead_insn (rtx_insn *);
+extern void lra_invalidate_insn_data (rtx);
+extern void lra_set_insn_deleted (rtx);
+extern void lra_delete_dead_insn (rtx);
 extern void lra_emit_add (rtx, rtx, rtx);
 extern void lra_emit_move (rtx, rtx);
 extern void lra_update_dups (lra_insn_recog_data_t, signed char *);
 
-extern void lra_process_new_insns (rtx_insn *, rtx_insn *, rtx_insn *,
-				   const char *);
+extern void lra_process_new_insns (rtx, rtx, rtx, const char *);
 
-extern lra_insn_recog_data_t lra_set_insn_recog_data (rtx_insn *);
-extern lra_insn_recog_data_t lra_update_insn_recog_data (rtx_insn *);
-extern void lra_set_used_insn_alternative (rtx_insn *, int);
+extern lra_insn_recog_data_t lra_set_insn_recog_data (rtx);
+extern lra_insn_recog_data_t lra_update_insn_recog_data (rtx);
+extern void lra_set_used_insn_alternative (rtx, int);
 extern void lra_set_used_insn_alternative_by_uid (int, int);
 
-extern void lra_invalidate_insn_regno_info (rtx_insn *);
-extern void lra_update_insn_regno_info (rtx_insn *);
+extern void lra_invalidate_insn_regno_info (rtx);
+extern void lra_update_insn_regno_info (rtx);
 extern struct lra_insn_reg *lra_get_insn_regs (int);
 
 extern void lra_free_copies (void);
 extern void lra_create_copy (int, int, int);
 extern lra_copy_t lra_get_copy (int);
 extern bool lra_former_scratch_p (int);
-extern bool lra_former_scratch_operand_p (rtx_insn *, int);
+extern bool lra_former_scratch_operand_p (rtx, int);
 
 extern int lra_new_regno_start;
 extern int lra_constraint_new_regno_start;
+extern int lra_bad_spill_regno_start;
 extern bitmap_head lra_inheritance_pseudos;
 extern bitmap_head lra_split_regs;
 extern bitmap_head lra_subreg_reload_pseudos;
@@ -329,7 +322,7 @@ extern int lra_constraint_new_insn_uid_start;
 /* lra-constraints.c: */
 
 extern void lra_init_equiv (void);
-extern int lra_constraint_offset (int, machine_mode);
+extern int lra_constraint_offset (int, enum machine_mode);
 
 extern int lra_constraint_iter;
 extern bool lra_risky_transformations_p;
@@ -390,8 +383,7 @@ extern void lra_final_code_change (void);
 
 extern void lra_debug_elim_table (void);
 extern int lra_get_elimination_hard_regno (int);
-extern rtx lra_eliminate_regs_1 (rtx_insn *, rtx, machine_mode, bool,
-				 bool, bool);
+extern rtx lra_eliminate_regs_1 (rtx, rtx, enum machine_mode, bool, bool, bool);
 extern void lra_eliminate (bool, bool);
 
 extern void lra_eliminate_reg_if_possible (rtx *);
@@ -457,7 +449,7 @@ lra_update_operator_dups (lra_insn_recog_data_t id)
 
 /* Return info about INSN.  Set up the info if it is not done yet.  */
 static inline lra_insn_recog_data_t
-lra_get_insn_recog_data (rtx_insn *insn)
+lra_get_insn_recog_data (rtx insn)
 {
   lra_insn_recog_data_t data;
   unsigned int uid = INSN_UID (insn);
@@ -506,5 +498,21 @@ lra_assign_reg_val (int from, int to)
   lra_reg_info[to].val = lra_reg_info[from].val;
   lra_reg_info[to].offset = lra_reg_info[from].offset;
 }
+
 
-#endif /* GCC_LRA_INT_H */
+struct target_lra_int
+{
+  /* Map INSN_UID -> the operand alternative data (NULL if unknown).
+     We assume that this data is valid until register info is changed
+     because classes in the data can be changed.  */
+  struct operand_alternative *x_op_alt_data[LAST_INSN_CODE];
+};
+
+extern struct target_lra_int default_target_lra_int;
+#if SWITCHABLE_TARGET
+extern struct target_lra_int *this_target_lra_int;
+#else
+#define this_target_lra_int (&default_target_lra_int)
+#endif
+
+#define op_alt_data (this_target_lra_int->x_op_alt_data)

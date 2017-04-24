@@ -4,7 +4,6 @@
    and the eh info. */
 /* PR tree-opt/30385 */
 
-int f (void);
 static inline void g(int t)
 {
  int a;

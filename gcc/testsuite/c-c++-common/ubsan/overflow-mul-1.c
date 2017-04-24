@@ -1,5 +1,7 @@
 /* { dg-do run } */
-/* { dg-options "-fsanitize=signed-integer-overflow -Wno-unused-variable -fno-sanitize-recover=signed-integer-overflow" } */
+/* { dg-options "-fsanitize=signed-integer-overflow -Wno-unused-variable" } */
+
+#include <stdio.h>
 
 #define SCHAR_MAX __SCHAR_MAX__
 #define SHRT_MAX __SHRT_MAX__
@@ -16,6 +18,8 @@ check (int i, int j)
 int
 main (void)
 {
+  fputs ("UBSAN TEST START\n", stderr);
+
   /* Test integer promotion.  */
 #if __SCHAR_MAX__ == 127
   volatile signed char a = -2;
@@ -41,5 +45,9 @@ main (void)
   o = m * n;
   check (o, INT_MIN);
 #endif
+
+  fputs ("UBSAN TEST END\n", stderr);
   return 0;
 }
+
+/* { dg-output "UBSAN TEST START(\n|\r\n|\r)UBSAN TEST END" } */

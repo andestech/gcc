@@ -4,6 +4,7 @@
 
 #include <math.h>
 #include "avx512f-check.h"
+#include "avx512f-helper.h"
 
 #define SIZE (128 / 32)
 

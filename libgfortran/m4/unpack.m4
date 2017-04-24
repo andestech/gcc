@@ -105,8 +105,6 @@ unpack0_'rtype_code` ('rtype` *ret, const 'rtype` *vector,
   else
     {
       dim = GFC_DESCRIPTOR_RANK (ret);
-      /* Initialize to avoid -Wmaybe-uninitialized complaints.  */
-      rstride[0] = 1;
       for (n = 0; n < dim; n++)
 	{
 	  count[n] = 0;
@@ -252,8 +250,6 @@ unpack1_'rtype_code` ('rtype` *ret, const 'rtype` *vector,
   else
     {
       dim = GFC_DESCRIPTOR_RANK (ret);
-      /* Initialize to avoid -Wmaybe-uninitialized complaints.  */
-      rstride[0] = 1;
       for (n = 0; n < dim; n++)
 	{
 	  count[n] = 0;

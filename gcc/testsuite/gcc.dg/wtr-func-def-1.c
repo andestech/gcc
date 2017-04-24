@@ -2,7 +2,7 @@
    Note, gcc should omit these warnings in system header files.
    Origin: Kaveh R. Ghazi <ghazi@caip.rutgers.edu> 6/30/2002.  */
 /* { dg-do compile } */
-/* { dg-options "-Wtraditional -std=gnu89" } */
+/* { dg-options "-Wtraditional" } */
 
 /* Test some simple cases.  */
 

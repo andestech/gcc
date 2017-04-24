@@ -18,7 +18,6 @@ void foo (struct bar *b)
     abort ();
 }
 
-int
 main ()
 {
   struct bar x;

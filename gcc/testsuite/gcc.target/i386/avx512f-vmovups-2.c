@@ -9,7 +9,7 @@
 #define SIZE (AVX512F_LEN / 32)
 #include "avx512f-mask-type.h"
 
-void
+static void
 TEST (void)
 {
   UNION_TYPE (AVX512F_LEN, ) res1, res2, res3, s2;

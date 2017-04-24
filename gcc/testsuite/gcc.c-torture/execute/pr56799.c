@@ -1,4 +1,3 @@
-/* { dg-require-effective-target int32plus } */
 
 #include <stdio.h>
 typedef struct { int x; int y;} S;

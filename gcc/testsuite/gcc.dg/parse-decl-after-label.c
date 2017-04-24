@@ -3,7 +3,7 @@
 { dg-options "-fsyntax-only" }
 */
 
-int f(int x)
+int f(x)
 {
   if (x > 1) 
     {

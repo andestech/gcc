@@ -6,7 +6,6 @@ struct test
   int type ;
   int symflag ;
 };
-int
 Chv_copyEntriesToVector ( input *chv,double *dvec) 
 {
   double *entries ;

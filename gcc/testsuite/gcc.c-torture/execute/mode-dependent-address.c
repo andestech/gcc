@@ -1,5 +1,3 @@
-/* { dg-require-effective-target stdint_types } */
-
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>

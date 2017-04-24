@@ -7,8 +7,6 @@ struct w49
   }
   value;
 };
-void backtrace (const char *, int, int);
-void
 f9887 (struct w49 a23040)
 {
   unsigned long r9887;

@@ -157,24 +157,12 @@
 #include "varasm.h"
 #include "rtl-error.h"
 #include "tm_p.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
 #include "function.h"
 #include "insn-config.h"
 #include "regs.h"
+#include "hard-reg-set.h"
 #include "flags.h"
 #include "recog.h"
-#include "predict.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfgrtl.h"
-#include "cfganal.h"
-#include "cfgbuild.h"
-#include "cfgcleanup.h"
 #include "basic-block.h"
 #include "reload.h"
 #include "ggc.h"
@@ -182,7 +170,6 @@
 #include "target.h"
 #include "df.h"
 #include "emit-rtl.h"  /* FIXME: Can go away once crtl is moved to rtl.h.  */
-#include "rtl-iter.h"
 
 #ifdef STACK_REGS
 
@@ -260,25 +247,25 @@ static int stack_regs_mentioned_p (const_rtx pat);
 static void pop_stack (stack_ptr, int);
 static rtx *get_true_reg (rtx *);
 
-static int check_asm_stack_operands (rtx_insn *);
+static int check_asm_stack_operands (rtx);
 static void get_asm_operands_in_out (rtx, int *, int *);
 static rtx stack_result (tree);
 static void replace_reg (rtx *, int);
-static void remove_regno_note (rtx_insn *, enum reg_note, unsigned int);
+static void remove_regno_note (rtx, enum reg_note, unsigned int);
 static int get_hard_regnum (stack_ptr, rtx);
-static rtx_insn *emit_pop_insn (rtx_insn *, stack_ptr, rtx, enum emit_where);
-static void swap_to_top (rtx_insn *, stack_ptr, rtx, rtx);
-static bool move_for_stack_reg (rtx_insn *, stack_ptr, rtx);
-static bool move_nan_for_stack_reg (rtx_insn *, stack_ptr, rtx);
+static rtx emit_pop_insn (rtx, stack_ptr, rtx, enum emit_where);
+static void swap_to_top (rtx, stack_ptr, rtx, rtx);
+static bool move_for_stack_reg (rtx, stack_ptr, rtx);
+static bool move_nan_for_stack_reg (rtx, stack_ptr, rtx);
 static int swap_rtx_condition_1 (rtx);
-static int swap_rtx_condition (rtx_insn *);
-static void compare_for_stack_reg (rtx_insn *, stack_ptr, rtx);
-static bool subst_stack_regs_pat (rtx_insn *, stack_ptr, rtx);
-static void subst_asm_stack_regs (rtx_insn *, stack_ptr);
-static bool subst_stack_regs (rtx_insn *, stack_ptr);
-static void change_stack (rtx_insn *, stack_ptr, stack_ptr, enum emit_where);
+static int swap_rtx_condition (rtx);
+static void compare_for_stack_reg (rtx, stack_ptr, rtx);
+static bool subst_stack_regs_pat (rtx, stack_ptr, rtx);
+static void subst_asm_stack_regs (rtx, stack_ptr);
+static bool subst_stack_regs (rtx, stack_ptr);
+static void change_stack (rtx, stack_ptr, stack_ptr, enum emit_where);
 static void print_stack (FILE *, stack_ptr);
-static rtx_insn *next_flags_user (rtx_insn *);
+static rtx next_flags_user (rtx);
 
 /* Return nonzero if any stack register is mentioned somewhere within PAT.  */
 
@@ -343,8 +330,8 @@ stack_regs_mentioned (const_rtx insn)
 
 static rtx ix86_flags_rtx;
 
-static rtx_insn *
-next_flags_user (rtx_insn *insn)
+static rtx
+next_flags_user (rtx insn)
 {
   /* Search forward looking for the first use of this value.
      Stop at block boundaries.  */
@@ -357,15 +344,15 @@ next_flags_user (rtx_insn *insn)
 	return insn;
 
       if (CALL_P (insn))
-	return NULL;
+	return NULL_RTX;
     }
-  return NULL;
+  return NULL_RTX;
 }
 
 /* Reorganize the stack into ascending numbers, before this insn.  */
 
 static void
-straighten_stack (rtx_insn *insn, stack_ptr regstack)
+straighten_stack (rtx insn, stack_ptr regstack)
 {
   struct stack_def temp_stack;
   int top;
@@ -466,7 +453,7 @@ static bool any_malformed_asm;
    numbers below refer to that explanation.  */
 
 static int
-check_asm_stack_operands (rtx_insn *insn)
+check_asm_stack_operands (rtx insn)
 {
   int i;
   int n_clobbers;
@@ -475,26 +462,28 @@ check_asm_stack_operands (rtx_insn *insn)
 
   char reg_used_as_output[FIRST_PSEUDO_REGISTER];
   char implicitly_dies[FIRST_PSEUDO_REGISTER];
+  int alt;
 
   rtx *clobber_reg = 0;
   int n_inputs, n_outputs;
 
   /* Find out what the constraints require.  If no constraint
      alternative matches, this asm is malformed.  */
-  extract_constrain_insn (insn);
+  extract_insn (insn);
+  constrain_operands (1);
+  alt = which_alternative;
 
-  preprocess_constraints (insn);
+  preprocess_constraints ();
 
   get_asm_operands_in_out (body, &n_outputs, &n_inputs);
 
-  if (which_alternative < 0)
+  if (alt < 0)
     {
       malformed_asm = 1;
       /* Avoid further trouble with this insn.  */
       PATTERN (insn) = gen_rtx_USE (VOIDmode, const0_rtx);
       return 0;
     }
-  const operand_alternative *op_alt = which_op_alt ();
 
   /* Strip SUBREGs here to make the following code simpler.  */
   for (i = 0; i < recog_data.n_operands; i++)
@@ -538,7 +527,7 @@ check_asm_stack_operands (rtx_insn *insn)
   for (i = 0; i < n_outputs; i++)
     if (STACK_REG_P (recog_data.operand[i]))
       {
-	if (reg_class_size[(int) op_alt[i].cl] != 1)
+	if (reg_class_size[(int) recog_op_alt[i][alt].cl] != 1)
 	  {
 	    error_for_asm (insn, "output constraint %d must specify a single register", i);
 	    malformed_asm = 1;
@@ -593,7 +582,7 @@ check_asm_stack_operands (rtx_insn *insn)
 	  if (operands_match_p (clobber_reg[j], recog_data.operand[i]))
 	    break;
 
-	if (j < n_clobbers || op_alt[i].matches >= 0)
+	if (j < n_clobbers || recog_op_alt[i][alt].matches >= 0)
 	  implicitly_dies[REGNO (recog_data.operand[i])] = 1;
       }
 
@@ -621,7 +610,7 @@ check_asm_stack_operands (rtx_insn *insn)
      record any earlyclobber.  */
 
   for (i = n_outputs; i < n_outputs + n_inputs; i++)
-    if (op_alt[i].matches == -1)
+    if (recog_op_alt[i][alt].matches == -1)
       {
 	int j;
 
@@ -707,7 +696,7 @@ replace_reg (rtx *reg, int regno)
    number REGNO from INSN.  Remove only one such note.  */
 
 static void
-remove_regno_note (rtx_insn *insn, enum reg_note note, unsigned int regno)
+remove_regno_note (rtx insn, enum reg_note note, unsigned int regno)
 {
   rtx *note_link, this_rtx;
 
@@ -750,11 +739,10 @@ get_hard_regnum (stack_ptr regstack, rtx reg)
    and source is the top of stack.  A death note for the top of stack
    cases the movdf pattern to pop.  */
 
-static rtx_insn *
-emit_pop_insn (rtx_insn *insn, stack_ptr regstack, rtx reg, enum emit_where where)
+static rtx
+emit_pop_insn (rtx insn, stack_ptr regstack, rtx reg, enum emit_where where)
 {
-  rtx_insn *pop_insn;
-  rtx pop_rtx;
+  rtx pop_insn, pop_rtx;
   int hard_regno;
 
   /* For complex types take care to pop both halves.  These may survive in
@@ -764,7 +752,7 @@ emit_pop_insn (rtx_insn *insn, stack_ptr regstack, rtx reg, enum emit_where wher
       rtx reg1 = FP_MODE_REG (REGNO (reg), DFmode);
       rtx reg2 = FP_MODE_REG (REGNO (reg) + 1, DFmode);
 
-      pop_insn = NULL;
+      pop_insn = NULL_RTX;
       if (get_hard_regnum (regstack, reg1) >= 0)
 	pop_insn = emit_pop_insn (insn, regstack, reg1, where);
       if (get_hard_regnum (regstack, reg2) >= 0)
@@ -803,12 +791,12 @@ emit_pop_insn (rtx_insn *insn, stack_ptr regstack, rtx reg, enum emit_where wher
    If REG is already at the top of the stack, no insn is emitted.  */
 
 static void
-emit_swap_insn (rtx_insn *insn, stack_ptr regstack, rtx reg)
+emit_swap_insn (rtx insn, stack_ptr regstack, rtx reg)
 {
   int hard_regno;
   rtx swap_rtx;
   int tmp, other_reg;		/* swap regno temps */
-  rtx_insn *i1;			/* the stack-reg insn prior to INSN */
+  rtx i1;			/* the stack-reg insn prior to INSN */
   rtx i1set = NULL_RTX;		/* the SET rtx within I1 */
 
   hard_regno = get_hard_regnum (regstack, reg);
@@ -838,8 +826,8 @@ emit_swap_insn (rtx_insn *insn, stack_ptr regstack, rtx reg)
   i1 = NULL;
   if (current_block && insn != BB_HEAD (current_block))
     {
-      rtx_insn *tmp = PREV_INSN (insn);
-      rtx_insn *limit = PREV_INSN (BB_HEAD (current_block));
+      rtx tmp = PREV_INSN (insn);
+      rtx limit = PREV_INSN (BB_HEAD (current_block));
       while (tmp != limit)
 	{
 	  if (LABEL_P (tmp)
@@ -910,7 +898,7 @@ emit_swap_insn (rtx_insn *insn, stack_ptr regstack, rtx reg)
    is emitted.  */
 
 static void
-swap_to_top (rtx_insn *insn, stack_ptr regstack, rtx src1, rtx src2)
+swap_to_top (rtx insn, stack_ptr regstack, rtx src1, rtx src2)
 {
   struct stack_def temp_stack;
   int regno, j, k, temp;
@@ -951,7 +939,7 @@ swap_to_top (rtx_insn *insn, stack_ptr regstack, rtx src1, rtx src2)
    was deleted in the process.  */
 
 static bool
-move_for_stack_reg (rtx_insn *insn, stack_ptr regstack, rtx pat)
+move_for_stack_reg (rtx insn, stack_ptr regstack, rtx pat)
 {
   rtx *psrc =  get_true_reg (&SET_SRC (pat));
   rtx *pdest = get_true_reg (&SET_DEST (pat));
@@ -1102,7 +1090,7 @@ move_for_stack_reg (rtx_insn *insn, stack_ptr regstack, rtx pat)
    a NaN into DEST, then invokes move_for_stack_reg.  */
 
 static bool
-move_nan_for_stack_reg (rtx_insn *insn, stack_ptr regstack, rtx dest)
+move_nan_for_stack_reg (rtx insn, stack_ptr regstack, rtx dest)
 {
   rtx pat;
 
@@ -1150,7 +1138,7 @@ swap_rtx_condition_1 (rtx pat)
 }
 
 static int
-swap_rtx_condition (rtx_insn *insn)
+swap_rtx_condition (rtx insn)
 {
   rtx pat = PATTERN (insn);
 
@@ -1241,7 +1229,7 @@ swap_rtx_condition (rtx_insn *insn)
    set up.  */
 
 static void
-compare_for_stack_reg (rtx_insn *insn, stack_ptr regstack, rtx pat_src)
+compare_for_stack_reg (rtx insn, stack_ptr regstack, rtx pat_src)
 {
   rtx *src1, *src2;
   rtx src1_note, src2_note;
@@ -1320,34 +1308,46 @@ compare_for_stack_reg (rtx_insn *insn, stack_ptr regstack, rtx pat_src)
     }
 }
 
+/* Substitute new registers in LOC, which is part of a debug insn.
+   REGSTACK is the current register layout.  */
+
+static int
+subst_stack_regs_in_debug_insn (rtx *loc, void *data)
+{
+  stack_ptr regstack = (stack_ptr)data;
+  int hard_regno;
+
+  if (!STACK_REG_P (*loc))
+    return 0;
+
+  hard_regno = get_hard_regnum (regstack, *loc);
+
+  /* If we can't find an active register, reset this debug insn.  */
+  if (hard_regno == -1)
+    return 1;
+
+  gcc_assert (hard_regno >= FIRST_STACK_REG);
+
+  replace_reg (loc, hard_regno);
+
+  return -1;
+}
+
 /* Substitute hardware stack regs in debug insn INSN, using stack
    layout REGSTACK.  If we can't find a hardware stack reg for any of
    the REGs in it, reset the debug insn.  */
 
 static void
-subst_all_stack_regs_in_debug_insn (rtx_insn *insn, struct stack_def *regstack)
+subst_all_stack_regs_in_debug_insn (rtx insn, struct stack_def *regstack)
 {
-  subrtx_ptr_iterator::array_type array;
-  FOR_EACH_SUBRTX_PTR (iter, array, &INSN_VAR_LOCATION_LOC (insn), NONCONST)
-    {
-      rtx *loc = *iter;
-      rtx x = *loc;
-      if (STACK_REG_P (x))
-	{
-	  int hard_regno = get_hard_regnum (regstack, x);
+  int ret = for_each_rtx (&INSN_VAR_LOCATION_LOC (insn),
+			  subst_stack_regs_in_debug_insn,
+			  regstack);
 
-	  /* If we can't find an active register, reset this debug insn.  */
-	  if (hard_regno == -1)
-	    {
-	      INSN_VAR_LOCATION_LOC (insn) = gen_rtx_UNKNOWN_VAR_LOC ();
-	      return;
-	    }
-
-	  gcc_assert (hard_regno >= FIRST_STACK_REG);
-	  replace_reg (loc, hard_regno);
-	  iter.skip_subrtxes ();
-	}
-    }
+  if (ret == 1)
+    INSN_VAR_LOCATION_LOC (insn) = gen_rtx_UNKNOWN_VAR_LOC ();
+  else
+    gcc_checking_assert (ret == 0);
 }
 
 /* Substitute new registers in PAT, which is part of INSN.  REGSTACK
@@ -1355,7 +1355,7 @@ subst_all_stack_regs_in_debug_insn (rtx_insn *insn, struct stack_def *regstack)
    was deleted in the process.  */
 
 static bool
-subst_stack_regs_pat (rtx_insn *insn, stack_ptr regstack, rtx pat)
+subst_stack_regs_pat (rtx insn, stack_ptr regstack, rtx pat)
 {
   rtx *dest, *src;
   bool control_flow_insn_deleted = false;
@@ -1432,7 +1432,7 @@ subst_stack_regs_pat (rtx_insn *insn, stack_ptr regstack, rtx pat)
 			if (get_hard_regnum (regstack, u) == -1)
 			  {
 			    rtx pat2 = gen_rtx_CLOBBER (VOIDmode, u);
-			    rtx_insn *insn2 = emit_insn_before (pat2, insn);
+			    rtx insn2 = emit_insn_before (pat2, insn);
 			    control_flow_insn_deleted
 			      |= move_nan_for_stack_reg (insn2, regstack, u);
 			  }
@@ -1568,14 +1568,14 @@ subst_stack_regs_pat (rtx_insn *insn, stack_ptr regstack, rtx pat)
 		if (src1_hard_regnum == -1)
 		  {
 		    rtx pat2 = gen_rtx_CLOBBER (VOIDmode, *src1);
-		    rtx_insn *insn2 = emit_insn_before (pat2, insn);
+		    rtx insn2 = emit_insn_before (pat2, insn);
 		    control_flow_insn_deleted
 		      |= move_nan_for_stack_reg (insn2, regstack, *src1);
 		  }
 		if (src2_hard_regnum == -1)
 		  {
 		    rtx pat2 = gen_rtx_CLOBBER (VOIDmode, *src2);
-		    rtx_insn *insn2 = emit_insn_before (pat2, insn);
+		    rtx insn2 = emit_insn_before (pat2, insn);
 		    control_flow_insn_deleted
 		      |= move_nan_for_stack_reg (insn2, regstack, *src2);
 		  }
@@ -2003,9 +2003,10 @@ subst_stack_regs_pat (rtx_insn *insn, stack_ptr regstack, rtx pat)
    requirements, since record_asm_stack_regs removes any problem asm.  */
 
 static void
-subst_asm_stack_regs (rtx_insn *insn, stack_ptr regstack)
+subst_asm_stack_regs (rtx insn, stack_ptr regstack)
 {
   rtx body = PATTERN (insn);
+  int alt;
 
   rtx *note_reg;		/* Array of note contents */
   rtx **note_loc;		/* Address of REG field of each note */
@@ -2027,12 +2028,15 @@ subst_asm_stack_regs (rtx_insn *insn, stack_ptr regstack)
   /* Find out what the constraints required.  If no constraint
      alternative matches, that is a compiler bug: we should have caught
      such an insn in check_asm_stack_operands.  */
-  extract_constrain_insn (insn);
+  extract_insn (insn);
+  constrain_operands (1);
+  alt = which_alternative;
 
-  preprocess_constraints (insn);
-  const operand_alternative *op_alt = which_op_alt ();
+  preprocess_constraints ();
 
   get_asm_operands_in_out (body, &n_outputs, &n_inputs);
+
+  gcc_assert (alt >= 0);
 
   /* Strip SUBREGs here to make the following code simpler.  */
   for (i = 0; i < recog_data.n_operands; i++)
@@ -2114,8 +2118,9 @@ subst_asm_stack_regs (rtx_insn *insn, stack_ptr regstack)
 
   for (i = n_outputs; i < n_outputs + n_inputs; i++)
     if (STACK_REG_P (recog_data.operand[i])
-	&& reg_class_subset_p (op_alt[i].cl, FLOAT_REGS)
-	&& op_alt[i].cl != FLOAT_REGS)
+	&& reg_class_subset_p (recog_op_alt[i][alt].cl,
+			       FLOAT_REGS)
+	&& recog_op_alt[i][alt].cl != FLOAT_REGS)
       {
 	/* If an operand needs to be in a particular reg in
 	   FLOAT_REGS, the constraint was either 't' or 'u'.  Since
@@ -2203,7 +2208,7 @@ subst_asm_stack_regs (rtx_insn *insn, stack_ptr regstack)
 	  if (operands_match_p (clobber_reg[j], recog_data.operand[i]))
 	    break;
 
-	if (j < n_clobbers || op_alt[i].matches >= 0)
+	if (j < n_clobbers || recog_op_alt[i][alt].matches >= 0)
 	  {
 	    /* recog_data.operand[i] might not be at the top of stack.
 	       But that's OK, because all we need to do is pop the
@@ -2283,7 +2288,7 @@ subst_asm_stack_regs (rtx_insn *insn, stack_ptr regstack)
    a control flow insn was deleted in the process.  */
 
 static bool
-subst_stack_regs (rtx_insn *insn, stack_ptr regstack)
+subst_stack_regs (rtx insn, stack_ptr regstack)
 {
   rtx *note_link, note;
   bool control_flow_insn_deleted = false;
@@ -2351,7 +2356,7 @@ subst_stack_regs (rtx_insn *insn, stack_ptr regstack)
   /* subst_stack_regs_pat may have deleted a no-op insn.  If so, any
      REG_UNUSED will already have been dealt with, so just return.  */
 
-  if (NOTE_P (insn) || insn->deleted ())
+  if (NOTE_P (insn) || INSN_DELETED_P (insn))
     return control_flow_insn_deleted;
 
   /* If this a noreturn call, we can't insert pop insns after it.
@@ -2395,8 +2400,7 @@ subst_stack_regs (rtx_insn *insn, stack_ptr regstack)
    is no longer needed once this has executed.  */
 
 static void
-change_stack (rtx_insn *insn, stack_ptr old, stack_ptr new_stack,
-	      enum emit_where where)
+change_stack (rtx insn, stack_ptr old, stack_ptr new_stack, enum emit_where where)
 {
   int reg;
   int update_end = 0;
@@ -2811,8 +2815,7 @@ compensate_edge (edge e)
     }
   else
     {
-      rtx_insn *seq;
-      rtx_note *after;
+      rtx seq, after;
 
       current_block = NULL;
       start_sequence ();
@@ -2895,7 +2898,7 @@ convert_regs_1 (basic_block block)
   struct stack_def regstack;
   block_info bi = BLOCK_INFO (block);
   int reg;
-  rtx_insn *insn, *next;
+  rtx insn, next;
   bool control_flow_insn_deleted = false;
   bool cfg_altered = false;
   int debug_insns_with_starting_stack = 0;
@@ -3237,7 +3240,7 @@ reg_to_stack (void)
   /* Create the replacement registers up front.  */
   for (i = FIRST_STACK_REG; i <= LAST_STACK_REG; i++)
     {
-      machine_mode mode;
+      enum machine_mode mode;
       for (mode = GET_CLASS_NARROWEST_MODE (MODE_FLOAT);
 	   mode != VOIDmode;
 	   mode = GET_MODE_WIDER_MODE (mode))
@@ -3282,6 +3285,16 @@ reg_to_stack (void)
 }
 #endif /* STACK_REGS */
 
+static bool
+gate_handle_stack_regs (void)
+{
+#ifdef STACK_REGS
+  return 1;
+#else
+  return 0;
+#endif
+}
+
 namespace {
 
 const pass_data pass_data_stack_regs =
@@ -3289,6 +3302,8 @@ const pass_data pass_data_stack_regs =
   RTL_PASS, /* type */
   "*stack_regs", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  false, /* has_execute */
   TV_REG_STACK, /* tv_id */
   0, /* properties_required */
   0, /* properties_provided */
@@ -3305,14 +3320,7 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *)
-    {
-#ifdef STACK_REGS
-      return true;
-#else
-      return false;
-#endif
-    }
+  bool gate () { return gate_handle_stack_regs (); }
 
 }; // class pass_stack_regs
 
@@ -3343,12 +3351,14 @@ const pass_data pass_data_stack_regs_run =
   RTL_PASS, /* type */
   "stack", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  false, /* has_gate */
+  true, /* has_execute */
   TV_REG_STACK, /* tv_id */
   0, /* properties_required */
   0, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  TODO_df_finish, /* todo_flags_finish */
+  ( TODO_df_finish | TODO_verify_rtl_sharing ), /* todo_flags_finish */
 };
 
 class pass_stack_regs_run : public rtl_opt_pass
@@ -3359,10 +3369,7 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual unsigned int execute (function *)
-    {
-      return rest_of_handle_stack_regs ();
-    }
+  unsigned int execute () { return rest_of_handle_stack_regs (); }
 
 }; // class pass_stack_regs_run
 

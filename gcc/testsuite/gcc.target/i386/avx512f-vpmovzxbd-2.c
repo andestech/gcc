@@ -20,10 +20,10 @@ CALC (unsigned char *s, int *r)
     }
 }
 
-void
+static void
 TEST (void)
 {
-  union128i_ub s;
+  union128i_b s;
   UNION_TYPE (AVX512F_LEN, i_d) res1, res2, res3;
   MASK_TYPE mask = MASK_VALUE;
   int res_ref[SIZE];

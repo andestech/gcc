@@ -1,4 +1,4 @@
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=c++0x" }
 // { dg-do run }
 
 //

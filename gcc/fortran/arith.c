@@ -758,7 +758,7 @@ gfc_arith_divide (gfc_expr *op1, gfc_expr *op2, gfc_expr **resultp)
       if (mpc_cmp_si_si (op2->value.complex, 0, 0) == 0)
       {
 	/* In Fortran, return (NaN + NaN I) for any zero divisor.  See
-	   PR 40318.  */
+	   PR 40318. */
 	mpfr_set_nan (mpc_realref (result->value.complex));
 	mpfr_set_nan (mpc_imagref (result->value.complex));
       }
@@ -1976,17 +1976,6 @@ gfc_int2int (gfc_expr *src, int kind)
 	}
     }
 
-  /*  If we do not trap numeric overflow, we need to convert the number to
-      signed, throwing away high-order bits if necessary.  */
-  if (gfc_option.flag_range_check == 0)
-    {
-      int k;
-
-      k = gfc_validate_kind (BT_INTEGER, kind, false);
-      gfc_convert_mpz_to_signed (result->value.integer,
-				 gfc_integer_kinds[k].bit_size);
-    }
-
   return result;
 }
 
@@ -2344,7 +2333,7 @@ gfc_hollerith2complex (gfc_expr *src, int kind)
 }
 
 
-/* Convert Hollerith to character.  */
+/* Convert Hollerith to character. */
 
 gfc_expr *
 gfc_hollerith2character (gfc_expr *src, int kind)

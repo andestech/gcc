@@ -5,7 +5,7 @@
 static int unnecesary_static_initialized_variable;
 static int *unnecesary_static_initialized_variable2 =
   &unnecesary_static_initialized_variable;
-static inline int
+static inline
 simplify_after_inline (int param1, int *param2)
 {
   if (unnecesary_static_initialized_variable != param1)
@@ -14,7 +14,6 @@ simplify_after_inline (int param1, int *param2)
     return unnecesary_static_initialized_variable;
 }
 
-int
 main ()
 {
   return simplify_after_inline (unnecesary_static_initialized_variable,

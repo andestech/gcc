@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 2004-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2004-2009, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -321,6 +321,8 @@ private
       Length : Count_Type := 0;
    end record;
 
+   Empty_List : constant List := (0, others => <>);
+
    type List_Access is access all List;
    for List_Access'Storage_Size use 0;
 
@@ -329,8 +331,6 @@ private
          Container : List_Access;
          Node      : Count_Type := 0;
       end record;
-
-   Empty_List : constant List := (0, others => <>);
 
    No_Element : constant Cursor := (null, 0);
 

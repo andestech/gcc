@@ -6,7 +6,7 @@
 --                                                                          --
 --                                   B o d y                                --
 --                                                                          --
---                     Copyright (C) 1995-2014, AdaCore                     --
+--                     Copyright (C) 1995-2012, AdaCore                     --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -38,9 +38,7 @@ pragma Polling (Off);
 --  This package encapsulates all direct interfaces to OS services
 --  that are needed by children of System.
 
-with Interfaces.C;            use Interfaces.C;
-with Interfaces.C.Extensions; use Interfaces.C.Extensions;
-
+with Interfaces.C; use Interfaces.C;
 package body System.OS_Interface is
 
    -----------------
@@ -90,19 +88,16 @@ package body System.OS_Interface is
 
       use Interfaces;
 
-      type timeval is array (1 .. 3) of C.long;
-      --  The timeval array is sized to contain long_long sec and long usec.
-      --  If long_long'Size = long'Size then it will be overly large but that
-      --  won't effect the implementation since it's not accessed directly.
+      type timeval is array (1 .. 2) of C.long;
 
       procedure timeval_to_duration
         (T    : not null access timeval;
-         sec  : not null access C.Extensions.long_long;
+         sec  : not null access C.long;
          usec : not null access C.long);
       pragma Import (C, timeval_to_duration, "__gnat_timeval_to_duration");
 
       Micro  : constant := 10**6;
-      sec    : aliased C.Extensions.long_long;
+      sec    : aliased C.long;
       usec   : aliased C.long;
       TV     : aliased timeval;
       Result : int;

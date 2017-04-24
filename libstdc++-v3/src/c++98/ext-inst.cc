@@ -27,6 +27,7 @@
 //
 
 #include <ext/rope>
+#include <ext/stdio_filebuf.h>
 
 namespace __gnu_cxx _GLIBCXX_VISIBILITY(default)
 {
@@ -46,6 +47,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     rope<char, std::allocator<char> >::
     _S_fetch(_Rope_RopeRep<char, std::allocator<char> >*, size_type);
 
+  template class stdio_filebuf<char>;
+
 #ifdef _GLIBCXX_USE_WCHAR_T
   template
     const unsigned long 
@@ -55,6 +58,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     wchar_t
     rope<wchar_t, std::allocator<wchar_t> >::
     _S_fetch(_Rope_RopeRep<wchar_t, std::allocator<wchar_t> >*, size_type);
+
+  template class stdio_filebuf<wchar_t>;
 #endif
 
 _GLIBCXX_END_NAMESPACE_VERSION

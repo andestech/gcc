@@ -1,8 +1,6 @@
 // { dg-do compile { target c++98_only } }
 // { dg-options "-ansi" }
 
-//  C++11 features:
-
 #ifndef __cpp_runtime_arrays
 #  error "__cpp_runtime_arrays" // { dg-error "error" }
 #endif
@@ -55,9 +53,9 @@
 #  error "__cpp_alias_templates" // { dg-error "error" }
 #endif
 
-// C++14 features:
+// C++14
 
-// C++98 gets binary literals in non-ANSI modes.
+// C++98 gets binary literals.
 //#ifndef __cpp_binary_literals
 //#  error "__cpp_binary_literals"
 //#endif
@@ -78,9 +76,10 @@
 #  error "__cpp_return_type_deduction" // { dg-error "error" }
 #endif
 
-#ifndef __cpp_aggregate_nsdmi
-#  error "__cpp_aggregate_nsdmi" // { dg-error "error" }
-#endif
+//  Aggregate initializers not in yet.
+//#ifdef __cpp_aggregate_nsdmi
+//#  error "__cpp_aggregate_nsdmi"
+//#endif
 
 #ifndef __cpp_variable_templates
 #  error "__cpp_variable_templates" // { dg-error "error" }
@@ -90,13 +89,11 @@
 #  error "__cpp_digit_separators" // { dg-error "error" }
 #endif
 
+#ifndef __cpp_attribute_deprecated
+#  error "__cpp_attribute_deprecated" // { dg-error "error" }
+#endif
+
 //  Sized deallocation not in yet.
 //#ifdef __cpp_sized_deallocation
 //#  error "__cpp_sized_deallocation"
 //#endif
-
-//  Attribute checks:
-
-#ifndef __cpp_attribute_deprecated
-#  error "__cpp_attribute_deprecated" // { dg-error "error" }
-#endif

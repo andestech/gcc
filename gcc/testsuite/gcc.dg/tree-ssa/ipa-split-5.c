@@ -24,7 +24,6 @@ struct a split_me (int a)
     }
 }
 int val;
-void
 test()
 {
   split_me (val);

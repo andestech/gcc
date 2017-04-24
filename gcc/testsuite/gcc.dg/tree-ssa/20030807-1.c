@@ -22,7 +22,6 @@ struct rtx_def
 
 static int *uid_cuid;
 static int max_uid_cuid;
-int insn_cuid (rtx);
 
 rtx
 bar (rtx r)

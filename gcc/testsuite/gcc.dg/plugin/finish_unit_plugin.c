@@ -9,6 +9,7 @@
 #include "tree.h"
 #include "toplev.h"
 #include "basic-block.h"
+#include "pointer-set.h"
 #include "hash-table.h"
 #include "vec.h"
 #include "ggc.h"

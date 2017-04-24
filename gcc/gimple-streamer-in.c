@@ -24,17 +24,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "coretypes.h"
 #include "diagnostic.h"
 #include "tree.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "tm.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -47,10 +36,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-phinodes.h"
 #include "stringpool.h"
 #include "tree-ssanames.h"
-#include "hash-map.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
-#include "cgraph.h"
 #include "data-streamer.h"
 #include "tree-streamer.h"
 #include "gimple-streamer.h"
@@ -152,7 +137,7 @@ input_gimple_stmt (struct lto_input_block *ib, struct data_in *data_in,
     case GIMPLE_ASM:
       {
 	/* FIXME lto.  Move most of this into a new gimple_asm_set_string().  */
-	gimple_statement_asm *asm_stmt = as_a <gimple_statement_asm *> (stmt);
+	gimple_statement_asm *asm_stmt = as_a <gimple_statement_asm> (stmt);
 	tree str;
 	asm_stmt->ni = streamer_read_uhwi (ib);
 	asm_stmt->no = streamer_read_uhwi (ib);

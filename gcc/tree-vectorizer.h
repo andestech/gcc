@@ -332,7 +332,7 @@ typedef struct _loop_vec_info {
   vec<gimple> reduction_chains;
 
   /* Hash table used to choose the best peeling option.  */
-  hash_table<peel_info_hasher> *peeling_htab;
+  hash_table <peel_info_hasher> peeling_htab;
 
   /* Cost data used by the target cost model.  */
   void *target_cost_data;
@@ -958,7 +958,7 @@ known_alignment_for_access_p (struct data_reference *data_ref_info)
 static inline bool
 unlimited_cost_model (loop_p loop)
 {
-  if (loop != NULL && loop->force_vectorize
+  if (loop != NULL && loop->force_vect
       && flag_simd_cost_model != VECT_COST_MODEL_DEFAULT)
     return flag_simd_cost_model == VECT_COST_MODEL_UNLIMITED;
   return (flag_vect_cost_model == VECT_COST_MODEL_UNLIMITED);
@@ -1098,10 +1098,12 @@ extern bool vectorizable_reduction (gimple, gimple_stmt_iterator *, gimple *,
 extern bool vectorizable_induction (gimple, gimple_stmt_iterator *, gimple *);
 extern tree get_initial_def_for_reduction (gimple, tree, tree *);
 extern int vect_min_worthwhile_factor (enum tree_code);
-extern int vect_get_known_peeling_cost (loop_vec_info, int, int *, int,
+extern int vect_get_known_peeling_cost (loop_vec_info, int, int *,
+					stmt_vector_for_cost *,
 					stmt_vector_for_cost *,
 					stmt_vector_for_cost *);
-extern int vect_get_single_scalar_iteration_cost (loop_vec_info);
+extern int vect_get_single_scalar_iteration_cost (loop_vec_info,
+						  stmt_vector_for_cost *);
 
 /* In tree-vect-slp.c.  */
 extern void vect_free_slp_instance (slp_instance);
@@ -1125,7 +1127,7 @@ extern void vect_slp_transform_bb (basic_block);
    Additional pattern recognition functions can (and will) be added
    in the future.  */
 typedef gimple (* vect_recog_func_ptr) (vec<gimple> *, tree *, tree *);
-#define NUM_PATTERNS 12
+#define NUM_PATTERNS 11
 void vect_pattern_recog (loop_vec_info, bb_vec_info);
 
 /* In tree-vectorizer.c.  */

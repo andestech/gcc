@@ -1,5 +1,5 @@
 // FreeBSD wants warning clean system headers:
-// { dg-options "-Wall -Wsystem-headers" { target *-*-freebsd* *-*-dragonfly* } }
+// { dg-options "-Wall -Wsystem-headers" { target *-*-freebsd* } }
 // { dg-do compile }
 // 1999-05-12 bkoz
 

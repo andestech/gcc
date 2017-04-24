@@ -1,4 +1,3 @@
-/* { dg-require-effective-target int32plus } */
 extern void abort(void);
 
 unsigned int bar(void) { return 32768; }

@@ -1,7 +1,7 @@
-// { dg-do run { target *-*-freebsd* *-*-dragonfly* *-*-netbsd* *-*-linux* *-*-gnu* *-*-solaris* *-*-cygwin *-*-darwin* powerpc-ibm-aix* } }
-// { dg-options " -std=gnu++11 -pthread" { target *-*-freebsd* *-*-dragonfly* *-*-netbsd* *-*-linux* *-*-gnu* powerpc-ibm-aix* } }
-// { dg-options " -std=gnu++11 -pthreads" { target *-*-solaris* } }
-// { dg-options " -std=gnu++11 " { target *-*-cygwin *-*-darwin* } }
+// { dg-do run { target *-*-freebsd* *-*-netbsd* *-*-linux* *-*-gnu* *-*-solaris* *-*-cygwin *-*-darwin* powerpc-ibm-aix* } }
+// { dg-options " -std=gnu++0x -pthread" { target *-*-freebsd* *-*-netbsd* *-*-linux* *-*-gnu* powerpc-ibm-aix* } }
+// { dg-options " -std=gnu++0x -pthreads" { target *-*-solaris* } }
+// { dg-options " -std=gnu++0x " { target *-*-cygwin *-*-darwin* } }
 // { dg-require-cstdint "" }
 // { dg-require-gthreads "" }
 // { dg-require-atomic-builtins "" }
@@ -27,20 +27,14 @@
 #include <testsuite_hooks.h>
 #include <testsuite_allocator.h>
 
-using std::promise;
-using std::allocator_arg;
-
 void test01()
 {
-  __gnu_test::uneq_allocator<char> alloc(99);
-  promise<int> p1(allocator_arg, alloc);
-  p1.set_value(5);
-  VERIFY( p1.get_future().get() == 5 );
-}
+  using std::promise;
+  using std::allocator_arg;
+  using __gnu_test::uneq_allocator;
 
-void test02()
-{
-  __gnu_test::CustomPointerAlloc<int> alloc;
+  uneq_allocator<char> alloc(99);
+
   promise<int> p1(allocator_arg, alloc);
   p1.set_value(5);
   VERIFY( p1.get_future().get() == 5 );
@@ -49,6 +43,5 @@ void test02()
 int main()
 {
   test01();
-  test02();
   return 0;
 }

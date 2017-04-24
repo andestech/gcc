@@ -10,7 +10,7 @@ decltype(f(T())) f(T t)		// { dg-error "depth" }
 
 int main()
 {
-  f(A());			// { dg-message "from here" }
+  f(A());			// { dg-error "no match" }
 }
 
-// { dg-prune-output "compilation terminated" }
+// { dg-prune-output "note" }

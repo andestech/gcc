@@ -1,7 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -fdump-tree-vrp1-details" } */
 
-int
 foo (int i, int *p)
 {
   int j;

@@ -1204,8 +1204,15 @@ check_dummy_characteristics (gfc_symbol *s1, gfc_symbol *s2,
 	  return false;
 	}
 
+      if (s1->as->corank != s2->as->corank)
+	{
+	  snprintf (errmsg, err_len, "Corank mismatch in argument '%s' (%i/%i)",
+		    s1->name, s1->as->corank, s2->as->corank);
+	  return false;
+	}
+
       if (s1->as->type == AS_EXPLICIT)
-	for (i = 0; i < s1->as->rank + s1->as->corank; i++)
+	for (i = 0; i < s1->as->rank + MAX (0, s1->as->corank-1); i++)
 	  {
 	    shape1 = gfc_subtract (gfc_copy_expr (s1->as->upper[i]),
 				  gfc_copy_expr (s1->as->lower[i]));
@@ -1219,8 +1226,12 @@ check_dummy_characteristics (gfc_symbol *s1, gfc_symbol *s2,
 	      case -1:
 	      case  1:
 	      case -3:
-		snprintf (errmsg, err_len, "Shape mismatch in dimension %i of "
-			  "argument '%s'", i + 1, s1->name);
+		if (i < s1->as->rank)
+		  snprintf (errmsg, err_len, "Shape mismatch in dimension %i of"
+			    " argument '%s'", i + 1, s1->name);
+		else
+		  snprintf (errmsg, err_len, "Shape mismatch in codimension %i "
+			    "of argument '%s'", i - s1->as->rank + 1, s1->name);
 		return false;
 
 	      case -2:
@@ -3170,26 +3181,17 @@ check_intents (gfc_formal_arglist *f, gfc_actual_arglist *a)
 
   for (;; f = f->next, a = a->next)
     {
-      gfc_expr *expr;
-
       if (f == NULL && a == NULL)
 	break;
       if (f == NULL || a == NULL)
 	gfc_internal_error ("check_intents(): List mismatch");
 
-      if (a->expr && a->expr->expr_type == EXPR_FUNCTION
-	  && a->expr->value.function.isym
-	  && a->expr->value.function.isym->id == GFC_ISYM_CAF_GET)
-	expr = a->expr->value.function.actual->expr;
-      else
-	expr = a->expr;
-
-      if (expr == NULL || expr->expr_type != EXPR_VARIABLE)
+      if (a->expr == NULL || a->expr->expr_type != EXPR_VARIABLE)
 	continue;
 
       f_intent = f->sym->attr.intent;
 
-      if (gfc_pure (NULL) && gfc_impure_variable (expr->symtree->n.sym))
+      if (gfc_pure (NULL) && gfc_impure_variable (a->expr->symtree->n.sym))
 	{
 	  if ((f->sym->ts.type == BT_CLASS && f->sym->attr.class_ok
 	       && CLASS_DATA (f->sym)->attr.class_pointer)
@@ -3197,19 +3199,19 @@ check_intents (gfc_formal_arglist *f, gfc_actual_arglist *a)
 	    {
 	      gfc_error ("Procedure argument at %L is local to a PURE "
 			 "procedure and has the POINTER attribute",
-			 &expr->where);
+			 &a->expr->where);
 	      return false;
 	    }
 	}
 
        /* Fortran 2008, C1283.  */
-       if (gfc_pure (NULL) && gfc_is_coindexed (expr))
+       if (gfc_pure (NULL) && gfc_is_coindexed (a->expr))
 	{
 	  if (f_intent == INTENT_INOUT || f_intent == INTENT_OUT)
 	    {
 	      gfc_error ("Coindexed actual argument at %L in PURE procedure "
 			 "is passed to an INTENT(%s) argument",
-			 &expr->where, gfc_intent_string (f_intent));
+			 &a->expr->where, gfc_intent_string (f_intent));
 	      return false;
 	    }
 
@@ -3219,18 +3221,18 @@ check_intents (gfc_formal_arglist *f, gfc_actual_arglist *a)
 	    {
 	      gfc_error ("Coindexed actual argument at %L in PURE procedure "
 			 "is passed to a POINTER dummy argument",
-			 &expr->where);
+			 &a->expr->where);
 	      return false;
 	    }
 	}
 
        /* F2008, Section 12.5.2.4.  */
-       if (expr->ts.type == BT_CLASS && f->sym->ts.type == BT_CLASS
-	   && gfc_is_coindexed (expr))
+       if (a->expr->ts.type == BT_CLASS && f->sym->ts.type == BT_CLASS
+	   && gfc_is_coindexed (a->expr))
 	 {
 	   gfc_error ("Coindexed polymorphic actual argument at %L is passed "
 		      "polymorphic dummy argument '%s'",
-			 &expr->where, f->sym->name);
+			 &a->expr->where, f->sym->name);
 	   return false;
 	 }
     }
@@ -3252,14 +3254,8 @@ gfc_procedure_use (gfc_symbol *sym, gfc_actual_arglist **ap, locus *where)
      for calling a ISO_C_BINDING because c_loc and c_funloc
      are pseudo-unknown.  Additionally, warn about procedures not
      explicitly declared at all if requested.  */
-  if (sym->attr.if_source == IFSRC_UNKNOWN && !sym->attr.is_iso_c)
+  if (sym->attr.if_source == IFSRC_UNKNOWN && ! sym->attr.is_iso_c)
     {
-      if (sym->ns->has_implicit_none_export && sym->attr.proc == PROC_UNKNOWN)
-	{
-	  gfc_error ("Procedure '%s' called at %L is not explicitly declared",
-		     sym->name, where);
-	  return false;
-	}
       if (gfc_option.warn_implicit_interface)
 	gfc_warning ("Procedure '%s' called with an implicit interface at %L",
 		     sym->name, where);
@@ -3690,6 +3686,8 @@ gfc_extend_expr (gfc_expr *e)
   gfc_user_op *uop;
   gfc_intrinsic_op i;
   const char *gname;
+  gfc_typebound_proc* tbo;
+  gfc_expr* tb_base;
 
   sym = NULL;
 
@@ -3706,6 +3704,48 @@ gfc_extend_expr (gfc_expr *e)
 
   i = fold_unary_intrinsic (e->value.op.op);
 
+  /* See if we find a matching type-bound operator.  */
+  if (i == INTRINSIC_USER)
+    tbo = matching_typebound_op (&tb_base, actual,
+				  i, e->value.op.uop->name, &gname);
+  else
+    switch (i)
+      {
+#define CHECK_OS_COMPARISON(comp) \
+  case INTRINSIC_##comp: \
+  case INTRINSIC_##comp##_OS: \
+    tbo = matching_typebound_op (&tb_base, actual, \
+				 INTRINSIC_##comp, NULL, &gname); \
+    if (!tbo) \
+      tbo = matching_typebound_op (&tb_base, actual, \
+				   INTRINSIC_##comp##_OS, NULL, &gname); \
+    break;
+	CHECK_OS_COMPARISON(EQ)
+	CHECK_OS_COMPARISON(NE)
+	CHECK_OS_COMPARISON(GT)
+	CHECK_OS_COMPARISON(GE)
+	CHECK_OS_COMPARISON(LT)
+	CHECK_OS_COMPARISON(LE)
+#undef CHECK_OS_COMPARISON
+
+	default:
+	  tbo = matching_typebound_op (&tb_base, actual, i, NULL, &gname);
+	  break;
+      }
+
+  /* If there is a matching typebound-operator, replace the expression with
+      a call to it and succeed.  */
+  if (tbo)
+    {
+      gcc_assert (tb_base);
+      build_compcall_for_operator (e, actual, tb_base, tbo, gname);
+
+      if (!gfc_resolve_expr (e))
+	return MATCH_ERROR;
+      else
+	return MATCH_YES;
+    }
+ 
   if (i == INTRINSIC_USER)
     {
       for (ns = gfc_current_ns; ns; ns = ns->parent)
@@ -3756,58 +3796,9 @@ gfc_extend_expr (gfc_expr *e)
 
   if (sym == NULL)
     {
-      gfc_typebound_proc* tbo;
-      gfc_expr* tb_base;
-
-      /* See if we find a matching type-bound operator.  */
-      if (i == INTRINSIC_USER)
-	tbo = matching_typebound_op (&tb_base, actual,
-				     i, e->value.op.uop->name, &gname);
-      else
-	switch (i)
-	  {
-#define CHECK_OS_COMPARISON(comp) \
-  case INTRINSIC_##comp: \
-  case INTRINSIC_##comp##_OS: \
-    tbo = matching_typebound_op (&tb_base, actual, \
-				 INTRINSIC_##comp, NULL, &gname); \
-    if (!tbo) \
-      tbo = matching_typebound_op (&tb_base, actual, \
-				   INTRINSIC_##comp##_OS, NULL, &gname); \
-    break;
-	    CHECK_OS_COMPARISON(EQ)
-	    CHECK_OS_COMPARISON(NE)
-	    CHECK_OS_COMPARISON(GT)
-	    CHECK_OS_COMPARISON(GE)
-	    CHECK_OS_COMPARISON(LT)
-	    CHECK_OS_COMPARISON(LE)
-#undef CHECK_OS_COMPARISON
-
-	    default:
-	      tbo = matching_typebound_op (&tb_base, actual, i, NULL, &gname);
-	      break;
-	  }
-
-      /* If there is a matching typebound-operator, replace the expression with
-	 a call to it and succeed.  */
-      if (tbo)
-	{
-	  bool result;
-
-	  gcc_assert (tb_base);
-	  build_compcall_for_operator (e, actual, tb_base, tbo, gname);
-
-	  result = gfc_resolve_expr (e);
-	  if (!result)
-	    return MATCH_ERROR;
-
-	  return MATCH_YES;
-	}
-
       /* Don't use gfc_free_actual_arglist().  */
       free (actual->next);
       free (actual);
-
       return MATCH_NO;
     }
 

@@ -3,7 +3,6 @@
 
 extern int foo (int);
 
-int
 main()
 {
   int x = foo (10);

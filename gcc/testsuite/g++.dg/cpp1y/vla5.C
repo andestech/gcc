@@ -1,5 +1,5 @@
 // PR c++/55149
-// { dg-do compile { target c++14 } }
+// { dg-do compile { target c++1y } }
 
 void test(int n) {
   int r[n];

@@ -48,7 +48,10 @@ cpp_diagnostic (cpp_reader * pfile, int level, int reason,
      current run -- that is invalid.  */
   else if (pfile->cur_token == pfile->cur_run->base)
     {
-      src_loc = 0;
+      if (pfile->cur_run->prev != NULL)
+	src_loc = pfile->cur_run->prev->limit->src_loc;
+      else
+	src_loc = 0;
     }
   else
     {

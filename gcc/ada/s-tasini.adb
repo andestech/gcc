@@ -6,7 +6,7 @@
 --                                                                          --
 --                                  B o d y                                 --
 --                                                                          --
---         Copyright (C) 1992-2014, Free Software Foundation, Inc.          --
+--         Copyright (C) 1992-2013, Free Software Foundation, Inc.          --
 --                                                                          --
 -- GNARL is free software; you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -45,14 +45,7 @@ with System.Task_Primitives.Operations;
 with System.Soft_Links;
 with System.Soft_Links.Tasking;
 with System.Tasking.Debug;
-with System.Tasking.Task_Attributes;
 with System.Parameters;
-
-with System.Secondary_Stack;
-pragma Elaborate_All (System.Secondary_Stack);
-pragma Unreferenced (System.Secondary_Stack);
---  Make sure the body of Secondary_Stack is elaborated before calling
---  Init_Tasking_Soft_Links. See comments for this routine for explanation.
 
 package body System.Tasking.Initialization is
 
@@ -510,7 +503,7 @@ package body System.Tasking.Initialization is
 
             --  The task is blocked on a system call waiting for the
             --  completion event. In this case Abort_Task may need to take
-            --  special action in order to succeed.
+            --  special action in order to succeed. Example system: VMS.
 
          then
             Abort_Task (T);
@@ -808,23 +801,26 @@ package body System.Tasking.Initialization is
       end if;
    end Wakeup_Entry_Caller;
 
-   -------------------------
-   -- Finalize_Attributes --
-   -------------------------
+   -----------------------
+   -- Soft-Link Dummies --
+   -----------------------
+
+   --  These are dummies for subprograms that are only needed by certain
+   --  optional run-time system packages. If they are needed, the soft links
+   --  will be redirected to the real subprogram by elaboration of the
+   --  subprogram body where the real subprogram is declared.
 
    procedure Finalize_Attributes (T : Task_Id) is
-      Attr : Atomic_Address;
-
+      pragma Unreferenced (T);
    begin
-      for J in T.Attributes'Range loop
-         Attr := T.Attributes (J);
-
-         if Attr /= 0 and then Task_Attributes.Require_Finalization (J) then
-            Task_Attributes.To_Attribute (Attr).Free (Attr);
-            T.Attributes (J) := 0;
-         end if;
-      end loop;
+      null;
    end Finalize_Attributes;
+
+   procedure Initialize_Attributes (T : Task_Id) is
+      pragma Unreferenced (T);
+   begin
+      null;
+   end Initialize_Attributes;
 
 begin
    Init_RTS;

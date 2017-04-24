@@ -67,13 +67,11 @@ func (wg *WaitGroup) Add(delta int) {
 		return
 	}
 	wg.m.Lock()
-	if atomic.LoadInt32(&wg.counter) == 0 {
-		for i := int32(0); i < wg.waiters; i++ {
-			runtime_Semrelease(wg.sema)
-		}
-		wg.waiters = 0
-		wg.sema = nil
+	for i := int32(0); i < wg.waiters; i++ {
+		runtime_Semrelease(wg.sema)
 	}
+	wg.waiters = 0
+	wg.sema = nil
 	wg.m.Unlock()
 }
 

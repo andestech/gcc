@@ -1,4 +1,5 @@
 /* PR tree-optimization/63189 */
+/* { dg-do run } */
 
 #include "tree-vect.h"
 

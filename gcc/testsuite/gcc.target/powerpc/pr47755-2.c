@@ -1,7 +1,6 @@
 /* { dg-do run { target { powerpc*-*-* } } } */
 /* { dg-skip-if "" { powerpc*-*-darwin* } { "*" } { "" } } */
 /* { dg-require-effective-target vsx_hw } */
-/* { dg-skip-if "do not override -mcpu" { powerpc*-*-* } { "-mcpu=*" } { "-mcpu=power7" } } */
 /* { dg-options "-O3 -mcpu=power7" } */
 
 /* PR 47755: Make sure compiler generates correct code for various
@@ -23,9 +22,9 @@ extern void abort (void) __attribute__((__noreturn__));
 #define FAIL_I(A, B, C, D) abort ()
 #endif
 
-static void test_ll (vector long long, long long, long long) __attribute__((__noinline__));
+static test_ll (vector long long, long long, long long) __attribute__((__noinline__));
 
-static void
+static
 test_ll (vector long long v, long long a, long long b)
 {
   union {
@@ -40,9 +39,9 @@ test_ll (vector long long v, long long a, long long b)
 
 #define TEST_LL(A,B) test_ll ((vector long long){ (A), (B) }, (A), (B))
 
-static void test_i (vector int, int, int, int, int) __attribute__((__noinline__));
+static test_i (vector int, int, int, int, int) __attribute__((__noinline__));
 
-static void
+static
 test_i (vector int v, int a, int b, int c, int d)
 {
   union {

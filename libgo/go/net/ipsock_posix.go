@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build darwin dragonfly freebsd linux nacl netbsd openbsd solaris windows
+// +build darwin dragonfly freebsd linux netbsd openbsd windows
 
 // Internet protocol family sockets for POSIX
 
@@ -40,13 +40,12 @@ func probeIPv4Stack() bool {
 func probeIPv6Stack() (supportsIPv6, supportsIPv4map bool) {
 	var probes = []struct {
 		laddr TCPAddr
-		value int
 		ok    bool
 	}{
 		// IPv6 communication capability
-		{laddr: TCPAddr{IP: ParseIP("::1")}, value: 1},
+		{TCPAddr{IP: ParseIP("::1")}, false},
 		// IPv6 IPv4-mapped address communication capability
-		{laddr: TCPAddr{IP: IPv4(127, 0, 0, 1)}, value: 0},
+		{TCPAddr{IP: IPv4(127, 0, 0, 1)}, false},
 	}
 
 	for i := range probes {
@@ -55,7 +54,7 @@ func probeIPv6Stack() (supportsIPv6, supportsIPv4map bool) {
 			continue
 		}
 		defer closesocket(s)
-		syscall.SetsockoptInt(s, syscall.IPPROTO_IPV6, syscall.IPV6_V6ONLY, probes[i].value)
+		syscall.SetsockoptInt(s, syscall.IPPROTO_IPV6, syscall.IPV6_V6ONLY, 0)
 		sa, err := probes[i].laddr.sockaddr(syscall.AF_INET6)
 		if err != nil {
 			continue

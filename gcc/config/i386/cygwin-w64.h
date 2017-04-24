@@ -66,8 +66,7 @@ along with GCC; see the file COPYING3.  If not see
   %{static:-Bstatic} %{!static:-Bdynamic} \
   %{shared|mdll: " SUB_LINK_ENTRY " --enable-auto-image-base} \
   %(shared_libgcc_undefs) \
-  --dll-search-prefix=cyg \
-  %{!shared: %{!mdll: %{" SPEC_32 ":--large-address-aware} --tsaware}}"
+  --dll-search-prefix=cyg -tsaware"
 
 /* Cygwin64 will have a 64-bit long type. */
 #undef LONG_TYPE_SIZE

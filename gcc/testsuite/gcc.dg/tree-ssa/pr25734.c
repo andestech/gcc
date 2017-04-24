@@ -4,7 +4,6 @@
 struct list_head {
  struct list_head *next;
 };
-void __list_del (struct list_head *);
 static inline __attribute__((always_inline)) void list_del_init(struct
 list_head *entry)
 {

@@ -2,8 +2,6 @@
 
 typedef long
 (*bla)(int *node);
-void T(int *);
-long F3(void *);
 
 static long F2(void *tree, long blk, bla after_node_func)
 {

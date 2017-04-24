@@ -23,16 +23,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm.h"
 #include "tree.h"
 #include "tm_p.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -141,36 +131,8 @@ do_while_loop_p (struct loop *loop)
    of the loop.  This is beneficial since it increases efficiency of
    code motion optimizations.  It also saves one jump on entry to the loop.  */
 
-namespace {
-
-const pass_data pass_data_ch =
-{
-  GIMPLE_PASS, /* type */
-  "ch", /* name */
-  OPTGROUP_LOOP, /* optinfo_flags */
-  TV_TREE_CH, /* tv_id */
-  ( PROP_cfg | PROP_ssa ), /* properties_required */
-  0, /* properties_provided */
-  0, /* properties_destroyed */
-  0, /* todo_flags_start */
-  TODO_cleanup_cfg, /* todo_flags_finish */
-};
-
-class pass_ch : public gimple_opt_pass
-{
-public:
-  pass_ch (gcc::context *ctxt)
-    : gimple_opt_pass (pass_data_ch, ctxt)
-  {}
-
-  /* opt_pass methods: */
-  virtual bool gate (function *) { return flag_tree_ch != 0; }
-  virtual unsigned int execute (function *);
-
-}; // class pass_ch
-
-unsigned int
-pass_ch::execute (function *fun)
+static unsigned int
+copy_loop_headers (void)
 {
   struct loop *loop;
   basic_block header;
@@ -181,15 +143,15 @@ pass_ch::execute (function *fun)
 
   loop_optimizer_init (LOOPS_HAVE_PREHEADERS
 		       | LOOPS_HAVE_SIMPLE_LATCHES);
-  if (number_of_loops (fun) <= 1)
+  if (number_of_loops (cfun) <= 1)
     {
       loop_optimizer_finalize ();
       return 0;
     }
 
-  bbs = XNEWVEC (basic_block, n_basic_blocks_for_fn (fun));
-  copied_bbs = XNEWVEC (basic_block, n_basic_blocks_for_fn (fun));
-  bbs_size = n_basic_blocks_for_fn (fun);
+  bbs = XNEWVEC (basic_block, n_basic_blocks_for_fn (cfun));
+  copied_bbs = XNEWVEC (basic_block, n_basic_blocks_for_fn (cfun));
+  bbs_size = n_basic_blocks_for_fn (cfun);
 
   FOR_EACH_LOOP (loop, 0)
     {
@@ -294,6 +256,43 @@ pass_ch::execute (function *fun)
   loop_optimizer_finalize ();
   return 0;
 }
+
+static bool
+gate_ch (void)
+{
+  return flag_tree_ch != 0;
+}
+
+namespace {
+
+const pass_data pass_data_ch =
+{
+  GIMPLE_PASS, /* type */
+  "ch", /* name */
+  OPTGROUP_LOOP, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
+  TV_TREE_CH, /* tv_id */
+  ( PROP_cfg | PROP_ssa ), /* properties_required */
+  0, /* properties_provided */
+  0, /* properties_destroyed */
+  0, /* todo_flags_start */
+  ( TODO_cleanup_cfg | TODO_verify_ssa
+    | TODO_verify_flow ), /* todo_flags_finish */
+};
+
+class pass_ch : public gimple_opt_pass
+{
+public:
+  pass_ch (gcc::context *ctxt)
+    : gimple_opt_pass (pass_data_ch, ctxt)
+  {}
+
+  /* opt_pass methods: */
+  bool gate () { return gate_ch (); }
+  unsigned int execute () { return copy_loop_headers (); }
+
+}; // class pass_ch
 
 } // anon namespace
 

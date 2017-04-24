@@ -118,19 +118,12 @@ along with GCC; see the file COPYING3.  If not see
 #include "stringpool.h"
 #include "stor-layout.h"
 #include "flags.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "vec.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
 #include "function.h"
-#include "insn-codes.h"
-#include "optabs.h"
 #include "expr.h"
 #include "libfuncs.h"
 #include "insn-config.h"
 #include "except.h"
+#include "hard-reg-set.h"
 #include "output.h"
 #include "dwarf2asm.h"
 #include "dwarf2out.h"
@@ -142,21 +135,12 @@ along with GCC; see the file COPYING3.  If not see
 #include "target.h"
 #include "common/common-target.h"
 #include "langhooks.h"
-#include "predict.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfgrtl.h"
-#include "basic-block.h"
-#include "hash-map.h"
-#include "is-a.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
 #include "diagnostic.h"
 #include "tree-pretty-print.h"
 #include "tree-pass.h"
+#include "pointer-set.h"
 #include "cfgloop.h"
-#include "builtins.h"
 
 /* Provide defaults for stuff that may not be defined when using
    sjlj exceptions.  */
@@ -165,13 +149,8 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 static GTY(()) int call_site_base;
-
-struct tree_hash_traits : default_hashmap_traits
-{
-  static hashval_t hash (tree t) { return TREE_HASH (t); }
-};
-
-static GTY (()) hash_map<tree, tree, tree_hash_traits> *type_to_runtime_map;
+static GTY ((param_is (union tree_node)))
+  htab_t type_to_runtime_map;
 
 /* Describe the SjLj_Function_Context structure.  */
 static GTY(()) tree sjlj_fc_type_node;
@@ -229,14 +208,17 @@ action_record_hasher::equal (const value_type *entry, const compare_type *data)
   return entry->filter == data->filter && entry->next == data->next;
 }
 
-typedef hash_table<action_record_hasher> action_hash_type;
+typedef hash_table <action_record_hasher> action_hash_type;
 
 static bool get_eh_region_and_lp_from_rtx (const_rtx, eh_region *,
 					   eh_landing_pad *);
 
+static int t2r_eq (const void *, const void *);
+static hashval_t t2r_hash (const void *);
+
 static void dw2_build_landing_pads (void);
 
-static int collect_one_action_chain (action_hash_type *, eh_region);
+static int collect_one_action_chain (action_hash_type, eh_region);
 static int add_call_site (rtx, int, int);
 
 static void push_uleb128 (vec<uchar, va_gc> **, unsigned int);
@@ -255,8 +237,7 @@ init_eh (void)
   if (! flag_exceptions)
     return;
 
-  type_to_runtime_map
-    = hash_map<tree, tree, tree_hash_traits>::create_ggc (31);
+  type_to_runtime_map = htab_create_ggc (31, t2r_hash, t2r_eq, NULL);
 
   /* Create the SjLj_Function_Context structure.  This should match
      the definition in unwind-sjlj.c.  */
@@ -305,22 +286,9 @@ init_eh (void)
       tmp = size_int (FIRST_PSEUDO_REGISTER + 2 - 1);
 #endif
 #else
-      /* Compute a minimally sized jump buffer.  We need room to store at
-	 least 3 pointers - stack pointer, frame pointer and return address.
-	 Plus for some targets we need room for an extra pointer - in the
-	 case of MIPS this is the global pointer.  This makes a total of four
-	 pointers, but to be safe we actually allocate room for 5.
-
-	 If pointers are smaller than words then we allocate enough room for
-	 5 words, just in case the backend needs this much room.  For more
-	 discussion on this issue see:
-	 http://gcc.gnu.org/ml/gcc-patches/2014-05/msg00313.html.  */
-      if (POINTER_SIZE > BITS_PER_WORD)
-	tmp = size_int (5 - 1);
-      else
-	tmp = size_int ((5 * BITS_PER_WORD / POINTER_SIZE) - 1);
+      /* builtin_setjmp takes a pointer to 5 words.  */
+      tmp = size_int (5 * BITS_PER_WORD / POINTER_SIZE - 1);
 #endif
-
       tmp = build_index_type (tmp);
       tmp = build_array_type (ptr_type_node, tmp);
       f_jbuf = build_decl (BUILTINS_LOCATION,
@@ -365,7 +333,7 @@ init_eh (void)
 void
 init_eh_for_function (void)
 {
-  cfun->eh = ggc_cleared_alloc<eh_status> ();
+  cfun->eh = ggc_alloc_cleared_eh_status ();
 
   /* Make sure zero'th entries are used.  */
   vec_safe_push (cfun->eh->region_array, (eh_region)0);
@@ -382,7 +350,7 @@ gen_eh_region (enum eh_region_type type, eh_region outer)
   eh_region new_eh;
 
   /* Insert a new blank region as a leaf in the tree.  */
-  new_eh = ggc_cleared_alloc<eh_region_d> ();
+  new_eh = ggc_alloc_cleared_eh_region_d ();
   new_eh->type = type;
   new_eh->outer = outer;
   if (outer)
@@ -439,7 +407,7 @@ gen_eh_region_catch (eh_region t, tree type_or_list)
 	add_type_for_runtime (TREE_VALUE (type_node));
     }
 
-  c = ggc_cleared_alloc<eh_catch_d> ();
+  c = ggc_alloc_cleared_eh_catch_d ();
   c->type_list = type_list;
   l = t->u.eh_try.last_catch;
   c->prev_catch = l;
@@ -473,7 +441,7 @@ gen_eh_region_must_not_throw (eh_region outer)
 eh_landing_pad
 gen_eh_landing_pad (eh_region region)
 {
-  eh_landing_pad lp = ggc_cleared_alloc<eh_landing_pad_d> ();
+  eh_landing_pad lp = ggc_alloc_cleared_eh_landing_pad_d ();
 
   lp->next_lp = region->landing_pads;
   lp->region = region;
@@ -545,7 +513,7 @@ struct duplicate_eh_regions_data
 {
   duplicate_eh_regions_map label_map;
   void *label_map_data;
-  hash_map<void *, void *> *eh_map;
+  struct pointer_map_t *eh_map;
 };
 
 static void
@@ -554,9 +522,12 @@ duplicate_eh_regions_1 (struct duplicate_eh_regions_data *data,
 {
   eh_landing_pad old_lp, new_lp;
   eh_region new_r;
+  void **slot;
 
   new_r = gen_eh_region (old_r->type, outer);
-  gcc_assert (!data->eh_map->put (old_r, new_r));
+  slot = pointer_map_insert (data->eh_map, (void *)old_r);
+  gcc_assert (*slot == NULL);
+  *slot = (void *)new_r;
 
   switch (old_r->type)
     {
@@ -601,7 +572,9 @@ duplicate_eh_regions_1 (struct duplicate_eh_regions_data *data,
 	continue;
 
       new_lp = gen_eh_landing_pad (new_r);
-      gcc_assert (!data->eh_map->put (old_lp, new_lp));
+      slot = pointer_map_insert (data->eh_map, (void *)old_lp);
+      gcc_assert (*slot == NULL);
+      *slot = (void *)new_lp;
 
       new_lp->post_landing_pad
 	= data->label_map (old_lp->post_landing_pad, data->label_map_data);
@@ -622,7 +595,7 @@ duplicate_eh_regions_1 (struct duplicate_eh_regions_data *data,
    that allows the caller to remap uses of both EH regions and
    EH landing pads.  */
 
-hash_map<void *, void *> *
+struct pointer_map_t *
 duplicate_eh_regions (struct function *ifun,
 		      eh_region copy_region, int outer_lp,
 		      duplicate_eh_regions_map map, void *map_data)
@@ -636,7 +609,7 @@ duplicate_eh_regions (struct function *ifun,
 
   data.label_map = map;
   data.label_map_data = map_data;
-  data.eh_map = new hash_map<void *, void *>;
+  data.eh_map = pointer_map_create ();
 
   outer_region = get_eh_region_from_lp_number (outer_lp);
 
@@ -690,28 +663,54 @@ eh_region_outermost (struct function *ifun, eh_region region_a,
   return region_a;
 }
 
+static int
+t2r_eq (const void *pentry, const void *pdata)
+{
+  const_tree const entry = (const_tree) pentry;
+  const_tree const data = (const_tree) pdata;
+
+  return TREE_PURPOSE (entry) == data;
+}
+
+static hashval_t
+t2r_hash (const void *pentry)
+{
+  const_tree const entry = (const_tree) pentry;
+  return TREE_HASH (TREE_PURPOSE (entry));
+}
+
 void
 add_type_for_runtime (tree type)
 {
+  tree *slot;
+
   /* If TYPE is NOP_EXPR, it means that it already is a runtime type.  */
   if (TREE_CODE (type) == NOP_EXPR)
     return;
 
-  bool existed = false;
-  tree *slot = &type_to_runtime_map->get_or_insert (type, &existed);
-  if (!existed)
-    *slot = lang_hooks.eh_runtime_type (type);
+  slot = (tree *) htab_find_slot_with_hash (type_to_runtime_map, type,
+					    TREE_HASH (type), INSERT);
+  if (*slot == NULL)
+    {
+      tree runtime = lang_hooks.eh_runtime_type (type);
+      *slot = tree_cons (type, runtime, NULL_TREE);
+    }
 }
 
 tree
 lookup_type_for_runtime (tree type)
 {
+  tree *slot;
+
   /* If TYPE is NOP_EXPR, it means that it already is a runtime type.  */
   if (TREE_CODE (type) == NOP_EXPR)
     return type;
 
+  slot = (tree *) htab_find_slot_with_hash (type_to_runtime_map, type,
+					    TREE_HASH (type), NO_INSERT);
+
   /* We should have always inserted the data earlier.  */
-  return *type_to_runtime_map->get (type);
+  return TREE_VALUE (*slot);
 }
 
 
@@ -747,7 +746,7 @@ ttypes_filter_hasher::hash (const value_type *entry)
   return TREE_HASH (entry->t);
 }
 
-typedef hash_table<ttypes_filter_hasher> ttypes_hash_type;
+typedef hash_table <ttypes_filter_hasher> ttypes_hash_type;
 
 
 /* Helper for ehspec hashing.  */
@@ -784,18 +783,18 @@ ehspec_hasher::hash (const value_type *entry)
   return h;
 }
 
-typedef hash_table<ehspec_hasher> ehspec_hash_type;
+typedef hash_table <ehspec_hasher> ehspec_hash_type;
 
 
 /* Add TYPE (which may be NULL) to cfun->eh->ttype_data, using TYPES_HASH
    to speed up the search.  Return the filter value to be used.  */
 
 static int
-add_ttypes_entry (ttypes_hash_type *ttypes_hash, tree type)
+add_ttypes_entry (ttypes_hash_type ttypes_hash, tree type)
 {
   struct ttypes_filter **slot, *n;
 
-  slot = ttypes_hash->find_slot_with_hash (type, (hashval_t) TREE_HASH (type),
+  slot = ttypes_hash.find_slot_with_hash (type, (hashval_t) TREE_HASH (type),
 					  INSERT);
 
   if ((n = *slot) == NULL)
@@ -817,14 +816,14 @@ add_ttypes_entry (ttypes_hash_type *ttypes_hash, tree type)
    to speed up the search.  Return the filter value to be used.  */
 
 static int
-add_ehspec_entry (ehspec_hash_type *ehspec_hash, ttypes_hash_type *ttypes_hash,
+add_ehspec_entry (ehspec_hash_type ehspec_hash, ttypes_hash_type ttypes_hash,
 		  tree list)
 {
   struct ttypes_filter **slot, *n;
   struct ttypes_filter dummy;
 
   dummy.t = list;
-  slot = ehspec_hash->find_slot (&dummy, INSERT);
+  slot = ehspec_hash.find_slot (&dummy, INSERT);
 
   if ((n = *slot) == NULL)
     {
@@ -873,6 +872,8 @@ void
 assign_filter_values (void)
 {
   int i;
+  ttypes_hash_type ttypes;
+  ehspec_hash_type ehspec;
   eh_region r;
   eh_catch c;
 
@@ -882,8 +883,8 @@ assign_filter_values (void)
   else
     vec_alloc (cfun->eh->ehspec_data.other, 64);
 
-  ehspec_hash_type ehspec (31);
-  ttypes_hash_type ttypes (31);
+  ttypes.create (31);
+  ehspec.create (31);
 
   for (i = 1; vec_safe_iterate (cfun->eh->region_array, i, &r); ++i)
     {
@@ -907,8 +908,7 @@ assign_filter_values (void)
 
 		  for ( ; tp_node; tp_node = TREE_CHAIN (tp_node))
 		    {
-		      int flt
-		       	= add_ttypes_entry (&ttypes, TREE_VALUE (tp_node));
+		      int flt = add_ttypes_entry (ttypes, TREE_VALUE (tp_node));
 		      tree flt_node = build_int_cst (integer_type_node, flt);
 
 		      c->filter_list
@@ -919,7 +919,7 @@ assign_filter_values (void)
 		{
 		  /* Get a filter value for the NULL list also since it
 		     will need an action record anyway.  */
-		  int flt = add_ttypes_entry (&ttypes, NULL);
+		  int flt = add_ttypes_entry (ttypes, NULL);
 		  tree flt_node = build_int_cst (integer_type_node, flt);
 
 		  c->filter_list
@@ -930,23 +930,26 @@ assign_filter_values (void)
 
 	case ERT_ALLOWED_EXCEPTIONS:
 	  r->u.allowed.filter
-	    = add_ehspec_entry (&ehspec, &ttypes, r->u.allowed.type_list);
+	    = add_ehspec_entry (ehspec, ttypes, r->u.allowed.type_list);
 	  break;
 
 	default:
 	  break;
 	}
     }
+
+  ttypes.dispose ();
+  ehspec.dispose ();
 }
 
 /* Emit SEQ into basic block just before INSN (that is assumed to be
    first instruction of some existing BB and return the newly
    produced block.  */
 static basic_block
-emit_to_new_bb_before (rtx_insn *seq, rtx insn)
+emit_to_new_bb_before (rtx seq, rtx insn)
 {
-  rtx_insn *last;
-  basic_block bb;
+  rtx last;
+  basic_block bb, prev_bb;
   edge e;
   edge_iterator ei;
 
@@ -961,7 +964,8 @@ emit_to_new_bb_before (rtx_insn *seq, rtx insn)
   last = emit_insn_before (seq, insn);
   if (BARRIER_P (last))
     last = PREV_INSN (last);
-  bb = create_basic_block (seq, last, BLOCK_FOR_INSN (insn)->prev_bb);
+  prev_bb = BLOCK_FOR_INSN (insn)->prev_bb;
+  bb = create_basic_block (seq, last, prev_bb);
   update_bb_for_insn (bb);
   bb->flags |= BB_SUPERBLOCK;
   return bb;
@@ -1014,7 +1018,7 @@ dw2_build_landing_pads (void)
   for (i = 1; vec_safe_iterate (cfun->eh->lp_array, i, &lp); ++i)
     {
       basic_block bb;
-      rtx_insn *seq;
+      rtx seq;
       edge e;
 
       if (lp == NULL || lp->post_landing_pad == NULL)
@@ -1057,11 +1061,12 @@ static vec<int> sjlj_lp_call_site_index;
 static int
 sjlj_assign_call_site_values (void)
 {
-  action_hash_type ar_hash (31);
+  action_hash_type ar_hash;
   int i, disp_index;
   eh_landing_pad lp;
 
   vec_alloc (crtl->eh.action_record_data, 64);
+  ar_hash.create (31);
 
   disp_index = 0;
   call_site_base = 1;
@@ -1071,7 +1076,7 @@ sjlj_assign_call_site_values (void)
 	int action, call_site;
 
 	/* First: build the action table.  */
-	action = collect_one_action_chain (&ar_hash, lp->region);
+	action = collect_one_action_chain (ar_hash, lp->region);
 
 	/* Next: assign call-site values.  If dwarf2 terms, this would be
 	   the region number assigned by convert_to_eh_region_ranges, but
@@ -1090,6 +1095,8 @@ sjlj_assign_call_site_values (void)
 	disp_index++;
       }
 
+  ar_hash.dispose ();
+
   return disp_index;
 }
 
@@ -1100,8 +1107,7 @@ static void
 sjlj_mark_call_sites (void)
 {
   int last_call_site = -2;
-  rtx_insn *insn;
-  rtx mem;
+  rtx insn, mem;
 
   for (insn = get_insns (); insn ; insn = NEXT_INSN (insn))
     {
@@ -1109,7 +1115,7 @@ sjlj_mark_call_sites (void)
       eh_region r;
       bool nothrow;
       int this_call_site;
-      rtx_insn *before, *p;
+      rtx before, p;
 
       /* Reset value tracking at extended basic block boundaries.  */
       if (LABEL_P (insn))
@@ -1145,7 +1151,7 @@ sjlj_mark_call_sites (void)
       /* Don't separate a call from it's argument loads.  */
       before = insn;
       if (CALL_P (insn))
-	before = find_first_parameter_load (insn, NULL);
+	before = find_first_parameter_load (insn, NULL_RTX);
 
       start_sequence ();
       mem = adjust_address (crtl->eh.sjlj_fc, TYPE_MODE (integer_type_node),
@@ -1162,10 +1168,9 @@ sjlj_mark_call_sites (void)
 /* Construct the SjLj_Function_Context.  */
 
 static void
-sjlj_emit_function_enter (rtx_code_label *dispatch_label)
+sjlj_emit_function_enter (rtx dispatch_label)
 {
-  rtx_insn *fn_begin, *seq;
-  rtx fc, mem;
+  rtx fn_begin, fc, mem, seq;
   bool fn_begin_outside_block;
   rtx personality = get_personality_function (current_function_decl);
 
@@ -1243,7 +1248,7 @@ sjlj_emit_function_enter (rtx_code_label *dispatch_label)
    the call to unwind_sjlj_unregister_libfunc if needed.  */
 
 void
-sjlj_emit_function_exit_after (rtx_insn *after)
+sjlj_emit_function_exit_after (rtx after)
 {
   crtl->eh.sjlj_exit_after = after;
 }
@@ -1251,7 +1256,7 @@ sjlj_emit_function_exit_after (rtx_insn *after)
 static void
 sjlj_emit_function_exit (void)
 {
-  rtx_insn *seq, *insn;
+  rtx seq, insn;
 
   start_sequence ();
 
@@ -1273,13 +1278,12 @@ sjlj_emit_function_exit (void)
 }
 
 static void
-sjlj_emit_dispatch_table (rtx_code_label *dispatch_label, int num_dispatch)
+sjlj_emit_dispatch_table (rtx dispatch_label, int num_dispatch)
 {
-  machine_mode unwind_word_mode = targetm.unwind_word_mode ();
-  machine_mode filter_mode = targetm.eh_return_filter_mode ();
+  enum machine_mode unwind_word_mode = targetm.unwind_word_mode ();
+  enum machine_mode filter_mode = targetm.eh_return_filter_mode ();
   eh_landing_pad lp;
-  rtx mem, fc, before, exc_ptr_reg, filter_reg;
-  rtx_insn *seq;
+  rtx mem, seq, fc, before, exc_ptr_reg, filter_reg;
   rtx first_reachable_label;
   basic_block bb;
   eh_region r;
@@ -1303,7 +1307,7 @@ sjlj_emit_dispatch_table (rtx_code_label *dispatch_label, int num_dispatch)
      CFG edges more exactly, we can use the forced_labels list instead.  */
   LABEL_PRESERVE_P (dispatch_label) = 1;
   forced_labels
-    = gen_rtx_INSN_LIST (VOIDmode, dispatch_label, forced_labels);
+    = gen_rtx_EXPR_LIST (VOIDmode, dispatch_label, forced_labels);
 #endif
 
   /* Load up exc_ptr and filter values from the function context.  */
@@ -1337,8 +1341,7 @@ sjlj_emit_dispatch_table (rtx_code_label *dispatch_label, int num_dispatch)
   for (i = 1; vec_safe_iterate (cfun->eh->lp_array, i, &lp); ++i)
     if (lp && lp->post_landing_pad)
       {
-	rtx_insn *seq2;
-	rtx label;
+	rtx seq2, label;
 
 	start_sequence ();
 
@@ -1391,7 +1394,10 @@ sjlj_emit_dispatch_table (rtx_code_label *dispatch_label, int num_dispatch)
 	      {
 		for (loop = bb->loop_father;
 		     loop_outer (loop); loop = loop_outer (loop))
-		  mark_loop_for_removal (loop);
+		  {
+		    loop->header = NULL;
+		    loop->latch = NULL;
+		  }
 	      }
 	  }
 
@@ -1449,7 +1455,7 @@ sjlj_build_landing_pads (void)
   num_dispatch = sjlj_assign_call_site_values ();
   if (num_dispatch > 0)
     {
-      rtx_code_label *dispatch_label = gen_label_rtx ();
+      rtx dispatch_label = gen_label_rtx ();
       int align = STACK_SLOT_ALIGNMENT (sjlj_fc_type_node,
 					TYPE_MODE (sjlj_fc_type_node),
 					TYPE_ALIGN (sjlj_fc_type_node));
@@ -1477,7 +1483,7 @@ sjlj_build_landing_pads (void)
 			      align);
 
       sjlj_mark_call_sites ();
-      sjlj_emit_function_enter (NULL);
+      sjlj_emit_function_enter (NULL_RTX);
       sjlj_emit_function_exit ();
     }
 
@@ -1731,10 +1737,9 @@ insn_could_throw_p (const_rtx insn)
    to look for a note, or the note itself.  */
 
 void
-copy_reg_eh_region_note_forward (rtx note_or_insn, rtx_insn *first, rtx last)
+copy_reg_eh_region_note_forward (rtx note_or_insn, rtx first, rtx last)
 {
-  rtx_insn *insn;
-  rtx note = note_or_insn;
+  rtx insn, note = note_or_insn;
 
   if (INSN_P (note_or_insn))
     {
@@ -1753,10 +1758,9 @@ copy_reg_eh_region_note_forward (rtx note_or_insn, rtx_insn *first, rtx last)
 /* Likewise, but iterate backward.  */
 
 void
-copy_reg_eh_region_note_backward (rtx note_or_insn, rtx_insn *last, rtx first)
+copy_reg_eh_region_note_backward (rtx note_or_insn, rtx last, rtx first)
 {
-  rtx_insn *insn;
-  rtx note = note_or_insn;
+  rtx insn, note = note_or_insn;
 
   if (INSN_P (note_or_insn))
     {
@@ -1869,11 +1873,11 @@ can_throw_external (const_rtx insn)
   if (NONJUMP_INSN_P (insn)
       && GET_CODE (PATTERN (insn)) == SEQUENCE)
     {
-      rtx_sequence *seq = as_a <rtx_sequence *> (PATTERN (insn));
-      int i, n = seq->len ();
+      rtx seq = PATTERN (insn);
+      int i, n = XVECLEN (seq, 0);
 
       for (i = 0; i < n; i++)
-	if (can_throw_external (seq->element (i)))
+	if (can_throw_external (XVECEXP (seq, 0, i)))
 	  return true;
 
       return false;
@@ -1913,11 +1917,11 @@ insn_nothrow_p (const_rtx insn)
   if (NONJUMP_INSN_P (insn)
       && GET_CODE (PATTERN (insn)) == SEQUENCE)
     {
-      rtx_sequence *seq = as_a <rtx_sequence *> (PATTERN (insn));
-      int i, n = seq->len ();
+      rtx seq = PATTERN (insn);
+      int i, n = XVECLEN (seq, 0);
 
       for (i = 0; i < n; i++)
-	if (!insn_nothrow_p (seq->element (i)))
+	if (!insn_nothrow_p (XVECEXP (seq, 0, i)))
 	  return false;
 
       return true;
@@ -1946,7 +1950,7 @@ can_nonlocal_goto (const_rtx insn)
 static unsigned int
 set_nothrow_function_flags (void)
 {
-  rtx_insn *insn;
+  rtx insn;
 
   crtl->nothrow = 1;
 
@@ -1980,14 +1984,15 @@ set_nothrow_function_flags (void)
       }
 
   if (crtl->nothrow
-      && (cgraph_node::get (current_function_decl)->get_availability ()
+      && (cgraph_function_body_availability (cgraph_get_node
+					     (current_function_decl))
           >= AVAIL_AVAILABLE))
     {
-      struct cgraph_node *node = cgraph_node::get (current_function_decl);
+      struct cgraph_node *node = cgraph_get_node (current_function_decl);
       struct cgraph_edge *e;
       for (e = node->callers; e; e = e->next_caller)
         e->can_throw_external = false;
-      node->set_nothrow_flag (true);
+      cgraph_set_nothrow_flag (node, true);
 
       if (dump_file)
 	fprintf (dump_file, "Marking function nothrow: %s\n\n",
@@ -2003,6 +2008,8 @@ const pass_data pass_data_set_nothrow_function_flags =
   RTL_PASS, /* type */
   "nothrow", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  false, /* has_gate */
+  true, /* has_execute */
   TV_NONE, /* tv_id */
   0, /* properties_required */
   0, /* properties_provided */
@@ -2019,10 +2026,7 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual unsigned int execute (function *)
-    {
-      return set_nothrow_function_flags ();
-    }
+  unsigned int execute () { return set_nothrow_function_flags (); }
 
 }; // class pass_set_nothrow_function_flags
 
@@ -2092,7 +2096,7 @@ expand_builtin_eh_copy_values (tree exp)
     = expand_builtin_eh_common (CALL_EXPR_ARG (exp, 0));
   eh_region src
     = expand_builtin_eh_common (CALL_EXPR_ARG (exp, 1));
-  machine_mode fmode = targetm.eh_return_filter_mode ();
+  enum machine_mode fmode = targetm.eh_return_filter_mode ();
 
   if (dst->exc_ptr_reg == NULL)
     dst->exc_ptr_reg = gen_reg_rtx (ptr_mode);
@@ -2244,7 +2248,7 @@ expand_builtin_eh_return (tree stackadj_tree ATTRIBUTE_UNUSED,
 void
 expand_eh_return (void)
 {
-  rtx_code_label *around_label;
+  rtx around_label;
 
   if (! crtl->eh.ehr_label)
     return;
@@ -2302,13 +2306,13 @@ expand_builtin_extend_pointer (tree addr_tree)
 }
 
 static int
-add_action_record (action_hash_type *ar_hash, int filter, int next)
+add_action_record (action_hash_type ar_hash, int filter, int next)
 {
   struct action_record **slot, *new_ar, tmp;
 
   tmp.filter = filter;
   tmp.next = next;
-  slot = ar_hash->find_slot (&tmp, INSERT);
+  slot = ar_hash.find_slot (&tmp, INSERT);
 
   if ((new_ar = *slot) == NULL)
     {
@@ -2333,7 +2337,7 @@ add_action_record (action_hash_type *ar_hash, int filter, int next)
 }
 
 static int
-collect_one_action_chain (action_hash_type *ar_hash, eh_region region)
+collect_one_action_chain (action_hash_type ar_hash, eh_region region)
 {
   int next;
 
@@ -2445,27 +2449,13 @@ add_call_site (rtx landing_pad, int action, int section)
 {
   call_site_record record;
 
-  record = ggc_alloc<call_site_record_d> ();
+  record = ggc_alloc_call_site_record_d ();
   record->landing_pad = landing_pad;
   record->action = action;
 
   vec_safe_push (crtl->eh.call_site_record_v[section], record);
 
   return call_site_base + crtl->eh.call_site_record_v[section]->length () - 1;
-}
-
-static rtx_note *
-emit_note_eh_region_end (rtx_insn *insn)
-{
-  rtx_insn *next = NEXT_INSN (insn);
-
-  /* Make sure we do not split a call and its corresponding
-     CALL_ARG_LOCATION note.  */
-  if (next && NOTE_P (next)
-      && NOTE_KIND (next) == NOTE_INSN_CALL_ARG_LOCATION)
-    insn = next;
-
-  return emit_note_after (NOTE_INSN_EH_REGION_END, insn);
 }
 
 /* Turn REG_EH_REGION notes back into NOTE_INSN_EH_REGION notes.
@@ -2475,22 +2465,22 @@ emit_note_eh_region_end (rtx_insn *insn)
 static unsigned int
 convert_to_eh_region_ranges (void)
 {
-  rtx insn;
-  rtx_insn *iter;
-  rtx_note *note;
-  action_hash_type ar_hash (31);
+  rtx insn, iter, note;
+  action_hash_type ar_hash;
   int last_action = -3;
-  rtx_insn *last_action_insn = NULL;
+  rtx last_action_insn = NULL_RTX;
   rtx last_landing_pad = NULL_RTX;
-  rtx_insn *first_no_action_insn = NULL;
+  rtx first_no_action_insn = NULL_RTX;
   int call_site = 0;
   int cur_sec = 0;
   rtx section_switch_note = NULL_RTX;
-  rtx_insn *first_no_action_insn_before_switch = NULL;
-  rtx_insn *last_no_action_insn_before_switch = NULL;
+  rtx first_no_action_insn_before_switch = NULL_RTX;
+  rtx last_no_action_insn_before_switch = NULL_RTX;
   int saved_call_site_base = call_site_base;
 
   vec_alloc (crtl->eh.action_record_data, 64);
+
+  ar_hash.create (31);
 
   for (iter = get_insns (); iter ; iter = NEXT_INSN (iter))
     if (INSN_P (iter))
@@ -2510,7 +2500,7 @@ convert_to_eh_region_ranges (void)
 	if (nothrow)
 	  continue;
 	if (region)
-	  this_action = collect_one_action_chain (&ar_hash, region);
+	  this_action = collect_one_action_chain (ar_hash, region);
 	else
 	  this_action = -1;
 
@@ -2548,14 +2538,14 @@ convert_to_eh_region_ranges (void)
 		note = emit_note_before (NOTE_INSN_EH_REGION_BEG,
 					 first_no_action_insn_before_switch);
 		NOTE_EH_HANDLER (note) = call_site;
-		note
-		  = emit_note_eh_region_end (last_no_action_insn_before_switch);
+		note = emit_note_after (NOTE_INSN_EH_REGION_END,
+					last_no_action_insn_before_switch);
 		NOTE_EH_HANDLER (note) = call_site;
 		gcc_assert (last_action != -3
 			    || (last_action_insn
 				== last_no_action_insn_before_switch));
-		first_no_action_insn_before_switch = NULL;
-		last_no_action_insn_before_switch = NULL;
+		first_no_action_insn_before_switch = NULL_RTX;
+		last_no_action_insn_before_switch = NULL_RTX;
 		call_site_base++;
 	      }
 	    /* If we'd not seen a previous action (-3) or the previous
@@ -2570,10 +2560,11 @@ convert_to_eh_region_ranges (void)
 		    note = emit_note_before (NOTE_INSN_EH_REGION_BEG,
 					     first_no_action_insn);
 		    NOTE_EH_HANDLER (note) = call_site;
-		    first_no_action_insn = NULL;
+		    first_no_action_insn = NULL_RTX;
 		  }
 
-		note = emit_note_eh_region_end (last_action_insn);
+		note = emit_note_after (NOTE_INSN_EH_REGION_END,
+					last_action_insn);
 		NOTE_EH_HANDLER (note) = call_site;
 	      }
 
@@ -2603,7 +2594,7 @@ convert_to_eh_region_ranges (void)
 	  {
 	    first_no_action_insn_before_switch = first_no_action_insn;
 	    last_no_action_insn_before_switch = last_action_insn;
-	    first_no_action_insn = NULL;
+	    first_no_action_insn = NULL_RTX;
 	    gcc_assert (last_action == -1);
 	    last_action = -3;
 	  }
@@ -2620,13 +2611,25 @@ convert_to_eh_region_ranges (void)
 
   if (last_action >= -1 && ! first_no_action_insn)
     {
-      note = emit_note_eh_region_end (last_action_insn);
+      note = emit_note_after (NOTE_INSN_EH_REGION_END, last_action_insn);
       NOTE_EH_HANDLER (note) = call_site;
     }
 
   call_site_base = saved_call_site_base;
 
+  ar_hash.dispose ();
   return 0;
+}
+
+static bool
+gate_convert_to_eh_region_ranges (void)
+{
+  /* Nothing to do for SJLJ exceptions or if no regions created.  */
+  if (cfun->eh->region_tree == NULL)
+    return false;
+  if (targetm_common.except_unwind_info (&global_options) == UI_SJLJ)
+    return false;
+  return true;
 }
 
 namespace {
@@ -2636,6 +2639,8 @@ const pass_data pass_data_convert_to_eh_region_ranges =
   RTL_PASS, /* type */
   "eh_ranges", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_NONE, /* tv_id */
   0, /* properties_required */
   0, /* properties_provided */
@@ -2652,24 +2657,10 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *);
-  virtual unsigned int execute (function *)
-    {
-      return convert_to_eh_region_ranges ();
-    }
+  bool gate () { return gate_convert_to_eh_region_ranges (); }
+  unsigned int execute () { return convert_to_eh_region_ranges (); }
 
 }; // class pass_convert_to_eh_region_ranges
-
-bool
-pass_convert_to_eh_region_ranges::gate (function *)
-{
-  /* Nothing to do for SJLJ exceptions or if no regions created.  */
-  if (cfun->eh->region_tree == NULL)
-    return false;
-  if (targetm_common.except_unwind_info (&global_options) == UI_SJLJ)
-    return false;
-  return true;
-}
 
 } // anon namespace
 
@@ -2860,12 +2851,12 @@ switch_to_exception_section (const char * ARG_UNUSED (fnname))
 
 #ifdef HAVE_LD_EH_GC_SECTIONS
 	  if (flag_function_sections
-	      || (DECL_COMDAT_GROUP (current_function_decl) && HAVE_COMDAT_GROUP))
+	      || (DECL_ONE_ONLY (current_function_decl) && HAVE_COMDAT_GROUP))
 	    {
 	      char *section_name = XNEWVEC (char, strlen (fnname) + 32);
 	      /* The EH table must match the code section, so only mark
 		 it linkonce if we have COMDAT groups to tie them together.  */
-	      if (DECL_COMDAT_GROUP (current_function_decl) && HAVE_COMDAT_GROUP)
+	      if (DECL_ONE_ONLY (current_function_decl) && HAVE_COMDAT_GROUP)
 		flags |= SECTION_LINKONCE;
 	      sprintf (section_name, ".gcc_except_table.%s", fnname);
 	      s = get_section (section_name, flags, current_function_decl);
@@ -3140,12 +3131,12 @@ output_function_exception_table (const char *fnname)
 }
 
 void
-set_eh_throw_stmt_table (function *fun, hash_map<gimple, int> *table)
+set_eh_throw_stmt_table (struct function *fun, struct htab *table)
 {
   fun->eh->throw_stmt_table = table;
 }
 
-hash_map<gimple, int> *
+htab_t
 get_eh_throw_stmt_table (struct function *fun)
 {
   return fun->eh->throw_stmt_table;

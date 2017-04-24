@@ -11,3 +11,6 @@ contains
     integer scalar[*]
   end subroutine
 end module
+
+! DO NOT CLEAN UP THE MODULE FILE - coarray_29_2.f90 does it.
+! { dg-final { keep-modules "" } }

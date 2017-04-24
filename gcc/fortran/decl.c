@@ -1904,9 +1904,8 @@ variable_decl (int elem)
     }
 
   /*  If this symbol has already shown up in a Cray Pointer declaration,
-      and this is not a component declaration,
       then we want to set the type & bail out.  */
-  if (gfc_option.flag_cray_pointer && gfc_current_state () != COMP_DERIVED)
+  if (gfc_option.flag_cray_pointer)
     {
       gfc_find_symbol (name, gfc_current_ns, 1, &sym);
       if (sym != NULL && sym->attr.cray_pointee)
@@ -2852,6 +2851,7 @@ gfc_match_decl_type_spec (gfc_typespec *ts, int implicit_flag)
       return MATCH_ERROR;
     }
 
+  gfc_save_symbol_data (sym);
   gfc_set_sym_referenced (sym);
   if (!sym->attr.generic
       && !gfc_add_generic (&sym->attr, sym->name, NULL))
@@ -2876,6 +2876,8 @@ gfc_match_decl_type_spec (gfc_typespec *ts, int implicit_flag)
       sym->generic = intr;
       sym->attr.if_source = IFSRC_DECL;
     }
+  else
+    gfc_save_symbol_data (dt_sym);
 
   gfc_set_sym_referenced (dt_sym);
 
@@ -2946,66 +2948,7 @@ get_kind:
 match
 gfc_match_implicit_none (void)
 {
-  char c;
-  match m;
-  char name[GFC_MAX_SYMBOL_LEN + 1];
-  bool type = false;
-  bool external = false;
-  locus cur_loc = gfc_current_locus;
-
-  if (gfc_current_ns->seen_implicit_none
-      || gfc_current_ns->has_implicit_none_export)
-    {
-      gfc_error ("Duplicate IMPLICIT NONE statement at %C");
-      return MATCH_ERROR;
-    }
-
-  gfc_gobble_whitespace ();
-  c = gfc_peek_ascii_char ();
-  if (c == '(')
-    {
-      (void) gfc_next_ascii_char ();
-      if (!gfc_notify_std (GFC_STD_F2015, "IMPORT NONE with spec list at %C"))
-	return MATCH_ERROR;
-
-      gfc_gobble_whitespace ();
-      if (gfc_peek_ascii_char () == ')')
-	{
-	  (void) gfc_next_ascii_char ();
-	  type = true;
-	}
-      else
-	for(;;)
-	  {
-	    m = gfc_match (" %n", name);
-	    if (m != MATCH_YES)
-	      return MATCH_ERROR;
-
-	    if (strcmp (name, "type") == 0)
-	      type = true;
-	    else if (strcmp (name, "external") == 0)
-	      external = true;
-	    else
-	      return MATCH_ERROR;
-
-	    gfc_gobble_whitespace ();
-	    c = gfc_next_ascii_char ();
-	    if (c == ',')
-	      continue;
-	    if (c == ')')
-	      break;
-	    return MATCH_ERROR;
-	  }
-    }
-  else
-    type = true;
-
-  if (gfc_match_eos () != MATCH_YES)
-    return MATCH_ERROR;
-
-  gfc_set_implicit_none (type, external, &cur_loc);
-
-  return MATCH_YES;
+  return (gfc_match_eos () == MATCH_YES) ? MATCH_YES : MATCH_NO;
 }
 
 
@@ -3121,13 +3064,6 @@ gfc_match_implicit (void)
   char c;
   match m;
 
-  if (gfc_current_ns->seen_implicit_none)
-    {
-      gfc_error ("IMPLICIT statement at %C following an IMPLICIT NONE (type) "
-		 "statement");
-      return MATCH_ERROR;
-    }
-
   gfc_clear_ts (&ts);
 
   /* We don't allow empty implicit statements.  */
@@ -3156,8 +3092,8 @@ gfc_match_implicit (void)
 	{
 	  /* We may have <TYPE> (<RANGE>).  */
 	  gfc_gobble_whitespace ();
-          c = gfc_peek_ascii_char ();
-	  if (c == ',' || c == '\n' || c == ';' || c == '!')
+	  c = gfc_next_ascii_char ();
+	  if ((c == '\n') || (c == ','))
 	    {
 	      /* Check for CHARACTER with no length parameter.  */
 	      if (ts.type == BT_CHARACTER && !ts.u.cl)
@@ -3171,10 +3107,6 @@ gfc_match_implicit (void)
 	      /* Record the Successful match.  */
 	      if (!gfc_merge_new_implicit (&ts))
 		return MATCH_ERROR;
-	      if (c == ',')
-		c = gfc_next_ascii_char ();
-	      else if (gfc_match_eos () == MATCH_ERROR)
-		goto error;
 	      continue;
 	    }
 
@@ -3210,7 +3142,7 @@ gfc_match_implicit (void)
 
       gfc_gobble_whitespace ();
       c = gfc_next_ascii_char ();
-      if (c != ',' && gfc_match_eos () != MATCH_YES)
+      if ((c != '\n') && (c != ','))
 	goto syntax;
 
       if (!gfc_merge_new_implicit (&ts))
@@ -3308,7 +3240,7 @@ gfc_match_import (void)
 	    {
 	      /* The actual derived type is stored in a symtree with the first
 		 letter of the name capitalized; the symtree with the all
-		 lower-case name contains the associated generic function.  */
+		 lower-case name contains the associated generic function. */
 	      st = gfc_new_symtree (&gfc_current_ns->sym_root,
 			gfc_get_string ("%c%s",
 				(char) TOUPPER ((unsigned char) name[0]),
@@ -4927,7 +4859,7 @@ match_procedure_decl (void)
   int num;
   gfc_expr *initializer = NULL;
 
-  /* Parse interface (with brackets).  */
+  /* Parse interface (with brackets). */
   m = match_procedure_interface (&proc_if);
   if (m != MATCH_YES)
     return m;
@@ -5768,7 +5700,7 @@ gfc_match_subroutine (void)
     return MATCH_ERROR;
 
   /* Set declared_at as it might point to, e.g., a PUBLIC statement, if
-     the symbol existed before.  */
+     the symbol existed before. */
   sym->declared_at = gfc_current_locus;
 
   if (add_hidden_procptr_result (sym))
@@ -5857,54 +5789,6 @@ gfc_match_subroutine (void)
 }
 
 
-/* Check that the NAME identifier in a BIND attribute or statement
-   is conform to C identifier rules.  */
-
-match
-check_bind_name_identifier (char **name)
-{
-  char *n = *name, *p;
-
-  /* Remove leading spaces.  */
-  while (*n == ' ')
-    n++;
-
-  /* On an empty string, free memory and set name to NULL.  */
-  if (*n == '\0')
-    {
-      free (*name);
-      *name = NULL;
-      return MATCH_YES;
-    }
-
-  /* Remove trailing spaces.  */
-  p = n + strlen(n) - 1;
-  while (*p == ' ')
-    *(p--) = '\0';
-
-  /* Insert the identifier into the symbol table.  */
-  p = xstrdup (n);
-  free (*name);
-  *name = p;
-
-  /* Now check that identifier is valid under C rules.  */
-  if (ISDIGIT (*p))
-    {
-      gfc_error ("Invalid C identifier in NAME= specifier at %C");
-      return MATCH_ERROR;
-    }
-
-  for (; *p; p++)
-    if (!(ISALNUM (*p) || *p == '_' || *p == '$'))
-      {
-        gfc_error ("Invalid C identifier in NAME= specifier at %C");
-	return MATCH_ERROR;
-      }
-
-  return MATCH_YES;
-}
-
-
 /* Match a BIND(C) specifier, with the optional 'name=' specifier if
    given, and set the binding label in either the given symbol (if not
    NULL), or in the current_ts.  The symbol may be NULL because we may
@@ -5919,8 +5803,10 @@ check_bind_name_identifier (char **name)
 match
 gfc_match_bind_c (gfc_symbol *sym, bool allow_binding_name)
 {
-  char *binding_label = NULL;
-  gfc_expr *e = NULL;
+  /* binding label, if exists */
+  const char* binding_label = NULL;
+  match double_quote;
+  match single_quote;
 
   /* Initialize the flag that specifies whether we encountered a NAME=
      specifier or not.  */
@@ -5945,37 +5831,44 @@ gfc_match_bind_c (gfc_symbol *sym, bool allow_binding_name)
 
       has_name_equals = 1;
 
-      if (gfc_match_init_expr (&e) != MATCH_YES)
+      /* Get the opening quote.  */
+      double_quote = MATCH_YES;
+      single_quote = MATCH_YES;
+      double_quote = gfc_match_char ('"');
+      if (double_quote != MATCH_YES)
+	single_quote = gfc_match_char ('\'');
+      if (double_quote != MATCH_YES && single_quote != MATCH_YES)
+        {
+          gfc_error ("Syntax error in NAME= specifier for binding label "
+                     "at %C");
+          return MATCH_ERROR;
+        }
+
+      /* Grab the binding label, using functions that will not lower
+	 case the names automatically.	*/
+      if (gfc_match_name_C (&binding_label) != MATCH_YES)
+	 return MATCH_ERROR;
+
+      /* Get the closing quotation.  */
+      if (double_quote == MATCH_YES)
 	{
-	  gfc_free_expr (e);
-	  return MATCH_ERROR;
+	  if (gfc_match_char ('"') != MATCH_YES)
+            {
+              gfc_error ("Missing closing quote '\"' for binding label at %C");
+              /* User started string with '"' so looked to match it.  */
+              return MATCH_ERROR;
+            }
 	}
-
-      if (!gfc_simplify_expr(e, 0))
+      else
 	{
-	  gfc_error ("NAME= specifier at %C should be a constant expression");
-	  gfc_free_expr (e);
-	  return MATCH_ERROR;
+	  if (gfc_match_char ('\'') != MATCH_YES)
+            {
+              gfc_error ("Missing closing quote '\'' for binding label at %C");
+              /* User started string with "'" char.  */
+              return MATCH_ERROR;
+            }
 	}
-
-      if (e->expr_type != EXPR_CONSTANT || e->ts.type != BT_CHARACTER
-	  || e->ts.kind != gfc_default_character_kind || e->rank != 0)
-	{
-	  gfc_error ("NAME= specifier at %C should be a scalar of "
-	             "default character kind");
-	  gfc_free_expr(e);
-	  return MATCH_ERROR;
-	}
-
-      // Get a C string from the Fortran string constant
-      binding_label = gfc_widechar_to_char (e->value.character.string,
-					    e->value.character.length);
-      gfc_free_expr(e);
-
-      // Check that it is valid (old gfc_match_name_C)
-      if (check_bind_name_identifier (&binding_label) != MATCH_YES)
-	return MATCH_ERROR;
-    }
+   }
 
   /* Get the required right paren.  */
   if (gfc_match_char (')') != MATCH_YES)
@@ -6013,7 +5906,7 @@ gfc_match_bind_c (gfc_symbol *sym, bool allow_binding_name)
       /* No binding label, but if symbol isn't null, we
 	 can set the label for it here.
 	 If name="" or allow_binding_name is false, no C binding name is
-	 created.  */
+	 created. */
       if (sym != NULL && sym->name != NULL && has_name_equals == 0)
 	sym->binding_label = IDENTIFIER_POINTER (get_identifier (sym->name));
     }
@@ -7303,7 +7196,7 @@ gfc_match_volatile (void)
   for(;;)
     {
       /* VOLATILE is special because it can be added to host-associated
-	 symbols locally.  Except for coarrays.  */
+	 symbols locally. Except for coarrays. */
       m = gfc_match_symbol (&sym, 1);
       switch (m)
 	{

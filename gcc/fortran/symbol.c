@@ -114,27 +114,22 @@ static int new_flag[GFC_LETTERS];
 /* Handle a correctly parsed IMPLICIT NONE.  */
 
 void
-gfc_set_implicit_none (bool type, bool external, locus *loc)
+gfc_set_implicit_none (void)
 {
   int i;
 
-  if (external)
-    gfc_current_ns->has_implicit_none_export = 1;
-
-  if (type)
+  if (gfc_current_ns->seen_implicit_none)
     {
-      gfc_current_ns->seen_implicit_none = 1;
-      for (i = 0; i < GFC_LETTERS; i++)
-	{
-	  if (gfc_current_ns->set_flag[i])
-	    {
-	      gfc_error_now ("IMPLICIT NONE (type) statement at %L following an "
-			     "IMPLICIT statement", loc);
-	      return;
-	    }
-	  gfc_clear_ts (&gfc_current_ns->default_type[i]);
-	  gfc_current_ns->set_flag[i] = 1;
-	}
+      gfc_error ("Duplicate IMPLICIT NONE statement at %C");
+      return;
+    }
+
+  gfc_current_ns->seen_implicit_none = 1;
+
+  for (i = 0; i < GFC_LETTERS; i++)
+    {
+      gfc_clear_ts (&gfc_current_ns->default_type[i]);
+      gfc_current_ns->set_flag[i] = 1;
     }
 }
 
@@ -463,7 +458,6 @@ check_conflict (symbol_attribute *attr, const char *name, locus *where)
   conf (pointer, target);
   conf (pointer, intrinsic);
   conf (pointer, elemental);
-  conf (pointer, codimension);
   conf (allocatable, elemental);
 
   conf (target, external);
@@ -540,8 +534,8 @@ check_conflict (symbol_attribute *attr, const char *name, locus *where)
   conf (cray_pointer, entry);
 
   conf (cray_pointee, allocatable);
-  conf (cray_pointee, contiguous);
-  conf (cray_pointee, codimension);
+  conf (cray_pointer, contiguous);
+  conf (cray_pointer, codimension);
   conf (cray_pointee, intent);
   conf (cray_pointee, optional);
   conf (cray_pointee, dummy);
@@ -2388,9 +2382,6 @@ gfc_get_namespace (gfc_namespace *parent, int parent_types)
 	}
     }
 
-  if (parent_types && ns->parent != NULL)
-    ns->has_implicit_none_export = ns->parent->has_implicit_none_export;
-
   ns->refs = 1;
 
   return ns;
@@ -2756,8 +2747,8 @@ single_undo_checkpoint_p (void)
 
 /* Save symbol with the information necessary to back it out.  */
 
-static void
-save_symbol_data (gfc_symbol *sym)
+void
+gfc_save_symbol_data (gfc_symbol *sym)
 {
   gfc_symbol *s;
   unsigned i;
@@ -2858,7 +2849,7 @@ gfc_get_sym_tree (const char *name, gfc_namespace *ns, gfc_symtree **result,
       p->mark = 1;
 
       /* Copy in case this symbol is changed.  */
-      save_symbol_data (p);
+      gfc_save_symbol_data (p);
     }
 
   *result = st;
@@ -2897,7 +2888,7 @@ gfc_get_ha_sym_tree (const char *name, gfc_symtree **result)
 
   if (st != NULL)
     {
-      save_symbol_data (st->n.sym);
+      gfc_save_symbol_data (st->n.sym);
       *result = st;
       return i;
     }
@@ -4078,21 +4069,16 @@ add_proc_interface (gfc_symbol *sym, ifsrc source, gfc_formal_arglist *formal)
    each arg is set according to the existing ones.  This function is
    used when creating procedure declaration variables from a procedure
    declaration statement (see match_proc_decl()) to create the formal
-   args based on the args of a given named interface.
-
-   When an actual argument list is provided, skip the absent arguments.
-   To be used together with gfc_se->ignore_optional.  */
+   args based on the args of a given named interface.  */
 
 void
-gfc_copy_formal_args_intr (gfc_symbol *dest, gfc_intrinsic_sym *src,
-			   gfc_actual_arglist *actual)
+gfc_copy_formal_args_intr (gfc_symbol *dest, gfc_intrinsic_sym *src)
 {
   gfc_formal_arglist *head = NULL;
   gfc_formal_arglist *tail = NULL;
   gfc_formal_arglist *formal_arg = NULL;
   gfc_intrinsic_arg *curr_arg = NULL;
   gfc_formal_arglist *formal_prev = NULL;
-  gfc_actual_arglist *act_arg = actual;
   /* Save current namespace so we can change it for formal args.  */
   gfc_namespace *parent_ns = gfc_current_ns;
 
@@ -4103,17 +4089,6 @@ gfc_copy_formal_args_intr (gfc_symbol *dest, gfc_intrinsic_sym *src,
 
   for (curr_arg = src->formal; curr_arg; curr_arg = curr_arg->next)
     {
-      /* Skip absent arguments.  */
-      if (actual)
-	{
-	  gcc_assert (act_arg != NULL);
-	  if (act_arg->expr == NULL)
-	    {
-	      act_arg = act_arg->next;
-	      continue;
-	    }
-	  act_arg = act_arg->next;
-	}
       formal_arg = gfc_get_formal_arglist ();
       gfc_get_symbol (curr_arg->name, gfc_current_ns, &(formal_arg->sym));
 
@@ -4215,7 +4190,7 @@ generate_isocbinding_symbol (const char *mod_name, iso_c_binding_symbol s,
 	  || tmp_symtree->n.sym->intmod_sym_id != s))
     tmp_symtree = NULL;
 
-  /* Already exists in this scope so don't re-add it.  */
+  /* Already exists in this scope so don't re-add it. */
   if (tmp_symtree != NULL && (tmp_sym = tmp_symtree->n.sym) != NULL
       && (!tmp_sym->attr.generic
 	  || (tmp_sym = gfc_find_dt_in_generic (tmp_sym)) != NULL)

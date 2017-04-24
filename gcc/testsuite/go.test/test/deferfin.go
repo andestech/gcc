@@ -34,17 +34,17 @@ func main() {
 	for i := 0; i < N; i++ {
 		go func() {
 			defer wg.Done()
-			v := new(string)
+			v := new(int)
 			f := func() {
-				if *v != "" {
+				if *v != 0 {
 					panic("oops")
 				}
 			}
-			if *v != "" {
+			if *v != 0 {
 				// let the compiler think f escapes
 				sink = f
 			}
-			runtime.SetFinalizer(v, func(p *string) {
+			runtime.SetFinalizer(v, func(p *int) {
 				atomic.AddInt32(&count, -1)
 			})
 			defer f()

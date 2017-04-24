@@ -9,7 +9,6 @@
 #define SIZE (AVX512F_LEN / 32)
 #include "avx512f-mask-type.h"
 
-static void
 CALC (int *r, int *s)
 {
   int i;
@@ -19,7 +18,7 @@ CALC (int *r, int *s)
     }
 }
 
-void
+void static
 TEST (void)
 {
   int i, sign;

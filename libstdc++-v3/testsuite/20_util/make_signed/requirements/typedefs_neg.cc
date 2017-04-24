@@ -1,5 +1,5 @@
 // { dg-do compile }
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 
 // 2007-05-03  Benjamin Kosnik  <bkoz@redhat.com>
 //
@@ -48,5 +48,5 @@ void test01()
 // { dg-error "required from here" "" { target *-*-* } 40 }
 // { dg-error "required from here" "" { target *-*-* } 42 }
 
-// { dg-error "invalid use of incomplete type" "" { target *-*-* } 1866 }
-// { dg-error "declaration of" "" { target *-*-* } 1830 }
+// { dg-error "invalid use of incomplete type" "" { target *-*-* } 1764 }
+// { dg-error "declaration of" "" { target *-*-* } 1728 }

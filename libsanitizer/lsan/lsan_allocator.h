@@ -23,7 +23,7 @@ void *Allocate(const StackTrace &stack, uptr size, uptr alignment,
 void Deallocate(void *p);
 void *Reallocate(const StackTrace &stack, void *p, uptr new_size,
                  uptr alignment);
-uptr GetMallocUsableSize(const void *p);
+uptr GetMallocUsableSize(void *p);
 
 template<typename Callable>
 void ForEachChunk(const Callable &callback);

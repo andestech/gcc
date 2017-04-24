@@ -1,7 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -fdump-tree-vrp1" } */
 
-int
 foo (int a, int b)
 {
   if (a == b)

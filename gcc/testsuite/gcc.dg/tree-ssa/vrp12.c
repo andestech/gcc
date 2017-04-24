@@ -1,9 +1,6 @@
 /* { dg-do link } */
 /* { dg-options -O2 } */
 
-extern void link_error (void);
-
-int
 foo (int i)
 {
   int x;
@@ -20,7 +17,6 @@ foo (int i)
   return x;
 }
 
-int
 main()
 {
   foo (-30);

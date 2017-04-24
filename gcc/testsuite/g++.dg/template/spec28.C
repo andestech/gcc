@@ -2,5 +2,5 @@
 // Bad diagnostic
 // { dg-do compile }
 
-template<typename> struct A {};  // { dg-message "provided for" }
+template<typename> struct A {};  // { dg-error "provided" }
 template<> struct A<> {};        // { dg-error "wrong number" }

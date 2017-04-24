@@ -26,16 +26,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "regs.h"
 #include "expr.h"
 #include "tree-pass.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "flags.h"
 #include "df.h"
@@ -71,28 +61,25 @@ initialize_uninitialized_regs (void)
 
   FOR_EACH_BB_FN (bb, cfun)
     {
-      rtx_insn *insn;
+      rtx insn;
       bitmap lr = DF_LR_IN (bb);
       bitmap ur = DF_LIVE_IN (bb);
       bitmap_clear (already_genned);
 
       FOR_BB_INSNS (bb, insn)
 	{
-	  df_ref use;
+	  unsigned int uid = INSN_UID (insn);
+	  df_ref *use_rec;
 	  if (!NONDEBUG_INSN_P (insn))
 	    continue;
 
-	  FOR_EACH_INSN_USE (use, insn)
+	  for (use_rec = DF_INSN_UID_USES (uid); *use_rec; use_rec++)
 	    {
+	      df_ref use = *use_rec;
 	      unsigned int regno = DF_REF_REGNO (use);
 
 	      /* Only do this for the pseudos.  */
 	      if (regno < FIRST_PSEUDO_REGISTER)
-		continue;
-
-	      /* Ignore pseudo PIC register.  */
-	      if (pic_offset_table_rtx
-		  && regno == REGNO (pic_offset_table_rtx))
 		continue;
 
 	      /* Do not generate multiple moves for the same regno.
@@ -109,7 +96,7 @@ initialize_uninitialized_regs (void)
 	      if (bitmap_bit_p (lr, regno)
 		  && (!bitmap_bit_p (ur, regno)))
 		{
-		  rtx_insn *move_insn;
+		  rtx move_insn;
 		  rtx reg = DF_REF_REAL_REG (use);
 
 		  bitmap_set_bit (already_genned, regno);
@@ -122,8 +109,7 @@ initialize_uninitialized_regs (void)
 		  if (dump_file)
 		    fprintf (dump_file,
 			     "adding initialization in %s of reg %d at in block %d for insn %d.\n",
-			     current_function_name (), regno, bb->index,
-			     INSN_UID (insn));
+			     current_function_name (), regno, bb->index, uid);
 		}
 	    }
 	}
@@ -139,6 +125,19 @@ initialize_uninitialized_regs (void)
   BITMAP_FREE (already_genned);
 }
 
+static bool
+gate_initialize_regs (void)
+{
+  return optimize > 0;
+}
+
+static unsigned int
+rest_of_handle_initialize_regs (void)
+{
+  initialize_uninitialized_regs ();
+  return 0;
+}
+
 namespace {
 
 const pass_data pass_data_initialize_regs =
@@ -146,6 +145,8 @@ const pass_data pass_data_initialize_regs =
   RTL_PASS, /* type */
   "init-regs", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_NONE, /* tv_id */
   0, /* properties_required */
   0, /* properties_provided */
@@ -162,12 +163,8 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *) { return optimize > 0; }
-  virtual unsigned int execute (function *)
-    {
-      initialize_uninitialized_regs ();
-      return 0;
-    }
+  bool gate () { return gate_initialize_regs (); }
+  unsigned int execute () { return rest_of_handle_initialize_regs (); }
 
 }; // class pass_initialize_regs
 

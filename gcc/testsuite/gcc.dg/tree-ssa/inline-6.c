@@ -1,9 +1,7 @@
 /* { dg-do compile } */
 /* { dg-options "-Os -fdump-tree-optimized" } */
 struct a {int a,b,c,d,e,f,g,h,i,j;};
-void do_something (struct a *);
 
-void
 do_inc (struct a *a)
 {
   a->a=1;
@@ -17,7 +15,6 @@ do_inc (struct a *a)
   a->j=5;
 }
 
-void
 test(struct a *a)
 {
   do_inc (a);

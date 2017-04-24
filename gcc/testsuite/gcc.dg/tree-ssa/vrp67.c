@@ -1,8 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -fdump-tree-vrp1" } */
 
-extern void link_error (void);
-
 unsigned foo (unsigned i)
 {
   if (i == 2)

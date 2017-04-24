@@ -1,9 +1,9 @@
 // PR c++/33501
 // { dg-do compile }
 
-class A;	// { dg-message "forward declaration" }
+class A;	// { dg-error "forward declaration" }
 
-int f (A);			// { dg-message "initializing" }
+int f (A);			// { dg-error "initializing" }
 const A &make ();
 
 int

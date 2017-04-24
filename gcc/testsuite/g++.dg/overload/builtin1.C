@@ -14,4 +14,5 @@ int main ()
   A a;
   a + a;			// { dg-error "ambiguous" "ambiguous" }
   // { dg-message "operator" "match candidate text" { target *-*-* } 15 }
+  // { dg-message "candidates" "candidates" { target *-*-* } 15 }
 }

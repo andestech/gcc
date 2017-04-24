@@ -1,5 +1,5 @@
 // { dg-do compile }
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=c++11" }
 
 // Copyright (C) 2012-2014 Free Software Foundation, Inc.
 //

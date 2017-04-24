@@ -6,7 +6,7 @@
  *                                                                          *
  *                          C Implementation File                           *
  *                                                                          *
- *                     Copyright (C) 2001-2014, AdaCore                     *
+ *                     Copyright (C) 2001-2011, AdaCore                     *
  *                                                                          *
  * GNAT is free software;  you can  redistribute it  and/or modify it under *
  * terms of the  GNU General Public License as published  by the Free Soft- *
@@ -45,17 +45,17 @@
 #include <sys/types.h>
 
 #ifdef __MINGW32__
-# if OLD_MINGW
-#  include <sys/wait.h>
-# endif
+#if OLD_MINGW
+#include <sys/wait.h>
+#endif
 #elif defined (__vxworks) && defined (__RTP__)
-# include <wait.h>
+#include <wait.h>
 #elif defined (__Lynx__)
-  /* ??? See comment in adaint.c.  */
-# define GCC_RESOURCE_H
-# include <sys/wait.h>
-#elif defined (__nucleus__) || defined (__PikeOS__)
-  /* No wait.h available on Nucleus */
+/* ??? See comment in adaint.c.  */
+#define GCC_RESOURCE_H
+#include <sys/wait.h>
+#elif defined (__nucleus__)
+/* No wait.h available on Nucleus */
 #else
 #include <sys/wait.h>
 #endif
@@ -148,19 +148,13 @@ __gnat_pipe (int *fd)
 }
 
 int
-__gnat_expect_poll (int *fd,
-                    int num_fd,
-                    int timeout,
-                    int *dead_process,
-                    int *is_set)
+__gnat_expect_poll (int *fd, int num_fd, int timeout, int *is_set)
 {
 #define MAX_DELAY 100
 
   int i, delay, infinite = 0;
   DWORD avail;
   HANDLE handles[num_fd];
-
-  *dead_process = 0;
 
   for (i = 0; i < num_fd; i++)
     is_set[i] = 0;
@@ -180,10 +174,8 @@ __gnat_expect_poll (int *fd,
       for (i = 0; i < num_fd; i++)
         {
           if (!PeekNamedPipe (handles [i], NULL, 0, NULL, &avail, NULL))
-            {
-              *dead_process = i + 1;
-              return -1;
-            }
+            return -1;
+
           if (avail > 0)
             {
               is_set[i] = 1;
@@ -253,11 +245,7 @@ __gnat_expect_portable_execvp (int *pid, char *cmd, char *argv[])
 }
 
 int
-__gnat_expect_poll (int *fd,
-                    int num_fd,
-                    int timeout,
-                    int *dead_process,
-                    int *is_set)
+__gnat_expect_poll (int *fd, int num_fd, int timeout, int *is_set)
 {
   int i, num, ready = 0;
   unsigned int status;
@@ -269,8 +257,6 @@ __gnat_expect_poll (int *fd,
     int dev;
   } iosb;
   char buf [256];
-
-  *dead_process = 0;
 
   for (i = 0; i < num_fd; i++)
     is_set[i] = 0;
@@ -293,9 +279,8 @@ __gnat_expect_poll (int *fd,
 
 	  if ((status & 1) != 1)
 	    {
-              ready = -1;
-              dead_process = i + 1;
-              return ready;
+	      ready = -1;
+	      return ready;
 	    }
 	}
     }
@@ -410,11 +395,7 @@ __gnat_expect_portable_execvp (int *pid, char *cmd, char *argv[])
 }
 
 int
-__gnat_expect_poll (int *fd,
-                    int num_fd,
-                    int timeout,
-                    int *dead_process,
-                    int *is_set)
+__gnat_expect_poll (int *fd, int num_fd, int timeout, int *is_set)
 {
   struct timeval tv;
   SELECT_MASK rset;
@@ -424,8 +405,6 @@ __gnat_expect_poll (int *fd,
   int ready;
   int i;
   int received;
-
-  *dead_process = 0;
 
   tv.tv_sec  = timeout / 1000;
   tv.tv_usec = (timeout % 1000) * 1000;
@@ -479,7 +458,6 @@ __gnat_expect_poll (int *fd,
 	            if (ei.request == TIOCCLOSE)
 		      {
 		        ioctl (fd[i], TIOCREQSET, &ei);
-                        dead_process = i + 1;
 		        return -1;
 		      }
 
@@ -498,20 +476,18 @@ __gnat_expect_poll (int *fd,
 #else
 
 void
-__gnat_kill (int pid ATTRIBUTE_UNUSED,
-	     int sig ATTRIBUTE_UNUSED,
-	     int close ATTRIBUTE_UNUSED)
+__gnat_kill (int pid, int sig, int close)
 {
 }
 
 int
-__gnat_waitpid (int pid ATTRIBUTE_UNUSED, int sig ATTRIBUTE_UNUSED)
+__gnat_waitpid (int pid, int sig)
 {
   return 0;
 }
 
 int
-__gnat_pipe (int *fd ATTRIBUTE_UNUSED)
+__gnat_pipe (int *fd)
 {
   return -1;
 }
@@ -523,21 +499,14 @@ __gnat_expect_fork (void)
 }
 
 void
-__gnat_expect_portable_execvp (int *pid ATTRIBUTE_UNUSED,
-			       char *cmd ATTRIBUTE_UNUSED,
-			       char *argv[] ATTRIBUTE_UNUSED)
+__gnat_expect_portable_execvp (int *pid, char *cmd, char *argv[])
 {
   *pid = 0;
 }
 
 int
-__gnat_expect_poll (int *fd ATTRIBUTE_UNUSED,
-                    int num_fd ATTRIBUTE_UNUSED,
-                    int timeout ATTRIBUTE_UNUSED,
-                    int *dead_process ATTRIBUTE_UNUSED,
-                    int *is_set ATTRIBUTE_UNUSED)
+__gnat_expect_poll (int *fd, int num_fd, int timeout, int *is_set)
 {
-  *dead_process = 0;
   return -1;
 }
 #endif

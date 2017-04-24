@@ -22,13 +22,8 @@ enum ReportType {
   ReportTypeUseAfterFree,
   ReportTypeThreadLeak,
   ReportTypeMutexDestroyLocked,
-  ReportTypeMutexDoubleLock,
-  ReportTypeMutexBadUnlock,
-  ReportTypeMutexBadReadLock,
-  ReportTypeMutexBadReadUnlock,
   ReportTypeSignalUnsafe,
-  ReportTypeErrnoInSignal,
-  ReportTypeDeadlock
+  ReportTypeErrnoInSignal
 };
 
 struct ReportStack {
@@ -40,7 +35,6 @@ struct ReportStack {
   char *file;
   int line;
   int col;
-  bool suppressable;
 };
 
 struct ReportMopMutex {
@@ -79,7 +73,6 @@ struct ReportLocation {
   char *name;
   char *file;
   int line;
-  bool suppressable;
   ReportStack *stack;
 };
 
@@ -94,7 +87,6 @@ struct ReportThread {
 
 struct ReportMutex {
   u64 id;
-  uptr addr;
   bool destroyed;
   ReportStack *stack;
 };
@@ -107,7 +99,6 @@ class ReportDesc {
   Vector<ReportLocation*> locs;
   Vector<ReportMutex*> mutexes;
   Vector<ReportThread*> threads;
-  Vector<int> unique_tids;
   ReportStack *sleep;
   int count;
 

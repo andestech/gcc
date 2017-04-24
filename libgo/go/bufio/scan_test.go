@@ -38,7 +38,7 @@ var scanTests = []string{
 
 func TestScanByte(t *testing.T) {
 	for n, test := range scanTests {
-		buf := strings.NewReader(test)
+		buf := bytes.NewBufferString(test)
 		s := NewScanner(buf)
 		s.Split(ScanBytes)
 		var i int
@@ -60,7 +60,7 @@ func TestScanByte(t *testing.T) {
 // Test that the rune splitter returns same sequence of runes (not bytes) as for range string.
 func TestScanRune(t *testing.T) {
 	for n, test := range scanTests {
-		buf := strings.NewReader(test)
+		buf := bytes.NewBufferString(test)
 		s := NewScanner(buf)
 		s.Split(ScanRunes)
 		var i, runeCount int
@@ -104,7 +104,7 @@ var wordScanTests = []string{
 // Test that the word splitter returns the same data as strings.Fields.
 func TestScanWords(t *testing.T) {
 	for n, test := range wordScanTests {
-		buf := strings.NewReader(test)
+		buf := bytes.NewBufferString(test)
 		s := NewScanner(buf)
 		s.Split(ScanWords)
 		words := strings.Fields(test)
@@ -135,7 +135,7 @@ func TestScanWords(t *testing.T) {
 // reads in Scanner.Scan.
 type slowReader struct {
 	max int
-	buf io.Reader
+	buf *bytes.Buffer
 }
 
 func (sr *slowReader) Read(p []byte) (n int, err error) {
@@ -248,7 +248,7 @@ func TestScanLineTooLong(t *testing.T) {
 
 // Test that the line splitter handles a final line without a newline.
 func testNoNewline(text string, lines []string, t *testing.T) {
-	buf := strings.NewReader(text)
+	buf := bytes.NewBufferString(text)
 	s := NewScanner(&slowReader{7, buf})
 	s.Split(ScanLines)
 	for lineNum := 0; s.Scan(); lineNum++ {
@@ -277,7 +277,7 @@ func TestScanLineNoNewline(t *testing.T) {
 	testNoNewline(text, lines, t)
 }
 
-// Test that the line splitter handles a final line with a carriage return but no newline.
+// Test that the line splitter handles a final line with a carriage return but nonewline.
 func TestScanLineReturnButNoNewline(t *testing.T) {
 	const text = "abcdefghijklmn\nopqrstuvwxyz\r"
 	lines := []string{
@@ -328,7 +328,7 @@ func TestSplitError(t *testing.T) {
 	}
 	// Read the data.
 	const text = "abcdefghijklmnopqrstuvwxyz"
-	buf := strings.NewReader(text)
+	buf := bytes.NewBufferString(text)
 	s := NewScanner(&slowReader{1, buf})
 	s.Split(errorSplit)
 	var i int

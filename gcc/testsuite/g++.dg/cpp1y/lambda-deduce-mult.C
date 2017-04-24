@@ -1,7 +1,7 @@
 // Testcase for an extension to allow return type deduction when the lambda
 // contains more than just a single return-statement.
 
-// { dg-do run { target c++14 } }
+// { dg-do run { target c++1y } }
 
 bool b;
 template <class T>

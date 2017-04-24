@@ -1,6 +1,5 @@
 /* PR tree-optimization/20076 */
 /* { dg-do run } */
-/* { dg-additional-options "-fgnu89-inline" } */
 
 extern void abort (void);
 

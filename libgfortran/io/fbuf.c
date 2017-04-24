@@ -121,7 +121,10 @@ fbuf_alloc (gfc_unit * u, int len)
     {
       /* Round up to nearest multiple of the current buffer length.  */
       newlen = ((u->fbuf->pos + len) / u->fbuf->len + 1) * u->fbuf->len;
-      u->fbuf->buf = xrealloc (u->fbuf->buf, newlen);
+      dest = realloc (u->fbuf->buf, newlen);
+      if (dest == NULL)
+	return NULL;
+      u->fbuf->buf = dest;
       u->fbuf->len = newlen;
     }
 
@@ -161,6 +164,42 @@ fbuf_flush (gfc_unit * u, unit_mode mode)
      of the record. For reading, this also happens if we sread() past
      the record boundary.  */ 
   if (u->fbuf->act > u->fbuf->pos && u->fbuf->pos > 0)
+    memmove (u->fbuf->buf, u->fbuf->buf + u->fbuf->pos, 
+             u->fbuf->act - u->fbuf->pos);
+
+  u->fbuf->act -= u->fbuf->pos;
+  u->fbuf->pos = 0;
+
+  return 0;
+}
+
+
+/* The mode argument is LIST_WRITING for write mode and LIST_READING for
+   read.  This should only be used for list directed  I/O.
+   Return value is 0 for success, -1 on failure.  */
+
+int
+fbuf_flush_list (gfc_unit * u, unit_mode mode)
+{
+  int nwritten;
+
+  if (!u->fbuf)
+    return 0;
+
+  if (u->fbuf->pos < 524288) /* Upper limit for list writing.  */
+    return 0;
+
+  fbuf_debug (u, "fbuf_flush_list with mode %d: ", mode);
+
+  if (mode == LIST_WRITING)
+    {
+      nwritten = swrite (u->s, u->fbuf->buf, u->fbuf->pos);
+      if (nwritten < 0)
+	return -1;
+    }
+
+  /* Salvage remaining bytes for both reading and writing.  */ 
+  if (u->fbuf->act > u->fbuf->pos)
     memmove (u->fbuf->buf, u->fbuf->buf + u->fbuf->pos, 
              u->fbuf->act - u->fbuf->pos);
 

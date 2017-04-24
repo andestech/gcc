@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 2011-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2011-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -23,9 +23,10 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Einfo;       use Einfo;
-with Nmake;       use Nmake;
-with SPARK_Xrefs; use SPARK_Xrefs;
+with SPARK_Xrefs;     use SPARK_Xrefs;
+with Einfo;           use Einfo;
+with Nmake;           use Nmake;
+with Put_SPARK_Xrefs;
 
 with GNAT.HTable;
 
@@ -485,6 +486,7 @@ package body SPARK_Specific is
                   declare
                      Dummy : constant SPARK_Scope_Record :=
                                SPARK_Scope_Table.Table (Index);
+                     pragma Unreferenced (Dummy);
                   begin
                      return True;
                   end;
@@ -970,9 +972,7 @@ package body SPARK_Specific is
    -- Enclosing_Subprogram_Or_Package --
    -------------------------------------
 
-   function Enclosing_Subprogram_Or_Library_Package
-     (N : Node_Id) return Entity_Id
-   is
+   function Enclosing_Subprogram_Or_Package (N : Node_Id) return Entity_Id is
       Result : Entity_Id;
 
    begin
@@ -990,26 +990,12 @@ package body SPARK_Specific is
       while Present (Result) loop
          case Nkind (Result) is
             when N_Package_Specification =>
-
-               --  Only return a library-level package
-
-               if Is_Library_Level_Entity (Defining_Entity (Result)) then
-                  Result := Defining_Entity (Result);
-                  exit;
-               else
-                  Result := Parent (Result);
-               end if;
+               Result := Defining_Unit_Name (Result);
+               exit;
 
             when N_Package_Body =>
-
-               --  Only return a library-level package
-
-               if Is_Library_Level_Entity (Defining_Entity (Result)) then
-                  Result := Defining_Entity (Result);
-                  exit;
-               else
-                  Result := Parent (Result);
-               end if;
+               Result := Defining_Unit_Name (Result);
+               exit;
 
             when N_Subprogram_Specification =>
                Result := Defining_Unit_Name (Result);
@@ -1059,7 +1045,7 @@ package body SPARK_Specific is
       end if;
 
       return Result;
-   end Enclosing_Subprogram_Or_Library_Package;
+   end Enclosing_Subprogram_Or_Package;
 
    -----------------
    -- Entity_Hash --
@@ -1121,7 +1107,7 @@ package body SPARK_Specific is
                Create_Heap;
             end if;
 
-            Ref_Scope := Enclosing_Subprogram_Or_Library_Package (N);
+            Ref_Scope := Enclosing_Subprogram_Or_Package (N);
 
             Deref.Ent := Heap;
             Deref.Loc := Loc;

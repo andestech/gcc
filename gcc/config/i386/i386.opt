@@ -641,18 +641,6 @@ mavx512cd
 Target Report Mask(ISA_AVX512CD) Var(ix86_isa_flags) Save
 Support MMX, SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, AVX, AVX2 and AVX512F and AVX512CD built-in functions and code generation
 
-mavx512dq
-Target Report Mask(ISA_AVX512DQ) Var(ix86_isa_flags) Save
-Support MMX, SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, AVX, AVX2 and AVX512F and AVX512DQ built-in functions and code generation
-
-mavx512bw
-Target Report Mask(ISA_AVX512BW) Var(ix86_isa_flags) Save
-Support MMX, SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, AVX, AVX2 and AVX512F and AVX512BW built-in functions and code generation
-
-mavx512vl
-Target Report Mask(ISA_AVX512VL) Var(ix86_isa_flags) Save
-Support MMX, SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, AVX, AVX2 and AVX512F and AVX512VL built-in functions and code generation
-
 mfma
 Target Report Mask(ISA_FMA) Var(ix86_isa_flags) Save
 Support MMX, SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, AVX and FMA built-in functions and code generation
@@ -709,10 +697,6 @@ madx
 Target Report Mask(ISA_ADX) Var(ix86_isa_flags) Save
 Support flag-preserving add-carry instructions
 
-mclflushopt
-Target Report Mask(ISA_CLFLUSHOPT) Var(ix86_isa_flags) Save
-Support CLFLUSHOPT instructions
-
 mfxsr
 Target Report Mask(ISA_FXSR) Var(ix86_isa_flags) Save
 Support FXSAVE and FXRSTOR instructions
@@ -724,14 +708,6 @@ Support XSAVE and XRSTOR instructions
 mxsaveopt
 Target Report Mask(ISA_XSAVEOPT) Var(ix86_isa_flags) Save
 Support XSAVEOPT instruction
-
-mxsavec
-Target Report Mask(ISA_XSAVEC) Var(ix86_isa_flags) Save
-Support XSAVEC instructions
-
-mxsaves
-Target Report Mask(ISA_XSAVES) Var(ix86_isa_flags) Save
-Support XSAVES and XRSTORS instructions
 
 mtbm
 Target Report Mask(ISA_TBM) Var(ix86_isa_flags) Save
@@ -789,15 +765,6 @@ mfentry
 Target Report Var(flag_fentry) Init(-1)
 Emit profiling counter call at function entry before prologue.
 
-mrecord-mcount
-Target Report Var(flag_record_mcount) Init(0)
-Generate __mcount_loc section with all mcount or __fentry__ calls.
-
-mnop-mcount
-Target Report Var(flag_nop_mcount) Init(0)
-Generate mcount/__fentry__ calls as nops. To activate they need to be
-patched in.
-
 m8bit-idiv
 Target Report Mask(USE_8BIT_IDIV) Save
 Expand 32bit/64bit integer divide into 8bit unsigned integer divide with run-time check
@@ -813,10 +780,6 @@ Split 32-byte AVX unaligned store
 mrtm
 Target Report Mask(ISA_RTM) Var(ix86_isa_flags) Save
 Support RTM built-in functions and code generation
-
-mmpx
-Target Report Mask(ISA_MPX) Var(ix86_isa_flags) Save
-Support MPX code generation
 
 mstack-protector-guard=
 Target RejectNegative Joined Enum(stack_protector_guard) Var(ix86_stack_protector_guard) Init(SSP_TLS)

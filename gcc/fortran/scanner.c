@@ -324,16 +324,19 @@ add_path_to_list (gfc_directorylist **list, const char *path,
   if (stat (q, &st))
     {
       if (errno != ENOENT)
-	gfc_warning_now_2 ("Include directory %qs: %s", path,
-			   xstrerror(errno));
-      else if (warn)
-	gfc_warning_now_2 (OPT_Wmissing_include_dirs,
-			   "Nonexistent include directory %qs", path);
+	gfc_warning_now ("Include directory \"%s\": %s", path,
+			 xstrerror(errno));
+      else
+	{
+	  /* FIXME:  Also support -Wmissing-include-dirs.  */
+	  if (warn)
+	    gfc_warning_now ("Nonexistent include directory \"%s\"", path);
+	}
       return;
     }
   else if (!S_ISDIR (st.st_mode))
     {
-      gfc_warning_now_2 ("%qs is not a directory", path);
+      gfc_warning_now ("\"%s\" is not a directory", path);
       return;
     }
 
@@ -741,7 +744,7 @@ skip_free_comments (void)
       if (c == '!')
 	{
 	  /* Keep the !GCC$ line.  */
-	  if (at_bol && skip_gcc_attribute (start))
+		  if (at_bol && skip_gcc_attribute (start))
 	    return false;
 
 	  /* If -fopenmp, we need to handle here 2 things:
@@ -1476,11 +1479,11 @@ load_line (FILE *input, gfc_char_t **pbuf, int *pbuflen, const int *first_char)
 	      && !seen_printable && seen_ampersand)
 	    {
 	      if (pedantic)
-		gfc_error_now_2 ("%<&%> not allowed by itself in line %d",
-				   current_line);
+		gfc_error_now ("'&' not allowed by itself in line %d",
+			       current_line);
 	      else
-		gfc_warning_now_2 ("%<&%> not allowed by itself in line %d",
-				     current_line);
+		gfc_warning_now ("'&' not allowed by itself in line %d",
+				 current_line);
 	    }
 	  break;
 	}
@@ -1538,8 +1541,8 @@ load_line (FILE *input, gfc_char_t **pbuf, int *pbuflen, const int *first_char)
 	      && current_line != linenum)
 	    {
 	      linenum = current_line;
-	      gfc_warning_now_2 ("Nonconforming tab character in column %d "
-				   "of line %d", i+1, linenum);
+	      gfc_warning_now ("Nonconforming tab character in column %d "
+			       "of line %d", i+1, linenum);
 	    }
 
 	  while (i < 6)
@@ -1785,7 +1788,7 @@ preprocessor_line (gfc_char_t *c)
     {
        /* FIXME: we leak the old filename because a pointer to it may be stored
           in the linemap.  Alternative could be using GC or updating linemap to
-          point to the new name, but there is no API for that currently.  */
+          point to the new name, but there is no API for that currently. */
       current_file->filename = xstrdup (filename);
     }
 
@@ -1922,7 +1925,7 @@ load_file (const char *realfilename, const char *displayedname, bool initial)
 	input = gfc_open_file (realfilename);
       if (input == NULL)
 	{
-	  gfc_error_now_2 ("Can't open file %qs", filename);
+	  gfc_error_now ("Can't open file '%s'", filename);
 	  return false;
 	}
     }

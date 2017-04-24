@@ -1,5 +1,5 @@
 // Core issue 1351
-// { dg-do run }
+// { dg-do run { xfail *-*-* } }
 // { dg-require-effective-target c++11 }
 
 bool fail;

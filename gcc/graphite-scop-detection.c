@@ -21,30 +21,17 @@ along with GCC; see the file COPYING3.  If not see
 
 #include "config.h"
 
-#ifdef HAVE_isl
+#ifdef HAVE_cloog
 #include <isl/set.h>
 #include <isl/map.h>
 #include <isl/union_map.h>
-#ifdef HAVE_cloog
 #include <cloog/cloog.h>
 #include <cloog/isl/domain.h>
-#endif
 #endif
 
 #include "system.h"
 #include "coretypes.h"
 #include "tree.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "tm.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -67,9 +54,8 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-pass.h"
 #include "sese.h"
 #include "tree-ssa-propagate.h"
-#include "cp/cp-tree.h"
 
-#ifdef HAVE_isl
+#ifdef HAVE_cloog
 #include "graphite-poly.h"
 #include "graphite-scop-detection.h"
 
@@ -229,14 +215,6 @@ static bool
 graphite_can_represent_scev (tree scev)
 {
   if (chrec_contains_undetermined (scev))
-    return false;
-
-  /* We disable the handling of pointer types, because it’s currently not
-     supported by Graphite with the ISL AST generator. SSA_NAME nodes are
-     the only nodes, which are disabled in case they are pointers to object
-     types, but this can be changed.  */
-
-  if (TYPE_PTROB_P (TREE_TYPE (scev)) && TREE_CODE (scev) == SSA_NAME)
     return false;
 
   switch (TREE_CODE (scev))
@@ -1078,7 +1056,7 @@ create_sese_edges (vec<sd_region> regions)
 
 #ifdef ENABLE_CHECKING
   verify_loop_structure ();
-  verify_ssa (false, true);
+  verify_ssa (false);
 #endif
 }
 

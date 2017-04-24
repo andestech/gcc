@@ -45,6 +45,7 @@ int bar(int);
 CHECK_DECLTYPE(decltype(foo), int(char));
 
 decltype(bar) z; // { dg-error "overload" "overload" }
+// { dg-error "invalid type" "invalid" { target *-*-* } 47 }
 
 CHECK_DECLTYPE(decltype(&foo), int(*)(char));
 CHECK_DECLTYPE(decltype(*&foo), int(&)(char));

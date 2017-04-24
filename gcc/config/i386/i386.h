@@ -71,12 +71,6 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define TARGET_AVX512ER_P(x)	TARGET_ISA_AVX512ER_P(x)
 #define TARGET_AVX512CD	TARGET_ISA_AVX512CD
 #define TARGET_AVX512CD_P(x)	TARGET_ISA_AVX512CD_P(x)
-#define TARGET_AVX512DQ	TARGET_ISA_AVX512DQ
-#define TARGET_AVX512DQ_P(x)	TARGET_ISA_AVX512DQ_P(x)
-#define TARGET_AVX512BW	TARGET_ISA_AVX512BW
-#define TARGET_AVX512BW_P(x)	TARGET_ISA_AVX512BW_P(x)
-#define TARGET_AVX512VL	TARGET_ISA_AVX512VL
-#define TARGET_AVX512VL_P(x)	TARGET_ISA_AVX512VL_P(x)
 #define TARGET_FMA	TARGET_ISA_FMA
 #define TARGET_FMA_P(x)	TARGET_ISA_FMA_P(x)
 #define TARGET_SSE4A	TARGET_ISA_SSE4A
@@ -110,12 +104,6 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define TARGET_AES_P(x)	TARGET_ISA_AES_P(x)
 #define TARGET_SHA	TARGET_ISA_SHA
 #define TARGET_SHA_P(x)	TARGET_ISA_SHA_P(x)
-#define TARGET_CLFLUSHOPT	TARGET_ISA_CLFLUSHOPT
-#define TARGET_CLFLUSHOPT_P(x)	TARGET_ISA_CLFLUSHOPT_P(x)
-#define TARGET_XSAVEC	TARGET_ISA_XSAVEC
-#define TARGET_XSAVEC_P(x)	TARGET_ISA_XSAVEC_P(x)
-#define TARGET_XSAVES	TARGET_ISA_XSAVES
-#define TARGET_XSAVES_P(x)	TARGET_ISA_XSAVES_P(x)
 #define TARGET_PCLMUL	TARGET_ISA_PCLMUL
 #define TARGET_PCLMUL_P(x)	TARGET_ISA_PCLMUL_P(x)
 #define TARGET_CMPXCHG16B	TARGET_ISA_CX16
@@ -144,8 +132,6 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define TARGET_XSAVEOPT_P(x)	TARGET_ISA_XSAVEOPT_P(x)
 #define TARGET_PREFETCHWT1	TARGET_ISA_PREFETCHWT1
 #define TARGET_PREFETCHWT1_P(x)	TARGET_ISA_PREFETCHWT1_P(x)
-#define TARGET_MPX	TARGET_ISA_MPX
-#define TARGET_MPX_P(x)	TARGET_ISA_MPX_P(x)
 
 #define TARGET_LP64	TARGET_ABI_64
 #define TARGET_LP64_P(x)	TARGET_ABI_64_P(x)
@@ -439,10 +425,6 @@ extern unsigned char ix86_tune_features[X86_TUNE_LAST];
 	ix86_tune_features[X86_TUNE_USE_VECTOR_FP_CONVERTS]
 #define TARGET_USE_VECTOR_CONVERTS \
 	ix86_tune_features[X86_TUNE_USE_VECTOR_CONVERTS]
-#define TARGET_SLOW_PSHUFB \
-	ix86_tune_features[X86_TUNE_SLOW_PSHUFB]
-#define TARGET_VECTOR_PARALLEL_EXECUTION \
-	ix86_tune_features[X86_TUNE_VECTOR_PARALLEL_EXECUTION]
 #define TARGET_FUSE_CMP_AND_BRANCH_32 \
 	ix86_tune_features[X86_TUNE_FUSE_CMP_AND_BRANCH_32]
 #define TARGET_FUSE_CMP_AND_BRANCH_64 \
@@ -696,6 +678,16 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
 #define LONG_DOUBLE_TYPE_SIZE \
   (TARGET_LONG_DOUBLE_64 ? 64 : (TARGET_LONG_DOUBLE_128 ? 128 : 80))
 
+/* Define this to set long double type size to use in libgcc2.c, which can
+   not depend on target_flags.  */
+#ifdef __LONG_DOUBLE_64__
+#define LIBGCC2_LONG_DOUBLE_TYPE_SIZE 64
+#elif defined (__LONG_DOUBLE_128__)
+#define LIBGCC2_LONG_DOUBLE_TYPE_SIZE 128
+#else
+#define LIBGCC2_LONG_DOUBLE_TYPE_SIZE 80
+#endif
+
 #define WIDEST_HARDWARE_FP_SIZE 80
 
 #if defined (TARGET_BI_ARCH) || TARGET_64BIT_DEFAULT
@@ -945,7 +937,7 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
    eliminated during reloading in favor of either the stack or frame
    pointer.  */
 
-#define FIRST_PSEUDO_REGISTER 81
+#define FIRST_PSEUDO_REGISTER 77
 
 /* Number of hardware registers that go into the DWARF-2 unwind info.
    If not defined, equals FIRST_PSEUDO_REGISTER.  */
@@ -977,9 +969,7 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
 /*xmm24,xmm25,xmm26,xmm27,xmm28,xmm29,xmm30,xmm31*/		\
      0,   0,    0,    0,    0,    0,    0,    0,		\
 /*  k0,  k1, k2, k3, k4, k5, k6, k7*/				\
-     0,  0,   0,  0,  0,  0,  0,  0,				\
-/*   b0, b1, b2, b3*/						\
-     0,  0,  0,  0 }
+     0,  0,   0,  0,  0,  0,  0,  0 }
 
 /* 1 for registers not available across function calls.
    These must include the FIXED_REGISTERS and also any
@@ -1013,9 +1003,7 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
 /*xmm24,xmm25,xmm26,xmm27,xmm28,xmm29,xmm30,xmm31*/		\
      6,    6,     6,    6,    6,    6,    6,    6,		\
  /* k0,  k1,  k2,  k3,  k4,  k5,  k6,  k7*/			\
-     1,   1,   1,   1,   1,   1,   1,   1,			\
-/*   b0, b1, b2, b3*/						\
-     1,  1,  1,  1 }
+     1,   1,   1,   1,   1,   1,   1,   1 }
 
 /* Order in which to allocate registers.  Each register must be
    listed once, even those in FIXED_REGISTERS.  List frame pointer
@@ -1031,8 +1019,7 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
    18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,	\
    33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,  \
    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62,	\
-   63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77,  \
-   78, 79, 80 }
+   63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76 }
 
 /* ADJUST_REG_ALLOC_ORDER is a macro which permits reg_alloc_order
    to be rearranged based on a particular function.  When using sse math,
@@ -1054,7 +1041,6 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
 
 #define HARD_REGNO_NREGS(REGNO, MODE)					\
   (STACK_REGNO_P (REGNO) || SSE_REGNO_P (REGNO) || MMX_REGNO_P (REGNO)	\
-   || MASK_REGNO_P (REGNO) || BND_REGNO_P (REGNO)			\
    ? (COMPLEX_MODE_P (MODE) ? 2 : 1)					\
    : ((MODE) == XFmode							\
       ? (TARGET_64BIT ? 2 : 3)						\
@@ -1085,12 +1071,7 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
 
 #define VALID_AVX512F_REG_MODE(MODE)					\
   ((MODE) == V8DImode || (MODE) == V8DFmode || (MODE) == V64QImode	\
-   || (MODE) == V16SImode || (MODE) == V16SFmode || (MODE) == V32HImode \
-   || (MODE) == V4TImode)
-
-#define VALID_AVX512VL_128_REG_MODE(MODE)					\
-  ((MODE) == V2DImode || (MODE) == V2DFmode || (MODE) == V16QImode	\
-   || (MODE) == V4SImode || (MODE) == V4SFmode || (MODE) == V8HImode)
+   || (MODE) == V16SImode || (MODE) == V16SFmode || (MODE) == V32HImode)
 
 #define VALID_SSE2_REG_MODE(MODE)					\
   ((MODE) == V16QImode || (MODE) == V8HImode || (MODE) == V2DFmode	\
@@ -1108,9 +1089,6 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
   ((MODE == V1DImode) || (MODE) == DImode				\
    || (MODE) == V2SImode || (MODE) == SImode				\
    || (MODE) == V4HImode || (MODE) == V8QImode)
-
-#define VALID_BND_REG_MODE(MODE) \
-  (TARGET_64BIT ? (MODE) == BND64mode : (MODE) == BND32mode)
 
 #define VALID_DFP_MODE_P(MODE) \
   ((MODE) == SDmode || (MODE) == DDmode || (MODE) == TDmode)
@@ -1139,8 +1117,6 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
    || (MODE) == V16SFmode)
 
 #define VALID_MASK_REG_MODE(MODE) ((MODE) == HImode || (MODE) == QImode)
-
-#define VALID_MASK_AVX512BW_MODE(MODE) ((MODE) == SImode || (MODE) == DImode)
 
 /* Value is 1 if hard register REGNO can hold a value of machine-mode MODE.  */
 
@@ -1220,9 +1196,6 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
 #define FIRST_MASK_REG  (LAST_EXT_REX_SSE_REG + 1) /*69*/
 #define LAST_MASK_REG   (FIRST_MASK_REG + 7) /*76*/
 
-#define FIRST_BND_REG  (LAST_MASK_REG + 1) /*77*/
-#define LAST_BND_REG   (FIRST_BND_REG + 3) /*80*/
-
 /* Override this in other tm.h files to cope with various OS lossage
    requiring a frame pointer.  */
 #ifndef SUBTARGET_FRAME_POINTER_REQUIRED
@@ -1246,14 +1219,12 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
 
 #define REAL_PIC_OFFSET_TABLE_REGNUM  BX_REG
 
-#define PIC_OFFSET_TABLE_REGNUM						\
-  ((TARGET_64BIT && (ix86_cmodel == CM_SMALL_PIC			\
-                     || TARGET_PECOFF))					\
-   || !flag_pic								\
-   ? INVALID_REGNUM							\
-   : pic_offset_table_rtx						\
-     ? INVALID_REGNUM							\
-     : REAL_PIC_OFFSET_TABLE_REGNUM)
+#define PIC_OFFSET_TABLE_REGNUM				\
+  ((TARGET_64BIT && (ix86_cmodel == CM_SMALL_PIC	\
+                     || TARGET_PECOFF))		\
+   || !flag_pic ? INVALID_REGNUM			\
+   : reload_completed ? REGNO (pic_offset_table_rtx)	\
+   : REAL_PIC_OFFSET_TABLE_REGNUM)
 
 #define GOT_SYMBOL_NAME "_GLOBAL_OFFSET_TABLE_"
 
@@ -1305,7 +1276,6 @@ enum reg_class
   SSE_FIRST_REG,
   SSE_REGS,
   EVEX_SSE_REGS,
-  BND_REGS,
   ALL_SSE_REGS,
   MMX_REGS,
   FP_TOP_SSE_REGS,
@@ -1363,7 +1333,6 @@ enum reg_class
    "SSE_FIRST_REG",			\
    "SSE_REGS",				\
    "EVEX_SSE_REGS",			\
-   "BND_REGS",				\
    "ALL_SSE_REGS",			\
    "MMX_REGS",				\
    "FP_TOP_SSE_REGS",			\
@@ -1383,38 +1352,37 @@ enum reg_class
    TARGET_CONDITIONAL_REGISTER_USAGE.  */
 
 #define REG_CLASS_CONTENTS                                              \
-{     { 0x00,       0x0,    0x0 },                                       \
-      { 0x01,       0x0,    0x0 },       /* AREG */                      \
-      { 0x02,       0x0,    0x0 },       /* DREG */                      \
-      { 0x04,       0x0,    0x0 },       /* CREG */                      \
-      { 0x08,       0x0,    0x0 },       /* BREG */                      \
-      { 0x10,       0x0,    0x0 },       /* SIREG */                     \
-      { 0x20,       0x0,    0x0 },       /* DIREG */                     \
-      { 0x03,       0x0,    0x0 },       /* AD_REGS */                   \
-      { 0x0f,       0x0,    0x0 },       /* Q_REGS */                    \
-  { 0x1100f0,    0x1fe0,    0x0 },       /* NON_Q_REGS */                \
-      { 0x7f,    0x1fe0,    0x0 },       /* INDEX_REGS */                \
-  { 0x1100ff,       0x0,    0x0 },       /* LEGACY_REGS */               \
-      { 0x07,       0x0,    0x0 },       /* CLOBBERED_REGS */            \
-  { 0x1100ff,    0x1fe0,    0x0 },       /* GENERAL_REGS */              \
-     { 0x100,       0x0,    0x0 },       /* FP_TOP_REG */                \
-    { 0x0200,       0x0,    0x0 },       /* FP_SECOND_REG */             \
-    { 0xff00,       0x0,    0x0 },       /* FLOAT_REGS */                \
-  { 0x200000,       0x0,    0x0 },       /* SSE_FIRST_REG */             \
-{ 0x1fe00000,  0x1fe000,    0x0 },       /* SSE_REGS */                  \
-       { 0x0,0xffe00000,   0x1f },       /* EVEX_SSE_REGS */             \
-       { 0x0,       0x0,0x1e000 },       /* BND_REGS */			 \
-{ 0x1fe00000,0xffffe000,   0x1f },       /* ALL_SSE_REGS */              \
-{ 0xe0000000,      0x1f,    0x0 },       /* MMX_REGS */                  \
-{ 0x1fe00100,0xffffe000,   0x1f },       /* FP_TOP_SSE_REG */            \
-{ 0x1fe00200,0xffffe000,   0x1f },       /* FP_SECOND_SSE_REG */         \
-{ 0x1fe0ff00,0xffffe000,   0x1f },       /* FLOAT_SSE_REGS */            \
-{   0x11ffff,    0x1fe0,    0x0 },       /* FLOAT_INT_REGS */            \
-{ 0x1ff100ff,0xffffffe0,   0x1f },       /* INT_SSE_REGS */              \
-{ 0x1ff1ffff,0xffffffe0,   0x1f },       /* FLOAT_INT_SSE_REGS */        \
-       { 0x0,       0x0, 0x1fc0 },       /* MASK_EVEX_REGS */           \
-       { 0x0,       0x0, 0x1fe0 },       /* MASK_REGS */                 \
-{ 0xffffffff,0xffffffff, 0x1fff }                                        \
+{     { 0x00,       0x0,   0x0 },                                       \
+      { 0x01,       0x0,   0x0 },       /* AREG */                      \
+      { 0x02,       0x0,   0x0 },       /* DREG */                      \
+      { 0x04,       0x0,   0x0 },       /* CREG */                      \
+      { 0x08,       0x0,   0x0 },       /* BREG */                      \
+      { 0x10,       0x0,   0x0 },       /* SIREG */                     \
+      { 0x20,       0x0,   0x0 },       /* DIREG */                     \
+      { 0x03,       0x0,   0x0 },       /* AD_REGS */                   \
+      { 0x0f,       0x0,   0x0 },       /* Q_REGS */                    \
+  { 0x1100f0,    0x1fe0,   0x0 },       /* NON_Q_REGS */                \
+      { 0x7f,    0x1fe0,   0x0 },       /* INDEX_REGS */                \
+  { 0x1100ff,       0x0,   0x0 },       /* LEGACY_REGS */               \
+      { 0x07,       0x0,   0x0 },       /* CLOBBERED_REGS */            \
+  { 0x1100ff,    0x1fe0,   0x0 },       /* GENERAL_REGS */              \
+     { 0x100,       0x0,   0x0 },       /* FP_TOP_REG */                \
+    { 0x0200,       0x0,   0x0 },       /* FP_SECOND_REG */             \
+    { 0xff00,       0x0,   0x0 },       /* FLOAT_REGS */                \
+  { 0x200000,       0x0,   0x0 },       /* SSE_FIRST_REG */             \
+{ 0x1fe00000,  0x1fe000,   0x0 },       /* SSE_REGS */                  \
+       { 0x0,0xffe00000,  0x1f },       /* EVEX_SSE_REGS */             \
+{ 0x1fe00000,0xffffe000,  0x1f },       /* ALL_SSE_REGS */              \
+{ 0xe0000000,      0x1f,   0x0 },       /* MMX_REGS */                  \
+{ 0x1fe00100,0xffffe000,  0x1f },       /* FP_TOP_SSE_REG */            \
+{ 0x1fe00200,0xffffe000,  0x1f },       /* FP_SECOND_SSE_REG */         \
+{ 0x1fe0ff00,0xffffe000,  0x1f },       /* FLOAT_SSE_REGS */            \
+{   0x11ffff,    0x1fe0,   0x0 },       /* FLOAT_INT_REGS */            \
+{ 0x1ff100ff,0xffffffe0,  0x1f },       /* INT_SSE_REGS */              \
+{ 0x1ff1ffff,0xffffffe0,  0x1f },       /* FLOAT_INT_SSE_REGS */        \
+       { 0x0,       0x0,0x1fc0 },       /* MASK_EVEX_REGS */           \
+       { 0x0,       0x0,0x1fe0 },       /* MASK_REGS */                 \
+{ 0xffffffff,0xffffffff,0x1fff }                                        \
 }
 
 /* The same information, inverted:
@@ -1472,7 +1440,6 @@ enum reg_class
          : (N) <= LAST_REX_SSE_REG ? (FIRST_REX_SSE_REG + (N) - 8) \
                                    : (FIRST_EXT_REX_SSE_REG + (N) - 16))
 
-#define MASK_REG_P(X) (REG_P (X) && MASK_REGNO_P (REGNO (X)))
 #define MASK_REGNO_P(N) IN_RANGE ((N), FIRST_MASK_REG, LAST_MASK_REG)
 #define ANY_MASK_REG_P(X) (REG_P (X) && MASK_REGNO_P (REGNO (X)))
 
@@ -1490,9 +1457,6 @@ enum reg_class
 
 #define CC_REG_P(X) (REG_P (X) && CC_REGNO_P (REGNO (X)))
 #define CC_REGNO_P(X) ((X) == FLAGS_REG || (X) == FPSR_REG)
-
-#define BND_REGNO_P(N) IN_RANGE ((N), FIRST_BND_REG, LAST_BND_REG)
-#define ANY_BND_REG_P(X) (REG_P (X) && BND_REGNO_P (REGNO (X)))
 
 /* The class value for index registers, and the one for base regs.  */
 
@@ -1663,10 +1627,6 @@ typedef struct ix86_args {
   int float_in_sse;		/* Set to 1 or 2 for 32bit targets if
 				   SFmode/DFmode arguments should be passed
 				   in SSE registers.  Otherwise 0.  */
-  int bnd_regno;                /* next available bnd register number */
-  int bnds_in_bt;               /* number of bounds expected in BT.  */
-  int force_bnd_pass;           /* number of bounds expected for stdarg arg.  */
-  int stdarg;                   /* Set to 1 if function is stdarg.  */
   enum calling_abi call_abi;	/* Set to SYSV_ABI for sysv abi. Otherwise
  				   MS_ABI for ms abi.  */
 } CUMULATIVE_ARGS;
@@ -1944,9 +1904,6 @@ do {							\
    between pointers and any other objects of this machine mode.  */
 #define Pmode (ix86_pmode == PMODE_DI ? DImode : SImode)
 
-/* Specify the machine mode that bounds have.  */
-#define BNDmode (ix86_pmode == PMODE_DI ? BND64mode : BND32mode)
-
 /* A C expression whose value is zero if pointers that need to be extended
    from being `POINTER_SIZE' bits wide to `Pmode' are sign-extended and
    greater then zero if they are zero-extended and less then zero if the
@@ -2057,8 +2014,7 @@ do {							\
  "xmm20", "xmm21", "xmm22", "xmm23",					\
  "xmm24", "xmm25", "xmm26", "xmm27",					\
  "xmm28", "xmm29", "xmm30", "xmm31",					\
- "k0", "k1", "k2", "k3", "k4", "k5", "k6", "k7",			\
- "bnd0", "bnd1", "bnd2", "bnd3" }
+ "k0", "k1", "k2", "k3", "k4", "k5", "k6", "k7" }
 
 #define REGISTER_NAMES HI_REGISTER_NAMES
 
@@ -2356,6 +2312,43 @@ enum avx_u128_state
 #define NUM_MODES_FOR_MODE_SWITCHING \
   { AVX_U128_ANY, I387_CW_ANY, I387_CW_ANY, I387_CW_ANY, I387_CW_ANY }
 
+/* ENTITY is an integer specifying a mode-switched entity.  If
+   `OPTIMIZE_MODE_SWITCHING' is defined, you must define this macro to
+   return an integer value not larger than the corresponding element
+   in `NUM_MODES_FOR_MODE_SWITCHING', to denote the mode that ENTITY
+   must be switched into prior to the execution of INSN.  */
+
+#define MODE_NEEDED(ENTITY, I) ix86_mode_needed ((ENTITY), (I))
+
+/* If this macro is defined, it is evaluated for every INSN during
+   mode switching.  It determines the mode that an insn results in (if
+   different from the incoming mode).  */
+
+#define MODE_AFTER(ENTITY, MODE, I) ix86_mode_after ((ENTITY), (MODE), (I))
+
+/* If this macro is defined, it is evaluated for every ENTITY that
+   needs mode switching.  It should evaluate to an integer, which is
+   a mode that ENTITY is assumed to be switched to at function entry.  */
+
+#define MODE_ENTRY(ENTITY) ix86_mode_entry (ENTITY)
+
+/* If this macro is defined, it is evaluated for every ENTITY that
+   needs mode switching.  It should evaluate to an integer, which is
+   a mode that ENTITY is assumed to be switched to at function exit.  */
+
+#define MODE_EXIT(ENTITY) ix86_mode_exit (ENTITY)
+
+/* This macro specifies the order in which modes for ENTITY are
+   processed.  0 is the highest priority.  */
+
+#define MODE_PRIORITY_TO_MODE(ENTITY, N) (N)
+
+/* Generate one or more insns to set ENTITY to MODE.  HARD_REG_LIVE
+   is the set of hard registers live at the point where the insn(s)
+   are to be inserted.  */
+
+#define EMIT_MODE_SET(ENTITY, MODE, HARD_REGS_LIVE) \
+  ix86_emit_mode_set ((ENTITY), (MODE), (HARD_REGS_LIVE))
 
 /* Avoid renaming of stack registers, as doing so in combination with
    scheduling just increases amount of live registers at time and in
@@ -2517,9 +2510,9 @@ extern void debug_dispatch_window (int);
 /* The value at zero is only defined for the BMI instructions
    LZCNT and TZCNT, not the BSR/BSF insns in the original isa.  */
 #define CTZ_DEFINED_VALUE_AT_ZERO(MODE, VALUE) \
-	((VALUE) = GET_MODE_BITSIZE (MODE), TARGET_BMI ? 1 : 0)
+	((VALUE) = GET_MODE_BITSIZE (MODE), TARGET_BMI)
 #define CLZ_DEFINED_VALUE_AT_ZERO(MODE, VALUE) \
-	((VALUE) = GET_MODE_BITSIZE (MODE), TARGET_LZCNT ? 1 : 0)
+	((VALUE) = GET_MODE_BITSIZE (MODE), TARGET_LZCNT)
 
 
 /* Flags returned by ix86_get_callcvt ().  */

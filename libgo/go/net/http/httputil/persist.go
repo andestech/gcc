@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Package httputil provides HTTP utility functions, complementing the
+// more common ones in the net/http package.
 package httputil
 
 import (
@@ -31,8 +33,8 @@ var errClosed = errors.New("i/o operation on closed connection")
 // i.e. requests can be read out of sync (but in the same order) while the
 // respective responses are sent.
 //
-// ServerConn is low-level and old. Applications should instead use Server
-// in the net/http package.
+// ServerConn is low-level and should not be needed by most applications.
+// See Server.
 type ServerConn struct {
 	lk              sync.Mutex // read-write protects the following fields
 	c               net.Conn
@@ -45,11 +47,8 @@ type ServerConn struct {
 	pipe textproto.Pipeline
 }
 
-// NewServerConn returns a new ServerConn reading and writing c. If r is not
+// NewServerConn returns a new ServerConn reading and writing c.  If r is not
 // nil, it is the buffer to use when reading c.
-//
-// ServerConn is low-level and old. Applications should instead use Server
-// in the net/http package.
 func NewServerConn(c net.Conn, r *bufio.Reader) *ServerConn {
 	if r == nil {
 		r = bufio.NewReader(c)
@@ -224,8 +223,8 @@ func (sc *ServerConn) Write(req *http.Request, resp *http.Response) error {
 // supports hijacking the connection calling Hijack to
 // regain control of the underlying net.Conn and deal with it as desired.
 //
-// ClientConn is low-level and old. Applications should instead use
-// Client or Transport in the net/http package.
+// ClientConn is low-level and should not be needed by most applications.
+// See Client.
 type ClientConn struct {
 	lk              sync.Mutex // read-write protects the following fields
 	c               net.Conn
@@ -241,9 +240,6 @@ type ClientConn struct {
 
 // NewClientConn returns a new ClientConn reading and writing c.  If r is not
 // nil, it is the buffer to use when reading c.
-//
-// ClientConn is low-level and old. Applications should use Client or
-// Transport in the net/http package.
 func NewClientConn(c net.Conn, r *bufio.Reader) *ClientConn {
 	if r == nil {
 		r = bufio.NewReader(c)
@@ -258,9 +254,6 @@ func NewClientConn(c net.Conn, r *bufio.Reader) *ClientConn {
 
 // NewProxyClientConn works like NewClientConn but writes Requests
 // using Request's WriteProxy method.
-//
-// New code should not use NewProxyClientConn. See Client or
-// Transport in the net/http package instead.
 func NewProxyClientConn(c net.Conn, r *bufio.Reader) *ClientConn {
 	cc := NewClientConn(c, r)
 	cc.writeReq = (*http.Request).WriteProxy

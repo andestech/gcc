@@ -26,37 +26,14 @@
 #define TARGET_CPU_CPP_BUILTINS()			\
   do							\
     {							\
-      builtin_define ("__aarch64__");                   \
-      builtin_define ("__ARM_64BIT_STATE");             \
-      builtin_define_with_int_value                     \
-        ("__ARM_ARCH", aarch64_architecture_version);   \
-      cpp_define_formatted                                              \
-        (parse_in, "__ARM_ARCH_%dA", aarch64_architecture_version);     \
-      builtin_define ("__ARM_ARCH_ISA_A64");            \
-      builtin_define_with_int_value                     \
-        ("__ARM_ARCH_PROFILE", 'A');                    \
-      builtin_define ("__ARM_FEATURE_CLZ");             \
-      builtin_define ("__ARM_FEATURE_IDIV");            \
-      builtin_define ("__ARM_FEATURE_UNALIGNED");       \
-      builtin_define ("__ARM_PCS_AAPCS64");             \
-      builtin_define_with_int_value                     \
-        ("__ARM_SIZEOF_WCHAR_T", WCHAR_TYPE_SIZE / 8);  \
-      builtin_define_with_int_value                     \
-        ("__ARM_SIZEOF_MINIMAL_ENUM",                   \
-         flag_short_enums? 1 : 4);                      \
+      builtin_define ("__aarch64__");			\
       if (TARGET_BIG_END)				\
-        {                                               \
-          builtin_define ("__AARCH64EB__");             \
-          builtin_define ("__ARM_BIG_ENDIAN");          \
-        }                                               \
+	builtin_define ("__AARCH64EB__");		\
       else						\
 	builtin_define ("__AARCH64EL__");		\
 							\
       if (TARGET_SIMD)					\
 	builtin_define ("__ARM_NEON");			\
-							\
-      if (TARGET_CRC32)				\
-	builtin_define ("__ARM_FEATURE_CRC32");		\
 							\
       switch (aarch64_cmodel)				\
 	{						\
@@ -178,8 +155,6 @@
 
 #define PCC_BITFIELD_TYPE_MATTERS	1
 
-/* Major revision number of the ARM Architecture implemented by the target.  */
-extern unsigned aarch64_architecture_version;
 
 /* Instruction tuning/selection flags.  */
 
@@ -212,9 +187,6 @@ extern unsigned long aarch64_tune_flags;
 
 /* Crypto is an optional extension to AdvSIMD.  */
 #define TARGET_CRYPTO (TARGET_SIMD && AARCH64_ISA_CRYPTO)
-
-/* CRC instructions that can be enabled through +crc arch extension.  */
-#define TARGET_CRC32 (AARCH64_ISA_CRC)
 
 /* Standard register usage.  */
 
@@ -393,7 +365,8 @@ extern unsigned long aarch64_tune_flags;
 
 #define HARD_REGNO_MODE_OK(REGNO, MODE)	aarch64_hard_regno_mode_ok (REGNO, MODE)
 
-#define MODES_TIEABLE_P(MODE1, MODE2) aarch64_modes_tieable_p (MODE1, MODE2)
+#define MODES_TIEABLE_P(MODE1, MODE2)			\
+  (GET_MODE_CLASS (MODE1) == GET_MODE_CLASS (MODE2))
 
 #define DWARF2_UNWIND_INFO 1
 
@@ -436,7 +409,7 @@ extern unsigned long aarch64_tune_flags;
 enum reg_class
 {
   NO_REGS,
-  CALLER_SAVE_REGS,
+  CORE_REGS,
   GENERAL_REGS,
   STACK_REG,
   POINTER_REGS,
@@ -451,7 +424,7 @@ enum reg_class
 #define REG_CLASS_NAMES				\
 {						\
   "NO_REGS",					\
-  "CALLER_SAVE_REGS",				\
+  "CORE_REGS",					\
   "GENERAL_REGS",				\
   "STACK_REG",					\
   "POINTER_REGS",				\
@@ -463,7 +436,7 @@ enum reg_class
 #define REG_CLASS_CONTENTS						\
 {									\
   { 0x00000000, 0x00000000, 0x00000000 },	/* NO_REGS */		\
-  { 0x0007ffff, 0x00000000, 0x00000000 },	/* CALLER_SAVE_REGS */	\
+  { 0x7fffffff, 0x00000000, 0x00000003 },	/* CORE_REGS */		\
   { 0x7fffffff, 0x00000000, 0x00000003 },	/* GENERAL_REGS */	\
   { 0x80000000, 0x00000000, 0x00000000 },	/* STACK_REG */		\
   { 0xffffffff, 0x00000000, 0x00000003 },	/* POINTER_REGS */	\
@@ -474,7 +447,7 @@ enum reg_class
 
 #define REGNO_REG_CLASS(REGNO)	aarch64_regno_regclass (REGNO)
 
-#define INDEX_REG_CLASS	GENERAL_REGS
+#define INDEX_REG_CLASS	CORE_REGS
 #define BASE_REG_CLASS  POINTER_REGS
 
 /* Register pairs used to eliminate unneeded registers that point into
@@ -511,11 +484,8 @@ enum target_cpus
 /* If inserting NOP before a mult-accumulate insn remember to adjust the
    length so that conditional branching code is updated appropriately.  */
 #define ADJUST_INSN_LENGTH(insn, length)	\
-  do						\
-    {						\
-       if (aarch64_madd_needs_nop (insn))	\
-         length += 4;				\
-    } while (0)
+  if (aarch64_madd_needs_nop (insn))		\
+    length += 4;
 
 #define FINAL_PRESCAN_INSN(INSN, OPVEC, NOPERANDS)	\
     aarch64_final_prescan_insn (INSN);			\
@@ -554,32 +524,12 @@ extern enum aarch64_processor aarch64_tune;
 struct GTY (()) aarch64_frame
 {
   HOST_WIDE_INT reg_offset[FIRST_PSEUDO_REGISTER];
-
-  /* The number of extra stack bytes taken up by register varargs.
-     This area is allocated by the callee at the very top of the
-     frame.  This value is rounded up to a multiple of
-     STACK_BOUNDARY.  */
-  HOST_WIDE_INT saved_varargs_size;
-
   HOST_WIDE_INT saved_regs_size;
   /* Padding if needed after the all the callee save registers have
      been saved.  */
   HOST_WIDE_INT padding0;
   HOST_WIDE_INT hardfp_offset;	/* HARD_FRAME_POINTER_REGNUM */
-
-  /* Offset from the base of the frame (incomming SP) to the
-     hard_frame_pointer.  This value is always a multiple of
-     STACK_BOUNDARY.  */
-  HOST_WIDE_INT hard_fp_offset;
-
-  /* The size of the frame.  This value is the offset from base of the
-   * frame (incomming SP) to the stack_pointer.  This value is always
-   * a multiple of STACK_BOUNDARY.  */
-
-  unsigned wb_candidate1;
-  unsigned wb_candidate2;
-
-  HOST_WIDE_INT frame_size;
+  HOST_WIDE_INT fp_lr_offset;	/* Space needed for saving fp and/or lr */
 
   bool laid_out;
 };
@@ -587,6 +537,11 @@ struct GTY (()) aarch64_frame
 typedef struct GTY (()) machine_function
 {
   struct aarch64_frame frame;
+
+  /* The number of extra stack bytes taken up by register varargs.
+     This area is allocated by the callee at the very top of the frame.  */
+  HOST_WIDE_INT saved_varargs_size;
+
 } machine_function;
 #endif
 
@@ -610,9 +565,13 @@ enum arm_pcs
 };
 
 
+extern enum arm_pcs arm_pcs_variant;
 
+#ifndef ARM_DEFAULT_PCS
+#define ARM_DEFAULT_PCS ARM_PCS_AAPCS64
+#endif
 
-/* We can't use machine_mode inside a generator file because it
+/* We can't use enum machine_mode inside a generator file because it
    hasn't been created yet; we shouldn't be using any code that
    needs the real definition though, so this ought to be safe.  */
 #ifdef GENERATOR_FILE
@@ -711,14 +670,12 @@ do {									     \
 /* The base cost overhead of a memcpy call, for MOVE_RATIO and friends.  */
 #define AARCH64_CALL_RATIO 8
 
-/* MOVE_RATIO dictates when we will use the move_by_pieces infrastructure.
-   move_by_pieces will continually copy the largest safe chunks.  So a
-   7-byte copy is a 4-byte + 2-byte + byte copy.  This proves inefficient
-   for both size and speed of copy, so we will instead use the "movmem"
-   standard name to implement the copy.  This logic does not apply when
-   targeting -mstrict-align, so keep a sensible default in that case.  */
+/* When optimizing for size, give a better estimate of the length of a memcpy
+   call, but use the default otherwise.  But move_by_pieces_ninsns() counts
+   memory-to-memory moves, and we'll have to generate a load & store for each,
+   so halve the value to take that into account.  */
 #define MOVE_RATIO(speed) \
-  (!STRICT_ALIGNMENT ? 2 : (((speed) ? 15 : AARCH64_CALL_RATIO) / 2))
+  (((speed) ? 15 : AARCH64_CALL_RATIO) / 2)
 
 /* For CLEAR_RATIO, when optimizing for size, give a better estimate
    of the length of a memset call, but use the default otherwise.  */
@@ -730,6 +687,12 @@ do {									     \
    the constant.  */
 #define SET_RATIO(speed) \
   ((speed) ? 15 : AARCH64_CALL_RATIO - 2)
+
+/* STORE_BY_PIECES_P can be used when copying a constant string, but
+   in that case each 64-bit chunk takes 5 insns instead of 2 (LDR/STR).
+   For now we always fail this and let the move_by_pieces code copy
+   the string from read-only memory.  */
+#define STORE_BY_PIECES_P(SIZE, ALIGN) 0
 
 /* Disable auto-increment in move_by_pieces et al.  Use of auto-increment is
    rarely a good idea in straight-line code since it adds an extra address
@@ -872,11 +835,6 @@ do {									     \
 
 #define SHIFT_COUNT_TRUNCATED !TARGET_SIMD
 
-/* Choose appropriate mode for caller saves, so we do the minimum
-   required size of load/store.  */
-#define HARD_REGNO_CALLER_SAVE_MODE(REGNO, NREGS, MODE) \
-  aarch64_hard_regno_caller_save_mode ((REGNO), (NREGS), (MODE))
-
 /* Callee only saves lower 64-bits of a 128-bit register.  Tell the
    compiler the callee clobbers the top 64-bits when restoring the
    bottom 64-bits.  */
@@ -905,13 +863,6 @@ extern enum aarch64_code_model aarch64_cmodel;
 
 #define ENDIAN_LANE_N(mode, n)  \
   (BYTES_BIG_ENDIAN ? GET_MODE_NUNITS (mode) - 1 - n : n)
-
-/* Support for a configure-time default CPU, etc.  We currently support
-   --with-arch and --with-cpu.  Both are ignored if either is specified
-   explicitly on the command line at run time.  */
-#define OPTION_DEFAULT_SPECS				\
-  {"arch", "%{!march=*:%{!mcpu=*:-march=%(VALUE)}}" },	\
-  {"cpu",  "%{!march=*:%{!mcpu=*:-mcpu=%(VALUE)}}" },
 
 #define BIG_LITTLE_SPEC \
    " %{mcpu=*:-mcpu=%:rewrite_mcpu(%{mcpu=*:%*})}"

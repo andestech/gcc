@@ -7,12 +7,12 @@
 
 struct A
 {
-    int i;			// { dg-message "" }
+    int i;			// { dg-error "non-static" }
 };
 
 template <int> struct B
 {
-    int foo() { return A::i; }	// { dg-error "non-static" }
+    int foo() { return A::i; }	// { dg-error "this location" }
 };
 
 template struct B<0>;

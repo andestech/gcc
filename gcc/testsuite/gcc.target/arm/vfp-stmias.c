@@ -12,4 +12,4 @@ foo (float *p, float a, float b, int n)
   while (n--);
 }
 
-/* { dg-final { scan-assembler "vstmia.32" } } */
+/* { dg-final { scan-assembler "fstmias" } } */

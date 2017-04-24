@@ -15,5 +15,6 @@ int
 main()
 {
 	new GlobalAddress(Value());		// internal error occured here// { dg-error "no matching" }
+	// { dg-message "candidate" "candidate note" { target *-*-* } 17 }
 	//new GlobalAddress(new Value());	// This line is correct code
 }

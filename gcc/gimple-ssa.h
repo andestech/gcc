@@ -21,8 +21,6 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef GCC_GIMPLE_SSA_H
 #define GCC_GIMPLE_SSA_H
 
-#include "hash-map.h"
-#include "tree-hasher.h"
 #include "tree-ssa-operands.h"
 
 /* This structure is used to map a gimple statement to a label,
@@ -31,25 +29,6 @@ along with GCC; see the file COPYING3.  If not see
 struct GTY(()) tm_restart_node {
   gimple stmt;
   tree label_or_list;
-};
-
-struct ssa_name_hasher : ggc_hasher<tree>
-{
-  /* Hash a tree in a uid_decl_map.  */
-
-  static hashval_t
-  hash (tree item)
-  {
-    return item->ssa_name.var->decl_minimal.uid;
-  }
-
-  /* Return true if the DECL_UID in both trees are equal.  */
-
-  static bool
-  equal (tree a, tree b)
-{
-  return (a->ssa_name.var->decl_minimal.uid == b->ssa_name.var->decl_minimal.uid);
-}
 };
 
 /* Gimple dataflow datastructure. All publicly available fields shall have
@@ -74,7 +53,7 @@ struct GTY(()) gimple_df {
 
   /* A map of decls to artificial ssa-names that point to the partition
      of the decl.  */
-  hash_map<tree, tree> * GTY((skip(""))) decls_to_pointers;
+  struct pointer_map_t * GTY((skip(""))) decls_to_pointers;
 
   /* Free list of SSA_NAMEs.  */
   vec<tree, va_gc> *free_ssanames;
@@ -83,7 +62,7 @@ struct GTY(()) gimple_df {
      means that the first reference to this variable in the function is a
      USE or a VUSE.  In those cases, the SSA renamer creates an SSA name
      for this variable with an empty defining statement.  */
-  hash_table<ssa_name_hasher> *default_defs;
+  htab_t GTY((param_is (union tree_node))) default_defs;
 
   /* True if there are any symbols that need to be renamed.  */
   unsigned int ssa_renaming_needed : 1;
@@ -130,7 +109,7 @@ gimple_vuse_op (const_gimple g)
 {
   struct use_optype_d *ops;
   const gimple_statement_with_memory_ops *mem_ops_stmt =
-     dyn_cast <const gimple_statement_with_memory_ops *> (g);
+     dyn_cast <const gimple_statement_with_memory_ops> (g);
   if (!mem_ops_stmt)
     return NULL_USE_OPERAND_P;
   ops = mem_ops_stmt->use_ops;
@@ -146,7 +125,7 @@ static inline def_operand_p
 gimple_vdef_op (gimple g)
 {
   gimple_statement_with_memory_ops *mem_ops_stmt =
-     dyn_cast <gimple_statement_with_memory_ops *> (g);
+     dyn_cast <gimple_statement_with_memory_ops> (g);
   if (!mem_ops_stmt)
     return NULL_DEF_OPERAND_P;
   if (mem_ops_stmt->vdef)

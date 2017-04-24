@@ -134,6 +134,7 @@ proc compat-run { testname objlist dest optall optfile optstr } {
 		     "$options"]
     if ![${tool}_check_compile "$testcase $testname link" "" \
 	 $dest $comp_output] then {
+	unresolved "$testcase $testname execute $optstr"
 	return
     }
 

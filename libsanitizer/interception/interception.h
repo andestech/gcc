@@ -13,8 +13,7 @@
 #ifndef INTERCEPTION_H
 #define INTERCEPTION_H
 
-#if !defined(__linux__) && !defined(__FreeBSD__) && \
-  !defined(__APPLE__) && !defined(_WIN32)
+#if !defined(__linux__) && !defined(__APPLE__) && !defined(_WIN32)
 # error "Interception doesn't work on this operating system."
 #endif
 
@@ -120,23 +119,19 @@ const interpose_substitution substitution_##func_name[] \
 # define DECLARE_WRAPPER(ret_type, func, ...)
 
 #elif defined(_WIN32)
-# define WRAP(x) __asan_wrap_##x
-# define WRAPPER_NAME(x) "__asan_wrap_"#x
-# define INTERCEPTOR_ATTRIBUTE __declspec(dllexport)
+# if defined(_DLL)  // DLL CRT
+#  define WRAP(x) x
+#  define WRAPPER_NAME(x) #x
+#  define INTERCEPTOR_ATTRIBUTE
+# else  // Static CRT
+#  define WRAP(x) wrap_##x
+#  define WRAPPER_NAME(x) "wrap_"#x
+#  define INTERCEPTOR_ATTRIBUTE
+# endif
 # define DECLARE_WRAPPER(ret_type, func, ...) \
     extern "C" ret_type func(__VA_ARGS__);
 # define DECLARE_WRAPPER_WINAPI(ret_type, func, ...) \
     extern "C" __declspec(dllimport) ret_type __stdcall func(__VA_ARGS__);
-#elif defined(__FreeBSD__)
-# define WRAP(x) __interceptor_ ## x
-# define WRAPPER_NAME(x) "__interceptor_" #x
-# define INTERCEPTOR_ATTRIBUTE __attribute__((visibility("default")))
-// FreeBSD's dynamic linker (incompliantly) gives non-weak symbols higher
-// priority than weak ones so weak aliases won't work for indirect calls
-// in position-independent (-fPIC / -fPIE) mode.
-# define DECLARE_WRAPPER(ret_type, func, ...) \
-     extern "C" ret_type func(__VA_ARGS__) \
-     __attribute__((alias("__interceptor_" #func), visibility("default")));
 #else
 # define WRAP(x) __interceptor_ ## x
 # define WRAPPER_NAME(x) "__interceptor_" #x
@@ -238,11 +233,11 @@ typedef unsigned long uptr;  // NOLINT
 
 #define INCLUDED_FROM_INTERCEPTION_LIB
 
-#if defined(__linux__) || defined(__FreeBSD__)
+#if defined(__linux__)
 # include "interception_linux.h"
-# define INTERCEPT_FUNCTION(func) INTERCEPT_FUNCTION_LINUX_OR_FREEBSD(func)
+# define INTERCEPT_FUNCTION(func) INTERCEPT_FUNCTION_LINUX(func)
 # define INTERCEPT_FUNCTION_VER(func, symver) \
-    INTERCEPT_FUNCTION_VER_LINUX_OR_FREEBSD(func, symver)
+    INTERCEPT_FUNCTION_VER_LINUX(func, symver)
 #elif defined(__APPLE__)
 # include "interception_mac.h"
 # define INTERCEPT_FUNCTION(func) INTERCEPT_FUNCTION_MAC(func)

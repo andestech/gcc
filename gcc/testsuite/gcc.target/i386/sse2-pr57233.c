@@ -4,8 +4,6 @@
 
 #include "sse2-check.h"
 
-int do_main (void);
-
 static void
 sse2_test (void)
 {

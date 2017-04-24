@@ -310,10 +310,9 @@ gen_type (const char *ret_val, tree t, formals_style style)
 				TREE_TYPE (t), style);
 	  else
 	    {
-	      char buff[23];
-	      sprintf (buff, "["HOST_WIDE_INT_PRINT_DEC"]",
-		       int_size_in_bytes (t)
-		       / int_size_in_bytes (TREE_TYPE (t)));
+	      int size = (int_size_in_bytes (t) / int_size_in_bytes (TREE_TYPE (t)));
+	      char buff[10];
+	      sprintf (buff, "[%d]", size);
 	      ret_val = gen_type (concat (ret_val, buff, NULL),
 				  TREE_TYPE (t), style);
 	    }

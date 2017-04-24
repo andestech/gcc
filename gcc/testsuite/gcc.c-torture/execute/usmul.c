@@ -1,4 +1,3 @@
-/* { dg-require-effective-target int32plus } */
 int __attribute__ ((noinline)) foo (short x, unsigned short y)
 {
   return x * y;

@@ -4,7 +4,7 @@
 
 extern int 
 __attribute__((visibility ("hidden")))
-xyzzy; /* { dg-message "previous declaration" "" } */
+xyzzy; /* { dg-warning "previous declaration here" "" } */
 
 int 
 __attribute__((visibility ("protected")))

@@ -1,4 +1,4 @@
-extern inline int __attribute__ ((gnu_inline))
+extern inline int
 e_inline_baz (void)
 {
   return 2 + 1;

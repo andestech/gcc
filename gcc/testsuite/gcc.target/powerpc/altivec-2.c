@@ -23,7 +23,6 @@ int xxx[sizeof(foobar) == 16 ? 69 : -1];
 
 int nc17[sizeof(shoe) == sizeof (char *) ? 69 : -1];
 
-void
 code ()
 {
   *shoe = polish;

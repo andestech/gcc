@@ -5,14 +5,14 @@ extern void abort (void);
 
 int global;
 
-static int foo(void) __attribute__((noinline));
+static foo(void) __attribute__((noinline));
 
-static int foo(void)
+static foo(void)
 {
   global = 1;
 }
 
-static int bar(void)
+static bar(void)
 {
   foo ();
 }

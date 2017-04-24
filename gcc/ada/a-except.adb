@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -88,9 +88,9 @@ package body Ada.Exceptions is
 
    package Exception_Data is
 
-      -----------------------------------
-      -- Exception Message Subprograms --
-      -----------------------------------
+      ---------------------------------
+      -- Exception messages routines --
+      ---------------------------------
 
       procedure Set_Exception_C_Msg
         (Excep  : EOA;
@@ -116,17 +116,12 @@ package body Ada.Exceptions is
       --  message. Message is a string which is generated as the exception
       --  message.
 
-      ---------------------------------------
-      -- Exception Information Subprograms --
-      ---------------------------------------
+      --------------------------------------
+      -- Exception information subprogram --
+      --------------------------------------
 
-      function Untailored_Exception_Information
-        (X : Exception_Occurrence) return String;
-      --  This is used by Stream_Attributes.EO_To_String to convert an
-      --  Exception_Occurrence to a String for the stream attributes.
-      --  String_To_EO understands the format, as documented here.
-      --
-      --  The format of the string is as follows:
+      function Exception_Information (X : Exception_Occurrence) return String;
+      --  The format of the exception information is as follows:
       --
       --    Exception_Name: <exception name> (as in Exception_Name)
       --    Message: <message> (only if Exception_Message is empty)
@@ -134,38 +129,59 @@ package body Ada.Exceptions is
       --    Call stack traceback locations:  (only if at least one location)
       --    <0xyyyyyyyy 0xyyyyyyyy ...>      (is recorded)
       --
-      --  The lines are separated by a ASCII.LF character.
-      --  The nnnn is the partition Id given as decimal digits.
+      --  The lines are separated by a ASCII.LF character
+      --
+      --  The nnnn is the partition Id given as decimal digits
+      --
       --  The 0x... line represents traceback program counter locations, in
-      --  execution order with the first one being the exception location.
+      --  execution order with the first one being the exception location. It
+      --  is present only
       --
-      --  The Exception_Name and Message lines are omitted in the abort
-      --  signal case, since this is not really an exception.
-      --
+      --  The Exception_Name and Message lines are omitted in the abort signal
+      --  case, since this is not really an exception.
+
       --  Note: If the format of the generated string is changed, please note
       --  that an equivalent modification to the routine String_To_EO must be
       --  made to preserve proper functioning of the stream attributes.
 
-      function Exception_Information (X : Exception_Occurrence) return String;
-      --  This is the implementation of Ada.Exceptions.Exception_Information,
-      --  as defined in the Ada RM.
+      ---------------------------------------
+      -- Exception backtracing subprograms --
+      ---------------------------------------
+
+      --  What is automatically output when exception tracing is on is the
+      --  usual exception information with the call chain backtrace possibly
+      --  tailored by a backtrace decorator. Modifying Exception_Information
+      --  itself is not a good idea because the decorated output is completely
+      --  out of control and would break all our code related to the streaming
+      --  of exceptions.  We then provide an alternative function to compute
+      --  the possibly tailored output, which is equivalent if no decorator is
+      --  currently set:
+
+      function Tailored_Exception_Information
+        (X : Exception_Occurrence) return String;
+      --  Exception information to be output in the case of automatic tracing
+      --  requested through GNAT.Exception_Traces.
       --
-      --  If no traceback decorator (see GNAT.Exception_Traces) is currently
-      --  in place, this is the same as Untailored_Exception_Information.
-      --  Otherwise, the decorator is used to produce a symbolic traceback
-      --  instead of hexadecimal addresses.
-      --
-      --  Note that unlike Untailored_Exception_Information, there is no need
-      --  to keep the output of Exception_Information stable for streaming
-      --  purposes, and in fact the output differs across platforms.
+      --  This is the same as Exception_Information if no backtrace decorator
+      --  is currently in place. Otherwise, this is Exception_Information with
+      --  the call chain raw addresses replaced by the result of a call to the
+      --  current decorator provided with the call chain addresses.
+
+      pragma Export
+        (Ada, Tailored_Exception_Information,
+           "__gnat_tailored_exception_information");
+      --  This is currently used by System.Tasking.Stages
 
    end Exception_Data;
 
    package Exception_Traces is
 
-      -------------------------------------------------
-      -- Run-Time Exception Notification Subprograms --
-      -------------------------------------------------
+      use Exception_Data;
+      --  Imports Tailored_Exception_Information
+
+      ----------------------------------------------
+      -- Run-Time Exception Notification Routines --
+      ----------------------------------------------
 
       --  These subprograms provide a common run-time interface to trigger the
       --  actions required when an exception is about to be propagated (e.g.
@@ -197,9 +213,9 @@ package body Ada.Exceptions is
 
    package Stream_Attributes is
 
-      ----------------------------------
-      -- Stream Attribute Subprograms --
-      ----------------------------------
+      --------------------------------
+      -- Stream attributes routines --
+      --------------------------------
 
       function EId_To_String (X : Exception_Id) return String;
       function String_To_EId (S : String) return Exception_Id;
@@ -222,8 +238,7 @@ package body Ada.Exceptions is
    --  about it.
 
    procedure Raise_Exception_No_Defer
-      (E       : Exception_Id;
-       Message : String := "");
+      (E : Exception_Id; Message : String := "");
    pragma Export
     (Ada, Raise_Exception_No_Defer,
      "ada__exceptions__raise_exception_no_defer");
@@ -337,104 +352,91 @@ package body Ada.Exceptions is
    --  caller task. Target is expected to be a pointer to the fixed TSD
    --  occurrence for this task.
 
-   --------------------------------
-   -- Run-Time Check Subprograms --
-   --------------------------------
+   -----------------------------
+   -- Run-Time Check Routines --
+   -----------------------------
 
-   --  These subprograms raise a specific exception with a reason message
+   --  These routines raise a specific exception with a reason message
    --  attached. The parameters are the file name and line number in each
    --  case. The names are defined by Exp_Ch11.Get_RT_Exception_Name.
 
-   --  Note on ordering of these subprograms. Normally in the Ada.Exceptions
-   --  units we do not care about the ordering of entries for Rcheck
-   --  subprograms, and the normal approach is to keep them in the same
-   --  order as declarations in Types.
-
-   --  This section is an IMPORTANT EXCEPTION. It is required by the .Net
-   --  runtime that the routine Rcheck_PE_Finalize_Raise_Exception is at the
-   --  end of the list (for reasons that are documented in the exceptmsg.awk
-   --  script which takes care of generating the required exception data).
-
-   procedure Rcheck_CE_Access_Check                   -- 00
+   procedure Rcheck_CE_Access_Check
      (File : System.Address; Line : Integer);
-   procedure Rcheck_CE_Null_Access_Parameter          -- 01
+   procedure Rcheck_CE_Null_Access_Parameter
      (File : System.Address; Line : Integer);
-   procedure Rcheck_CE_Discriminant_Check             -- 02
+   procedure Rcheck_CE_Discriminant_Check
      (File : System.Address; Line : Integer);
-   procedure Rcheck_CE_Divide_By_Zero                 -- 03
+   procedure Rcheck_CE_Divide_By_Zero
      (File : System.Address; Line : Integer);
-   procedure Rcheck_CE_Explicit_Raise                 -- 04
+   procedure Rcheck_CE_Explicit_Raise
      (File : System.Address; Line : Integer);
-   procedure Rcheck_CE_Index_Check                    -- 05
+   procedure Rcheck_CE_Index_Check
      (File : System.Address; Line : Integer);
-   procedure Rcheck_CE_Invalid_Data                   -- 06
+   procedure Rcheck_CE_Invalid_Data
      (File : System.Address; Line : Integer);
-   procedure Rcheck_CE_Length_Check                   -- 07
+   procedure Rcheck_CE_Length_Check
      (File : System.Address; Line : Integer);
-   procedure Rcheck_CE_Null_Exception_Id              -- 08
+   procedure Rcheck_CE_Null_Exception_Id
      (File : System.Address; Line : Integer);
-   procedure Rcheck_CE_Null_Not_Allowed               -- 09
+   procedure Rcheck_CE_Null_Not_Allowed
      (File : System.Address; Line : Integer);
-   procedure Rcheck_CE_Overflow_Check                 -- 10
+   procedure Rcheck_CE_Overflow_Check
      (File : System.Address; Line : Integer);
-   procedure Rcheck_CE_Partition_Check                -- 11
+   procedure Rcheck_CE_Partition_Check
      (File : System.Address; Line : Integer);
-   procedure Rcheck_CE_Range_Check                    -- 12
+   procedure Rcheck_CE_Range_Check
      (File : System.Address; Line : Integer);
-   procedure Rcheck_CE_Tag_Check                      -- 13
+   procedure Rcheck_CE_Tag_Check
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Access_Before_Elaboration      -- 14
+   procedure Rcheck_PE_Access_Before_Elaboration
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Accessibility_Check            -- 15
+   procedure Rcheck_PE_Accessibility_Check
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Address_Of_Intrinsic           -- 16
+   procedure Rcheck_PE_Address_Of_Intrinsic
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Aliased_Parameters             -- 17
+   procedure Rcheck_PE_Aliased_Parameters
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_All_Guards_Closed              -- 18
+   procedure Rcheck_PE_All_Guards_Closed
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Bad_Predicated_Generic_Type    -- 19
+   procedure Rcheck_PE_Bad_Predicated_Generic_Type
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Current_Task_In_Entry_Body     -- 20
+   procedure Rcheck_PE_Current_Task_In_Entry_Body
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Duplicated_Entry_Address       -- 21
+   procedure Rcheck_PE_Duplicated_Entry_Address
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Explicit_Raise                 -- 22
+   procedure Rcheck_PE_Explicit_Raise
      (File : System.Address; Line : Integer);
-
-   procedure Rcheck_PE_Implicit_Return                -- 24
+   procedure Rcheck_PE_Implicit_Return
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Misaligned_Address_Value       -- 25
+   procedure Rcheck_PE_Misaligned_Address_Value
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Missing_Return                 -- 26
+   procedure Rcheck_PE_Missing_Return
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Overlaid_Controlled_Object     -- 27
+   procedure Rcheck_PE_Overlaid_Controlled_Object
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Potentially_Blocking_Operation -- 28
+   procedure Rcheck_PE_Potentially_Blocking_Operation
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Stubbed_Subprogram_Called      -- 29
+   procedure Rcheck_PE_Stubbed_Subprogram_Called
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Unchecked_Union_Restriction    -- 30
+   procedure Rcheck_PE_Unchecked_Union_Restriction
      (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Non_Transportable_Actual       -- 31
+   procedure Rcheck_PE_Non_Transportable_Actual
      (File : System.Address; Line : Integer);
-   procedure Rcheck_SE_Empty_Storage_Pool             -- 32
+   procedure Rcheck_SE_Empty_Storage_Pool
      (File : System.Address; Line : Integer);
-   procedure Rcheck_SE_Explicit_Raise                 -- 33
+   procedure Rcheck_SE_Explicit_Raise
      (File : System.Address; Line : Integer);
-   procedure Rcheck_SE_Infinite_Recursion             -- 34
+   procedure Rcheck_SE_Infinite_Recursion
      (File : System.Address; Line : Integer);
-   procedure Rcheck_SE_Object_Too_Large               -- 35
-     (File : System.Address; Line : Integer);
-   procedure Rcheck_PE_Stream_Operation_Not_Allowed   -- 36
+   procedure Rcheck_SE_Object_Too_Large
      (File : System.Address; Line : Integer);
 
-   procedure Rcheck_PE_Finalize_Raised_Exception      -- 23
+   procedure Rcheck_PE_Finalize_Raised_Exception
      (File : System.Address; Line : Integer);
    --  This routine is separated out because it has quite different behavior
    --  from the others. This is the "finalize/adjust raised exception". This
    --  subprogram is always called with abort deferred, unlike all other
-   --  Rcheck_* subprograms, it needs to call Raise_Exception_No_Defer.
+   --  Rcheck_* routines, it needs to call Raise_Exception_No_Defer.
 
    pragma Export (C, Rcheck_CE_Access_Check,
                   "__gnat_rcheck_CE_Access_Check");
@@ -490,18 +492,16 @@ package body Ada.Exceptions is
                   "__gnat_rcheck_PE_Misaligned_Address_Value");
    pragma Export (C, Rcheck_PE_Missing_Return,
                   "__gnat_rcheck_PE_Missing_Return");
-   pragma Export (C, Rcheck_PE_Non_Transportable_Actual,
-                  "__gnat_rcheck_PE_Non_Transportable_Actual");
    pragma Export (C, Rcheck_PE_Overlaid_Controlled_Object,
                   "__gnat_rcheck_PE_Overlaid_Controlled_Object");
    pragma Export (C, Rcheck_PE_Potentially_Blocking_Operation,
                   "__gnat_rcheck_PE_Potentially_Blocking_Operation");
-   pragma Export (C, Rcheck_PE_Stream_Operation_Not_Allowed,
-                  "__gnat_rcheck_PE_Stream_Operation_Not_Allowed");
    pragma Export (C, Rcheck_PE_Stubbed_Subprogram_Called,
                   "__gnat_rcheck_PE_Stubbed_Subprogram_Called");
    pragma Export (C, Rcheck_PE_Unchecked_Union_Restriction,
                   "__gnat_rcheck_PE_Unchecked_Union_Restriction");
+   pragma Export (C, Rcheck_PE_Non_Transportable_Actual,
+                  "__gnat_rcheck_PE_Non_Transportable_Actual");
    pragma Export (C, Rcheck_SE_Empty_Storage_Pool,
                   "__gnat_rcheck_SE_Empty_Storage_Pool");
    pragma Export (C, Rcheck_SE_Explicit_Raise,
@@ -513,7 +513,7 @@ package body Ada.Exceptions is
 
    --  None of these procedures ever returns (they raise an exception). By
    --  using pragma No_Return, we ensure that any junk code after the call,
-   --  such as normal return epilogue stuff, can be eliminated).
+   --  such as normal return epilog stuff, can be eliminated).
 
    pragma No_Return (Rcheck_CE_Access_Check);
    pragma No_Return (Rcheck_CE_Null_Access_Parameter);
@@ -542,11 +542,10 @@ package body Ada.Exceptions is
    pragma No_Return (Rcheck_PE_Misaligned_Address_Value);
    pragma No_Return (Rcheck_PE_Missing_Return);
    pragma No_Return (Rcheck_PE_Overlaid_Controlled_Object);
-   pragma No_Return (Rcheck_PE_Non_Transportable_Actual);
    pragma No_Return (Rcheck_PE_Potentially_Blocking_Operation);
-   pragma No_Return (Rcheck_PE_Stream_Operation_Not_Allowed);
    pragma No_Return (Rcheck_PE_Stubbed_Subprogram_Called);
    pragma No_Return (Rcheck_PE_Unchecked_Union_Restriction);
+   pragma No_Return (Rcheck_PE_Non_Transportable_Actual);
    pragma No_Return (Rcheck_PE_Finalize_Raised_Exception);
    pragma No_Return (Rcheck_SE_Empty_Storage_Pool);
    pragma No_Return (Rcheck_SE_Explicit_Raise);
@@ -577,7 +576,6 @@ package body Ada.Exceptions is
    procedure Rcheck_19 (File : System.Address; Line : Integer);
    procedure Rcheck_20 (File : System.Address; Line : Integer);
    procedure Rcheck_21 (File : System.Address; Line : Integer);
-   procedure Rcheck_22 (File : System.Address; Line : Integer);
    procedure Rcheck_23 (File : System.Address; Line : Integer);
    procedure Rcheck_24 (File : System.Address; Line : Integer);
    procedure Rcheck_25 (File : System.Address; Line : Integer);
@@ -591,7 +589,8 @@ package body Ada.Exceptions is
    procedure Rcheck_33 (File : System.Address; Line : Integer);
    procedure Rcheck_34 (File : System.Address; Line : Integer);
    procedure Rcheck_35 (File : System.Address; Line : Integer);
-   procedure Rcheck_36 (File : System.Address; Line : Integer);
+
+   procedure Rcheck_22 (File : System.Address; Line : Integer);
 
    pragma Export (C, Rcheck_00, "__gnat_rcheck_00");
    pragma Export (C, Rcheck_01, "__gnat_rcheck_01");
@@ -629,11 +628,10 @@ package body Ada.Exceptions is
    pragma Export (C, Rcheck_33, "__gnat_rcheck_33");
    pragma Export (C, Rcheck_34, "__gnat_rcheck_34");
    pragma Export (C, Rcheck_35, "__gnat_rcheck_35");
-   pragma Export (C, Rcheck_36, "__gnat_rcheck_36");
 
    --  None of these procedures ever returns (they raise an exception). By
    --  using pragma No_Return, we ensure that any junk code after the call,
-   --  such as normal return epilogue stuff, can be eliminated).
+   --  such as normal return epilog stuff, can be eliminated).
 
    pragma No_Return (Rcheck_00);
    pragma No_Return (Rcheck_01);
@@ -670,7 +668,6 @@ package body Ada.Exceptions is
    pragma No_Return (Rcheck_33);
    pragma No_Return (Rcheck_34);
    pragma No_Return (Rcheck_35);
-   pragma No_Return (Rcheck_36);
 
    ---------------------------------------------
    -- Reason Strings for Run-Time Check Calls --
@@ -721,7 +718,6 @@ package body Ada.Exceptions is
    Rmsg_33 : constant String := "explicit raise"                   & NUL;
    Rmsg_34 : constant String := "infinite recursion"               & NUL;
    Rmsg_35 : constant String := "object too large"                 & NUL;
-   Rmsg_36 : constant String := "stream operation not allowed"     & NUL;
 
    -----------------------
    -- Polling Interface --
@@ -759,7 +755,7 @@ package body Ada.Exceptions is
    ------------------
 
    --  We use the null string to represent the null occurrence, otherwise we
-   --  output the Untailored_Exception_Information string for the occurrence.
+   --  output the Exception_Information string for the occurrence.
 
    function EO_To_String (X : Exception_Occurrence) return String
      renames Stream_Attributes.EO_To_String;
@@ -791,9 +787,9 @@ package body Ada.Exceptions is
    begin
       if X.Id = Null_Id then
          raise Constraint_Error;
-      else
-         return Exception_Data.Exception_Information (X);
       end if;
+
+      return Exception_Data.Exception_Information (X);
    end Exception_Information;
 
    -----------------------
@@ -1175,9 +1171,9 @@ package body Ada.Exceptions is
       Raise_Current_Excep (E);
    end Raise_With_Msg;
 
-   -----------------------------------------
-   -- Calls to Run-Time Check Subprograms --
-   -----------------------------------------
+   --------------------------------------
+   -- Calls to Run-Time Check Routines --
+   --------------------------------------
 
    procedure Rcheck_CE_Access_Check
      (File : System.Address; Line : Integer)
@@ -1424,23 +1420,15 @@ package body Ada.Exceptions is
       Raise_Storage_Error_Msg (File, Line, Rmsg_35'Address);
    end Rcheck_SE_Object_Too_Large;
 
-   procedure Rcheck_PE_Stream_Operation_Not_Allowed
-     (File : System.Address; Line : Integer)
-   is
-   begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_36'Address);
-   end Rcheck_PE_Stream_Operation_Not_Allowed;
-
    procedure Rcheck_PE_Finalize_Raised_Exception
      (File : System.Address; Line : Integer)
    is
       E     : constant Exception_Id := Program_Error_Def'Access;
       Excep : constant EOA := Get_Current_Excep.all;
-
    begin
       --  This is "finalize/adjust raised exception". This subprogram is always
-      --  called with abort deferred, unlike all other Rcheck_* subprograms,
-      --  itneeds to call Raise_Exception_No_Defer.
+      --  called with abort deferred, unlike all other Rcheck_* routines, it
+      --  needs to call Raise_Exception_No_Defer.
 
       --  This is consistent with Raise_From_Controlled_Operation
 
@@ -1495,8 +1483,6 @@ package body Ada.Exceptions is
      renames Rcheck_PE_Duplicated_Entry_Address;
    procedure Rcheck_22 (File : System.Address; Line : Integer)
      renames Rcheck_PE_Explicit_Raise;
-   procedure Rcheck_23 (File : System.Address; Line : Integer)
-     renames Rcheck_PE_Finalize_Raised_Exception;
    procedure Rcheck_24 (File : System.Address; Line : Integer)
      renames Rcheck_PE_Implicit_Return;
    procedure Rcheck_25 (File : System.Address; Line : Integer)
@@ -1521,8 +1507,9 @@ package body Ada.Exceptions is
      renames Rcheck_SE_Infinite_Recursion;
    procedure Rcheck_35 (File : System.Address; Line : Integer)
      renames Rcheck_SE_Object_Too_Large;
-   procedure Rcheck_36 (File : System.Address; Line : Integer)
-     renames Rcheck_PE_Stream_Operation_Not_Allowed;
+
+   procedure Rcheck_23 (File : System.Address; Line : Integer)
+     renames Rcheck_PE_Finalize_Raised_Exception;
 
    -------------
    -- Reraise --

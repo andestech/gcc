@@ -9,7 +9,6 @@ void foo (void)
 {
   int toread;
   int bytes;
-  __attribute__ ((used))
   static char eof_reached = 0;
 
   toread = blocksize;

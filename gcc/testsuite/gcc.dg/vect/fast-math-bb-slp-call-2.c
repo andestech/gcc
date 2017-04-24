@@ -63,6 +63,5 @@ main ()
   return main1 ();
 }
 
-/* { dg-final { scan-tree-dump-times "basic block vectorized" 2 "slp2" { target vect_call_lrint } } } */
-/* { dg-final { cleanup-tree-dump "slp1" } } */
-/* { dg-final { cleanup-tree-dump "slp2" } } */
+/* { dg-final { scan-tree-dump-times "basic block vectorized" 2 "slp" { target vect_call_lrint } } } */
+/* { dg-final { cleanup-tree-dump "slp" } } */

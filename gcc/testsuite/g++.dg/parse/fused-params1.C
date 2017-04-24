@@ -2,7 +2,7 @@
 // Origin: Alexander Zvyagin <Alexander.Zviagine@cern.ch>
 // { dg-do compile }
 
-template <int N,typename T> struct A //  { dg-message "" }
+template <int N,typename T> struct A //  { dg-error "" }
 {
     typedef T X;
     template <int M> void foo (const A<M,X>&);

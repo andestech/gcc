@@ -2,9 +2,7 @@
 /* { dg-options "-O1 -fdump-tree-dom2" } */
    
 extern void abort (void);
-extern void oof (int);
 
-int
 com(int *blah)
 {
   int z = *blah;

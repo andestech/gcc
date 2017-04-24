@@ -1,5 +1,4 @@
 /* Test arithmetics on bitfields.  */
-/* { dg-require-effective-target int32plus } */
 
 extern void abort (void);
 extern void exit (int);

@@ -1,4 +1,4 @@
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 // { dg-do compile }
 
 // Copyright (C) 2007-2014 Free Software Foundation, Inc.
@@ -21,4 +21,6 @@
 #include <string>
 #include <debug/unordered_set>
 
-template class __gnu_debug::unordered_multiset<int>;
+using namespace __gnu_debug;
+
+template class unordered_multiset<int>;

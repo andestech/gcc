@@ -10,10 +10,12 @@ enum struct A : short { X };
 void foo(int x, ...) {
    va_list vl;
    __builtin_va_start(vl, x);
-   enum A t = __builtin_va_arg(vl, enum A); // { dg-warning "scoped|promote" }
+   enum A t = __builtin_va_arg(vl, enum A); // { dg-warning "promote" }
    __builtin_va_end(vl);
 }
 
 int main() {
-   foo(0, A::X);		// { dg-warning "scoped" }
+   foo(0, A::X);		// { dg-warning "will not promote" }
 }
+
+// { dg-prune-output "note" }

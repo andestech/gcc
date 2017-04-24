@@ -1,4 +1,4 @@
-class Foo; // { dg-message "" }
+class Foo; // { dg-error "" }
 
 void
 bar(void* p)

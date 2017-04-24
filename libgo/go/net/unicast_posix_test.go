@@ -166,12 +166,9 @@ var dualStackListenerTests = []struct {
 }
 
 // TestDualStackTCPListener tests both single and double listen
-// to a test listener with various address families, different
+// to a test listener with various address families, differnet
 // listening address and same port.
 func TestDualStackTCPListener(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode, see issue 5001")
-	}
 	switch runtime.GOOS {
 	case "plan9":
 		t.Skipf("skipping test on %q", runtime.GOOS)
@@ -181,7 +178,7 @@ func TestDualStackTCPListener(t *testing.T) {
 	}
 
 	for _, tt := range dualStackListenerTests {
-		if tt.wildcard && !*testExternal {
+		if tt.wildcard && (testing.Short() || !*testExternal) {
 			continue
 		}
 		switch runtime.GOOS {

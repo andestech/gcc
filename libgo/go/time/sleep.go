@@ -8,8 +8,10 @@ package time
 // A negative or zero duration causes Sleep to return immediately.
 func Sleep(d Duration)
 
-// runtimeNano returns the current value of the runtime clock in nanoseconds.
-func runtimeNano() int64
+func nano() int64 {
+	sec, nsec := now()
+	return sec*1e9 + int64(nsec)
+}
 
 // Interface to timers implemented in package runtime.
 // Must be in sync with ../runtime/runtime.h:/^struct.Timer$
@@ -27,9 +29,9 @@ type runtimeTimer struct {
 // zero because of an overflow, MaxInt64 is returned.
 func when(d Duration) int64 {
 	if d <= 0 {
-		return runtimeNano()
+		return nano()
 	}
-	t := runtimeNano() + int64(d)
+	t := nano() + int64(d)
 	if t < 0 {
 		t = 1<<63 - 1 // math.MaxInt64
 	}
@@ -90,7 +92,7 @@ func sendTime(now int64, c interface{}) {
 	// the desired behavior when the reader gets behind,
 	// because the sends are periodic.
 	select {
-	case c.(chan Time) <- Now():
+	case c.(chan Time) <- Unix(0, now):
 	default:
 	}
 }

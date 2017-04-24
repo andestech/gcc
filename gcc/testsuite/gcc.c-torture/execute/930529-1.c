@@ -1,11 +1,5 @@
-/* { dg-options { "-fwrapv" } } */
+dd (x,d) { return x / d; }
 
-extern void abort (void);
-extern void exit (int);
-
-int dd (int x, int d) { return x / d; }
-
-int
 main ()
 {
   int i;

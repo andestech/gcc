@@ -63,10 +63,9 @@ extern "C" {
 #define DMGL_EDG	 (1 << 13)
 #define DMGL_GNU_V3	 (1 << 14)
 #define DMGL_GNAT	 (1 << 15)
-#define DMGL_DLANG	 (1 << 16)
 
 /* If none of these are set, use 'current_demangling_style' as the default. */
-#define DMGL_STYLE_MASK (DMGL_AUTO|DMGL_GNU|DMGL_LUCID|DMGL_ARM|DMGL_HP|DMGL_EDG|DMGL_GNU_V3|DMGL_JAVA|DMGL_GNAT|DMGL_DLANG)
+#define DMGL_STYLE_MASK (DMGL_AUTO|DMGL_GNU|DMGL_LUCID|DMGL_ARM|DMGL_HP|DMGL_EDG|DMGL_GNU_V3|DMGL_JAVA|DMGL_GNAT)
 
 /* Enumeration of possible demangling styles.
 
@@ -88,8 +87,7 @@ extern enum demangling_styles
   edg_demangling = DMGL_EDG,
   gnu_v3_demangling = DMGL_GNU_V3,
   java_demangling = DMGL_JAVA,
-  gnat_demangling = DMGL_GNAT,
-  dlang_demangling = DMGL_DLANG
+  gnat_demangling = DMGL_GNAT
 } current_demangling_style;
 
 /* Define string names for the various demangling styles. */
@@ -104,7 +102,6 @@ extern enum demangling_styles
 #define GNU_V3_DEMANGLING_STYLE_STRING        "gnu-v3"
 #define JAVA_DEMANGLING_STYLE_STRING          "java"
 #define GNAT_DEMANGLING_STYLE_STRING          "gnat"
-#define DLANG_DEMANGLING_STYLE_STRING         "dlang"
 
 /* Some macros to test what demangling style is active. */
 
@@ -118,7 +115,6 @@ extern enum demangling_styles
 #define GNU_V3_DEMANGLING (((int) CURRENT_DEMANGLING_STYLE) & DMGL_GNU_V3)
 #define JAVA_DEMANGLING (((int) CURRENT_DEMANGLING_STYLE) & DMGL_JAVA)
 #define GNAT_DEMANGLING (((int) CURRENT_DEMANGLING_STYLE) & DMGL_GNAT)
-#define DLANG_DEMANGLING (((int) CURRENT_DEMANGLING_STYLE) & DMGL_DLANG)
 
 /* Provide information about the available demangle styles. This code is
    pulled from gdb into libiberty because it is useful to binutils also.  */
@@ -172,9 +168,6 @@ java_demangle_v3 (const char *mangled);
 
 char *
 ada_demangle (const char *mangled, int options);
-
-extern char *
-dlang_demangle (const char *mangled, int options);
 
 enum gnu_v3_ctor_kinds {
   gnu_v3_complete_object_ctor = 1,

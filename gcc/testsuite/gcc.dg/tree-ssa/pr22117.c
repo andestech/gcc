@@ -5,8 +5,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -fdump-tree-vrp1" } */
 
-void link_error (void);
-
 void
 foo (int *p, int q)
 {

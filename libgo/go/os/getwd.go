@@ -22,7 +22,7 @@ var useSyscallwd = func(error) bool { return true }
 // current directory.  If the current directory can be
 // reached via multiple paths (due to symbolic links),
 // Getwd may return any one of them.
-func Getwd() (dir string, err error) {
+func Getwd() (pwd string, err error) {
 	// If the operating system provides a Getwd call, use it.
 	if syscall.ImplementsGetwd {
 		s, e := syscall.Getwd()
@@ -39,22 +39,22 @@ func Getwd() (dir string, err error) {
 
 	// Clumsy but widespread kludge:
 	// if $PWD is set and matches ".", use it.
-	dir = Getenv("PWD")
-	if len(dir) > 0 && dir[0] == '/' {
-		d, err := Stat(dir)
+	pwd = Getenv("PWD")
+	if len(pwd) > 0 && pwd[0] == '/' {
+		d, err := Stat(pwd)
 		if err == nil && SameFile(dot, d) {
-			return dir, nil
+			return pwd, nil
 		}
 	}
 
 	// Apply same kludge but to cached dir instead of $PWD.
 	getwdCache.Lock()
-	dir = getwdCache.dir
+	pwd = getwdCache.dir
 	getwdCache.Unlock()
-	if len(dir) > 0 {
-		d, err := Stat(dir)
+	if len(pwd) > 0 {
+		d, err := Stat(pwd)
 		if err == nil && SameFile(dot, d) {
-			return dir, nil
+			return pwd, nil
 		}
 	}
 
@@ -71,8 +71,8 @@ func Getwd() (dir string, err error) {
 
 	// General algorithm: find name in parent
 	// and then find name of parent.  Each iteration
-	// adds /name to the beginning of dir.
-	dir = ""
+	// adds /name to the beginning of pwd.
+	pwd = ""
 	for parent := ".."; ; parent = "../" + parent {
 		if len(parent) >= 1024 { // Sanity check
 			return "", syscall.ENAMETOOLONG
@@ -91,7 +91,7 @@ func Getwd() (dir string, err error) {
 			for _, name := range names {
 				d, _ := Lstat(parent + "/" + name)
 				if SameFile(d, dot) {
-					dir = "/" + name + dir
+					pwd = "/" + name + pwd
 					goto Found
 				}
 			}
@@ -112,8 +112,8 @@ func Getwd() (dir string, err error) {
 
 	// Save answer as hint to avoid the expensive path next time.
 	getwdCache.Lock()
-	getwdCache.dir = dir
+	getwdCache.dir = pwd
 	getwdCache.Unlock()
 
-	return dir, nil
+	return pwd, nil
 }

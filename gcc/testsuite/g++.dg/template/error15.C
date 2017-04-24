@@ -9,9 +9,9 @@ template <class T>
 class B {
 protected:
     
-  A<T> a; // { dg-message "" }
+  A<T> a; // { dg-error "" }
     
-  void f(const A<T> * a1 = &a); // { dg-error "non-static" }
+  void f(const A<T> * a1 = &a); // { dg-error "this location" }
     
   void g(void);
 };

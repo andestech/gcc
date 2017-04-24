@@ -1,5 +1,5 @@
 /* { dg-do run } */
-/* { dg-options "" } */
+/* { dg-options "-fextended-identifiers" } */
 /* { dg-xfail-if "" { powerpc-ibm-aix* } { "*" } { "" } } */
 /* { dg-skip-if "" { ! ucn } { "*" } { "" } } */
 #include <cstdlib>

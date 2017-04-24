@@ -15,5 +15,6 @@ struct A
     void (A::*p)() = &A::f;
     void (A::*q)() = &(A::f);       // { dg-error "parenthesized" "" }
     foo(&g<int>);                   // { dg-error "no matching" "" }
+    // { dg-message "candidate" "candidate note" { target *-*-* } 17 }
   }
 };

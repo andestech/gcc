@@ -24,35 +24,17 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm.h"
 #include "tree.h"
 #include "varasm.h"
-#include "predict.h"
-#include "basic-block.h"
-#include "hash-map.h"
-#include "is-a.h"
-#include "plugin-api.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
 #include "langhooks.h"
 #include "diagnostic-core.h"
+#include "hashtab.h"
 #include "timevar.h"
 #include "debug.h"
 #include "target.h"
 #include "output.h"
 #include "gimple-expr.h"
 #include "flags.h"
-#include "tree-ssa-alias.h"
-#include "gimple.h"
-#include "lto-streamer.h"
-
-const char * const tls_model_names[]={"none", "tls-emulated", "tls-real",
-				      "tls-global-dynamic", "tls-local-dynamic",
-				      "tls-initial-exec", "tls-local-exec"};
+#include "pointer-set.h"
 
 /* List of hooks triggered on varpool_node events.  */
 struct varpool_node_hook_list {
@@ -61,14 +43,19 @@ struct varpool_node_hook_list {
   struct varpool_node_hook_list *next;
 };
 
-/* Register HOOK to be called with DATA on each removed node.  */
-varpool_node_hook_list *
-symbol_table::add_varpool_removal_hook (varpool_node_hook hook, void *data)
-{
-  varpool_node_hook_list *entry;
-  varpool_node_hook_list **ptr = &m_first_varpool_removal_hook;
+/* List of hooks triggered when a node is removed.  */
+struct varpool_node_hook_list *first_varpool_node_removal_hook;
+/* List of hooks triggered when an variable is inserted.  */
+struct varpool_node_hook_list *first_varpool_variable_insertion_hook;
 
-  entry = (varpool_node_hook_list *) xmalloc (sizeof (*entry));
+/* Register HOOK to be called with DATA on each removed node.  */
+struct varpool_node_hook_list *
+varpool_add_node_removal_hook (varpool_node_hook hook, void *data)
+{
+  struct varpool_node_hook_list *entry;
+  struct varpool_node_hook_list **ptr = &first_varpool_node_removal_hook;
+
+  entry = (struct varpool_node_hook_list *) xmalloc (sizeof (*entry));
   entry->hook = hook;
   entry->data = data;
   entry->next = NULL;
@@ -80,9 +67,9 @@ symbol_table::add_varpool_removal_hook (varpool_node_hook hook, void *data)
 
 /* Remove ENTRY from the list of hooks called on removing nodes.  */
 void
-symbol_table::remove_varpool_removal_hook (varpool_node_hook_list *entry)
+varpool_remove_node_removal_hook (struct varpool_node_hook_list *entry)
 {
-  varpool_node_hook_list **ptr = &m_first_varpool_removal_hook;
+  struct varpool_node_hook_list **ptr = &first_varpool_node_removal_hook;
 
   while (*ptr != entry)
     ptr = &(*ptr)->next;
@@ -91,10 +78,10 @@ symbol_table::remove_varpool_removal_hook (varpool_node_hook_list *entry)
 }
 
 /* Call all node removal hooks.  */
-void
-symbol_table::call_varpool_removal_hooks (varpool_node *node)
+static void
+varpool_call_node_removal_hooks (varpool_node *node)
 {
-  varpool_node_hook_list *entry = m_first_varpool_removal_hook;
+  struct varpool_node_hook_list *entry = first_varpool_node_removal_hook;
   while (entry)
   {
     entry->hook (node, entry->data);
@@ -103,13 +90,13 @@ symbol_table::call_varpool_removal_hooks (varpool_node *node)
 }
 
 /* Register HOOK to be called with DATA on each inserted node.  */
-varpool_node_hook_list *
-symbol_table::add_varpool_insertion_hook (varpool_node_hook hook, void *data)
+struct varpool_node_hook_list *
+varpool_add_variable_insertion_hook (varpool_node_hook hook, void *data)
 {
-  varpool_node_hook_list *entry;
-  varpool_node_hook_list **ptr = &m_first_varpool_insertion_hook;
+  struct varpool_node_hook_list *entry;
+  struct varpool_node_hook_list **ptr = &first_varpool_variable_insertion_hook;
 
-  entry = (varpool_node_hook_list *) xmalloc (sizeof (*entry));
+  entry = (struct varpool_node_hook_list *) xmalloc (sizeof (*entry));
   entry->hook = hook;
   entry->data = data;
   entry->next = NULL;
@@ -121,9 +108,9 @@ symbol_table::add_varpool_insertion_hook (varpool_node_hook hook, void *data)
 
 /* Remove ENTRY from the list of hooks called on inserted nodes.  */
 void
-symbol_table::remove_varpool_insertion_hook (varpool_node_hook_list *entry)
+varpool_remove_variable_insertion_hook (struct varpool_node_hook_list *entry)
 {
-  varpool_node_hook_list **ptr = &m_first_varpool_insertion_hook;
+  struct varpool_node_hook_list **ptr = &first_varpool_variable_insertion_hook;
 
   while (*ptr != entry)
     ptr = &(*ptr)->next;
@@ -133,9 +120,9 @@ symbol_table::remove_varpool_insertion_hook (varpool_node_hook_list *entry)
 
 /* Call all node insertion hooks.  */
 void
-symbol_table::call_varpool_insertion_hooks (varpool_node *node)
+varpool_call_variable_insertion_hooks (varpool_node *node)
 {
-  varpool_node_hook_list *entry = m_first_varpool_insertion_hook;
+  struct varpool_node_hook_list *entry = first_varpool_variable_insertion_hook;
   while (entry)
   {
     entry->hook (node, entry->data);
@@ -146,241 +133,119 @@ symbol_table::call_varpool_insertion_hooks (varpool_node *node)
 /* Allocate new callgraph node and insert it into basic data structures.  */
 
 varpool_node *
-varpool_node::create_empty (void)
+varpool_create_empty_node (void)
 {   
-  varpool_node *node = ggc_cleared_alloc<varpool_node> ();
+  varpool_node *node = ggc_alloc_cleared_varpool_node ();
   node->type = SYMTAB_VARIABLE;
   return node;
 }   
 
 /* Return varpool node assigned to DECL.  Create new one when needed.  */
 varpool_node *
-varpool_node::get_create (tree decl)
+varpool_node_for_decl (tree decl)
 {
-  varpool_node *node = varpool_node::get (decl);
+  varpool_node *node = varpool_get_node (decl);
   gcc_checking_assert (TREE_CODE (decl) == VAR_DECL);
   if (node)
     return node;
 
-  node = varpool_node::create_empty ();
+  node = varpool_create_empty_node ();
   node->decl = decl;
-  node->register_symbol ();
+  symtab_register_node (node);
   return node;
 }
 
-/* Remove variable from symbol table.  */
-
+/* Remove node from the varpool.  */
 void
-varpool_node::remove (void)
+varpool_remove_node (varpool_node *node)
 {
-  symtab->call_varpool_removal_hooks (this);
-  unregister ();
+  tree init;
+  varpool_call_node_removal_hooks (node);
+  symtab_unregister_node (node);
 
-  /* When streaming we can have multiple nodes associated with decl.  */
-  if (symtab->state == LTO_STREAMING)
+  /* Because we remove references from external functions before final compilation,
+     we may end up removing useful constructors.
+     FIXME: We probably want to trace boundaries better.  */
+  if (cgraph_state == CGRAPH_LTO_STREAMING)
     ;
-  /* Keep constructor when it may be used for folding. We remove
-     references to external variables before final compilation.  */
-  else if (DECL_INITIAL (decl) && DECL_INITIAL (decl) != error_mark_node
-	   && !ctor_useable_for_folding_p ())
-    remove_initializer ();
-  ggc_free (this);
+  else if ((init = ctor_for_folding (node->decl)) == error_mark_node)
+    varpool_remove_initializer (node);
+  else
+    DECL_INITIAL (node->decl) = init;
+  ggc_free (node);
 }
 
-/* Remove node initializer when it is no longer needed.  */
+/* Renove node initializer when it is no longer needed.  */
 void
-varpool_node::remove_initializer (void)
+varpool_remove_initializer (varpool_node *node)
 {
-  if (DECL_INITIAL (decl)
-      && !DECL_IN_CONSTANT_POOL (decl)
+  if (DECL_INITIAL (node->decl)
+      && !DECL_IN_CONSTANT_POOL (node->decl)
       /* Keep vtables for BINFO folding.  */
-      && !DECL_VIRTUAL_P (decl)
+      && !DECL_VIRTUAL_P (node->decl)
       /* FIXME: http://gcc.gnu.org/PR55395 */
       && debug_info_level == DINFO_LEVEL_NONE
       /* When doing declaration merging we have duplicate
 	 entries for given decl.  Do not attempt to remove
 	 the boides, or we will end up remiving
 	 wrong one.  */
-      && symtab->state != LTO_STREAMING)
-    DECL_INITIAL (decl) = error_mark_node;
+      && cgraph_state != CGRAPH_LTO_STREAMING)
+    DECL_INITIAL (node->decl) = error_mark_node;
 }
 
-/* Dump given varpool node to F.  */
+/* Dump given cgraph node.  */
 void
-varpool_node::dump (FILE *f)
+dump_varpool_node (FILE *f, varpool_node *node)
 {
-  dump_base (f);
+  dump_symtab_base (f, node);
   fprintf (f, "  Availability: %s\n",
-	   symtab->function_flags_ready
-	   ? cgraph_availability_names[get_availability ()]
+	   cgraph_function_flags_ready
+	   ? cgraph_availability_names[cgraph_variable_initializer_availability (node)]
 	   : "not-ready");
   fprintf (f, "  Varpool flags:");
-  if (DECL_INITIAL (decl))
+  if (DECL_INITIAL (node->decl))
     fprintf (f, " initialized");
-  if (output)
+  if (node->output)
     fprintf (f, " output");
-  if (used_by_single_function)
-    fprintf (f, " used-by-single-function");
-  if (need_bounds_init)
-    fprintf (f, " need-bounds-init");
-  if (TREE_READONLY (decl))
+  if (TREE_READONLY (node->decl))
     fprintf (f, " read-only");
-  if (ctor_useable_for_folding_p ())
+  if (ctor_for_folding (node->decl) != error_mark_node)
     fprintf (f, " const-value-known");
-  if (writeonly)
-    fprintf (f, " write-only");
-  if (tls_model)
-    fprintf (f, " %s", tls_model_names [tls_model]);
   fprintf (f, "\n");
 }
 
-
-/* Dump given varpool node to stderr.  */
-void varpool_node::debug (void)
-{
-  varpool_node::dump (stderr);
-}
-
-/* Dump the variable pool to F.  */
+/* Dump the variable pool.  */
 void
-varpool_node::dump_varpool (FILE *f)
+dump_varpool (FILE *f)
 {
   varpool_node *node;
 
   fprintf (f, "variable pool:\n\n");
   FOR_EACH_VARIABLE (node)
-    node->dump (f);
+    dump_varpool_node (f, node);
 }
 
 /* Dump the variable pool to stderr.  */
 
 DEBUG_FUNCTION void
-varpool_node::debug_varpool (void)
+debug_varpool (void)
 {
   dump_varpool (stderr);
 }
 
 /* Given an assembler name, lookup node.  */
 varpool_node *
-varpool_node::get_for_asmname (tree asmname)
+varpool_node_for_asm (tree asmname)
 {
-  if (symtab_node *node = symtab_node::get_for_asmname (asmname))
-    return dyn_cast <varpool_node *> (node);
+  if (symtab_node *node = symtab_node_for_asm (asmname))
+    return dyn_cast <varpool_node> (node);
   else
     return NULL;
 }
 
-/* When doing LTO, read variable's constructor from disk if
-   it is not already present.  */
-
-tree
-varpool_node::get_constructor (void)
-{
-  lto_file_decl_data *file_data;
-  const char *data, *name;
-  size_t len;
-
-  if (DECL_INITIAL (decl) != error_mark_node
-      || !in_lto_p)
-    return DECL_INITIAL (decl);
-
-  timevar_push (TV_IPA_LTO_CTORS_IN);
-
-  file_data = lto_file_data;
-  name = IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (decl));
-
-  /* We may have renamed the declaration, e.g., a static function.  */
-  name = lto_get_decl_name_mapping (file_data, name);
-
-  data = lto_get_section_data (file_data, LTO_section_function_body,
-			       name, &len);
-  if (!data)
-    fatal_error ("%s: section %s is missing",
-		 file_data->file_name,
-		 name);
-
-  lto_input_variable_constructor (file_data, this, data);
-  lto_stats.num_function_bodies++;
-  lto_free_section_data (file_data, LTO_section_function_body, name,
-			 data, len);
-  lto_free_function_in_decl_state_for_node (this);
-  timevar_pop (TV_IPA_LTO_CTORS_IN);
-  return DECL_INITIAL (decl);
-}
-
-/* Return true if variable has constructor that can be used for folding.  */
-
-bool
-varpool_node::ctor_useable_for_folding_p (void)
-{
-  varpool_node *real_node = this;
-
-  if (real_node->alias && real_node->definition)
-    real_node = ultimate_alias_target ();
-
-  if (TREE_CODE (decl) == CONST_DECL
-      || DECL_IN_CONSTANT_POOL (decl))
-    return true;
-  if (TREE_THIS_VOLATILE (decl))
-    return false;
-
-  /* If we do not have a constructor, we can't use it.  */
-  if (DECL_INITIAL (real_node->decl) == error_mark_node
-      && !real_node->lto_file_data)
-    return false;
-
-  /* Avoid attempts to load constructors that was not streamed.  */
-  if (flag_ltrans && DECL_INITIAL (real_node->decl) == error_mark_node
-      && real_node->body_removed)
-    return false;
-
-  /* Vtables are defined by their types and must match no matter of interposition
-     rules.  */
-  if (DECL_VIRTUAL_P (decl))
-    {
-      /* The C++ front end creates VAR_DECLs for vtables of typeinfo
-	 classes not defined in the current TU so that it can refer
-	 to them from typeinfo objects.  Avoid returning NULL_TREE.  */
-      return DECL_INITIAL (real_node->decl) != NULL;
-    }
-
-  /* Alias of readonly variable is also readonly, since the variable is stored
-     in readonly memory.  We also accept readonly aliases of non-readonly
-     locations assuming that user knows what he is asking for.  */
-  if (!TREE_READONLY (decl) && !TREE_READONLY (real_node->decl))
-    return false;
-
-  /* Variables declared 'const' without an initializer
-     have zero as the initializer if they may not be
-     overridden at link or run time.
-
-     It is actually requirement for C++ compiler to optimize const variables
-     consistently. As a GNU extension, do not enfore this rule for user defined
-     weak variables, so we support interposition on:
-     static const int dummy = 0;
-     extern const int foo __attribute__((__weak__, __alias__("dummy"))); 
-   */
-  if ((!DECL_INITIAL (real_node->decl)
-       || (DECL_WEAK (decl) && !DECL_COMDAT (decl)))
-      && (DECL_EXTERNAL (decl) || decl_replaceable_p (decl)))
-    return false;
-
-  /* Variables declared `const' with an initializer are considered
-     to not be overwritable with different initializer by default. 
-
-     ??? Previously we behaved so for scalar variables but not for array
-     accesses.  */
-  return true;
-}
-
-/* If DECLARATION is constant variable and its initial value is known
-   (so we can do constant folding), return its constructor (DECL_INITIAL).
-   This may be an expression or NULL when DECL is initialized to 0.
-   Return ERROR_MARK_NODE otherwise.
-
-   In LTO this may actually trigger reading the constructor from disk.
-   For this reason varpool_ctor_useable_for_folding_p should be used when
-   the actual constructor value is not needed.  */
+/* Return if DECL is constant and its initial value is known (so we can do
+   constant folding using DECL_INITIAL (decl)).
+   Return ERROR_MARK_NODE when value is unknown.  */
 
 tree
 ctor_for_folding (tree decl)
@@ -390,12 +255,6 @@ ctor_for_folding (tree decl)
 
   if (TREE_CODE (decl) != VAR_DECL
       && TREE_CODE (decl) != CONST_DECL)
-    return error_mark_node;
-
-  /* Static constant bounds are created to be
-     used instead of constants and therefore
-     do not let folding it.  */
-  if (POINTER_BOUNDS_P (decl))
     return error_mark_node;
 
   if (TREE_CODE (decl) == CONST_DECL
@@ -415,10 +274,10 @@ ctor_for_folding (tree decl)
 
   gcc_assert (TREE_CODE (decl) == VAR_DECL);
 
-  real_node = node = varpool_node::get (decl);
+  node = varpool_get_node (decl);
   if (node)
     {
-      real_node = node->ultimate_alias_target ();
+      real_node = varpool_variable_node (node);
       real_decl = real_node->decl;
     }
   else
@@ -432,118 +291,160 @@ ctor_for_folding (tree decl)
   if (decl != real_decl)
     {
       gcc_assert (!DECL_INITIAL (decl)
-		  || (node->alias && node->get_alias_target () == real_node)
 		  || DECL_INITIAL (decl) == error_mark_node);
-      if (node->weakref)
+      if (lookup_attribute ("weakref", DECL_ATTRIBUTES (decl)))
 	{
-	  node = node->get_alias_target ();
+	  node = varpool_alias_target (node);
 	  decl = node->decl;
 	}
     }
 
-  if ((!DECL_VIRTUAL_P (real_decl)
-       || DECL_INITIAL (real_decl) == error_mark_node
-       || !DECL_INITIAL (real_decl))
-      && (!node || !node->ctor_useable_for_folding_p ()))
+  /* Vtables are defined by their types and must match no matter of interposition
+     rules.  */
+  if (DECL_VIRTUAL_P (real_decl))
+    {
+      gcc_checking_assert (TREE_READONLY (real_decl));
+      if (DECL_INITIAL (real_decl))
+	return DECL_INITIAL (real_decl);
+      else
+	{
+	  /* The C++ front end creates VAR_DECLs for vtables of typeinfo
+	     classes not defined in the current TU so that it can refer
+	     to them from typeinfo objects.  Avoid returning NULL_TREE.  */
+	  gcc_checking_assert (!COMPLETE_TYPE_P (DECL_CONTEXT (real_decl)));
+	  return error_mark_node;
+	}
+    }
+
+  /* If there is no constructor, we have nothing to do.  */
+  if (DECL_INITIAL (real_decl) == error_mark_node)
     return error_mark_node;
 
-  /* OK, we can return constructor.  See if we need to fetch it from disk
-     in LTO mode.  */
-  if (DECL_INITIAL (real_decl) != error_mark_node
-      || !in_lto_p)
-    return DECL_INITIAL (real_decl);
-  return real_node->get_constructor ();
+  /* Non-readonly alias of readonly variable is also de-facto readonly,
+     because the variable itself is in readonly section.  
+     We also honnor READONLY flag on alias assuming that user knows
+     what he is doing.  */
+  if (!TREE_READONLY (decl) && !TREE_READONLY (real_decl))
+    return error_mark_node;
+
+  /* Variables declared 'const' without an initializer
+     have zero as the initializer if they may not be
+     overridden at link or run time.
+
+     It is actually requirement for C++ compiler to optimize const variables
+     consistently. As a GNU extension, do not enfore this rule for user defined
+     weak variables, so we support interposition on:
+     static const int dummy = 0;
+     extern const int foo __attribute__((__weak__, __alias__("dummy"))); 
+   */
+  if ((!DECL_INITIAL (real_decl)
+       || (DECL_WEAK (decl) && !DECL_COMDAT (decl)))
+      && (DECL_EXTERNAL (decl) || decl_replaceable_p (decl)))
+    return error_mark_node;
+
+  /* Variables declared `const' with an initializer are considered
+     to not be overwritable with different initializer by default. 
+
+     ??? Previously we behaved so for scalar variables but not for array
+     accesses.  */
+  return DECL_INITIAL (real_decl);
 }
 
 /* Add the variable DECL to the varpool.
-   Unlike finalize_decl function is intended to be used
+   Unlike varpool_finalize_decl function is intended to be used
    by middle end and allows insertion of new variable at arbitrary point
    of compilation.  */
 void
-varpool_node::add (tree decl)
+varpool_add_new_variable (tree decl)
 {
   varpool_node *node;
-  varpool_node::finalize_decl (decl);
-  node = varpool_node::get_create (decl);
-  symtab->call_varpool_insertion_hooks (node);
-  if (node->externally_visible_p ())
+  varpool_finalize_decl (decl);
+  node = varpool_node_for_decl (decl);
+  varpool_call_variable_insertion_hooks (node);
+  if (varpool_externally_visible_p (node))
     node->externally_visible = true;
-  if (lookup_attribute ("no_reorder", DECL_ATTRIBUTES (decl)))
-    node->no_reorder = 1;
 }
 
 /* Return variable availability.  See cgraph.h for description of individual
    return values.  */
 enum availability
-varpool_node::get_availability (void)
+cgraph_variable_initializer_availability (varpool_node *node)
 {
-  if (!definition)
+  gcc_assert (cgraph_function_flags_ready);
+  if (!node->definition)
     return AVAIL_NOT_AVAILABLE;
-  if (!TREE_PUBLIC (decl))
+  if (!TREE_PUBLIC (node->decl))
     return AVAIL_AVAILABLE;
-  if (DECL_IN_CONSTANT_POOL (decl)
-      || DECL_VIRTUAL_P (decl))
+  if (DECL_IN_CONSTANT_POOL (node->decl)
+      || DECL_VIRTUAL_P (node->decl))
     return AVAIL_AVAILABLE;
-  if (alias && weakref)
+  if (node->alias && node->weakref)
     {
       enum availability avail;
 
-      ultimate_alias_target (&avail)->get_availability ();
+      cgraph_variable_initializer_availability
+	      (varpool_variable_node (node, &avail));
       return avail;
     }
   /* If the variable can be overwritten, return OVERWRITABLE.  Takes
      care of at least one notable extension - the COMDAT variables
      used to share template instantiations in C++.  */
-  if (decl_replaceable_p (decl)
-      || DECL_EXTERNAL (decl))
-    return AVAIL_INTERPOSABLE;
+  if (decl_replaceable_p (node->decl)
+      || DECL_EXTERNAL (node->decl))
+    return AVAIL_OVERWRITABLE;
   return AVAIL_AVAILABLE;
 }
 
 void
-varpool_node::analyze (void)
+varpool_analyze_node (varpool_node *node)
 {
+  tree decl = node->decl;
+
   /* When reading back varpool at LTO time, we re-construct the queue in order
      to have "needed" list right by inserting all needed nodes into varpool.
      We however don't want to re-analyze already analyzed nodes.  */
-  if (!analyzed)
+  if (!node->analyzed)
     {
-      gcc_assert (!in_lto_p || symtab->function_flags_ready);
+      gcc_assert (!in_lto_p || cgraph_function_flags_ready);
       /* Compute the alignment early so function body expanders are
 	 already informed about increased alignment.  */
       align_variable (decl, 0);
     }
-  if (alias)
-    resolve_alias (varpool_node::get (alias_target));
+  if (node->alias)
+    symtab_resolve_alias
+       (node, varpool_get_node (node->alias_target));
   else if (DECL_INITIAL (decl))
-    record_references_in_initializer (decl, analyzed);
-  analyzed = true;
+    record_references_in_initializer (decl, node->analyzed);
+  node->analyzed = true;
 }
 
-/* Assemble thunks and aliases associated to varpool node.  */
+/* Assemble thunks and aliases associated to NODE.  */
 
-void
-varpool_node::assemble_aliases (void)
+static void
+assemble_aliases (varpool_node *node)
 {
-  ipa_ref *ref;
-
-  FOR_EACH_ALIAS (this, ref)
-    {
-      varpool_node *alias = dyn_cast <varpool_node *> (ref->referring);
-      do_assemble_alias (alias->decl,
-			 DECL_ASSEMBLER_NAME (decl));
-      alias->assemble_aliases ();
-    }
+  int i;
+  struct ipa_ref *ref;
+  for (i = 0; ipa_ref_list_referring_iterate (&node->ref_list, i, ref); i++)
+    if (ref->use == IPA_REF_ALIAS)
+      {
+	varpool_node *alias = ipa_ref_referring_varpool_node (ref);
+	do_assemble_alias (alias->decl,
+			   DECL_ASSEMBLER_NAME (node->decl));
+	assemble_aliases (alias);
+      }
 }
 
 /* Output one variable, if necessary.  Return whether we output it.  */
 
 bool
-varpool_node::assemble_decl (void)
+varpool_assemble_decl (varpool_node *node)
 {
+  tree decl = node->decl;
+
   /* Aliases are outout when their target is produced or by
      output_weakrefs.  */
-  if (alias)
+  if (node->alias)
     return false;
 
   /* Constant pool is output from RTL land when the reference
@@ -567,14 +468,13 @@ varpool_node::assemble_decl (void)
 		       && TREE_CODE (decl) == VAR_DECL
 		       && !DECL_HAS_VALUE_EXPR_P (decl));
 
-  if (!in_other_partition
+  if (!node->in_other_partition
       && !DECL_EXTERNAL (decl))
     {
-      get_constructor ();
       assemble_variable (decl, 0, 1, 0);
       gcc_assert (TREE_ASM_WRITTEN (decl));
-      gcc_assert (definition);
-      assemble_aliases ();
+      node->definition = true;
+      assemble_aliases (node);
       return true;
     }
 
@@ -599,31 +499,31 @@ enqueue_node (varpool_node *node, varpool_node **first)
    reachability starting from variables that are either externally visible
    or was referred from the asm output routines.  */
 
-void
-symbol_table::remove_unreferenced_decls (void)
+static void
+varpool_remove_unreferenced_decls (void)
 {
   varpool_node *next, *node;
   varpool_node *first = (varpool_node *)(void *)1;
   int i;
-  ipa_ref *ref = NULL;
-  hash_set<varpool_node *> referenced;
+  struct ipa_ref *ref;
+  struct pointer_set_t *referenced = pointer_set_create ();
 
   if (seen_error ())
     return;
 
-  if (dump_file)
-    fprintf (dump_file, "Trivially needed variables:");
+  if (cgraph_dump_file)
+    fprintf (cgraph_dump_file, "Trivially needed variables:");
   FOR_EACH_DEFINED_VARIABLE (node)
     {
       if (node->analyzed
-	  && (!node->can_remove_if_no_refs_p ()
+	  && (!varpool_can_remove_if_no_refs (node)
 	      /* We just expanded all function bodies.  See if any of
 		 them needed the variable.  */
 	      || DECL_RTL_SET_P (node->decl)))
 	{
 	  enqueue_node (node, &first);
-	  if (dump_file)
-	    fprintf (dump_file, " %s", node->asm_name ());
+          if (cgraph_dump_file)
+	    fprintf (cgraph_dump_file, " %s", node->asm_name ());
 	}
     }
   while (first != (varpool_node *)(void *)1)
@@ -638,14 +538,14 @@ symbol_table::remove_unreferenced_decls (void)
 	       next != node;
 	       next = next->same_comdat_group)
 	    {
-	      varpool_node *vnext = dyn_cast <varpool_node *> (next);
-	      if (vnext && vnext->analyzed && !next->comdat_local_p ())
+	      varpool_node *vnext = dyn_cast <varpool_node> (next);
+	      if (vnext && vnext->analyzed && !symtab_comdat_local_p (next))
 		enqueue_node (vnext, &first);
 	    }
 	}
-      for (i = 0; node->iterate_reference (i, ref); i++)
+      for (i = 0; ipa_ref_list_reference_iterate (&node->ref_list, i, ref); i++)
 	{
-	  varpool_node *vnode = dyn_cast <varpool_node *> (ref->referred);
+	  varpool_node *vnode = dyn_cast <varpool_node> (ref->referred);
 	  if (vnode
 	      && !vnode->in_other_partition
 	      && (!DECL_EXTERNAL (ref->referred->decl)
@@ -653,27 +553,27 @@ symbol_table::remove_unreferenced_decls (void)
 	      && vnode->analyzed)
 	    enqueue_node (vnode, &first);
 	  else
-	    referenced.add (node);
+	    pointer_set_insert (referenced, node);
 	}
     }
-  if (dump_file)
-    fprintf (dump_file, "\nRemoving variables:");
-  for (node = first_defined_variable (); node; node = next)
+  if (cgraph_dump_file)
+    fprintf (cgraph_dump_file, "\nRemoving variables:");
+  for (node = varpool_first_defined_variable (); node; node = next)
     {
-      next = next_defined_variable (node);
-      if (!node->aux && !node->no_reorder)
+      next = varpool_next_defined_variable (node);
+      if (!node->aux)
 	{
-	  if (dump_file)
-	    fprintf (dump_file, " %s", node->asm_name ());
-	  if (referenced.contains(node))
-	    node->remove_initializer ();
+          if (cgraph_dump_file)
+	    fprintf (cgraph_dump_file, " %s", node->asm_name ());
+	  if (pointer_set_contains (referenced, node))
+	    varpool_remove_initializer (node);
 	  else
-	    node->remove ();
+	    varpool_remove_node (node);
 	}
     }
-
-  if (dump_file)
-    fprintf (dump_file, "\n");
+  pointer_set_destroy (referenced);
+  if (cgraph_dump_file)
+    fprintf (cgraph_dump_file, "\n");
 }
 
 /* For variables in named sections make sure get_variable_section
@@ -681,21 +581,21 @@ symbol_table::remove_unreferenced_decls (void)
    conflicts between read-only and read-only requiring relocations
    sections can be resolved.  */
 void
-varpool_node::finalize_named_section_flags (void)
+varpool_finalize_named_section_flags (varpool_node *node)
 {
-  if (!TREE_ASM_WRITTEN (decl)
-      && !alias
-      && !in_other_partition
-      && !DECL_EXTERNAL (decl)
-      && TREE_CODE (decl) == VAR_DECL
-      && !DECL_HAS_VALUE_EXPR_P (decl)
-      && get_section ())
-    get_variable_section (decl, false);
+  if (!TREE_ASM_WRITTEN (node->decl)
+      && !node->alias
+      && !node->in_other_partition
+      && !DECL_EXTERNAL (node->decl)
+      && TREE_CODE (node->decl) == VAR_DECL
+      && !DECL_HAS_VALUE_EXPR_P (node->decl)
+      && DECL_SECTION_NAME (node->decl))
+    get_variable_section (node->decl, false);
 }
 
 /* Output all variables enqueued to be assembled.  */
 bool
-symbol_table::output_variables (void)
+varpool_output_variables (void)
 {
   bool changed = false;
   varpool_node *node;
@@ -703,27 +603,16 @@ symbol_table::output_variables (void)
   if (seen_error ())
     return false;
 
-  remove_unreferenced_decls ();
+  varpool_remove_unreferenced_decls ();
 
   timevar_push (TV_VAROUT);
 
   FOR_EACH_DEFINED_VARIABLE (node)
-    {
-      /* Handled in output_in_order.  */
-      if (node->no_reorder)
-	continue;
-
-      node->finalize_named_section_flags ();
-    }
+    varpool_finalize_named_section_flags (node);
 
   FOR_EACH_DEFINED_VARIABLE (node)
-    {
-      /* Handled in output_in_order.  */
-      if (node->no_reorder)
-	continue;
-      if (node->assemble_decl ())
-        changed = true;
-    }
+    if (varpool_assemble_decl (node))
+      changed = true;
   timevar_pop (TV_VAROUT);
   return changed;
 }
@@ -741,10 +630,10 @@ add_new_static_var (tree type)
   TREE_STATIC (new_decl) = 1;
   TREE_USED (new_decl) = 1;
   DECL_CONTEXT (new_decl) = NULL_TREE;
-  DECL_ABSTRACT_P (new_decl) = false;
+  DECL_ABSTRACT (new_decl) = 0;
   lang_hooks.dup_lang_specific_decl (new_decl);
-  new_node = varpool_node::get_create (new_decl);
-  varpool_node::finalize_decl (new_decl);
+  new_node = varpool_node_for_decl (new_decl);
+  varpool_finalize_decl (new_decl);
 
   return new_node->decl;
 }
@@ -753,13 +642,13 @@ add_new_static_var (tree type)
    Extra name aliases are output whenever DECL is output.  */
 
 varpool_node *
-varpool_node::create_alias (tree alias, tree decl)
+varpool_create_variable_alias (tree alias, tree decl)
 {
   varpool_node *alias_node;
 
   gcc_assert (TREE_CODE (decl) == VAR_DECL);
   gcc_assert (TREE_CODE (alias) == VAR_DECL);
-  alias_node = varpool_node::get_create (alias);
+  alias_node = varpool_node_for_decl (alias);
   alias_node->alias = true;
   alias_node->definition = true;
   alias_node->alias_target = decl;
@@ -772,7 +661,7 @@ varpool_node::create_alias (tree alias, tree decl)
    Extra name aliases are output whenever DECL is output.  */
 
 varpool_node *
-varpool_node::create_extra_name_alias (tree alias, tree decl)
+varpool_extra_name_alias (tree alias, tree decl)
 {
   varpool_node *alias_node;
 
@@ -780,41 +669,43 @@ varpool_node::create_extra_name_alias (tree alias, tree decl)
   /* If aliases aren't supported by the assembler, fail.  */
   return NULL;
 #endif
-  alias_node = varpool_node::create_alias (alias, decl);
+  alias_node = varpool_create_variable_alias (alias, decl);
   alias_node->cpp_implicit_alias = true;
 
   /* Extra name alias mechanizm creates aliases really late
      via DECL_ASSEMBLER_NAME mechanizm.
      This is unfortunate because they are not going through the
      standard channels.  Ensure they get output.  */
-  if (symtab->cpp_implicit_aliases_done)
-    alias_node->resolve_alias (varpool_node::get_create (decl));
+  if (cpp_implicit_aliases_done)
+    symtab_resolve_alias (alias_node,
+			  varpool_node_for_decl (decl));
   return alias_node;
 }
 
-/* Call calback on varpool symbol and aliases associated to varpool symbol.
+/* Call calback on NODE and aliases associated to NODE. 
    When INCLUDE_OVERWRITABLE is false, overwritable aliases and thunks are
    skipped. */
 
 bool
-varpool_node::call_for_node_and_aliases (bool (*callback) (varpool_node *,
-							   void *),
-					 void *data,
-					 bool include_overwritable)
+varpool_for_node_and_aliases (varpool_node *node,
+			      bool (*callback) (varpool_node *, void *),
+			      void *data,
+			      bool include_overwritable)
 {
-  ipa_ref *ref;
+  int i;
+  struct ipa_ref *ref;
 
-  if (callback (this, data))
+  if (callback (node, data))
     return true;
-
-  FOR_EACH_ALIAS (this, ref)
-    {
-      varpool_node *alias = dyn_cast <varpool_node *> (ref->referring);
-      if (include_overwritable
-	  || alias->get_availability () > AVAIL_INTERPOSABLE)
-	if (alias->call_for_node_and_aliases (callback, data,
-					      include_overwritable))
-	  return true;
-    }
+  for (i = 0; ipa_ref_list_referring_iterate (&node->ref_list, i, ref); i++)
+    if (ref->use == IPA_REF_ALIAS)
+      {
+	varpool_node *alias = ipa_ref_referring_varpool_node (ref);
+	if (include_overwritable
+	    || cgraph_variable_initializer_availability (alias) > AVAIL_OVERWRITABLE)
+          if (varpool_for_node_and_aliases (alias, callback, data,
+					   include_overwritable))
+	    return true;
+      }
   return false;
 }

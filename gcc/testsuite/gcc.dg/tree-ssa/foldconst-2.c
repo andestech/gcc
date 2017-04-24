@@ -25,8 +25,6 @@ enum tree_index
     TI_CURRENT_TARGET_PRAGMA, TI_CURRENT_OPTIMIZE_PRAGMA, TI_MAX
 };
 extern tree global_trees[TI_MAX];
-void fancy_abort (const char *file, int line, const char *function);
-void
 emit_support_tinfos (void)
 {
   static tree *const fundamentals[] = {

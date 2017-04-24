@@ -1,5 +1,5 @@
 // PR c++/60314
-// { dg-do compile { target c++14 } }
+// { dg-do compile { target c++1y } }
 // { dg-options "-g" }
 
 // fine

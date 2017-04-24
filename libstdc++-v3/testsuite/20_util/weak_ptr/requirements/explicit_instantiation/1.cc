@@ -1,4 +1,4 @@
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 // { dg-do compile }
 
 // Copyright (C) 2006-2014 Free Software Foundation, Inc.
@@ -24,7 +24,8 @@
 #include <testsuite_tr1.h>
 
 using namespace __gnu_test;
-template class std::weak_ptr<int>;
-template class std::weak_ptr<void>;
-template class std::weak_ptr<ClassType>;
-template class std::weak_ptr<IncompleteClass>;
+using std::weak_ptr;
+template class weak_ptr<int>;
+template class weak_ptr<void>;
+template class weak_ptr<ClassType>;
+template class weak_ptr<IncompleteClass>;

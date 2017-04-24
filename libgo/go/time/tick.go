@@ -17,7 +17,6 @@ type Ticker struct {
 // time with a period specified by the duration argument.
 // It adjusts the intervals or drops ticks to make up for slow receivers.
 // The duration d must be greater than zero; if not, NewTicker will panic.
-// Stop the ticker to release associated resources.
 func NewTicker(d Duration) *Ticker {
 	if d <= 0 {
 		panic(errors.New("non-positive interval for NewTicker"))
@@ -29,7 +28,7 @@ func NewTicker(d Duration) *Ticker {
 	t := &Ticker{
 		C: c,
 		r: runtimeTimer{
-			when:   when(d),
+			when:   nano() + int64(d),
 			period: int64(d),
 			f:      sendTime,
 			arg:    c,

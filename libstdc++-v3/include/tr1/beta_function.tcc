@@ -194,4 +194,4 @@ namespace tr1
 }
 }
 
-#endif // _GLIBCXX_TR1_BETA_FUNCTION_TCC
+#endif // __GLIBCXX_TR1_BETA_FUNCTION_TCC

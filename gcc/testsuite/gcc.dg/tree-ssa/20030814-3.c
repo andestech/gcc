@@ -2,7 +2,6 @@
 /* { dg-options "-O1 -fdump-tree-dom2" } */
     
 extern void abort (void);
-extern void blah (void);
 
 void
 foo (int value)

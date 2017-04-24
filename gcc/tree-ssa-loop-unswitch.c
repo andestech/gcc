@@ -23,16 +23,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm.h"
 #include "tree.h"
 #include "tm_p.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -412,6 +402,21 @@ tree_unswitch_loop (struct loop *loop,
 
 /* Loop unswitching pass.  */
 
+static unsigned int
+tree_ssa_loop_unswitch (void)
+{
+  if (number_of_loops (cfun) <= 1)
+    return 0;
+
+  return tree_ssa_unswitch_loops ();
+}
+
+static bool
+gate_tree_ssa_loop_unswitch (void)
+{
+  return flag_unswitch_loops != 0;
+}
+
 namespace {
 
 const pass_data pass_data_tree_unswitch =
@@ -419,6 +424,8 @@ const pass_data pass_data_tree_unswitch =
   GIMPLE_PASS, /* type */
   "unswitch", /* name */
   OPTGROUP_LOOP, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_TREE_LOOP_UNSWITCH, /* tv_id */
   PROP_cfg, /* properties_required */
   0, /* properties_provided */
@@ -435,19 +442,10 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *) { return flag_unswitch_loops != 0; }
-  virtual unsigned int execute (function *);
+  bool gate () { return gate_tree_ssa_loop_unswitch (); }
+  unsigned int execute () { return tree_ssa_loop_unswitch (); }
 
 }; // class pass_tree_unswitch
-
-unsigned int
-pass_tree_unswitch::execute (function *fun)
-{
-  if (number_of_loops (fun) <= 1)
-    return 0;
-
-  return tree_ssa_unswitch_loops ();
-}
 
 } // anon namespace
 

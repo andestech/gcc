@@ -18,7 +18,6 @@ union lispunion
 {
   struct vector v;
 };
-void number_plus (object, object);
 void init_code ()
 {
   object V659;

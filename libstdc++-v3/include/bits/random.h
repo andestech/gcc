@@ -661,6 +661,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *
    * The size of the state is @f$r@f$
    * and the maximum period of the generator is @f$(m^r - m^s - 1)@f$.
+   *
+   * @var _M_x     The state of the generator.  This is a ring buffer.
+   * @var _M_carry The carry.
+   * @var _M_p     Current index of x(i - r).
    */
   template<typename _UIntType, size_t __w, size_t __s, size_t __r>
     class subtract_with_carry_engine
@@ -792,9 +796,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       template<typename _UIntType1, size_t __w1, size_t __s1, size_t __r1,
 	       typename _CharT, typename _Traits>
 	friend std::basic_ostream<_CharT, _Traits>&
-	operator<<(std::basic_ostream<_CharT, _Traits>& __os,
+	operator<<(std::basic_ostream<_CharT, _Traits>&,
 		   const std::subtract_with_carry_engine<_UIntType1, __w1,
-		   __s1, __r1>& __x);
+		   __s1, __r1>&);
 
       /**
        * @brief Extracts the current state of a % subtract_with_carry_engine
@@ -811,15 +815,14 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       template<typename _UIntType1, size_t __w1, size_t __s1, size_t __r1,
 	       typename _CharT, typename _Traits>
 	friend std::basic_istream<_CharT, _Traits>&
-	operator>>(std::basic_istream<_CharT, _Traits>& __is,
+	operator>>(std::basic_istream<_CharT, _Traits>&,
 		   std::subtract_with_carry_engine<_UIntType1, __w1,
-		   __s1, __r1>& __x);
+		   __s1, __r1>&);
 
     private:
-      /// The state of the generator.  This is a ring buffer.
       _UIntType  _M_x[long_lag];
-      _UIntType  _M_carry;		///< The carry
-      size_t     _M_p;			///< Current index of x(i - r).
+      _UIntType  _M_carry;
+      size_t     _M_p;
     };
 
   /**

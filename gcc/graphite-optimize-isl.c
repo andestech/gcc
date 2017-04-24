@@ -20,7 +20,7 @@ along with GCC; see the file COPYING3.  If not see
 
 #include "config.h"
 
-#ifdef HAVE_isl
+#ifdef HAVE_cloog
 #include <isl/set.h>
 #include <isl/map.h>
 #include <isl/union_map.h>
@@ -28,22 +28,15 @@ along with GCC; see the file COPYING3.  If not see
 #include <isl/band.h>
 #include <isl/aff.h>
 #include <isl/options.h>
+#ifdef HAVE_ISL_SCHED_CONSTRAINTS_COMPUTE_SCHEDULE
+#include <isl/deprecated/int.h>
+#include <isl/deprecated/aff_int.h>
+#endif
 #endif
 
 #include "system.h"
 #include "coretypes.h"
 #include "tree.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "tm.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -59,7 +52,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-scalar-evolution.h"
 #include "sese.h"
 
-#ifdef HAVE_isl
+#ifdef HAVE_cloog
 #include "graphite-poly.h"
 
 static isl_union_set *
@@ -74,6 +67,35 @@ scop_get_domains (scop_p scop ATTRIBUTE_UNUSED)
     res = isl_union_set_add_set (res, isl_set_copy (pbb->domain));
 
   return res;
+}
+
+static isl_union_map *
+scop_get_dependences (scop_p scop)
+{
+  isl_union_map *dependences;
+
+  if (!scop->must_raw)
+    compute_deps (scop, SCOP_BBS (scop),
+		  &scop->must_raw, &scop->may_raw,
+		  &scop->must_raw_no_source, &scop->may_raw_no_source,
+		  &scop->must_war, &scop->may_war,
+		  &scop->must_war_no_source, &scop->may_war_no_source,
+		  &scop->must_waw, &scop->may_waw,
+		  &scop->must_waw_no_source, &scop->may_waw_no_source);
+
+  dependences = isl_union_map_copy (scop->must_raw);
+  dependences = isl_union_map_union (dependences,
+				     isl_union_map_copy (scop->must_war));
+  dependences = isl_union_map_union (dependences,
+				     isl_union_map_copy (scop->must_waw));
+  dependences = isl_union_map_union (dependences,
+				     isl_union_map_copy (scop->may_raw));
+  dependences = isl_union_map_union (dependences,
+				     isl_union_map_copy (scop->may_war));
+  dependences = isl_union_map_union (dependences,
+				     isl_union_map_copy (scop->may_waw));
+
+  return dependences;
 }
 
 /* getTileMap - Create a map that describes a n-dimensonal tiling.
@@ -255,7 +277,7 @@ getPrevectorMap (isl_ctx *ctx, int DimToVectorize,
   isl_aff *Aff;
   int PointDimension; /* ip */
   int TileDimension;  /* it */
-  isl_val *VectorWidthMP;
+  isl_int VectorWidthMP;
   int i;
 
   /* assert (0 <= DimToVectorize && DimToVectorize < ScheduleDimensions);*/
@@ -286,9 +308,10 @@ getPrevectorMap (isl_ctx *ctx, int DimToVectorize,
   Aff = isl_aff_zero_on_domain (LocalSpaceRange);
   Aff = isl_aff_set_constant_si (Aff, VectorWidth);
   Aff = isl_aff_set_coefficient_si (Aff, isl_dim_in, TileDimension, 1);
-
-  VectorWidthMP = isl_val_int_from_si (ctx, VectorWidth);
-  Aff = isl_aff_mod_val (Aff, VectorWidthMP);
+  isl_int_init (VectorWidthMP);
+  isl_int_set_si (VectorWidthMP, VectorWidth);
+  Aff = isl_aff_mod (Aff, VectorWidthMP);
+  isl_int_clear (VectorWidthMP);
   Modulo = isl_pw_aff_zero_set (isl_pw_aff_from_aff (Aff));
   TilingMap = isl_map_intersect_range (TilingMap, Modulo);
 
@@ -354,7 +377,11 @@ getScheduleForBandList (isl_band_list *BandList)
 	{
 	  for (i = ScheduleDimensions - 1 ;  i >= 0 ; i--)
 	    {
+#ifdef HAVE_ISL_SCHED_CONSTRAINTS_COMPUTE_SCHEDULE
+	      if (isl_band_member_is_coincident (Band, i))
+#else
 	      if (isl_band_member_is_zero_distance (Band, i))
+#endif
 		{
 		  isl_map *TileMap;
 		  isl_union_map *TileUMap;

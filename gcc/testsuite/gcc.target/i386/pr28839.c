@@ -3,7 +3,6 @@
 
 static int ready[10];
 void abort (void);
-int b (void);
 void test_once (int t,int t1)
 {
   int i, repeat;

@@ -1,7 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O2" } */
 
-void
 cblas_csyr2k (int N, void *A, int lda, float *B, int ldb, float *C, int k)
 {
   int i, j;

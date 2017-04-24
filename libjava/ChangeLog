@@ -1,21 +1,18 @@
-2014-05-20  Sebastian Huber  <sebastian.huber@embedded-brains.de>
+2015-06-26  Release Manager
 
-	* testsuite/lib/libjava.exp (load_gcc_lib): Register loaded libs.
+	* GCC 4.9.3 released.
 
-2014-05-13  Bernd Edlinger  <bernd.edlinger@hotmail.de>
+2014-10-30  Release Manager
 
-	Fix current cygwin-64 build problems.
-	* configure.host: Added handling for x86_64-*-cygwin/mingw.	
-	* boehm.cc (_Jv_GCAttachThread, _Jv_GCDetachThread): Don't compile if
-	GC_WIN32_THREADS is defined.
-	* java/lang/natClass.cc (_Jv_InterfaceAssignableFrom): Rename interface
-	to source_interface.
+	* GCC 4.9.2 released.
 
-2014-04-22  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+2014-07-16  Release Manager
 
-	* configure.ac (THREADLIBS, THREADSPEC): Remove *-*-solaris2.9
-	handling.
-	* configure: Regenerate.
+	* GCC 4.9.1 released.
+
+2014-04-22  Release Manager
+
+	* GCC 4.9.0 released.
 
 2014-03-12  Uros Bizjak  <ubizjak@gmail.com>
 

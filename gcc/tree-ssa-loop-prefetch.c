@@ -24,16 +24,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "stor-layout.h"
 #include "tm_p.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-pretty-print.h"
 #include "tree-ssa-alias.h"
@@ -53,6 +43,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "cfgloop.h"
 #include "tree-pass.h"
 #include "insn-config.h"
+#include "hashtab.h"
 #include "tree-chrec.h"
 #include "tree-scalar-evolution.h"
 #include "diagnostic-core.h"
@@ -65,7 +56,6 @@ along with GCC; see the file COPYING3.  If not see
 /* FIXME: Needed for optabs, but this should all be moved to a TBD interface
    between the GIMPLE and RTL worlds.  */
 #include "expr.h"
-#include "insn-codes.h"
 #include "optabs.h"
 #include "recog.h"
 
@@ -1208,7 +1198,7 @@ issue_prefetches (struct mem_ref_group *groups,
 static bool
 nontemporal_store_p (struct mem_ref *ref)
 {
-  machine_mode mode;
+  enum machine_mode mode;
   enum insn_code code;
 
   /* REF must be a write that is not reused.  We require it to be independent
@@ -2014,6 +2004,21 @@ tree_ssa_prefetch_arrays (void)
 
 /* Prefetching.  */
 
+static unsigned int
+tree_ssa_loop_prefetch (void)
+{
+  if (number_of_loops (cfun) <= 1)
+    return 0;
+
+  return tree_ssa_prefetch_arrays ();
+}
+
+static bool
+gate_tree_ssa_loop_prefetch (void)
+{
+  return flag_prefetch_loop_arrays > 0;
+}
+
 namespace {
 
 const pass_data pass_data_loop_prefetch =
@@ -2021,6 +2026,8 @@ const pass_data pass_data_loop_prefetch =
   GIMPLE_PASS, /* type */
   "aprefetch", /* name */
   OPTGROUP_LOOP, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_TREE_PREFETCH, /* tv_id */
   ( PROP_cfg | PROP_ssa ), /* properties_required */
   0, /* properties_provided */
@@ -2037,19 +2044,10 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *) { return flag_prefetch_loop_arrays > 0; }
-  virtual unsigned int execute (function *);
+  bool gate () { return gate_tree_ssa_loop_prefetch (); }
+  unsigned int execute () { return tree_ssa_loop_prefetch (); }
 
 }; // class pass_loop_prefetch
-
-unsigned int
-pass_loop_prefetch::execute (function *fun)
-{
-  if (number_of_loops (fun) <= 1)
-    return 0;
-
-  return tree_ssa_prefetch_arrays ();
-}
 
 } // anon namespace
 

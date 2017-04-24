@@ -502,9 +502,12 @@ new_unit (st_parameter_open *opp, gfc_unit *u, unit_flags * flags)
   s = open_external (opp, flags);
   if (s == NULL)
     {
-      char *path = fc_strdup (opp->file, opp->file_len);
-      size_t msglen = opp->file_len + 51;
-      char *msg = xmalloc (msglen);
+      char *path, *msg;
+      size_t msglen;
+      path = (char *) gfc_alloca (opp->file_len + 1);
+      msglen = opp->file_len + 51;
+      msg = (char *) gfc_alloca (msglen);
+      unpack_filename (path, opp->file, opp->file_len);
 
       switch (errno)
 	{
@@ -526,13 +529,10 @@ new_unit (st_parameter_open *opp, gfc_unit *u, unit_flags * flags)
 	  break;
 
 	default:
-	  free (msg);
 	  msg = NULL;
 	}
 
       generate_error (&opp->common, LIBERROR_OS, msg);
-      free (msg);
-      free (path);
       goto cleanup;
     }
 
@@ -541,6 +541,7 @@ new_unit (st_parameter_open *opp, gfc_unit *u, unit_flags * flags)
 
   /* Create the unit structure.  */
 
+  u->file = xmalloc (opp->file_len);
   if (u->unit_number != opp->common.unit)
     internal_error (&opp->common, "Unit number changed");
   u->s = s;
@@ -617,7 +618,8 @@ new_unit (st_parameter_open *opp, gfc_unit *u, unit_flags * flags)
       u->strm_pos = stell (u->s) + 1;
     }
 
-  u->filename = fc_strdup (opp->file, opp->file_len);
+  memmove (u->file, opp->file, opp->file_len);
+  u->file_len = opp->file_len;
 
   /* Curiously, the standard requires that the
      position specifier be ignored for new files so a newly connected
@@ -674,6 +676,15 @@ already_open (st_parameter_open *opp, gfc_unit * u, unit_flags * flags)
 
   if (!compare_file_filename (u, opp->file, opp->file_len))
     {
+#if !HAVE_UNLINK_OPEN_FILE
+      char *path = NULL;
+      if (u->file && u->flags.status == STATUS_SCRATCH)
+	{
+	  path = (char *) gfc_alloca (u->file_len + 1);
+	  unpack_filename (path, u->file, u->file_len);
+	}
+#endif
+
       if (sclose (u->s) == -1)
 	{
 	  unlock_unit (u);
@@ -683,13 +694,14 @@ already_open (st_parameter_open *opp, gfc_unit * u, unit_flags * flags)
 	}
 
       u->s = NULL;
- 
+      free (u->file);
+      u->file = NULL;
+      u->file_len = 0;
+
 #if !HAVE_UNLINK_OPEN_FILE
-      if (u->filename && u->flags.status == STATUS_SCRATCH)
-	unlink (u->filename);
+      if (path != NULL)
+	unlink (path);
 #endif
-     free (u->filename);
-     u->filename = NULL;
 
       u = new_unit (opp, u, flags);
       if (u != NULL)

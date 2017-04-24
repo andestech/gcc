@@ -1,32 +1,10 @@
-2014-11-07  Marat Zakirov  <m.zakirov@samsung.com>
+2015-06-26  Release Manager
 
-	* mklog: Always doubt in functions.  
-	Add EOF protection.  
+	* GCC 4.9.3 released.
 
-2014-10-31  Jan-Benedict Glaw  <jbglaw@lug-owl.de>
+2014-10-30  Release Manager
 
-	* config-list.mk: Don't build Go for certain targets.
-
-2014-10-04  Trevor Saunders  <tsaunders@mozilla.com>
-
-	* compare-all-tests: Don't test score-*.
-	* config-list.mk: Likewise.
-
-2014-10-02  Segher Boessenkool  <segher@kernel.crashing.org>
-
-	* dg-extract-results.py (output_variation): Always sort if do_sum.
-
-2014-09-22  Tom de Vries  <tom@codesourcery.com>
-
-	* mklog: Add --inline option.
-
-2014-09-19  Segher Boessenkool  <segher@kernel.crashing.org>
-
-	* dg-extract-results.py (Prog.result_re): Include options in test name.
-
-2014-09-19  Olivier Hainque  <hainque@adacore.com>
-
-	* config-list.mk (LIST): Add powerpc-wrs-vxworksmils.
+	* GCC 4.9.2 released.
 
 2014-09-18  Joel Sherrill <joel.sherrill@oarcorp.com>
 
@@ -37,63 +15,17 @@
 	* config-list.mk (LIST): Add arm-rtems.
 	Add nios2-rtems.  Remove extra option from powerpc-rtems.
 
-2014-09-08  Trevor Saunders  <tsaunders@mozilla.com>
+2014-07-16  Release Manager
 
-	* compare-all-tests: Don't test picochip.
-	* config-list.mk: Likewise.
+	* GCC 4.9.1 released.
 
-2014-08-11  Mingjie Xing <mingjie.xing@gmail.com>
-
-	* texi2pod.pl (postprocess): Move command process for '@sc' to the
-	front of '@dfn'.  Add a new command process for '@t{...}', just print
-	the content.
-
-2014-07-21  Trevor Saunders  <tsaunders@mozilla.com>
-	    Yury Gribov  <y.gribov@samsung.com>
-
-	* mklog: Run mklog as a filter.
-
-2014-07-21  Trevor Saunders  <tsaunders@mozilla.com>
-
-	* mklog: Read name and email from git config when available.
-
-2014-06-28  Richard Biener  <rguenther@suse.de>
+2014-06-29  Richard Biener  <rguenther@suse.de>
 
 	* gennews: Use gcc-3.0/index.html.
 
-2014-06-14  Richard Sandiford  <rdsandiford@googlemail.com>
+2014-04-22  Release Manager
 
-	* dg-extract-results.py: For Python 3, force sys.stdout to handle
-	surrogate escape sequences.
-	(safe_open): New function.
-	(output_segment, main): Use it.
-
-2014-05-25  Richard Sandiford  <rdsandiford@googlemail.com>
-
-	* dg-extract-results.py (Named): Remove __cmp__ method.
-	(output_variation): Use a key to sort variation.harnesses.
-
-2014-05-24  Uros Bizjak  <ubizjak@gmail.com>
-
-	* texi2pod.pl: Force .pod file to not be a numbered list.
-
-2014-05-20  Richard Sandiford  <rdsandiford@googlemail.com>
-
-	* dg-extract-results.py (parse_run): Handle warnings that are printed
-	before a test harness is run.
-
-2014-05-09  Jan-Benedict Glaw  <jbglaw@lug-owl.de>
-
-	* config-list.mk (show): New target.
-
-2014-05-08  Richard Sandiford  <rdsandiford@googlemail.com>
-
-	* dg-extract-results.py: New file.
-	* dg-extract-results.sh: Use it if the environment seems suitable.
-
-2014-04-22  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
-
-	* config-list.mk (LIST): Remove sparc-sun-solaris2.9, i686-solaris2.9.
+	* GCC 4.9.0 released.
 
 2013-04-22  Jakub Jelinek  <jakub@redhat.com>
 
@@ -169,7 +101,7 @@
 2013-08-03  Caroline Tice  <cmtice@google.com>
 
 	* gcc_update: Add libvtv files.
-
+	
 2013-06-06  Brooks Moses  <bmoses@google.com>
 
 	* testsuite-management/validate_failures.py: Fix handling of
@@ -356,7 +288,7 @@
 2012-08-24   Diego Novillo  <dnovillo@google.com>
 
 	* testsuite-management/x86_64-unknown-linux-gnu.xfail: Update.
-
+	
 2012-08-14   Diego Novillo  <dnovillo@google.com>
 
 	* testsuite-management/x86_64-unknown-linux-gnu.xfail: New.
@@ -757,7 +689,7 @@
 2009-08-18  H.J. Lu  <hongjiu.lu@intel.com>
 
 	PR testsuite/40704
-	* test_summary: Filter out "\r".
+	* test_summary: Filter out "\r". 
 
 2009-06-02  Alexandre Oliva  <aoliva@redhat.com>
 
@@ -830,7 +762,7 @@
 2008-03-10  Janis Johnson  <janis187@us.ibm.com>
 
 	* patch_tester.sh (initialization): Initialize svnpatch and stop.
-	(usage): Add -svnpath and -stop.
+	(usage): Add -svnpath and -stop.	
 	(makedir): New.
 	(argument handling): Process -stop and -svnpath.
 	(setup code): Use makedir, error out if initial svn checkout fails.
@@ -901,7 +833,7 @@
 
 	* texi2pod.pl: Handle @asis.
 	(postprocess): Move @gccoptlist{} after all formatting commands.
-
+	
 2007-10-01  Alexandre Oliva  <aoliva@redhat.com>
 
 	* compare-debug: Avoid spurious errors when .stripped files
@@ -1063,14 +995,14 @@
 
 2005-10-28  Daniel Berlin  <dberlin@dberlin.org>
 	    Ben Elliston  <bje@au1.ibm.com>
-
+	
 	* gcc_update: Update for svn.
 	* newcvsroot: Ditto.
 	* gcc_build: Ditto.
 
 2005-10-21  Mark Mitchell  <mark@codesourcery.com>
 
-	* texi2pod.pl: Substitue for @value even when part of @include.
+	* texi2pod.pl: Substitue for @value even when part of @include. 
 
 2005-10-21  Bob Wilson  <bob.wilson@acm.org>
 

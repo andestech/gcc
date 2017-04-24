@@ -48,17 +48,17 @@
 ;; Four insns can be dispatched per cycle.
 
 (define_insn_reservation "ppc604-load" 2
-  (and (eq_attr "type" "load")
+  (and (eq_attr "type" "load,load_ext,load_ext_u,load_ext_ux,load_ux,load_u")
        (eq_attr "cpu" "ppc604,ppc604e,ppc620,ppc630"))
   "lsu_6xx")
 
 (define_insn_reservation "ppc604-fpload" 3
-  (and (eq_attr "type" "fpload")
+  (and (eq_attr "type" "fpload,fpload_ux,fpload_u")
        (eq_attr "cpu" "ppc604,ppc604e,ppc620,ppc630"))
   "lsu_6xx")
 
 (define_insn_reservation "ppc604-store" 3
-  (and (eq_attr "type" "store,fpstore")
+  (and (eq_attr "type" "store,fpstore,store_ux,store_u,fpstore_ux,fpstore_u")
        (eq_attr "cpu" "ppc604,ppc604e,ppc620,ppc630"))
   "lsu_6xx")
 
@@ -73,9 +73,8 @@
   "lsu_6xx")
   
 (define_insn_reservation "ppc604-integer" 1
-  (and (ior (eq_attr "type" "integer,insert,trap,cntlz,isel")
-	    (and (eq_attr "type" "add,logical,shift,exts")
-		 (eq_attr "dot" "no")))
+  (and (eq_attr "type" "integer,insert_word,insert_dword,shift,trap,\
+                        var_shift_rotate,cntlz,exts,isel")
        (eq_attr "cpu" "ppc604,ppc604e,ppc620,ppc630"))
   "iu1_6xx|iu2_6xx")
 
@@ -90,66 +89,58 @@
   "iu1_6xx|iu2_6xx,iu1_6xx|iu2_6xx,iu1_6xx|iu2_6xx")
 
 (define_insn_reservation "ppc604-imul" 4
-  (and (eq_attr "type" "mul")
+  (and (eq_attr "type" "imul,imul2,imul3,imul_compare")
        (eq_attr "cpu" "ppc604"))
   "mciu_6xx*2")
 
 (define_insn_reservation "ppc604e-imul" 2
-  (and (eq_attr "type" "mul")
+  (and (eq_attr "type" "imul,imul2,imul3,imul_compare")
        (eq_attr "cpu" "ppc604e"))
   "mciu_6xx")
 
 (define_insn_reservation "ppc620-imul" 5
-  (and (eq_attr "type" "mul")
-       (eq_attr "size" "32")
+  (and (eq_attr "type" "imul,imul_compare")
        (eq_attr "cpu" "ppc620,ppc630"))
   "mciu_6xx*3")
 
 (define_insn_reservation "ppc620-imul2" 4
-  (and (eq_attr "type" "mul")
-       (eq_attr "size" "16")
+  (and (eq_attr "type" "imul2")
        (eq_attr "cpu" "ppc620,ppc630"))
   "mciu_6xx*3")
 
 (define_insn_reservation "ppc620-imul3" 3
-  (and (eq_attr "type" "mul")
-       (eq_attr "size" "8")
+  (and (eq_attr "type" "imul3")
        (eq_attr "cpu" "ppc620,ppc630"))
   "mciu_6xx*3")
 
 (define_insn_reservation "ppc620-lmul" 7
-  (and (eq_attr "type" "mul")
-       (eq_attr "size" "64")
+  (and (eq_attr "type" "lmul,lmul_compare")
        (eq_attr "cpu" "ppc620,ppc630"))
   "mciu_6xx*5")
 
 (define_insn_reservation "ppc604-idiv" 20
-  (and (eq_attr "type" "div")
+  (and (eq_attr "type" "idiv")
        (eq_attr "cpu" "ppc604,ppc604e"))
   "mciu_6xx*19")
 
 (define_insn_reservation "ppc620-idiv" 37
-  (and (eq_attr "type" "div")
-       (eq_attr "size" "32")
+  (and (eq_attr "type" "idiv")
        (eq_attr "cpu" "ppc620"))
   "mciu_6xx*36")
 
 (define_insn_reservation "ppc630-idiv" 21
-  (and (eq_attr "type" "div")
-       (eq_attr "size" "32")
+  (and (eq_attr "type" "idiv")
        (eq_attr "cpu" "ppc630"))
   "mciu_6xx*20")
 
 (define_insn_reservation "ppc620-ldiv" 37
-  (and (eq_attr "type" "div")
-       (eq_attr "size" "64")
+  (and (eq_attr "type" "ldiv")
        (eq_attr "cpu" "ppc620,ppc630"))
   "mciu_6xx*36")
 
 (define_insn_reservation "ppc604-compare" 3
-  (and (ior (eq_attr "type" "cmp,compare")
-	    (and (eq_attr "type" "add,logical,shift,exts")
-		 (eq_attr "dot" "yes")))
+  (and (eq_attr "type" "cmp,fast_compare,compare,delayed_compare,\
+                        var_delayed_compare")
        (eq_attr "cpu" "ppc604,ppc604e,ppc620,ppc630"))
   "(iu1_6xx|iu2_6xx)")
 

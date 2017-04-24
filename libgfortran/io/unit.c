@@ -580,7 +580,7 @@ init_units (void)
       u->flags.position = POSITION_ASIS;
       u->flags.sign = SIGN_SUPPRESS;
       u->flags.decimal = DECIMAL_POINT;
-      u->flags.delim = DECIMAL_UNSPECIFIED;
+      u->flags.delim = DELIM_UNSPECIFIED;
       u->flags.encoding = ENCODING_DEFAULT;
       u->flags.async = ASYNC_NO;
       u->flags.round = ROUND_UNSPECIFIED;
@@ -588,7 +588,9 @@ init_units (void)
       u->recl = options.default_recl;
       u->endfile = NO_ENDFILE;
 
-      u->filename = strdup (stdin_name);
+      u->file_len = strlen (stdin_name);
+      u->file = xmalloc (u->file_len);
+      memmove (u->file, stdin_name, u->file_len);
 
       fbuf_init (u, 0);
     
@@ -617,7 +619,9 @@ init_units (void)
       u->recl = options.default_recl;
       u->endfile = AT_ENDFILE;
     
-      u->filename = strdup (stdout_name);
+      u->file_len = strlen (stdout_name);
+      u->file = xmalloc (u->file_len);
+      memmove (u->file, stdout_name, u->file_len);
       
       fbuf_init (u, 0);
 
@@ -645,7 +649,9 @@ init_units (void)
       u->recl = options.default_recl;
       u->endfile = AT_ENDFILE;
 
-      u->filename = strdup (stderr_name);
+      u->file_len = strlen (stderr_name);
+      u->file = xmalloc (u->file_len);
+      memmove (u->file, stderr_name, u->file_len);
       
       fbuf_init (u, 256);  /* 256 bytes should be enough, probably not doing
                               any kind of exotic formatting to stderr.  */
@@ -684,8 +690,9 @@ close_unit_1 (gfc_unit *u, int locked)
 
   delete_unit (u);
 
-  free (u->filename);
-  u->filename = NULL;
+  free (u->file);
+  u->file = NULL;
+  u->file_len = 0;
 
   free_format_hash_table (u);  
   fbuf_destroy (u);
@@ -780,6 +787,7 @@ unit_truncate (gfc_unit * u, gfc_offset pos, st_parameter_common * common)
 char *
 filename_from_unit (int n)
 {
+  char *filename;
   gfc_unit *u;
   int c;
 
@@ -798,7 +806,11 @@ filename_from_unit (int n)
 
   /* Get the filename.  */
   if (u != NULL)
-    return strdup (u->filename);
+    {
+      filename = (char *) xmalloc (u->file_len + 1);
+      unpack_filename (filename, u->file, u->file_len);
+      return filename;
+    }
   else
     return (char *) NULL;
 }

@@ -1,35 +1,72 @@
-2014-11-05  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+2015-06-26  Release Manager
 
-	* config/posix/lock.c (_XOPEN_SOURCE) Define as 600.
+	* GCC 4.9.3 released.
 
-2014-10-06  Marek Polacek  <polacek@redhat.com>
+2015-06-03  Jakub Jelinek  <jakub@redhat.com>
 
-	* testsuite/libgomp.c/affinity-1.c: Include <sys/wait.h>.
-	* testsuite/libgomp.c/nqueens-1.c: Include <stdlib.h>.
-	* testsuite/libgomp.c/thread-limit-1.c: Include <omp.h>
-	* testsuite/libgomp.c/thread-limit-2.c: Likewise.
+	Backported from mainline
+	2015-05-13  Jakub Jelinek  <jakub@redhat.com>
 
-2014-10-06  Marek Polacek  <polacek@redhat.com>
+	PR middle-end/66133
+	* testsuite/libgomp.c/pr66133.c: New test.
 
-	* testsuite/libgomp.c/affinity-1.c: Fix implicit declarations.
-	* testsuite/libgomp.c/nqueens-1.c: Likewise.
-	* testsuite/libgomp.c/pr26943-3.c: Likewise.
-	* testsuite/libgomp.c/pr26943-4.c: Likewise.
-	* testsuite/libgomp.c/pr36802-2.c: Likewise.
-	* testsuite/libgomp.c/pr36802-3.c: Likewise.
-	* testsuite/libgomp.c/thread-limit-1.c: Likewise.
-	* testsuite/libgomp.c/thread-limit-2.c: Likewise.
-	* testsuite/libgomp.c/appendix-a/a.15.1.c: Include <omp.h>.
-	* testsuite/libgomp.c/omp-loop02.c: Fix defaulting to int.
-	* testsuite/libgomp.c/omp-parallel-for.c: Likewise.
-	* testsuite/libgomp.c/omp-parallel-if.c: Likewise.
-	* testsuite/libgomp.c/omp-single-1.c: Likewise.
-	* testsuite/libgomp.c/omp-single-2.c: Likewise.
-	* testsuite/libgomp.c/omp_matvec.c: Likewise.
-	* testsuite/libgomp.c/omp_workshare3.c: Likewise.
-	* testsuite/libgomp.c/omp_workshare4.c: Likewise.
-	* testsuite/libgomp.c/shared-1.c: Fix defaulting to int.  Fix implicit
-	declarations.
+	2015-03-30  Jakub Jelinek  <jakub@redhat.com>
+
+	PR fortran/65597
+	* testsuite/libgomp.fortran/pr65597.f90: New test.
+
+	2015-03-19  Jakub Jelinek  <jakub@redhat.com>
+
+	* testsuite/libgomp.c/target-10.c: New test.
+	* testsuite/libgomp.c++/target-4.C: New test.
+
+2015-04-02  Sebastian Huber  <sebastian.huber@embedded-brains.de>
+
+	Backported from mainline
+	2015-03-13  Sebastian Huber  <sebastian.huber@embedded-brains.de>
+
+	* configure.tgt (*-*-rtems*): Use local-exec TLS model.
+	* configure.ac (*-*-rtems*): Assume Pthread is supported.
+	(pthread.h): Check for this header file.
+	* configure: Regenerate.
+
+2015-02-11  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c/64824
+	* testsuite/libgomp.c/atomic-18.c: New test.
+	* testsuite/libgomp.c++/atomic-16.C: New test.
+
+	Backported from mainline
+	2015-02-04  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c/64824
+	PR c/64868
+	* testsuite/libgomp.c/pr64824.c: New test.
+	* testsuite/libgomp.c/pr64868.c: New test.
+	* testsuite/libgomp.c++/pr64824.C: New test.
+	* testsuite/libgomp.c++/pr64868.C: New test.
+
+2015-01-23  Jakub Jelinek  <jakub@redhat.com>
+
+	PR middle-end/64734
+	* libgomp.c/pr64734.c: New test.
+
+2014-12-03  Uros Bizjak  <ubizjak@gmail.com>
+
+	* configure.tgt (x86_64-*-linux*): Tune -m32 multilib to generic.
+
+2014-11-28  Jakub Jelinek  <jakub@redhat.com>
+
+	Backported from mainline
+	2014-11-24  Jakub Jelinek  <jakub@redhat.com>
+
+	PR fortran/63938
+	* libgomp.fortran/pr63938-1.f90: New test.
+	* libgomp.fortran/pr63938-2.f90: New test.
+
+2014-10-30  Release Manager
+
+	* GCC 4.9.2 released.
 
 2014-10-03  Jakub Jelinek  <jakub@redhat.com>
 
@@ -82,55 +119,20 @@
 	(gomp_task_maybe_wait_for_dependencies): New function.
 	* testsuite/libgomp.c/depend-5.c: New test.
 
-2014-07-13  Tobias Burnus  <burnus@net-b.de>
+2014-07-16  Release Manager
 
-	* testsuite/libgomp.fortran/pr34020.f90: Make compile
-	with TS 18508/Fortran 2015.
+	* GCC 4.9.1 released.
 
-2014-07-06  Marek Polacek  <polacek@redhat.com>
+2014-06-30  Jakub Jelinek  <jakub@redhat.com>
 
-	PR c/6940
-	* testsuite/libgomp.c/appendix-a/a.29.1.c (f): Add dg-warnings.
-
-2014-07-03  Jakub Jelinek  <jakub@redhat.com>
-
-	* testsuite/lib/libgomp.exp (libgomp_target_compile): If $source
-	matches regex $lang_source_re, add $lang_include_flags to options.
-	* testsuite/libgomp.c/c.exp: Unset lang_include_flags.
-	* testsuite/libgomp.c++/c++.exp: Likewise.
-	* testsuite/libgomp.fortran/fortran.exp: Likewise.  Set lang_source_re
-	and lang_include_flags instead of adding -fintrinsic-modules-path= to
-	ALWAYS_CFLAGS.
-	* testsuite/libgomp.graphite/graphite.exp: Unset lang_include_flags.
-
-2014-07-03  Thomas Schwinge  <thomas@codesourcery.com>
-
-	* testsuite/libgomp.fortran/fortran.exp: Explain
-	gfortran-dg-runtest usage.
-
-2014-06-25  Jakub Jelinek  <jakub@redhat.com>
+	Backported from mainline
+	2014-06-25  Jakub Jelinek  <jakub@redhat.com>
 
 	* testsuite/libgomp.fortran/simd5.f90: New test.
 	* testsuite/libgomp.fortran/simd6.f90: New test.
 	* testsuite/libgomp.fortran/simd7.f90: New test.
 
-2014-06-24  Jakub Jelinek  <jakub@redhat.com>
-
-	* testsuite/libgomp.c/for-2.c: Define SC to static for
-	#pragma omp for simd testing.
-	* testsuite/libgomp.c/for-2.h (SC): Define if not defined.
-	(N(f5), N(f6), N(f7), N(f8), N(f10), N(f12), N(f14)): Use
-	SC macro.
-	* testsuite/libgomp.c/simd-14.c: New test.
-	* testsuite/libgomp.c/simd-15.c: New test.
-	* testsuite/libgomp.c/simd-16.c: New test.
-	* testsuite/libgomp.c/simd-17.c: New test.
-	* testsuite/libgomp.c++/for-10.C: Define SC to static for
-	#pragma omp for simd testing.
-	* testsuite/libgomp.c++/simd10.C: New test.
-	* testsuite/libgomp.c++/simd11.C: New test.
-	* testsuite/libgomp.c++/simd12.C: New test.
-	* testsuite/libgomp.c++/simd13.C: New test.
+	2014-06-24  Jakub Jelinek  <jakub@redhat.com>
 
 	* testsuite/libgomp.fortran/aligned1.f03: New test.
 	* testsuite/libgomp.fortran/nestedfn5.f90: New test.
@@ -149,7 +151,7 @@
 	* testsuite/libgomp.fortran/udr14.f90: New test.
 	* testsuite/libgomp.fortran/udr15.f90: New test.
 
-2014-06-18  Jakub Jelinek  <jakub@redhat.com>
+	2014-06-18  Jakub Jelinek  <jakub@redhat.com>
 
 	* omp_lib.f90.in (openmp_version): Set to 201307.
 	* omp_lib.h.in (openmp_version): Likewise.
@@ -168,7 +170,7 @@
 	* testsuite/libgomp.fortran/target6.f90: New test.
 	* testsuite/libgomp.fortran/target7.f90: New test.
 
-2014-06-10  Jakub Jelinek  <jakub@redhat.com>
+	2014-06-10  Jakub Jelinek  <jakub@redhat.com>
 
 	PR fortran/60928
 	* testsuite/libgomp.fortran/allocatable9.f90: New test.
@@ -182,7 +184,7 @@
 	* testsuite/libgomp.fortran/associate2.f90: New test.
 	* testsuite/libgomp.fortran/procptr1.f90: New test.
 
-2014-06-06  Jakub Jelinek  <jakub@redhat.com>
+	2014-06-06  Jakub Jelinek  <jakub@redhat.com>
 
 	* testsuite/libgomp.fortran/simd1.f90: New test.
 	* testsuite/libgomp.fortran/udr1.f90: New test.
@@ -197,24 +199,13 @@
 	* testsuite/libgomp.fortran/udr10.f90: New test.
 	* testsuite/libgomp.fortran/udr11.f90: New test.
 
-2014-05-27  Uros Bizjak  <ubizjak@gmail.com>
+	2014-05-27  Uros Bizjak  <ubizjak@gmail.com>
 
 	* testsuite/libgomp.fortran/declare-simd-1.f90: Require
 	vect_simd_clones effective target.
 	* testsuite/libgomp.fortran/declare-simd-2.f90: Ditto.
 
-2014-05-21  Jakub Jelinek  <jakub@redhat.com>
-
-	PR middle-end/61252
-	* testsuite/libgomp.c++/simd-9.C: New test.
-
-2014-05-18  Uros Bizjak  <ubizjak@gmail.com>
-
-	* libgomp.texi (Runitme Library Routines): Remove multiple @menu.
-	(Environment Variables) Move OMP_PROC_BIND and OMP_STACKSIZE node
-	texts according to their @menu entry positions.
-
-2014-05-11  Jakub Jelinek  <jakub@redhat.com>
+	2014-05-11  Jakub Jelinek  <jakub@redhat.com>
 
 	* testsuite/libgomp.fortran/cancel-do-1.f90: New test.
 	* testsuite/libgomp.fortran/cancel-do-2.f90: New test.
@@ -234,6 +225,35 @@
 	* testsuite/libgomp.fortran/simd4.f90: New test.
 	* testsuite/libgomp.fortran/taskgroup1.f90: New test.
 
+2014-06-24  Jakub Jelinek  <jakub@redhat.com>
+
+	* testsuite/libgomp.c/for-2.c: Define SC to static for
+	#pragma omp for simd testing.
+	* testsuite/libgomp.c/for-2.h (SC): Define if not defined.
+	(N(f5), N(f6), N(f7), N(f8), N(f10), N(f12), N(f14)): Use
+	SC macro.
+	* testsuite/libgomp.c/simd-14.c: New test.
+	* testsuite/libgomp.c/simd-15.c: New test.
+	* testsuite/libgomp.c/simd-16.c: New test.
+	* testsuite/libgomp.c/simd-17.c: New test.
+	* testsuite/libgomp.c++/for-10.C: Define SC to static for
+	#pragma omp for simd testing.
+	* testsuite/libgomp.c++/simd10.C: New test.
+	* testsuite/libgomp.c++/simd11.C: New test.
+	* testsuite/libgomp.c++/simd12.C: New test.
+	* testsuite/libgomp.c++/simd13.C: New test.
+
+2014-05-21  Jakub Jelinek  <jakub@redhat.com>
+
+	PR middle-end/61252
+	* testsuite/libgomp.c++/simd-9.C: New test.
+
+2014-05-18  Uros Bizjak  <ubizjak@gmail.com>
+
+	* libgomp.texi (Runitme Library Routines): Remove multiple @menu.
+	(Environment Variables) Move OMP_PROC_BIND and OMP_STACKSIZE node
+	texts according to their @menu entry positions.
+
 2014-05-02  Jakub Jelinek  <jakub@redhat.com>
 
 	* testsuite/libgomp.c/simd-10.c: New test.
@@ -252,6 +272,10 @@
 	* testsuite/libgomp.c/simd-8.c: New test.
 	* testsuite/libgomp.c/simd-9.c: New test.
 	* testsuite/libgomp.c/loop-16.c: New test.
+
+2014-04-22  Release Manager
+
+	* GCC 4.9.0 released.
 
 2014-04-02  Richard Henderson  <rth@redhat.com>
 

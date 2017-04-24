@@ -1,4 +1,4 @@
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 
 // 2012-01-19  Jakub Jelinek  <jakub@redhat.com>
 //

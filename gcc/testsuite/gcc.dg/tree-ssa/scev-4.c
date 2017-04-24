@@ -9,7 +9,6 @@ typedef struct {
 int *a_p;
 S a[1000];
 
-void
 f(int k)
 {
 	int i;

@@ -7,7 +7,6 @@ struct A
   int b;
 };
 
-int
 foo (struct A *p, struct A *q)
 {
   int x = p->a;

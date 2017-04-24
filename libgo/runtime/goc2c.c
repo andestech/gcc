@@ -617,22 +617,9 @@ process_file(void)
 	package = read_package();
 	read_preprocessor_lines();
 	while (read_func_header(&name, &params, &rets)) {
-		char *p;
-		char *pkg;
-		char *nm;
-
-		p = strchr(name, '.');
-		if (p == NULL) {
-			pkg = package;
-			nm = name;
-		} else {
-			pkg = name;
-			nm = p + 1;
-			*p = '\0';
-		}
-		write_func_header(pkg, nm, params, rets);
+		write_func_header(package, name, params, rets);
 		copy_body();
-		write_func_trailer(pkg, nm, rets);
+		write_func_trailer(package, name, rets);
 		free(name);
 		free_params(params);
 		free_params(rets);

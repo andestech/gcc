@@ -26,16 +26,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "gimple-pretty-print.h"
 #include "bitmap.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -449,6 +439,11 @@ ter_is_replaceable_p (gimple stmt)
       if ((!optimize || optimize_debug)
 	  && ((locus1 != UNKNOWN_LOCATION && locus1 != locus2)
 	      || (block1 != NULL_TREE && block1 != block2)))
+	return false;
+
+      /* Without alias info we can't move around loads.  */
+      if (!optimize && gimple_assign_single_p (stmt)
+	  && !is_gimple_val (gimple_assign_rhs1 (stmt)))
 	return false;
 
       return true;

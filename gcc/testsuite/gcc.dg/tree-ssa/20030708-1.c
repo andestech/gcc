@@ -17,8 +17,6 @@ struct rtx_def
   enum rtx_code code:16;
 };
 
-extern void blah (rtx *);
-
 int
 nonlocal_mentioned_p (x)
      rtx x;

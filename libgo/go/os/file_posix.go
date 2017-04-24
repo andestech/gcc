@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build darwin dragonfly freebsd linux nacl netbsd openbsd solaris windows
+// +build darwin dragonfly freebsd linux netbsd openbsd windows
 
 package os
 
@@ -48,7 +48,8 @@ func Readlink(name string) (string, error) {
 	}
 }
 
-func rename(oldname, newname string) error {
+// Rename renames a file.
+func Rename(oldname, newname string) error {
 	e := syscall.Rename(oldname, newname)
 	if e != nil {
 		return &LinkError{"rename", oldname, newname, e}
@@ -144,7 +145,7 @@ func (f *File) Truncate(size int64) error {
 // of recently written data to disk.
 func (f *File) Sync() (err error) {
 	if f == nil {
-		return ErrInvalid
+		return syscall.EINVAL
 	}
 	if e := syscall.Fsync(f.fd); e != nil {
 		return NewSyscallError("fsync", e)

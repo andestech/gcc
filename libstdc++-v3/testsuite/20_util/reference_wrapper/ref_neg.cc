@@ -18,7 +18,7 @@
 // 20.8.3 Class template reference_wrapper
 
 // { dg-do compile }
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 
 #include <functional>
 

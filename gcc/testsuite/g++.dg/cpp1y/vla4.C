@@ -1,5 +1,5 @@
 // Test for range-based for with VLAs.
-// { dg-do run { target c++14 } }
+// { dg-do run { target c++1y } }
 
 #include <new>
 

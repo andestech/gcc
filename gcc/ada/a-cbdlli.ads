@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 2004-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2004-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- This specification is derived from the Ada Reference Manual for use with --
 -- GNAT. The copyright notice above, and the license provisions that follow --
@@ -284,10 +284,11 @@ private
    type List_Access is access all List;
    for List_Access'Storage_Size use 0;
 
-   type Cursor is record
-      Container : List_Access;
-      Node      : Count_Type := 0;
-   end record;
+   type Cursor is
+      record
+         Container : List_Access;
+         Node      : Count_Type := 0;
+      end record;
 
    procedure Read
      (Stream : not null access Root_Stream_Type'Class;
@@ -301,27 +302,8 @@ private
 
    for Cursor'Write use Write;
 
-   type Reference_Control_Type is new Controlled with record
-      Container : List_Access;
-   end record;
-
-   overriding procedure Adjust (Control : in out Reference_Control_Type);
-   pragma Inline (Adjust);
-
-   overriding procedure Finalize (Control : in out Reference_Control_Type);
-   pragma Inline (Finalize);
-
    type Constant_Reference_Type
-     (Element : not null access constant Element_Type) is
-   record
-      Control : Reference_Control_Type;
-   end record;
-
-   procedure Read
-     (Stream : not null access Root_Stream_Type'Class;
-      Item   : out Constant_Reference_Type);
-
-   for Constant_Reference_Type'Read use Read;
+      (Element : not null access constant Element_Type) is null record;
 
    procedure Write
      (Stream : not null access Root_Stream_Type'Class;
@@ -329,9 +311,14 @@ private
 
    for Constant_Reference_Type'Write use Write;
 
-   type Reference_Type (Element : not null access Element_Type) is record
-      Control : Reference_Control_Type;
-   end record;
+   procedure Read
+     (Stream : not null access Root_Stream_Type'Class;
+      Item   : out Constant_Reference_Type);
+
+   for Constant_Reference_Type'Read use Read;
+
+   type Reference_Type
+      (Element : not null access Element_Type) is null record;
 
    procedure Write
      (Stream : not null access Root_Stream_Type'Class;

@@ -2,9 +2,8 @@
 /* { dg-do compile } */
 /* { dg-options "-O -Wuninitialized" } */
 
-void g(void*);
-void f()
+void *f()
 {
   void *i = &i;
-  g(i);
+  return i;
 }

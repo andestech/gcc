@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 1992-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2009, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -39,37 +39,20 @@ package System.Pack_42 is
    type Bits_42 is mod 2 ** Bits;
    for Bits_42'Size use Bits;
 
-   --  In all subprograms below, Rev_SSO is set True if the array has the
-   --  non-default scalar storage order.
-
-   function Get_42
-     (Arr     : System.Address;
-      N       : Natural;
-      Rev_SSO : Boolean) return Bits_42 with Inline;
+   function Get_42 (Arr : System.Address; N : Natural) return Bits_42;
    --  Arr is the address of the packed array, N is the zero-based
    --  subscript. This element is extracted and returned.
 
-   procedure Set_42
-     (Arr     : System.Address;
-      N       : Natural;
-      E       : Bits_42;
-      Rev_SSO : Boolean) with Inline;
+   procedure Set_42 (Arr : System.Address; N : Natural; E : Bits_42);
    --  Arr is the address of the packed array, N is the zero-based
    --  subscript. This element is set to the given value.
 
-   function GetU_42
-     (Arr     : System.Address;
-      N       : Natural;
-      Rev_SSO : Boolean) return Bits_42 with Inline;
+   function GetU_42 (Arr : System.Address; N : Natural) return Bits_42;
    --  Arr is the address of the packed array, N is the zero-based
    --  subscript. This element is extracted and returned. This version
    --  is used when Arr may represent an unaligned address.
 
-   procedure SetU_42
-     (Arr     : System.Address;
-      N       : Natural;
-      E       : Bits_42;
-      Rev_SSO : Boolean) with Inline;
+   procedure SetU_42 (Arr : System.Address; N : Natural; E : Bits_42);
    --  Arr is the address of the packed array, N is the zero-based
    --  subscript. This element is set to the given value. This version
    --  is used when Arr may represent an unaligned address

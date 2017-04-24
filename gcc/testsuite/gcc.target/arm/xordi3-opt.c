@@ -1,4 +1,4 @@
-/* { dg-do compile { target { arm_arm_ok || arm_thumb2_ok} } } */
+/* { dg-do compile } */
 /* { dg-options "-O1" } */
 
 unsigned long long xor64 (unsigned long long input)

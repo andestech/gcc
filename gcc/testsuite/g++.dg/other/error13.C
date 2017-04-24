@@ -7,5 +7,6 @@ struct A			// { dg-message "note" }
 };
 
 struct B : A {}; // { dg-error "no matching function for call|deleted" }
+// { dg-message "candidate" "candidate note" { target *-*-* } 9 }
  
 B b; // { dg-message "synthesized method|deleted" }

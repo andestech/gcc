@@ -1,7 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-std=gnu89" } */
 
-int
 mandel(double _Complex C)
 {
   int py;

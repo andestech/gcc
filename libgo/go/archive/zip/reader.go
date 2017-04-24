@@ -253,7 +253,7 @@ func readDirectoryHeader(f *File, r io.Reader) error {
 			}
 			if tag == zip64ExtraId {
 				// update directory values from the zip64 extra block
-				eb := readBuf(b[:size])
+				eb := readBuf(b)
 				if len(eb) >= 8 {
 					f.UncompressedSize64 = eb.uint64()
 				}

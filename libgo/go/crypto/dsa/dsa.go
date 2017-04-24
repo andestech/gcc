@@ -173,16 +173,6 @@ func GenerateKey(priv *PrivateKey, rand io.Reader) error {
 	return nil
 }
 
-// fermatInverse calculates the inverse of k in GF(P) using Fermat's method.
-// This has better constant-time properties than Euclid's method (implemented
-// in math/big.Int.ModInverse) although math/big itself isn't strictly
-// constant-time so it's not perfect.
-func fermatInverse(k, P *big.Int) *big.Int {
-	two := big.NewInt(2)
-	pMinus2 := new(big.Int).Sub(P, two)
-	return new(big.Int).Exp(k, pMinus2, P)
-}
-
 // Sign signs an arbitrary length hash (which should be the result of hashing a
 // larger message) using the private key, priv. It returns the signature as a
 // pair of integers. The security of the private key depends on the entropy of
@@ -215,7 +205,7 @@ func Sign(rand io.Reader, priv *PrivateKey, hash []byte) (r, s *big.Int, err err
 			}
 		}
 
-		kInv := fermatInverse(k, priv.Q)
+		kInv := new(big.Int).ModInverse(k, priv.Q)
 
 		r = new(big.Int).Exp(priv.G, k, priv.P)
 		r.Mod(r, priv.Q)

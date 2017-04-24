@@ -1,6 +1,8 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -fdump-tree-pre" } */
 
+int bar (int);
+
 int z;
 
 void

@@ -3,7 +3,6 @@
 
 extern int something(void) __attribute__((transaction_safe));
 extern void *malloc (__SIZE_TYPE__) __attribute__((malloc,transaction_safe));
-extern void foo (int);
 
 int f()
 {

@@ -24,15 +24,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "rtl.h"
 #include "hard-reg-set.h"
 #include "obstack.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "cfgloop.h"
 #include "expr.h"
@@ -183,7 +174,7 @@ num_loop_insns (const struct loop *loop)
 {
   basic_block *bbs, bb;
   unsigned i, ninsns = 0;
-  rtx_insn *insn;
+  rtx insn;
 
   bbs = get_loop_body (loop);
   for (i = 0; i < loop->num_nodes; i++)
@@ -207,7 +198,7 @@ average_num_loop_insns (const struct loop *loop)
 {
   basic_block *bbs, bb;
   unsigned i, binsns, ninsns, ratio;
-  rtx_insn *insn;
+  rtx insn;
 
   ninsns = 0;
   bbs = get_loop_body (loop);
@@ -311,13 +302,33 @@ get_loop_level (const struct loop *loop)
   return mx;
 }
 
+/* Returns estimate on cost of computing SEQ.  */
+
+static unsigned
+seq_cost (const_rtx seq, bool speed)
+{
+  unsigned cost = 0;
+  rtx set;
+
+  for (; seq; seq = NEXT_INSN (seq))
+    {
+      set = single_set (seq);
+      if (set)
+	cost += set_rtx_cost (set, speed);
+      else
+	cost++;
+    }
+
+  return cost;
+}
+
 /* Initialize the constants for computing set costs.  */
 
 void
 init_set_costs (void)
 {
   int speed;
-  rtx_insn *seq;
+  rtx seq;
   rtx reg1 = gen_raw_REG (SImode, FIRST_PSEUDO_REGISTER);
   rtx reg2 = gen_raw_REG (SImode, FIRST_PSEUDO_REGISTER + 1);
   rtx addr = gen_raw_REG (Pmode, FIRST_PSEUDO_REGISTER + 2);

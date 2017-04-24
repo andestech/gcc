@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build darwin dragonfly freebsd linux netbsd openbsd windows solaris
+// +build darwin dragonfly freebsd linux netbsd openbsd windows
 
 package net
 
@@ -11,9 +11,6 @@ import (
 	"syscall"
 	"time"
 )
-
-// runtimeNano returns the current value of the runtime clock in nanoseconds.
-func runtimeNano() int64
 
 func runtime_pollServerInit()
 func runtime_pollOpen(fd uintptr) (uintptr, int)
@@ -131,7 +128,7 @@ func (fd *netFD) setWriteDeadline(t time.Time) error {
 }
 
 func setDeadlineImpl(fd *netFD, t time.Time, mode int) error {
-	d := runtimeNano() + int64(t.Sub(time.Now()))
+	d := t.UnixNano()
 	if t.IsZero() {
 		d = 0
 	}

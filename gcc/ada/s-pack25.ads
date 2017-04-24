@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 1992-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2009, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -39,21 +39,11 @@ package System.Pack_25 is
    type Bits_25 is mod 2 ** Bits;
    for Bits_25'Size use Bits;
 
-   --  In all subprograms below, Rev_SSO is set True if the array has the
-   --  non-default scalar storage order.
-
-   function Get_25
-     (Arr     : System.Address;
-      N       : Natural;
-      Rev_SSO : Boolean) return Bits_25 with Inline;
+   function Get_25 (Arr : System.Address; N : Natural) return Bits_25;
    --  Arr is the address of the packed array, N is the zero-based
    --  subscript. This element is extracted and returned.
 
-   procedure Set_25
-     (Arr     : System.Address;
-      N       : Natural;
-      E       : Bits_25;
-      Rev_SSO : Boolean) with Inline;
+   procedure Set_25 (Arr : System.Address; N : Natural; E : Bits_25);
    --  Arr is the address of the packed array, N is the zero-based
    --  subscript. This element is set to the given value.
 

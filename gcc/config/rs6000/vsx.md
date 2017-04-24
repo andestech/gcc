@@ -704,9 +704,8 @@
       gcc_unreachable ();
     }
 }
-  [(set_attr "type" "vecstore,vecload,vecsimple,vecsimple,vecsimple,vecstore,vecload,store,store,load,load, *, *")
-   (set_attr "update" "     *,      *,        *,       *,         *,       *,      *,  yes,  yes, yes, yes, *, *")
-   (set_attr "length" "     4,      4,        4,       4,         8,       4,      4,   16,   16,  16,  16,16,16")
+  [(set_attr "type" "vecstore,vecload,vecsimple,vecsimple,vecsimple,vecstore,vecload,store_ux,store_ux,load_ux,load_ux, *, *")
+   (set_attr "length" "     4,      4,        4,       4,         8,       4,      4,      16,      16,     16,     16,16,16")
    (set (attr "cell_micro") (if_then_else (match_test "TARGET_STRING")
    			                  (const_string "always")
 					  (const_string "conditional")))])
@@ -781,7 +780,7 @@
   emit_insn (gen_muldi3 (op3, op3, op4));
   emit_insn (gen_vsx_concat_v2di (op0, op5, op3));
 }"
-  [(set_attr "type" "mul")])
+  [(set_attr "type" "vecdouble")])
 
 (define_insn "*vsx_div<mode>3"
   [(set (match_operand:VSX_F 0 "vsx_register_operand" "=<VSr>,?<VSa>")
@@ -818,7 +817,7 @@
   emit_insn (gen_divdi3 (op3, op3, op4));
   emit_insn (gen_vsx_concat_v2di (op0, op5, op3));
 }"
-  [(set_attr "type" "div")])
+  [(set_attr "type" "vecdiv")])
 
 (define_insn_and_split "vsx_udiv_v2di"
   [(set (match_operand:V2DI 0 "vsx_register_operand" "=wa")
@@ -845,7 +844,7 @@
   emit_insn (gen_udivdi3 (op3, op3, op4));
   emit_insn (gen_vsx_concat_v2di (op0, op5, op3));
 }"
-  [(set_attr "type" "div")])
+  [(set_attr "type" "vecdiv")])
 
 ;; *tdiv* instruction returning the FG flag
 (define_expand "vsx_tdiv<mode>3_fg"
@@ -1841,7 +1840,22 @@
    lfd%U1%X1 %0,%1
    lxsd%U1x %x0,%y1
    ld%U1%X1 %0,%1"
-  [(set_attr "type" "fpload,fpload,load")
+  [(set_attr_alternative "type"
+      [(if_then_else
+	 (match_test "update_indexed_address_mem (operands[1], VOIDmode)")
+	 (const_string "fpload_ux")
+	 (if_then_else
+	   (match_test "update_address_mem (operands[1], VOIDmode)")
+	   (const_string "fpload_u")
+	   (const_string "fpload")))
+       (const_string "fpload")
+       (if_then_else
+	 (match_test "update_indexed_address_mem (operands[1], VOIDmode)")
+	 (const_string "load_ux")
+	 (if_then_else
+	   (match_test "update_address_mem (operands[1], VOIDmode)")
+	   (const_string "load_u")
+	   (const_string "load")))])
    (set_attr "length" "4")])
 
 ;; Optimize storing a single scalar element that is the right location to
@@ -1856,7 +1870,16 @@
    stfd%U0%X0 %1,%0
    stxsd%U0x %x1,%y0
    stxsd%U0x %x1,%y0"
-  [(set_attr "type" "fpstore")
+  [(set_attr_alternative "type"
+      [(if_then_else
+	 (match_test "update_indexed_address_mem (operands[0], VOIDmode)")
+	 (const_string "fpstore_ux")
+	 (if_then_else
+	   (match_test "update_address_mem (operands[0], VOIDmode)")
+	   (const_string "fpstore_u")
+	   (const_string "fpstore")))
+       (const_string "fpstore")
+       (const_string "fpstore")])
    (set_attr "length" "4")])
 
 ;; Extract a SF element from V4SF

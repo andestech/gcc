@@ -107,20 +107,19 @@ func NewErrorString(s string, ret *interface{}) {
 }
 
 // An errorCString represents a runtime error described by a single C string.
-// Not "type errorCString uintptr" because of http://golang.org/issue/7084.
-type errorCString struct{ cstr uintptr }
+type errorCString uintptr
 
 func (e errorCString) RuntimeError() {}
 
 func cstringToGo(uintptr) string
 
 func (e errorCString) Error() string {
-	return "runtime error: " + cstringToGo(e.cstr)
+	return "runtime error: " + cstringToGo(uintptr(e))
 }
 
 // For calling from C.
 func NewErrorCString(s uintptr, ret *interface{}) {
-	*ret = errorCString{s}
+	*ret = errorCString(s)
 }
 
 type stringer interface {

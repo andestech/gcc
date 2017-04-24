@@ -2,11 +2,11 @@
 --                                                                          --
 --                         GNAT COMPILER COMPONENTS                         --
 --                                                                          --
---                             P R J . P R O C                              --
+--                              P R J . P R O C                             --
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 2001-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2001-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -63,15 +63,6 @@ package body Prj.Proc is
       Equal      => "=");
    --  This hash table contains all processed projects
 
-   package Runtime_Defaults is new GNAT.HTable.Simple_HTable
-     (Header_Num => Prj.Header_Num,
-      Element    => Name_Id,
-      No_Element => No_Name,
-      Key        => Name_Id,
-      Hash       => Prj.Hash,
-      Equal      => "=");
-   --  Stores the default values of 'Runtime names for the various languages
-
    procedure Add (To_Exp : in out Name_Id; Str : Name_Id);
    --  Concatenate two strings and returns another string if both
    --  arguments are not null string.
@@ -127,12 +118,9 @@ package body Prj.Proc is
    --  of an expression and return it as a Variable_Value.
 
    function Imported_Or_Extended_Project_From
-     (Project      : Project_Id;
-      With_Name    : Name_Id;
-      No_Extending : Boolean := False) return Project_Id;
-   --  Find an imported or extended project of Project whose name is With_Name.
-   --  When No_Extending is True, do not look for extending projects, returns
-   --  the exact project whose name is With_Name.
+     (Project   : Project_Id;
+      With_Name : Name_Id) return Project_Id;
+   --  Find an imported or extended project of Project whose name is With_Name
 
    function Package_From
      (Project   : Project_Id;
@@ -528,8 +516,6 @@ package body Prj.Proc is
       Last : String_List_Id := Nil_String;
       --  Reference to the last string elements in Result, when Kind is List
 
-      Current_Term_Kind : Project_Node_Kind;
-
    begin
       Result.Project := Project;
       Result.Location := Location_Of (First_Term, From_Project_Node_Tree);
@@ -539,10 +525,8 @@ package body Prj.Proc is
       The_Term := First_Term;
       while Present (The_Term) loop
          The_Current_Term := Current_Term (The_Term, From_Project_Node_Tree);
-         Current_Term_Kind :=
-           Kind_Of (The_Current_Term, From_Project_Node_Tree);
 
-         case Current_Term_Kind is
+         case Kind_Of (The_Current_Term, From_Project_Node_Tree) is
 
             when N_Literal_String =>
 
@@ -713,13 +697,6 @@ package body Prj.Proc is
                   Index           : Name_Id := No_Name;
 
                begin
-                  <<Object_Dir_Restart>>
-                  The_Project := Project;
-                  The_Package := Pkg;
-                  The_Name := No_Name;
-                  The_Variable_Id := No_Variable;
-                  Index := No_Name;
-
                   if Present (Term_Project)
                     and then Term_Project /= From_Project_Node
                   then
@@ -728,9 +705,8 @@ package body Prj.Proc is
                      The_Name :=
                        Name_Of (Term_Project, From_Project_Node_Tree);
                      The_Project := Imported_Or_Extended_Project_From
-                                      (Project      => Project,
-                                       With_Name    => The_Name,
-                                       No_Extending => True);
+                                      (Project   => Project,
+                                       With_Name => The_Name);
                   end if;
 
                   if Present (Term_Package) then
@@ -761,7 +737,9 @@ package body Prj.Proc is
                   The_Name :=
                     Name_Of (The_Current_Term, From_Project_Node_Tree);
 
-                  if Current_Term_Kind = N_Attribute_Reference then
+                  if Kind_Of (The_Current_Term, From_Project_Node_Tree) =
+                                                        N_Attribute_Reference
+                  then
                      Index :=
                        Associative_Array_Index_Of
                          (The_Current_Term, From_Project_Node_Tree);
@@ -777,7 +755,9 @@ package body Prj.Proc is
 
                         --  First, if there is a package, look into the package
 
-                        if Current_Term_Kind = N_Variable_Reference then
+                        if Kind_Of (The_Current_Term, From_Project_Node_Tree) =
+                                                        N_Variable_Reference
+                        then
                            The_Variable_Id :=
                              Shared.Packages.Table
                                (The_Package).Decl.Variables;
@@ -802,7 +782,9 @@ package body Prj.Proc is
 
                         --  If we have not found it, look into the project
 
-                        if Current_Term_Kind = N_Variable_Reference then
+                        if Kind_Of (The_Current_Term, From_Project_Node_Tree) =
+                             N_Variable_Reference
+                        then
                            The_Variable_Id := The_Project.Decl.Variables;
                         else
                            The_Variable_Id := The_Project.Decl.Attributes;
@@ -896,97 +878,8 @@ package body Prj.Proc is
                      end;
                   end if;
 
-                  --  Check the defaults
-
-                  if Current_Term_Kind = N_Attribute_Reference then
-                     declare
-                        The_Default : constant Attribute_Default_Value :=
-                          Default_Of
-                            (The_Current_Term, From_Project_Node_Tree);
-
-                     begin
-                        --  Check the special value for 'Target when specified
-
-                        if The_Default = Target_Value
-                          and then Opt.Target_Origin = Specified
-                        then
-                           Name_Len := 0;
-                           Add_Str_To_Name_Buffer (Opt.Target_Value.all);
-                           The_Variable.Value := Name_Find;
-
-                        --  Check the defaults
-
-                        elsif The_Variable.Default then
-                           case The_Variable.Kind is
-
-                           when Undefined =>
-                              null;
-
-                           when Single =>
-                              case The_Default is
-                                 when Read_Only_Value =>
-                                    null;
-
-                                 when Empty_Value =>
-                                    The_Variable.Value := Empty_String;
-
-                                 when Dot_Value =>
-                                    The_Variable.Value := Dot_String;
-
-                                 when Object_Dir_Value =>
-                                    From_Project_Node_Tree.Project_Nodes.Table
-                                      (The_Current_Term).Name :=
-                                      Snames.Name_Object_Dir;
-                                    From_Project_Node_Tree.Project_Nodes.Table
-                                      (The_Current_Term).Default :=
-                                      Dot_Value;
-                                    goto Object_Dir_Restart;
-
-                                 when Target_Value =>
-                                    if Opt.Target_Value = null then
-                                       The_Variable.Value := Empty_String;
-
-                                    else
-                                       Name_Len := 0;
-                                       Add_Str_To_Name_Buffer
-                                         (Opt.Target_Value.all);
-                                       The_Variable.Value := Name_Find;
-                                    end if;
-
-                                 when Runtime_Value =>
-                                    Get_Name_String (Index);
-                                    To_Lower (Name_Buffer (1 .. Name_Len));
-                                    The_Variable.Value :=
-                                      Runtime_Defaults.Get (Name_Find);
-                                    if The_Variable.Value = No_Name then
-                                       The_Variable.Value := Empty_String;
-                                    end if;
-
-                              end case;
-
-                           when List =>
-                              case The_Default is
-                                 when Read_Only_Value  =>
-                                    null;
-
-                                 when Empty_Value      =>
-                                    The_Variable.Values := Nil_String;
-
-                                 when Dot_Value        =>
-                                    The_Variable.Values :=
-                                      Shared.Dot_String_List;
-
-                                 when Object_Dir_Value |
-                                      Target_Value     |
-                                      Runtime_Value    =>
-                                    null;
-                              end case;
-                           end case;
-                        end if;
-                     end;
-                  end if;
-
                   case Kind is
+
                      when Undefined =>
 
                         --  Should never happen
@@ -995,6 +888,7 @@ package body Prj.Proc is
                         null;
 
                      when Single =>
+
                         case The_Variable.Kind is
 
                            when Undefined =>
@@ -1367,9 +1261,8 @@ package body Prj.Proc is
    ---------------------------------------
 
    function Imported_Or_Extended_Project_From
-     (Project      : Project_Id;
-      With_Name    : Name_Id;
-      No_Extending : Boolean := False) return Project_Id
+     (Project   : Project_Id;
+      With_Name : Name_Id) return Project_Id
    is
       List        : Project_List;
       Result      : Project_Id;
@@ -1411,12 +1304,7 @@ package body Prj.Proc is
             Proj := Result.Extends;
             while Proj /= No_Project loop
                if Proj.Name = With_Name then
-                  if No_Extending then
-                     Temp_Result := Proj;
-                  else
-                     Temp_Result := Result;
-                  end if;
-
+                  Temp_Result := Result;
                   exit;
                end if;
 
@@ -2308,9 +2196,7 @@ package body Prj.Proc is
                  Name_Of
                    (Project_Node_Of (Variable_Node, Node_Tree), Node_Tree);
                The_Project :=
-                 Imported_Or_Extended_Project_From
-                   (Project, Name, No_Extending => True);
-               The_Package := No_Package;
+                 Imported_Or_Extended_Project_From (Project, Name);
             end if;
 
             --  If a package was specified for the case variable, get its id
@@ -2765,10 +2651,6 @@ package body Prj.Proc is
             Success := not Prj.Tree.No (Loaded_Project);
 
             if Success then
-               if Node_Tree.Incomplete_With then
-                  From_Project_Node_Tree.Incomplete_With := True;
-               end if;
-
                List.Tree := new Project_Tree_Data (Is_Root_Tree => False);
                Prj.Initialize (List.Tree);
                List.Tree.Shared := In_Tree.Shared;
@@ -2932,9 +2814,9 @@ package body Prj.Proc is
             Name : constant Name_Id :=
                      Name_Of (From_Project_Node, From_Project_Node_Tree);
 
-            Display_Name : constant Name_Id :=
-                             Display_Name_Of
-                               (From_Project_Node, From_Project_Node_Tree);
+            Name_Node : constant Tree_Private_Part.Project_Name_And_Node :=
+                          Tree_Private_Part.Projects_Htable.Get
+                            (From_Project_Node_Tree.Projects_HT, Name);
 
          begin
             Project := Processed_Projects.Get (Name);
@@ -2953,43 +2835,20 @@ package body Prj.Proc is
                return;
             end if;
 
-            --  Check if the project is already in the tree
+            Project :=
+              new Project_Data'
+                (Empty_Project
+                  (Project_Qualifier_Of
+                    (From_Project_Node, From_Project_Node_Tree)));
 
-            Project := No_Project;
+            --  Note that at this point we do not know yet if the project has
+            --  been withed from an encapsulated library or not.
 
-            declare
-               List : Project_List := In_Tree.Projects;
-               Path : constant Path_Name_Type :=
-                        Path_Name_Of (From_Project_Node,
-                                      From_Project_Node_Tree);
-
-            begin
-               while List /= null loop
-                  if List.Project.Path.Display_Name = Path then
-                     Project := List.Project;
-                     exit;
-                  end if;
-
-                  List := List.Next;
-               end loop;
-            end;
-
-            if Project = No_Project then
-               Project :=
-                 new Project_Data'
-                   (Empty_Project
-                      (Project_Qualifier_Of
-                         (From_Project_Node, From_Project_Node_Tree)));
-
-               --  Note that at this point we do not know yet if the project
-               --  has been withed from an encapsulated library or not.
-
-               In_Tree.Projects :=
-                 new Project_List_Element'
-                   (Project               => Project,
-                    From_Encapsulated_Lib => False,
-                    Next                  => In_Tree.Projects);
-            end if;
+            In_Tree.Projects :=
+              new Project_List_Element'
+             (Project               => Project,
+              From_Encapsulated_Lib => False,
+              Next                  => In_Tree.Projects);
 
             --  Keep track of this point
 
@@ -2998,8 +2857,7 @@ package body Prj.Proc is
             Processed_Projects.Set (Name, Project);
 
             Project.Name := Name;
-            Project.Display_Name := Display_Name;
-
+            Project.Display_Name := Name_Node.Display_Name;
             Get_Name_String (Name);
 
             --  If name starts with the virtual prefix, flag the project as
@@ -3040,7 +2898,7 @@ package body Prj.Proc is
 
             Process_Imported_Projects (Imported, Limited_With => False);
 
-            if Project.Qualifier = Aggregate then
+            if Project.Qualifier = Aggregate and then In_Tree.Is_Root_Tree then
                Initialize_And_Copy (Child_Env, Copy_From => Env);
 
             elsif Project.Qualifier = Aggregate_Library then
@@ -3154,14 +3012,4 @@ package body Prj.Proc is
       end if;
    end Recursive_Process;
 
-   -----------------------------
-   -- Set_Default_Runtime_For --
-   -----------------------------
-
-   procedure Set_Default_Runtime_For (Language : Name_Id; Value : String) is
-   begin
-      Name_Len := Value'Length;
-      Name_Buffer (1 .. Name_Len) := Value;
-      Runtime_Defaults.Set (Language, Name_Find);
-   end Set_Default_Runtime_For;
 end Prj.Proc;

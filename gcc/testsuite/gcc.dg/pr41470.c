@@ -1,8 +1,5 @@
 /* { dg-do compile } */
 /* { dg-options "-fexceptions" } */
-
-void cf (void *);
-
 void *
 af (void *a)
 {

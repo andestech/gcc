@@ -26,7 +26,6 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include <errno.h>
 
 
 #ifdef HAVE_UNISTD_H
@@ -71,18 +70,23 @@ static int argc_save;
 static char **argv_save;
 
 static const char *exe_path;
-static bool please_free_exe_path_when_done;
+static int please_free_exe_path_when_done;
 
 /* Save the path under which the program was called, for use in the
    backtrace routines.  */
 void
 store_exe_path (const char * argv0)
 {
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
+
 #ifndef DIR_SEPARATOR   
 #define DIR_SEPARATOR '/'
 #endif
 
-  char *cwd, *path;
+  char buf[PATH_MAX], *path;
+  const char *cwd;
 
   /* This can only happen if store_exe_path is called multiple times.  */
   if (please_free_exe_path_when_done)
@@ -91,27 +95,13 @@ store_exe_path (const char * argv0)
   /* Reading the /proc/self/exe symlink is Linux-specific(?), but if
      it works it gives the correct answer.  */
 #ifdef HAVE_READLINK
-  ssize_t len, psize = 256;
-  while (1)
+  int len;
+  if ((len = readlink ("/proc/self/exe", buf, sizeof (buf) - 1)) != -1)
     {
-      path = xmalloc (psize);
-      len = readlink ("/proc/self/exe", path, psize);
-      if (len < 0)
-	{
-	  free (path);
-	  break;
-	}
-      else if (len < psize)
-	{
-	  path[len] = '\0';
-	  exe_path = strdup (path);
-	  free (path);
-	  please_free_exe_path_when_done = true;
-	  return;
-	}
-      /* The remaining option is len == psize.  */
-      free (path);
-      psize *= 4;
+      buf[len] = '\0';
+      exe_path = strdup (buf);
+      please_free_exe_path_when_done = 1;
+      return;
     }
 #endif
 
@@ -127,29 +117,12 @@ store_exe_path (const char * argv0)
 #endif
     {
       exe_path = argv0;
-      please_free_exe_path_when_done = false;
+      please_free_exe_path_when_done = 0;
       return;
     }
 
 #ifdef HAVE_GETCWD
-  size_t cwdsize = 256;
-  while (1)
-    {
-      cwd = xmalloc (cwdsize);
-      if (getcwd (cwd, cwdsize))
-	break;
-      else if (errno == ERANGE)
-	{
-	  free (cwd);
-	  cwdsize *= 4;
-	}
-      else
-	{
-	  free (cwd);
-	  cwd = NULL;
-	  break;
-	}
-    }
+  cwd = getcwd (buf, sizeof (buf));
 #else
   cwd = NULL;
 #endif
@@ -157,7 +130,7 @@ store_exe_path (const char * argv0)
   if (!cwd)
     {
       exe_path = argv0;
-      please_free_exe_path_when_done = false;
+      please_free_exe_path_when_done = 0;
       return;
     }
 
@@ -165,11 +138,10 @@ store_exe_path (const char * argv0)
      if the executable is not in the cwd, but at this point we're out
      of better ideas.  */
   size_t pathlen = strlen (cwd) + 1 + strlen (argv0) + 1;
-  path = xmalloc (pathlen);
+  path = malloc (pathlen);
   snprintf (path, pathlen, "%s%c%s", cwd, DIR_SEPARATOR, argv0);
-  free (cwd);
   exe_path = path;
-  please_free_exe_path_when_done = true;
+  please_free_exe_path_when_done = 1;
 }
 
 

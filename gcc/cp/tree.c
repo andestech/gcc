@@ -23,7 +23,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "coretypes.h"
 #include "tm.h"
 #include "tree.h"
-#include "tree-hasher.h"
 #include "stor-layout.h"
 #include "print-tree.h"
 #include "tree-iterator.h"
@@ -32,27 +31,17 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-inline.h"
 #include "debug.h"
 #include "convert.h"
-#include "hash-map.h"
-#include "is-a.h"
-#include "plugin-api.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "ipa-ref.h"
 #include "cgraph.h"
 #include "splay-tree.h"
 #include "hash-table.h"
 #include "gimple-expr.h"
 #include "gimplify.h"
-#include "wide-int.h"
 
 static tree bot_manip (tree *, int *, void *);
 static tree bot_replace (tree *, int *, void *);
+static int list_hash_eq (const void *, const void *);
 static hashval_t list_hash_pieces (tree, tree, tree);
+static hashval_t list_hash (const void *);
 static tree build_target_expr (tree, tree, tsubst_flags_t);
 static tree count_trees_r (tree *, int *, void *);
 static tree verify_stmt_tree_r (tree *, int *, void *);
@@ -169,7 +158,6 @@ lvalue_kind (const_tree ref)
     case ARRAY_NOTATION_REF:
     case PARM_DECL:
     case RESULT_DECL:
-    case PLACEHOLDER_EXPR:
       return clk_ordinary;
 
       /* A scope ref in a template, left as SCOPE_REF to support later
@@ -733,26 +721,13 @@ rvalue (tree expr)
 }
 
 
-struct cplus_array_info
-{
-  tree type;
-  tree domain;
-};
-
-struct cplus_array_hasher : ggc_hasher<tree>
-{
-  typedef cplus_array_info *compare_type;
-
-  static hashval_t hash (tree t);
-  static bool equal (tree, cplus_array_info *);
-};
-
 /* Hash an ARRAY_TYPE.  K is really of type `tree'.  */
 
-hashval_t
-cplus_array_hasher::hash (tree t)
+static hashval_t
+cplus_array_hash (const void* k)
 {
   hashval_t hash;
+  const_tree const t = (const_tree) k;
 
   hash = TYPE_UID (TREE_TYPE (t));
   if (TYPE_DOMAIN (t))
@@ -760,53 +735,28 @@ cplus_array_hasher::hash (tree t)
   return hash;
 }
 
+typedef struct cplus_array_info {
+  tree type;
+  tree domain;
+} cplus_array_info;
+
 /* Compare two ARRAY_TYPEs.  K1 is really of type `tree', K2 is really
    of type `cplus_array_info*'. */
 
-bool
-cplus_array_hasher::equal (tree t1, cplus_array_info *t2)
+static int
+cplus_array_compare (const void * k1, const void * k2)
 {
+  const_tree const t1 = (const_tree) k1;
+  const cplus_array_info *const t2 = (const cplus_array_info*) k2;
+
   return (TREE_TYPE (t1) == t2->type && TYPE_DOMAIN (t1) == t2->domain);
 }
 
 /* Hash table containing dependent array types, which are unsuitable for
    the language-independent type hash table.  */
-static GTY (()) hash_table<cplus_array_hasher> *cplus_array_htab;
+static GTY ((param_is (union tree_node))) htab_t cplus_array_htab;
 
-/* Build an ARRAY_TYPE without laying it out.  */
-
-static tree
-build_min_array_type (tree elt_type, tree index_type)
-{
-  tree t = cxx_make_type (ARRAY_TYPE);
-  TREE_TYPE (t) = elt_type;
-  TYPE_DOMAIN (t) = index_type;
-  return t;
-}
-
-/* Set TYPE_CANONICAL like build_array_type_1, but using
-   build_cplus_array_type.  */
-
-static void
-set_array_type_canon (tree t, tree elt_type, tree index_type)
-{
-  /* Set the canonical type for this new node.  */
-  if (TYPE_STRUCTURAL_EQUALITY_P (elt_type)
-      || (index_type && TYPE_STRUCTURAL_EQUALITY_P (index_type)))
-    SET_TYPE_STRUCTURAL_EQUALITY (t);
-  else if (TYPE_CANONICAL (elt_type) != elt_type
-	   || (index_type && TYPE_CANONICAL (index_type) != index_type))
-    TYPE_CANONICAL (t)
-      = build_cplus_array_type (TYPE_CANONICAL (elt_type),
-				index_type
-				? TYPE_CANONICAL (index_type) : index_type);
-  else
-    TYPE_CANONICAL (t) = t;
-}
-
-/* Like build_array_type, but handle special C++ semantics: an array of a
-   variant element type is a variant of the array of the main variant of
-   the element type.  */
+/* Like build_array_type, but handle special C++ semantics.  */
 
 tree
 build_cplus_array_type (tree elt_type, tree index_type)
@@ -816,24 +766,17 @@ build_cplus_array_type (tree elt_type, tree index_type)
   if (elt_type == error_mark_node || index_type == error_mark_node)
     return error_mark_node;
 
-  bool dependent
-    = (processing_template_decl
-       && (dependent_type_p (elt_type)
-	   || (index_type && !TREE_CONSTANT (TYPE_MAX_VALUE (index_type)))));
-
-  if (elt_type != TYPE_MAIN_VARIANT (elt_type))
-    /* Start with an array of the TYPE_MAIN_VARIANT.  */
-    t = build_cplus_array_type (TYPE_MAIN_VARIANT (elt_type),
-				index_type);
-  else if (dependent)
+  if (processing_template_decl
+      && (dependent_type_p (elt_type)
+	  || (index_type && !TREE_CONSTANT (TYPE_MAX_VALUE (index_type)))))
     {
-      /* Since type_hash_canon calls layout_type, we need to use our own
-	 hash table.  */
+      void **e;
       cplus_array_info cai;
       hashval_t hash;
 
       if (cplus_array_htab == NULL)
-	cplus_array_htab = hash_table<cplus_array_hasher>::create_ggc (61);
+	cplus_array_htab = htab_create_ggc (61, &cplus_array_hash,
+					    &cplus_array_compare, NULL);
       
       hash = TYPE_UID (elt_type);
       if (index_type)
@@ -841,42 +784,89 @@ build_cplus_array_type (tree elt_type, tree index_type)
       cai.type = elt_type;
       cai.domain = index_type;
 
-      tree *e = cplus_array_htab->find_slot_with_hash (&cai, hash, INSERT); 
+      e = htab_find_slot_with_hash (cplus_array_htab, &cai, hash, INSERT); 
       if (*e)
 	/* We have found the type: we're done.  */
 	return (tree) *e;
       else
 	{
 	  /* Build a new array type.  */
-	  t = build_min_array_type (elt_type, index_type);
+	  t = cxx_make_type (ARRAY_TYPE);
+	  TREE_TYPE (t) = elt_type;
+	  TYPE_DOMAIN (t) = index_type;
 
 	  /* Store it in the hash table. */
 	  *e = t;
 
 	  /* Set the canonical type for this new node.  */
-	  set_array_type_canon (t, elt_type, index_type);
+	  if (TYPE_STRUCTURAL_EQUALITY_P (elt_type)
+	      || (index_type && TYPE_STRUCTURAL_EQUALITY_P (index_type)))
+	    SET_TYPE_STRUCTURAL_EQUALITY (t);
+	  else if (TYPE_CANONICAL (elt_type) != elt_type
+		   || (index_type 
+		       && TYPE_CANONICAL (index_type) != index_type))
+	    TYPE_CANONICAL (t)
+		= build_cplus_array_type 
+		   (TYPE_CANONICAL (elt_type),
+		    index_type ? TYPE_CANONICAL (index_type) : index_type);
+	  else
+	    TYPE_CANONICAL (t) = t;
 	}
     }
   else
     {
+      if (!TYPE_STRUCTURAL_EQUALITY_P (elt_type)
+	  && !(index_type && TYPE_STRUCTURAL_EQUALITY_P (index_type))
+	  && (TYPE_CANONICAL (elt_type) != elt_type
+	      || (index_type && TYPE_CANONICAL (index_type) != index_type)))
+	/* Make sure that the canonical type is on the appropriate
+	   variants list.  */
+	build_cplus_array_type
+	  (TYPE_CANONICAL (elt_type),
+	   index_type ? TYPE_CANONICAL (index_type) : index_type);
       t = build_array_type (elt_type, index_type);
     }
 
-  /* Now check whether we already have this array variant.  */
+  /* Push these needs up so that initialization takes place
+     more easily.  */
+  bool needs_ctor
+    = TYPE_NEEDS_CONSTRUCTING (TYPE_MAIN_VARIANT (elt_type));
+  TYPE_NEEDS_CONSTRUCTING (t) = needs_ctor;
+  bool needs_dtor
+    = TYPE_HAS_NONTRIVIAL_DESTRUCTOR (TYPE_MAIN_VARIANT (elt_type));
+  TYPE_HAS_NONTRIVIAL_DESTRUCTOR (t) = needs_dtor;
+
+  /* We want TYPE_MAIN_VARIANT of an array to strip cv-quals from the
+     element type as well, so fix it up if needed.  */
   if (elt_type != TYPE_MAIN_VARIANT (elt_type))
     {
-      tree m = t;
-      for (t = m; t; t = TYPE_NEXT_VARIANT (t))
-	if (TREE_TYPE (t) == elt_type
-	    && TYPE_NAME (t) == NULL_TREE
-	    && TYPE_ATTRIBUTES (t) == NULL_TREE)
-	  break;
-      if (!t)
+      tree m = build_cplus_array_type (TYPE_MAIN_VARIANT (elt_type),
+				       index_type);
+
+      if (TYPE_MAIN_VARIANT (t) != m)
 	{
-	  t = build_min_array_type (elt_type, index_type);
-	  set_array_type_canon (t, elt_type, index_type);
-	  if (!dependent)
-	    layout_type (t);
+	  if (COMPLETE_TYPE_P (TREE_TYPE (t)) && !COMPLETE_TYPE_P (m))
+	    {
+	      /* m was built before the element type was complete, so we
+		 also need to copy the layout info from t.  We might
+	         end up doing this multiple times if t is an array of
+	         unknown bound.  */
+	      tree size = TYPE_SIZE (t);
+	      tree size_unit = TYPE_SIZE_UNIT (t);
+	      unsigned int align = TYPE_ALIGN (t);
+	      unsigned int user_align = TYPE_USER_ALIGN (t);
+	      enum machine_mode mode = TYPE_MODE (t);
+	      for (tree var = m; var; var = TYPE_NEXT_VARIANT (var))
+		{
+		  TYPE_SIZE (var) = size;
+		  TYPE_SIZE_UNIT (var) = size_unit;
+		  TYPE_ALIGN (var) = align;
+		  TYPE_USER_ALIGN (var) = user_align;
+		  SET_TYPE_MODE (var, mode);
+		  TYPE_NEEDS_CONSTRUCTING (var) = needs_ctor;
+		  TYPE_HAS_NONTRIVIAL_DESTRUCTOR (var) = needs_dtor;
+		}
+	    }
 
 	  TYPE_MAIN_VARIANT (t) = m;
 	  TYPE_NEXT_VARIANT (t) = TYPE_NEXT_VARIANT (m);
@@ -887,27 +877,6 @@ build_cplus_array_type (tree elt_type, tree index_type)
   /* Avoid spurious warnings with VLAs (c++/54583).  */
   if (TYPE_SIZE (t) && EXPR_P (TYPE_SIZE (t)))
     TREE_NO_WARNING (TYPE_SIZE (t)) = 1;
-
-  /* Push these needs up to the ARRAY_TYPE so that initialization takes
-     place more easily.  */
-  bool needs_ctor = (TYPE_NEEDS_CONSTRUCTING (t)
-		     = TYPE_NEEDS_CONSTRUCTING (elt_type));
-  bool needs_dtor = (TYPE_HAS_NONTRIVIAL_DESTRUCTOR (t)
-		     = TYPE_HAS_NONTRIVIAL_DESTRUCTOR (elt_type));
-
-  if (!dependent && t == TYPE_MAIN_VARIANT (t)
-      && !COMPLETE_TYPE_P (t) && COMPLETE_TYPE_P (elt_type))
-    {
-      /* The element type has been completed since the last time we saw
-	 this array type; update the layout and 'tor flags for any variants
-	 that need it.  */
-      layout_type (t);
-      for (tree v = TYPE_NEXT_VARIANT (t); v; v = TYPE_NEXT_VARIANT (v))
-	{
-	  TYPE_NEEDS_CONSTRUCTING (v) = needs_ctor;
-	  TYPE_HAS_NONTRIVIAL_DESTRUCTOR (v) = needs_dtor;
-	}
-    }
 
   return t;
 }
@@ -920,7 +889,7 @@ build_array_of_n_type (tree elt, int n)
   return build_cplus_array_type (elt, build_index_type (size_int (n - 1)));
 }
 
-/* True iff T is a C++14 array of runtime bound (VLA).  */
+/* True iff T is a C++1y array of runtime bound (VLA).  */
 
 bool
 array_of_runtime_bound_p (tree t)
@@ -1217,32 +1186,10 @@ strip_typedefs (tree t)
 {
   tree result = NULL, type = NULL, t0 = NULL;
 
-  if (!t || t == error_mark_node)
+  if (!t || t == error_mark_node || t == TYPE_CANONICAL (t))
     return t;
-
-  if (TREE_CODE (t) == TREE_LIST)
-    {
-      bool changed = false;
-      vec<tree,va_gc> *vec = make_tree_vector ();
-      for (; t; t = TREE_CHAIN (t))
-	{
-	  gcc_assert (!TREE_PURPOSE (t));
-	  tree elt = strip_typedefs (TREE_VALUE (t));
-	  if (elt != TREE_VALUE (t))
-	    changed = true;
-	  vec_safe_push (vec, elt);
-	}
-      tree r = t;
-      if (changed)
-	r = build_tree_list_vec (vec);
-      release_tree_vector (vec);
-      return r;
-    }
 
   gcc_assert (TYPE_P (t));
-
-  if (t == TYPE_CANONICAL (t))
-    return t;
 
   switch (TREE_CODE (t))
     {
@@ -1319,8 +1266,6 @@ strip_typedefs (tree t)
 	if (TYPE_RAISES_EXCEPTIONS (t))
 	  result = build_exception_variant (result,
 					    TYPE_RAISES_EXCEPTIONS (t));
-	if (TYPE_HAS_LATE_RETURN_TYPE (t))
-	  TYPE_HAS_LATE_RETURN_TYPE (result) = 1;
       }
       break;
     case TYPENAME_TYPE:
@@ -1655,6 +1600,14 @@ copy_binfo (tree binfo, tree type, tree t, tree *igo_prev, int virt)
 /* Hashing of lists so that we don't make duplicates.
    The entry point is `list_hash_canon'.  */
 
+/* Now here is the hash table.  When recording a list, it is added
+   to the slot whose index is the hash code mod the table size.
+   Note that the hash table is used for several kinds of lists.
+   While all these live in the same table, they are completely independent,
+   and the hash code is computed differently for each of these.  */
+
+static GTY ((param_is (union tree_node))) htab_t list_hash_table;
+
 struct list_proxy
 {
   tree purpose;
@@ -1662,28 +1615,15 @@ struct list_proxy
   tree chain;
 };
 
-struct list_hasher : ggc_hasher<tree>
-{
-  typedef list_proxy *compare_type;
-
-  static hashval_t hash (tree);
-  static bool equal (tree, list_proxy *);
-};
-
-/* Now here is the hash table.  When recording a list, it is added
-   to the slot whose index is the hash code mod the table size.
-   Note that the hash table is used for several kinds of lists.
-   While all these live in the same table, they are completely independent,
-   and the hash code is computed differently for each of these.  */
-
-static GTY (()) hash_table<list_hasher> *list_hash_table;
-
 /* Compare ENTRY (an entry in the hash table) with DATA (a list_proxy
    for a node we are thinking about adding).  */
 
-bool
-list_hasher::equal (tree t, list_proxy *proxy)
+static int
+list_hash_eq (const void* entry, const void* data)
 {
+  const_tree const t = (const_tree) entry;
+  const struct list_proxy *const proxy = (const struct list_proxy *) data;
+
   return (TREE_VALUE (t) == proxy->value
 	  && TREE_PURPOSE (t) == proxy->purpose
 	  && TREE_CHAIN (t) == proxy->chain);
@@ -1714,9 +1654,10 @@ list_hash_pieces (tree purpose, tree value, tree chain)
 
 /* Hash an already existing TREE_LIST.  */
 
-hashval_t
-list_hasher::hash (tree t)
+static hashval_t
+list_hash (const void* p)
 {
+  const_tree const t = (const_tree) p;
   return list_hash_pieces (TREE_PURPOSE (t),
 			   TREE_VALUE (t),
 			   TREE_CHAIN (t));
@@ -1730,7 +1671,7 @@ tree
 hash_tree_cons (tree purpose, tree value, tree chain)
 {
   int hashcode = 0;
-  tree *slot;
+  void **slot;
   struct list_proxy proxy;
 
   /* Hash the list node.  */
@@ -1741,7 +1682,8 @@ hash_tree_cons (tree purpose, tree value, tree chain)
   proxy.value = value;
   proxy.chain = chain;
   /* See if it is already in the table.  */
-  slot = list_hash_table->find_slot_with_hash (&proxy, hashcode, INSERT);
+  slot = htab_find_slot_with_hash (list_hash_table, &proxy, hashcode,
+				   INSERT);
   /* If not, create a new node.  */
   if (!*slot)
     *slot = tree_cons (purpose, value, chain);
@@ -2147,8 +2089,8 @@ static tree
 verify_stmt_tree_r (tree* tp, int * /*walk_subtrees*/, void* data)
 {
   tree t = *tp;
-  hash_table<pointer_hash <tree_node> > *statements
-      = static_cast <hash_table<pointer_hash <tree_node> > *> (data);
+  hash_table <pointer_hash <tree_node> > *statements
+      = static_cast <hash_table <pointer_hash <tree_node> > *> (data);
   tree_node **slot;
 
   if (!STATEMENT_CODE_P (TREE_CODE (t)))
@@ -2171,8 +2113,10 @@ verify_stmt_tree_r (tree* tp, int * /*walk_subtrees*/, void* data)
 void
 verify_stmt_tree (tree t)
 {
-  hash_table<pointer_hash <tree_node> > statements (37);
+  hash_table <pointer_hash <tree_node> > statements;
+  statements.create (37);
   cp_walk_tree (&t, verify_stmt_tree_r, &statements, NULL);
+  statements.dispose ();
 }
 
 /* Check if the type T depends on a type with no linkage and if so, return
@@ -2249,14 +2193,14 @@ no_linkage_check (tree t, bool relaxed_p)
       return no_linkage_check (TYPE_PTRMEM_CLASS_TYPE (t), relaxed_p);
 
     case METHOD_TYPE:
-      r = no_linkage_check (TYPE_METHOD_BASETYPE (t), relaxed_p);
-      if (r)
-	return r;
-      /* Fall through.  */
     case FUNCTION_TYPE:
       {
-	tree parm;
-	for (parm = TYPE_ARG_TYPES (t);
+	tree parm = TYPE_ARG_TYPES (t);
+	if (TREE_CODE (t) == METHOD_TYPE)
+	  /* The 'this' pointer isn't interesting; a method has the same
+	     linkage (or lack thereof) as its enclosing class.  */
+	  parm = TREE_CHAIN (parm);
+	for (;
 	     parm && parm != void_list_node;
 	     parm = TREE_CHAIN (parm))
 	  {
@@ -2386,8 +2330,6 @@ bot_manip (tree* tp, int* walk_subtrees, void* data)
 	  case BUILT_IN_FILE:
 	  case BUILT_IN_LINE:
 	    SET_EXPR_LOCATION (*tp, input_location);
-	  default:
-	    break;
 	  }
     }
   return t;
@@ -2410,8 +2352,7 @@ bot_replace (tree* t, int* /*walk_subtrees*/, void* data)
 	*t = (tree) n->value;
     }
   else if (TREE_CODE (*t) == PARM_DECL
-	   && DECL_NAME (*t) == this_identifier
-	   && !DECL_CONTEXT (*t))
+	   && DECL_NAME (*t) == this_identifier)
     {
       /* In an NSDMI we need to replace the 'this' parameter we used for
 	 parsing with the real one for this function.  */
@@ -2460,103 +2401,6 @@ break_out_target_exprs (tree t)
     }
 
   return t;
-}
-
-/* Build an expression for the subobject of OBJ at CONSTRUCTOR index INDEX,
-   which we expect to have type TYPE.  */
-
-tree
-build_ctor_subob_ref (tree index, tree type, tree obj)
-{
-  if (index == NULL_TREE)
-    /* Can't refer to a particular member of a vector.  */
-    obj = NULL_TREE;
-  else if (TREE_CODE (index) == INTEGER_CST)
-    obj = cp_build_array_ref (input_location, obj, index, tf_none);
-  else
-    obj = build_class_member_access_expr (obj, index, NULL_TREE,
-					  /*reference*/false, tf_none);
-  if (obj)
-    gcc_assert (same_type_ignoring_top_level_qualifiers_p (type,
-							   TREE_TYPE (obj)));
-  return obj;
-}
-
-/* Like substitute_placeholder_in_expr, but handle C++ tree codes and
-   build up subexpressions as we go deeper.  */
-
-struct replace_placeholders_t
-{
-  tree obj;
-  hash_set<tree> *pset;
-};
-
-static tree
-replace_placeholders_r (tree* t, int* walk_subtrees, void* data_)
-{
-  tree obj = static_cast<tree>(data_);
-
-  if (TREE_CONSTANT (*t))
-    {
-      *walk_subtrees = false;
-      return NULL_TREE;
-    }
-
-  switch (TREE_CODE (*t))
-    {
-    case PLACEHOLDER_EXPR:
-      gcc_assert (same_type_ignoring_top_level_qualifiers_p
-		  (TREE_TYPE (*t), TREE_TYPE (obj)));
-      *t = obj;
-      *walk_subtrees = false;
-      break;
-
-    case TARGET_EXPR:
-      /* Don't mess with placeholders in an unrelated object.  */
-      *walk_subtrees = false;
-      break;
-
-    case CONSTRUCTOR:
-      {
-	constructor_elt *ce;
-	vec<constructor_elt,va_gc> *v = CONSTRUCTOR_ELTS (*t);
-	for (unsigned i = 0; vec_safe_iterate (v, i, &ce); ++i)
-	  {
-	    tree *valp = &ce->value;
-	    tree type = TREE_TYPE (*valp);
-	    tree subob = obj;
-
-	    if (TREE_CODE (*valp) == CONSTRUCTOR
-		&& AGGREGATE_TYPE_P (type))
-	      {
-		subob = build_ctor_subob_ref (ce->index, type, obj);
-		if (TREE_CODE (*valp) == TARGET_EXPR)
-		  valp = &TARGET_EXPR_INITIAL (*valp);
-	      }
-
-	    cp_walk_tree (valp, replace_placeholders_r,
-			  subob, NULL);
-	  }
-	*walk_subtrees = false;
-	break;
-      }
-
-    default:
-      break;
-    }
-
-  return NULL_TREE;
-}
-
-tree
-replace_placeholders (tree exp, tree obj)
-{
-  hash_set<tree> pset;
-  tree *tp = &exp;
-  if (TREE_CODE (exp) == TARGET_EXPR)
-    tp = &TARGET_EXPR_INITIAL (exp);
-  cp_walk_tree (tp, replace_placeholders_r, obj, NULL);
-  return exp;
 }
 
 /* Similar to `build_nt', but for template definitions of dependent
@@ -2785,13 +2629,9 @@ cp_tree_equal (tree t1, tree t2)
 
   switch (code1)
     {
-    case VOID_CST:
-      /* There's only a single VOID_CST node, so we should never reach
-	 here.  */
-      gcc_unreachable ();
-
     case INTEGER_CST:
-      return tree_int_cst_equal (t1, t2);
+      return TREE_INT_CST_LOW (t1) == TREE_INT_CST_LOW (t2)
+	&& TREE_INT_CST_HIGH (t1) == TREE_INT_CST_HIGH (t2);
 
     case REAL_CST:
       return REAL_VALUES_EQUAL (TREE_REAL_CST (t1), TREE_REAL_CST (t2));
@@ -3007,7 +2847,7 @@ cp_tree_equal (tree t1, tree t2)
       if (TRAIT_EXPR_KIND (t1) != TRAIT_EXPR_KIND (t2))
 	return false;
       return same_type_p (TRAIT_EXPR_TYPE1 (t1), TRAIT_EXPR_TYPE1 (t2))
-	&& cp_tree_equal (TRAIT_EXPR_TYPE2 (t1), TRAIT_EXPR_TYPE2 (t2));
+	&& same_type_p (TRAIT_EXPR_TYPE2 (t1), TRAIT_EXPR_TYPE2 (t2));
 
     case CAST_EXPR:
     case STATIC_CAST_EXPR:
@@ -3117,7 +2957,7 @@ member_p (const_tree decl)
 tree
 build_dummy_object (tree type)
 {
-  tree decl = build1 (CONVERT_EXPR, build_pointer_type (type), void_node);
+  tree decl = build1 (NOP_EXPR, build_pointer_type (type), void_zero_node);
   return cp_build_indirect_ref (decl, RO_NULL, tf_warning_or_error);
 }
 
@@ -3166,8 +3006,8 @@ is_dummy_object (const_tree ob)
 {
   if (INDIRECT_REF_P (ob))
     ob = TREE_OPERAND (ob, 0);
-  return (TREE_CODE (ob) == CONVERT_EXPR
-	  && TREE_OPERAND (ob, 0) == void_node);
+  return (TREE_CODE (ob) == NOP_EXPR
+	  && TREE_OPERAND (ob, 0) == void_zero_node);
 }
 
 /* Returns 1 iff type T is something we want to treat as a scalar type for
@@ -3639,7 +3479,7 @@ cxx_type_hash_eq (const_tree typea, const_tree typeb)
 
 tree
 cp_walk_subtrees (tree *tp, int *walk_subtrees_p, walk_tree_fn func,
-		  void *data, hash_set<tree> *pset)
+		  void *data, struct pointer_set_t *pset)
 {
   enum tree_code code = TREE_CODE (*tp);
   tree result;
@@ -3784,7 +3624,7 @@ cp_save_expr (tree expr)
 void
 init_tree (void)
 {
-  list_hash_table = hash_table<list_hasher>::create_ggc (61);
+  list_hash_table = htab_create_ggc (31, list_hash, list_hash_eq, NULL);
 }
 
 /* Returns the kind of special function that DECL (a FUNCTION_DECL)
@@ -3876,15 +3716,23 @@ decl_linkage (tree decl)
   if (TREE_CODE (decl) == CONST_DECL)
     return decl_linkage (TYPE_NAME (DECL_CONTEXT (decl)));
 
+  /* Some things that are not TREE_PUBLIC have external linkage, too.
+     For example, on targets that don't have weak symbols, we make all
+     template instantiations have internal linkage (in the object
+     file), but the symbols should still be treated as having external
+     linkage from the point of view of the language.  */
+  if (VAR_OR_FUNCTION_DECL_P (decl)
+      && DECL_COMDAT (decl))
+    return lk_external;
+
   /* Things in local scope do not have linkage, if they don't have
      TREE_PUBLIC set.  */
   if (decl_function_context (decl))
     return lk_none;
 
   /* Members of the anonymous namespace also have TREE_PUBLIC unset, but
-     are considered to have external linkage for language purposes, as do
-     template instantiations on targets without weak symbols.  DECLs really
-     meant to have internal linkage have DECL_THIS_STATIC set.  */
+     are considered to have external linkage for language purposes.  DECLs
+     really meant to have internal linkage have DECL_THIS_STATIC set.  */
   if (TREE_CODE (decl) == TYPE_DECL)
     return lk_external;
   if (VAR_OR_FUNCTION_DECL_P (decl))
@@ -3937,7 +3785,7 @@ stabilize_expr (tree exp, tree* initp)
   else if (VOID_TYPE_P (TREE_TYPE (exp)))
     {
       init_expr = exp;
-      exp = void_node;
+      exp = void_zero_node;
     }
   /* There are no expressions with REFERENCE_TYPE, but there can be call
      arguments with such a type; just treat it as a pointer.  */
@@ -4177,7 +4025,7 @@ cp_fix_function_decl_p (tree decl)
       && !DECL_THUNK_P (decl)
       && !DECL_EXTERNAL (decl))
     {
-      struct cgraph_node *node = cgraph_node::get (decl);
+      struct cgraph_node *node = cgraph_get_node (decl);
 
       /* Don't fix same_body aliases.  Although they don't have their own
 	 CFG, they share it with what they alias to.  */

@@ -1,5 +1,5 @@
 // { dg-do compile }
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 // { dg-require-cstdint "" }
 
 // Copyright (C) 2008-2014 Free Software Foundation, Inc.

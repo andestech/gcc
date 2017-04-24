@@ -116,9 +116,6 @@
 ;; Vector modes including 64-bit integer elements, but no floats.
 (define_mode_iterator VDQIX [V8QI V16QI V4HI V8HI V2SI V4SI DI V2DI])
 
-;; Vector modes for H, S and D types.
-(define_mode_iterator VDQHSD [V4HI V8HI V2SI V4SI V2DI])
-
 ;; Vector modes for float->int conversions.
 (define_mode_iterator VCVTF [V2SF V4SF])
 
@@ -194,23 +191,6 @@
 ;; Right shifts
 (define_code_iterator rshifts [ashiftrt lshiftrt])
 
-;; Iterator for integer conversions
-(define_code_iterator FIXUORS [fix unsigned_fix])
-
-;; Binary operators whose second operand can be shifted.
-(define_code_iterator shiftable_ops [plus minus ior xor and])
-
-;; plus and minus are the only shiftable_ops for which Thumb2 allows
-;; a stack pointer opoerand.  The minus operation is a candidate for an rsub
-;; and hence only plus is supported.
-(define_code_attr t2_binop0
-  [(plus "rk") (minus "r") (ior "r") (xor "r") (and "r")])
-
-;; The instruction to use when a shiftable_ops has a shift operation as
-;; its first operand.
-(define_code_attr arith_shift_insn
-  [(plus "add") (minus "rsb") (ior "orr") (xor "eor") (and "and")])
-
 ;;----------------------------------------------------------------------------
 ;; Int iterators
 ;;----------------------------------------------------------------------------
@@ -218,12 +198,8 @@
 (define_int_iterator VRINT [UNSPEC_VRINTZ UNSPEC_VRINTP UNSPEC_VRINTM
                             UNSPEC_VRINTR UNSPEC_VRINTX UNSPEC_VRINTA])
 
-(define_int_iterator VCVT [UNSPEC_VRINTP UNSPEC_VRINTM UNSPEC_VRINTA])
-
 (define_int_iterator NEON_VRINT [UNSPEC_NVRINTP UNSPEC_NVRINTZ UNSPEC_NVRINTM
                               UNSPEC_NVRINTX UNSPEC_NVRINTA UNSPEC_NVRINTN])
-
-(define_int_iterator NEON_VCVT [UNSPEC_NVRINTP UNSPEC_NVRINTM UNSPEC_NVRINTA])
 
 (define_int_iterator CRC [UNSPEC_CRC32B UNSPEC_CRC32H UNSPEC_CRC32W
                           UNSPEC_CRC32CB UNSPEC_CRC32CH UNSPEC_CRC32CW])
@@ -525,13 +501,6 @@
 
 ;; Assembler mnemonics for signedness of widening operations.
 (define_code_attr US [(sign_extend "s") (zero_extend "u")])
-
-;; Signedness suffix for float->fixed conversions.  Empty for signed
-;; conversion.
-(define_code_attr su_optab [(fix "") (unsigned_fix "u")])
-
-;; Sign prefix to use in instruction type suffixes, i.e. s32, u32.
-(define_code_attr su [(fix "s") (unsigned_fix "u")])
 
 ;; Right shifts
 (define_code_attr shift [(ashiftrt "ashr") (lshiftrt "lshr")])

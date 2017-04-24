@@ -1,5 +1,4 @@
 /* { dg-do compile { target { powerpc*-*-* } } } */
-/* { dg-skip-if "do not override -mcpu" { powerpc*-*-* } { "-mcpu=*" } { "-mcpu=power5" } } */
 /* { dg-options "-O2 -mno-popcntd -mcpu=power5" } */
 /* { dg-require-effective-target lp64 } */
 /* { dg-final { scan-assembler "lwbrx" } } */

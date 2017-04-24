@@ -11,7 +11,6 @@ typedef struct
 } ImageParameters;
 
 ImageParameters *img;
-void error (const char *);
 
 void GenerateSequenceParameterSet(seq_parameter_set_rbsp_t *sps)
 {

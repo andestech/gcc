@@ -82,7 +82,8 @@ along with GCC; see the file COPYING3.  If not see
 
 /* Don't put any single quote (') in MOD_VERSION, if you want it to be
    recognized.  */
-#define MOD_VERSION "13"
+#define MOD_VERSION "12"
+#define MOD_VERSION_OMP4 "12 OpenMP 4"
 
 
 /* Structure that describes a position within a module file.  */
@@ -190,15 +191,13 @@ static gzFile module_fp;
 static const char *module_name;
 static gfc_use_list *module_list;
 
-/* If we're reading an intrinsic module, this is its ID.  */
-static intmod_id current_intmod;
-
 /* Content of module.  */
 static char* module_content;
 
 static long module_pos;
 static int module_line, module_column, only_flag;
 static int prev_module_line, prev_module_column;
+static bool module_omp4;
 
 static enum
 { IO_INPUT, IO_OUTPUT }
@@ -1758,7 +1757,7 @@ unquote_string (const char *s)
       if (p[1] == '\\')
 	p++;
       else if (p[1] == 'U')
-	p += 9; /* That is a "\U????????".  */
+	p += 9; /* That is a "\U????????". */
       else
 	gfc_internal_error ("unquote_string(): got bad string");
     }
@@ -4099,10 +4098,7 @@ mio_symbol (gfc_symbol *sym)
   else
     {
       mio_integer (&intmod);
-      if (current_intmod)
-	sym->from_intmod = current_intmod;
-      else
-	sym->from_intmod = (intmod_id) intmod;
+      sym->from_intmod = (intmod_id) intmod;
     }
   
   mio_integer (&(sym->intmod_sym_id));
@@ -4113,7 +4109,13 @@ mio_symbol (gfc_symbol *sym)
   if (sym->formal_ns
       && sym->formal_ns->proc_name == sym
       && sym->formal_ns->entries == NULL)
-    mio_omp_declare_simd (sym->formal_ns, &sym->formal_ns->omp_declare_simd);
+    {
+      if (module_omp4)
+	mio_omp_declare_simd (sym->formal_ns,
+			      &sym->formal_ns->omp_declare_simd);
+      else if (iomode == IO_OUTPUT)
+	gcc_assert (sym->formal_ns->omp_declare_simd == NULL);
+    }
 
   mio_rparen ();
 }
@@ -4847,19 +4849,21 @@ read_cleanup (pointer_info *p)
 /* It is not quite enough to check for ambiguity in the symbols by
    the loaded symbol and the new symbol not being identical.  */
 static bool
-check_for_ambiguous (gfc_symbol *st_sym, pointer_info *info)
+check_for_ambiguous (gfc_symtree *st, pointer_info *info)
 {
   gfc_symbol *rsym;
   module_locus locus;
   symbol_attribute attr;
+  gfc_symbol *st_sym;
 
-  if (gfc_current_ns->proc_name && st_sym->name == gfc_current_ns->proc_name->name)
+  if (gfc_current_ns->proc_name && st->name == gfc_current_ns->proc_name->name)
     {
       gfc_error ("'%s' of module '%s', imported at %C, is also the name of the "
-		 "current program unit", st_sym->name, module_name);
+		 "current program unit", st->name, module_name);
       return true;
     }
 
+  st_sym = st->n.sym;
   rsym = info->u.rsym.sym;
   if (st_sym == rsym)
     return false;
@@ -4920,7 +4924,8 @@ read_module (void)
 
   /* Skip OpenMP UDRs.  */
   get_module_locus (&omp_udrs);
-  skip_list ();
+  if (module_omp4)
+    skip_list ();
 
   mio_lparen ();
 
@@ -5090,7 +5095,7 @@ read_module (void)
 	  if (st != NULL)
 	    {
 	      /* Check for ambiguous symbols.  */
-	      if (check_for_ambiguous (st->n.sym, info))
+	      if (check_for_ambiguous (st, info))
 		st->ambiguous = 1;
 	      else
 		info->u.rsym.symtree = st;
@@ -5187,9 +5192,12 @@ read_module (void)
   load_commons ();
   load_equiv ();
 
-  /* Load OpenMP user defined reductions.  */
-  set_module_locus (&omp_udrs);
-  load_omp_udrs ();
+  if (module_omp4)
+    {
+      /* Load OpenMP user defined reductions.  */
+      set_module_locus (&omp_udrs);
+      load_omp_udrs ();
+    }
 
   /* At this point, we read those symbols that are needed but haven't
      been loaded yet.  If one symbol requires another, the other gets
@@ -5891,11 +5899,16 @@ write_module (void)
   write_char ('\n');
   write_char ('\n');
 
-  mio_lparen ();
-  write_omp_udrs (gfc_current_ns->omp_udr_root);
-  mio_rparen ();
-  write_char ('\n');
-  write_char ('\n');
+  if (module_omp4)
+    {
+      mio_lparen ();
+      write_omp_udrs (gfc_current_ns->omp_udr_root);
+      mio_rparen ();
+      write_char ('\n');
+      write_char ('\n');
+    }
+  else
+    gcc_assert (gfc_current_ns->omp_udr_root == NULL);
 
   /* Write symbol information.  First we traverse all symbols in the
      primary namespace, writing those that need to be written.
@@ -5965,6 +5978,21 @@ read_crc32_from_module_file (const char* filename, uLong* crc)
 }
 
 
+/* Set module_omp4 if any symbol has !$OMP DECLARE SIMD directives.  */
+
+static void
+find_omp_declare_simd (gfc_symtree *st)
+{
+  gfc_symbol *sym = st->n.sym;
+  if (sym->formal_ns
+      && sym->formal_ns->proc_name == sym
+      && sym->formal_ns->omp_declare_simd)
+    module_omp4 = true;
+  else if (sym->attr.omp_declare_target)
+    module_omp4 = true;
+}
+
+
 /* Given module, dump it to disk.  If there was an error while
    processing the module, dump_flag will be set to zero and we delete
    the module file, even if it was already there.  */
@@ -6000,12 +6028,18 @@ gfc_dump_module (const char *name, int dump_flag)
      module file, even if it was already there.  */
   if (!dump_flag)
     {
-      remove (filename);
+      unlink (filename);
       return;
     }
 
   if (gfc_cpp_makedep ())
     gfc_cpp_add_target (filename);
+
+  module_omp4 = false;
+  if (gfc_current_ns->omp_udr_root)
+    module_omp4 = true;
+  else
+    gfc_traverse_symtree (gfc_current_ns->sym_root, find_omp_declare_simd);
 
   /* Write the module to the temporary file.  */
   module_fp = gzopen (filename_tmp, "w");
@@ -6014,7 +6048,7 @@ gfc_dump_module (const char *name, int dump_flag)
 		     filename_tmp, xstrerror (errno));
 
   gzprintf (module_fp, "GFORTRAN module version '%s' created from %s\n",
-	    MOD_VERSION, gfc_source_file);
+	    module_omp4 ? MOD_VERSION_OMP4 : MOD_VERSION, gfc_source_file);
 
   /* Write the module itself.  */
   iomode = IO_OUTPUT;
@@ -6040,16 +6074,16 @@ gfc_dump_module (const char *name, int dump_flag)
       || crc_old != crc)
     {
       /* Module file have changed, replace the old one.  */
-      if (remove (filename) && errno != ENOENT)
+      if (unlink (filename) && errno != ENOENT)
 	gfc_fatal_error ("Can't delete module file '%s': %s", filename,
 			 xstrerror (errno));
-      if (rename (filename_tmp, filename))
+       if (rename (filename_tmp, filename))
 	gfc_fatal_error ("Can't rename module file '%s' to '%s': %s",
 			 filename_tmp, filename, xstrerror (errno));
     }
   else
     {
-      if (remove (filename_tmp))
+      if (unlink (filename_tmp))
 	gfc_fatal_error ("Can't delete temporary module file '%s': %s",
 			 filename_tmp, xstrerror (errno));
     }
@@ -6329,7 +6363,7 @@ import_iso_c_binding_module (void)
 		break;
 #include "iso-c-binding.def"
 	      default:
-		; /* Not GFC_STD_* versioned.  */
+		; /* Not GFC_STD_* versioned. */
 	    }
 
 	  switch (i)
@@ -6742,10 +6776,6 @@ gfc_use_module (gfc_use_list *module)
   module_name = module->module_name;
   gfc_rename_list = module->rename;
   only_flag = module->only_flag;
-  current_intmod = INTMOD_NONE;
-
-  if (!only_flag && gfc_option.warn_use_without_only) 
-    gfc_warning_now ("USE statement at %C has no ONLY qualifier");
 
   filename = XALLOCAVEC (char, strlen (module_name) + strlen (MODULE_EXTENSION)
 			       + 1);
@@ -6790,26 +6820,6 @@ gfc_use_module (gfc_use_list *module)
       if (module_fp == NULL && module->intrinsic)
 	gfc_fatal_error ("Can't find an intrinsic module named '%s' at %C",
 			 module_name);
-
-      /* Check for the IEEE modules, so we can mark their symbols
-	 accordingly when we read them.  */
-      if (strcmp (module_name, "ieee_features") == 0
-	  && gfc_notify_std (GFC_STD_F2003, "IEEE_FEATURES module at %C"))
-	{
-	  current_intmod = INTMOD_IEEE_FEATURES;
-	}
-      else if (strcmp (module_name, "ieee_exceptions") == 0
-	       && gfc_notify_std (GFC_STD_F2003,
-				  "IEEE_EXCEPTIONS module at %C"))
-	{
-	  current_intmod = INTMOD_IEEE_EXCEPTIONS;
-	}
-      else if (strcmp (module_name, "ieee_arithmetic") == 0
-	       && gfc_notify_std (GFC_STD_F2003,
-				  "IEEE_ARITHMETIC module at %C"))
-	{
-	  current_intmod = INTMOD_IEEE_ARITHMETIC;
-	}
     }
 
   if (module_fp == NULL)
@@ -6832,6 +6842,8 @@ gfc_use_module (gfc_use_list *module)
   read_module_to_tmpbuf ();
   gzclose (module_fp);
 
+  module_omp4 = false;
+
   /* Skip the first line of the module, after checking that this is
      a gfortran module file.  */
   line = 0;
@@ -6851,10 +6863,14 @@ gfc_use_module (gfc_use_list *module)
 	  if (strcmp (atom_name, " version") != 0
 	      || module_char () != ' '
 	      || parse_atom () != ATOM_STRING
-	      || strcmp (atom_string, MOD_VERSION))
+	      || (strcmp (atom_string, MOD_VERSION)
+		  && strcmp (atom_string, MOD_VERSION_OMP4)))
 	    gfc_fatal_error ("Cannot read module file '%s' opened at %C,"
 			     " because it was created by a different"
 			     " version of GNU Fortran", filename);
+
+	  if (strcmp (atom_string, MOD_VERSION_OMP4) == 0)
+	    module_omp4 = true;
 
 	  free (atom_string);
 	}
@@ -6891,7 +6907,7 @@ gfc_use_module (gfc_use_list *module)
 }
 
 
-/* Remove duplicated intrinsic operators from the rename list.  */
+/* Remove duplicated intrinsic operators from the rename list. */
 
 static void
 rename_list_remove_duplicate (gfc_use_rename *list)

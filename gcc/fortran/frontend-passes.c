@@ -47,9 +47,11 @@ static int callback_reduction (gfc_expr **, int *, void *);
 
 static int count_arglist;
 
-/* Vector of gfc_expr ** we operate on.  */
+/* Pointer to an array of gfc_expr ** we operate on, plus its size
+   and counter.  */
 
-static vec<gfc_expr **> expr_array;
+static gfc_expr ***expr_array;
+static int expr_size, expr_count;
 
 /* Pointer to the gfc_code we currently work on - to be able to insert
    a block before the statement.  */
@@ -79,9 +81,8 @@ static int iterator_level;
 
 /* Keep track of DO loop levels.  */
 
-static vec<gfc_code *> doloop_list;
-
-static int doloop_level;
+static gfc_code **doloop_list;
+static int doloop_size, doloop_level;
 
 /* Vector of gfc_expr * to keep track of DO loops.  */
 
@@ -91,7 +92,7 @@ struct my_struct *evec;
 
 static bool in_assoc_list;
 
-/* Entry point - run all passes for a namespace.  */
+/* Entry point - run all passes for a namespace. */
 
 void
 gfc_run_passes (gfc_namespace *ns)
@@ -100,18 +101,23 @@ gfc_run_passes (gfc_namespace *ns)
   /* Warn about dubious DO loops where the index might
      change.  */
 
+  doloop_size = 20;
   doloop_level = 0;
+  doloop_list = XNEWVEC(gfc_code *, doloop_size);
   doloop_warn (ns);
-  doloop_list.release ();
+  XDELETEVEC (doloop_list);
 
   if (gfc_option.flag_frontend_optimize)
     {
+      expr_size = 20;
+      expr_array = XNEWVEC(gfc_expr **, expr_size);
+
       optimize_namespace (ns);
       optimize_reduction (ns);
       if (gfc_option.dump_fortran_optimized)
 	gfc_dump_parse_tree (ns, stdout);
 
-      expr_array.release ();
+      XDELETEVEC (expr_array);
     }
 }
 
@@ -414,7 +420,13 @@ cfe_register_funcs (gfc_expr **e, int *walk_subtrees ATTRIBUTE_UNUSED,
 	return 0;
     }
 
-  expr_array.safe_push (e);
+  if (expr_count >= expr_size)
+    {
+      expr_size += expr_size;
+      expr_array = XRESIZEVEC(gfc_expr **, expr_array, expr_size);
+    }
+  expr_array[expr_count] = e;
+  expr_count ++;
   return 0;
 }
 
@@ -500,7 +512,7 @@ create_var (gfc_expr * e)
       if (e->shape == NULL)
 	{
 	  /* We don't know the shape at compile time, so we use an
-	     allocatable.  */
+	     allocatable. */
 	  symbol->as->type = AS_DEFERRED;
 	  symbol->attr.allocatable = 1;
 	}
@@ -587,9 +599,8 @@ cfe_expr_0 (gfc_expr **e, int *walk_subtrees,
 {
   int i,j;
   gfc_expr *newvar;
-  gfc_expr **ei, **ej;
 
-  /* Don't do this optimization within OMP workshare.  */
+  /* Don't do this optimization within OMP workshare. */
 
   if (in_omp_workshare)
     {
@@ -597,36 +608,36 @@ cfe_expr_0 (gfc_expr **e, int *walk_subtrees,
       return 0;
     }
 
-  expr_array.release ();
+  expr_count = 0;
 
   gfc_expr_walker (e, cfe_register_funcs, NULL);
 
   /* Walk through all the functions.  */
 
-  FOR_EACH_VEC_ELT_FROM (expr_array, i, ei, 1)
+  for (i=1; i<expr_count; i++)
     {
       /* Skip if the function has been replaced by a variable already.  */
-      if ((*ei)->expr_type == EXPR_VARIABLE)
+      if ((*(expr_array[i]))->expr_type == EXPR_VARIABLE)
 	continue;
 
       newvar = NULL;
       for (j=0; j<i; j++)
 	{
-	  ej = expr_array[j];
-	  if (gfc_dep_compare_functions (*ei, *ej, true) == 0)
+	  if (gfc_dep_compare_functions (*(expr_array[i]),
+					*(expr_array[j]), true)	== 0)
 	    {
 	      if (newvar == NULL)
-		newvar = create_var (*ei);
+		newvar = create_var (*(expr_array[i]));
 
 	      if (gfc_option.warn_function_elimination)
-		warn_function_elimination (*ej);
+		warn_function_elimination (*(expr_array[j]));
 
-	      free (*ej);
-	      *ej = gfc_copy_expr (newvar);
+	      free (*(expr_array[j]));
+	      *(expr_array[j]) = gfc_copy_expr (newvar);
 	    }
 	}
       if (newvar)
-	*ei = newvar;
+	*(expr_array[i]) = newvar;
     }
 
   /* We did all the necessary walking in this function.  */
@@ -1660,23 +1671,25 @@ doloop_code (gfc_code **c, int *walk_subtrees ATTRIBUTE_UNUSED,
   int i;
   gfc_formal_arglist *f;
   gfc_actual_arglist *a;
-  gfc_code *cl;
 
   co = *c;
-
-  /* If the doloop_list grew, we have to truncate it here.  */
-
-  if ((unsigned) doloop_level < doloop_list.length())
-    doloop_list.truncate (doloop_level);
 
   switch (co->op)
     {
     case EXEC_DO:
 
+      /* Grow the temporary storage if necessary.  */
+      if (doloop_level >= doloop_size)
+	{
+	  doloop_size = 2 * doloop_size;
+	  doloop_list = XRESIZEVEC (gfc_code *, doloop_list, doloop_size);
+	}
+
+      /* Mark the DO loop variable if there is one.  */
       if (co->ext.iterator && co->ext.iterator->var)
-	doloop_list.safe_push (co);
+	doloop_list[doloop_level] = co;
       else
-	doloop_list.safe_push ((gfc_code *) NULL);
+	doloop_list[doloop_level] = NULL;
       break;
 
     case EXEC_CALL:
@@ -1695,14 +1708,14 @@ doloop_code (gfc_code **c, int *walk_subtrees ATTRIBUTE_UNUSED,
 
       while (a && f)
 	{
-	  FOR_EACH_VEC_ELT (doloop_list, i, cl)
+	  for (i=0; i<doloop_level; i++)
 	    {
 	      gfc_symbol *do_sym;
 	      
-	      if (cl == NULL)
+	      if (doloop_list[i] == NULL)
 		break;
 
-	      do_sym = cl->ext.iterator->var->symtree->n.sym;
+	      do_sym = doloop_list[i]->ext.iterator->var->symtree->n.sym;
 	      
 	      if (a->expr && a->expr->symtree
 		  && a->expr->symtree->n.sym == do_sym)
@@ -1742,7 +1755,6 @@ do_function (gfc_expr **e, int *walk_subtrees ATTRIBUTE_UNUSED,
   gfc_formal_arglist *f;
   gfc_actual_arglist *a;
   gfc_expr *expr;
-  gfc_code *dl;
   int i;
 
   expr = *e;
@@ -1765,14 +1777,15 @@ do_function (gfc_expr **e, int *walk_subtrees ATTRIBUTE_UNUSED,
 
   while (a && f)
     {
-      FOR_EACH_VEC_ELT (doloop_list, i, dl)
+      for (i=0; i<doloop_level; i++)
 	{
 	  gfc_symbol *do_sym;
-
-	  if (dl == NULL)
+	 
+    
+	  if (doloop_list[i] == NULL)
 	    break;
 
-	  do_sym = dl->ext.iterator->var->symtree->n.sym;
+	  do_sym = doloop_list[i]->ext.iterator->var->symtree->n.sym;
 	  
 	  if (a->expr && a->expr->symtree
 	      && a->expr->symtree->n.sym == do_sym)

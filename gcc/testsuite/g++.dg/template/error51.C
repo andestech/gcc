@@ -2,7 +2,7 @@
 
 template<int> void foo()
 {
-  struct A;                // { dg-message "declaration" }
+  struct A;                // { dg-error "declaration" }
   struct B : A {};         // { dg-error "invalid use of incomplete" }
 }
 

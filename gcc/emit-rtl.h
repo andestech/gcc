@@ -55,29 +55,29 @@ extern tree get_spill_slot_decl (bool);
    ADDR.  The caller is asserting that the actual piece of memory pointed
    to is the same, just the form of the address is being changed, such as
    by putting something into a register.  */
-extern rtx replace_equiv_address (rtx, rtx, bool = false);
+extern rtx replace_equiv_address (rtx, rtx);
 
 /* Likewise, but the reference is not required to be valid.  */
-extern rtx replace_equiv_address_nv (rtx, rtx, bool = false);
+extern rtx replace_equiv_address_nv (rtx, rtx);
 
 extern rtx gen_blockage (void);
 extern rtvec gen_rtvec (int, ...);
 extern rtx copy_insn_1 (rtx);
 extern rtx copy_insn (rtx);
-extern rtx_insn *copy_delay_slot_insn (rtx_insn *);
-extern rtx gen_int_mode (HOST_WIDE_INT, machine_mode);
-extern rtx_insn *emit_copy_of_insn_after (rtx_insn *, rtx_insn *);
+extern rtx copy_delay_slot_insn (rtx);
+extern rtx gen_int_mode (HOST_WIDE_INT, enum machine_mode);
+extern rtx emit_copy_of_insn_after (rtx, rtx);
 extern void set_reg_attrs_from_value (rtx, rtx);
 extern void set_reg_attrs_for_parm (rtx, rtx);
 extern void set_reg_attrs_for_decl_rtl (tree t, rtx x);
-extern void adjust_reg_mode (rtx, machine_mode);
+extern void adjust_reg_mode (rtx, enum machine_mode);
 extern int mem_expr_equal_p (const_tree, const_tree);
 
 extern bool need_atomic_barrier_p (enum memmodel, bool);
 
 /* Return the first insn of the current sequence or current function.  */
 
-static inline rtx_insn *
+static inline rtx
 get_insns (void)
 {
   return crtl->emit.x_first_insn;
@@ -86,7 +86,7 @@ get_insns (void)
 /* Specify a new insn as the first in the chain.  */
 
 static inline void
-set_first_insn (rtx_insn *insn)
+set_first_insn (rtx insn)
 {
   gcc_checking_assert (!insn || !PREV_INSN (insn));
   crtl->emit.x_first_insn = insn;
@@ -94,7 +94,7 @@ set_first_insn (rtx_insn *insn)
 
 /* Return the last insn emitted in current sequence or current function.  */
 
-static inline rtx_insn *
+static inline rtx
 get_last_insn (void)
 {
   return crtl->emit.x_last_insn;
@@ -103,7 +103,7 @@ get_last_insn (void)
 /* Specify a new insn as the last in the chain.  */
 
 static inline void
-set_last_insn (rtx_insn *insn)
+set_last_insn (rtx insn)
 {
   gcc_checking_assert (!insn || !NEXT_INSN (insn));
   crtl->emit.x_last_insn = insn;

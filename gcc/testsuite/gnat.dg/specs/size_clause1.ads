@@ -1,5 +1,4 @@
 -- { dg-do compile }
--- { dg-options "-gnatws" }
 
 package Size_Clause1 is
 

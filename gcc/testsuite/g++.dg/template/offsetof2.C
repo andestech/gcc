@@ -1,7 +1,7 @@
 // PR c++/49085
 
 template <class T>
-struct A			// { dg-message "not complete" }
+struct A			// { dg-error "declaration" }
 {
   int i, j;
   int ar[__builtin_offsetof(A,j)]; // { dg-error "incomplete type" }

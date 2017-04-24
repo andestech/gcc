@@ -148,8 +148,7 @@ func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w: w}
 }
 
-// Encode writes the JSON encoding of v to the stream,
-// followed by a newline character.
+// Encode writes the JSON encoding of v to the stream.
 //
 // See the documentation for Marshal for details about the
 // conversion of Go values to JSON.
@@ -174,7 +173,7 @@ func (enc *Encoder) Encode(v interface{}) error {
 	if _, err = enc.w.Write(e.Bytes()); err != nil {
 		enc.err = err
 	}
-	encodeStatePool.Put(e)
+	putEncodeState(e)
 	return err
 }
 

@@ -108,7 +108,6 @@ void simulate_thread_main()
     }
 }
 
-int
 main()
 {
   simulate_thread_main ();

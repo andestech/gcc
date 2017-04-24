@@ -268,8 +268,6 @@ var cgoEnabled = map[string]bool{
 	"linux/386":       true,
 	"linux/amd64":     true,
 	"linux/arm":       true,
-	"linux/s390":      true,
-	"linux/s390x":     true,
 	"netbsd/386":      true,
 	"netbsd/amd64":    true,
 	"netbsd/arm":      true,
@@ -294,10 +292,10 @@ func defaultContext() Context {
 	// say "+build go1.x", and code that should only be built before Go 1.x
 	// (perhaps it is the stub to use in that case) should say "+build !go1.x".
 	//
-	// When we reach Go 1.4 the line will read
-	//	c.ReleaseTags = []string{"go1.1", "go1.2", "go1.3", "go1.4"}
+	// When we reach Go 1.3 the line will read
+	//	c.ReleaseTags = []string{"go1.1", "go1.2", "go1.3"}
 	// and so on.
-	c.ReleaseTags = []string{"go1.1", "go1.2", "go1.3"}
+	c.ReleaseTags = []string{"go1.1", "go1.2"}
 
 	switch os.Getenv("CGO_ENABLED") {
 	case "1":
@@ -305,7 +303,8 @@ func defaultContext() Context {
 	case "0":
 		c.CgoEnabled = false
 	default:
-		// cgo must be explicitly enabled for cross compilation builds
+		// golang.org/issue/5141
+		// cgo should be disabled for cross compilation builds
 		if runtime.GOARCH == c.GOARCH && runtime.GOOS == c.GOOS {
 			c.CgoEnabled = cgoEnabled[c.GOOS+"/"+c.GOARCH]
 			break
@@ -359,7 +358,6 @@ type Package struct {
 	IgnoredGoFiles []string // .go source files ignored for this build
 	CFiles         []string // .c source files
 	CXXFiles       []string // .cc, .cpp and .cxx source files
-	MFiles         []string // .m (Objective-C) source files
 	HFiles         []string // .h, .hh, .hpp and .hxx source files
 	SFiles         []string // .s source files
 	SwigFiles      []string // .swig files
@@ -624,9 +622,6 @@ Found:
 		case ".cc", ".cpp", ".cxx":
 			p.CXXFiles = append(p.CXXFiles, name)
 			continue
-		case ".m":
-			p.MFiles = append(p.MFiles, name)
-			continue
 		case ".h", ".hh", ".hpp", ".hxx":
 			p.HFiles = append(p.HFiles, name)
 			continue
@@ -794,7 +789,7 @@ func (ctxt *Context) matchFile(dir, name string, returnImports bool, allTags map
 	}
 
 	switch ext {
-	case ".go", ".c", ".cc", ".cxx", ".cpp", ".m", ".s", ".h", ".hh", ".hpp", ".hxx", ".S", ".swig", ".swigcxx":
+	case ".go", ".c", ".cc", ".cxx", ".cpp", ".s", ".h", ".hh", ".hpp", ".hxx", ".S", ".swig", ".swigcxx":
 		// tentatively okay - read to make sure
 	case ".syso":
 		// binary, no reading
@@ -1212,7 +1207,7 @@ func ArchChar(goarch string) (string, error) {
 	switch goarch {
 	case "386":
 		return "8", nil
-	case "amd64", "amd64p32":
+	case "amd64":
 		return "6", nil
 	case "arm":
 		return "5", nil

@@ -18,7 +18,7 @@
 // 20.8.9 Function template bind
 
 // { dg-do compile }
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 
 #include <functional>
 
@@ -30,10 +30,10 @@ void test01()
 {
   const int dummy = 0;
   std::bind(&inc, _1)(0);               // { dg-error  "no match" }
-  // { dg-error "rvalue|const" "" { target *-*-* } 1207 }
-  // { dg-error "rvalue|const" "" { target *-*-* } 1221 }
-  // { dg-error "rvalue|const" "" { target *-*-* } 1235 }
-  // { dg-error "rvalue|const" "" { target *-*-* } 1249 }
+  // { dg-error "rvalue|const" "" { target *-*-* } 1315 }
+  // { dg-error "rvalue|const" "" { target *-*-* } 1329 }
+  // { dg-error "rvalue|const" "" { target *-*-* } 1343 }
+  // { dg-error "rvalue|const" "" { target *-*-* } 1357 }
   std::bind(&inc, std::ref(dummy))();	// { dg-error  "no match" }
 }
 

@@ -1,5 +1,5 @@
 /* { dg-do run } */ 
-/* { dg-options "-O2 -std=gnu89" } */
+/* { dg-options "-O2" } */
 
 struct A {
     int x;

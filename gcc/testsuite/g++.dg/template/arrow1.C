@@ -9,7 +9,9 @@ struct a {
 };
 
 int main() {
-    a<0>()->x; // { dg-error "depth" }
+    a<0>()->x; // { dg-error "instantiation depth exceeds maximum" }
 }
 
-// { dg-prune-output "compilation terminated" }
+// { dg-prune-output "incomplete type" }
+// { dg-prune-output "declaration of" }
+// { dg-prune-output "used but never defined" }

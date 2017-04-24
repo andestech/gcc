@@ -3,7 +3,7 @@
 
 class foo {
  public:
-   class __iterator;		// { dg-message "declaration" }
+   class __iterator;
    friend class __iterator;
    typedef __iterator const_iterator;
    virtual ~foo() { }
@@ -12,7 +12,8 @@ class foo {
 static void iteratorTest(const foo &x)
 {
    foo::const_iterator i = x.begin();		// { dg-error "incomplete type" "incomplete type" } 
-   // { dg-error "const foo" "" { target *-*-* } 14 }
+   // { dg-message "candidate" "candidate note" { target *-*-* } 14 }
+   // { dg-error "no matching" "no matching" { target *-*-* } 14 }
    for (; i; ++i)
       *i;
 }

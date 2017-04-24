@@ -14,12 +14,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/url"
 	"strings"
-	"sync"
-	"time"
 )
 
 // A Client is an HTTP client. Its zero value (DefaultClient) is a
@@ -55,20 +52,6 @@ type Client struct {
 	// If Jar is nil, cookies are not sent in requests and ignored
 	// in responses.
 	Jar CookieJar
-
-	// Timeout specifies a time limit for requests made by this
-	// Client. The timeout includes connection time, any
-	// redirects, and reading the response body. The timer remains
-	// running after Get, Head, Post, or Do return and will
-	// interrupt reading of the Response.Body.
-	//
-	// A Timeout of zero means no timeout.
-	//
-	// The Client's Transport must support the CancelRequest
-	// method or Client will return errors when attempting to make
-	// a request with Get, Head, Post, or Do. Client's default
-	// Transport (DefaultTransport) supports CancelRequest.
-	Timeout time.Duration
 }
 
 // DefaultClient is the default Client and is used by Get, Head, and Post.
@@ -91,9 +74,8 @@ type RoundTripper interface {
 	// authentication, or cookies.
 	//
 	// RoundTrip should not modify the request, except for
-	// consuming and closing the Body, including on errors. The
-	// request's URL and Header fields are guaranteed to be
-	// initialized.
+	// consuming and closing the Body. The request's URL and
+	// Header fields are guaranteed to be initialized.
 	RoundTrip(*Request) (*Response, error)
 }
 
@@ -115,7 +97,7 @@ func (c *Client) send(req *Request) (*Response, error) {
 			req.AddCookie(cookie)
 		}
 	}
-	resp, err := send(req, c.transport())
+	resp, err := send(req, c.Transport)
 	if err != nil {
 		return nil, err
 	}
@@ -141,9 +123,6 @@ func (c *Client) send(req *Request) (*Response, error) {
 // (typically Transport) may not be able to re-use a persistent TCP
 // connection to the server for a subsequent "keep-alive" request.
 //
-// The request Body, if non-nil, will be closed by the underlying
-// Transport, even on errors.
-//
 // Generally Get, Post, or PostForm will be used instead of Do.
 func (c *Client) Do(req *Request) (resp *Response, err error) {
 	if req.Method == "GET" || req.Method == "HEAD" {
@@ -155,28 +134,22 @@ func (c *Client) Do(req *Request) (resp *Response, err error) {
 	return c.send(req)
 }
 
-func (c *Client) transport() RoundTripper {
-	if c.Transport != nil {
-		return c.Transport
-	}
-	return DefaultTransport
-}
-
 // send issues an HTTP request.
 // Caller should close resp.Body when done reading from it.
 func send(req *Request, t RoundTripper) (resp *Response, err error) {
 	if t == nil {
-		req.closeBody()
-		return nil, errors.New("http: no Client.Transport or DefaultTransport")
+		t = DefaultTransport
+		if t == nil {
+			err = errors.New("http: no Client.Transport or DefaultTransport")
+			return
+		}
 	}
 
 	if req.URL == nil {
-		req.closeBody()
 		return nil, errors.New("http: nil Request.URL")
 	}
 
 	if req.RequestURI != "" {
-		req.closeBody()
 		return nil, errors.New("http: Request.RequestURI can't be set in client requests.")
 	}
 
@@ -284,40 +257,21 @@ func (c *Client) doFollowingRedirects(ireq *Request, shouldRedirect func(int) bo
 	var via []*Request
 
 	if ireq.URL == nil {
-		ireq.closeBody()
 		return nil, errors.New("http: nil Request.URL")
 	}
 
-	var reqmu sync.Mutex // guards req
 	req := ireq
-
-	var timer *time.Timer
-	if c.Timeout > 0 {
-		type canceler interface {
-			CancelRequest(*Request)
-		}
-		tr, ok := c.transport().(canceler)
-		if !ok {
-			return nil, fmt.Errorf("net/http: Client Transport of type %T doesn't support CancelRequest; Timeout not supported", c.transport())
-		}
-		timer = time.AfterFunc(c.Timeout, func() {
-			reqmu.Lock()
-			defer reqmu.Unlock()
-			tr.CancelRequest(req)
-		})
-	}
-
 	urlStr := "" // next relative or absolute URL to fetch (after first request)
 	redirectFailed := false
 	for redirect := 0; ; redirect++ {
 		if redirect != 0 {
-			nreq := new(Request)
-			nreq.Method = ireq.Method
+			req = new(Request)
+			req.Method = ireq.Method
 			if ireq.Method == "POST" || ireq.Method == "PUT" {
-				nreq.Method = "GET"
+				req.Method = "GET"
 			}
-			nreq.Header = make(Header)
-			nreq.URL, err = base.Parse(urlStr)
+			req.Header = make(Header)
+			req.URL, err = base.Parse(urlStr)
 			if err != nil {
 				break
 			}
@@ -325,18 +279,15 @@ func (c *Client) doFollowingRedirects(ireq *Request, shouldRedirect func(int) bo
 				// Add the Referer header.
 				lastReq := via[len(via)-1]
 				if lastReq.URL.Scheme != "https" {
-					nreq.Header.Set("Referer", lastReq.URL.String())
+					req.Header.Set("Referer", lastReq.URL.String())
 				}
 
-				err = redirectChecker(nreq, via)
+				err = redirectChecker(req, via)
 				if err != nil {
 					redirectFailed = true
 					break
 				}
 			}
-			reqmu.Lock()
-			req = nreq
-			reqmu.Unlock()
 		}
 
 		urlStr = req.URL.String()
@@ -345,12 +296,6 @@ func (c *Client) doFollowingRedirects(ireq *Request, shouldRedirect func(int) bo
 		}
 
 		if shouldRedirect(resp.StatusCode) {
-			// Read the body if small so underlying TCP connection will be re-used.
-			// No need to check for errors: if it fails, Transport won't reuse it anyway.
-			const maxBodySlurpSize = 2 << 10
-			if resp.ContentLength == -1 || resp.ContentLength <= maxBodySlurpSize {
-				io.CopyN(ioutil.Discard, resp.Body, maxBodySlurpSize)
-			}
 			resp.Body.Close()
 			if urlStr = resp.Header.Get("Location"); urlStr == "" {
 				err = errors.New(fmt.Sprintf("%d response missing Location header", resp.StatusCode))
@@ -360,10 +305,7 @@ func (c *Client) doFollowingRedirects(ireq *Request, shouldRedirect func(int) bo
 			via = append(via, req)
 			continue
 		}
-		if timer != nil {
-			resp.Body = &cancelTimerBody{timer, resp.Body}
-		}
-		return resp, nil
+		return
 	}
 
 	method := ireq.Method
@@ -407,7 +349,7 @@ func Post(url string, bodyType string, body io.Reader) (resp *Response, err erro
 // Caller should close resp.Body when done reading from it.
 //
 // If the provided body is also an io.Closer, it is closed after the
-// request.
+// body is successfully written to the server.
 func (c *Client) Post(url string, bodyType string, body io.Reader) (resp *Response, err error) {
 	req, err := NewRequest("POST", url, body)
 	if err != nil {
@@ -465,23 +407,4 @@ func (c *Client) Head(url string) (resp *Response, err error) {
 		return nil, err
 	}
 	return c.doFollowingRedirects(req, shouldRedirectGet)
-}
-
-type cancelTimerBody struct {
-	t  *time.Timer
-	rc io.ReadCloser
-}
-
-func (b *cancelTimerBody) Read(p []byte) (n int, err error) {
-	n, err = b.rc.Read(p)
-	if err == io.EOF {
-		b.t.Stop()
-	}
-	return
-}
-
-func (b *cancelTimerBody) Close() error {
-	err := b.rc.Close()
-	b.t.Stop()
-	return err
 }

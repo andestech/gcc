@@ -18,7 +18,7 @@
 // 25.2.12 [alg.is_permutation] Is permutation
 
 // { dg-do compile }
-// { dg-options " -std=gnu++14 " }
+// { dg-options " -std=gnu++1y " }
 
 #include <algorithm>
 #include <testsuite_iterators.h>

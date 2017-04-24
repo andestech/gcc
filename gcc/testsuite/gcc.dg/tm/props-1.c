@@ -3,7 +3,6 @@
 
 int global;
 
-void
 foo(int local)
 {
   __transaction_atomic {

@@ -16,9 +16,10 @@ foo (int i)
   return j;
 }
 
+
 int foo2( void ) {
-  int rc;
-  return rc; /* { dg-warning "'rc' is used uninitialized in this function" } */
+  int rc;  /* { dg-warning "'rc' is used uninitialized in this function" "uninitialized" { xfail *-*-* } 21 } */
+  return rc;
   *&rc = 0;
 }
 
@@ -28,7 +29,7 @@ void frob(int *pi);
 int main(void)
 {
   int i; 
-  printf("i = %d\n", i); /* { dg-warning "'i' is used uninitialized in this function" } */
+  printf("i = %d\n", i); /* { dg-warning "'i' is used uninitialized in this function" "uninitialized" { xfail *-*-* } 32 } */
   frob(&i);
 
   return 0;
@@ -37,6 +38,6 @@ int main(void)
 void foo3(int*);
 void bar3(void) { 
   int x; 
-  if(x) /* { dg-warning "'x' is used uninitialized in this function" } */
+  if(x) /* { dg-warning "'x' is used uninitialized in this function" "uninitialized" { xfail *-*-* } 41 } */
     foo3(&x); 
 }

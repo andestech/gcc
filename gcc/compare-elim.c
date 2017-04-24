@@ -63,17 +63,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "insn-config.h"
 #include "recog.h"
 #include "flags.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfgrtl.h"
 #include "basic-block.h"
 #include "tree-pass.h"
 #include "target.h"
@@ -92,7 +81,7 @@ along with GCC; see the file COPYING3.  If not see
 struct comparison_use
 {
   /* The instruction in which the result of the compare is used.  */
-  rtx_insn *insn;
+  rtx insn;
   /* The location of the flags register within the use.  */
   rtx *loc;
   /* The comparison code applied against the flags register.  */
@@ -102,23 +91,20 @@ struct comparison_use
 struct comparison
 {
   /* The comparison instruction.  */
-  rtx_insn *insn;
+  rtx insn;
 
   /* The insn prior to the comparison insn that clobbers the flags.  */
-  rtx_insn *prev_clobber;
+  rtx prev_clobber;
 
   /* The two values being compared.  These will be either REGs or
      constants.  */
   rtx in_a, in_b;
 
-  /* The REG_EH_REGION of the comparison.  */
-  rtx eh_note;
-
   /* Information about how this comparison is used.  */
   struct comparison_use uses[MAX_CMP_USE];
 
   /* The original CC_MODE for this comparison.  */
-  machine_mode orig_mode;
+  enum machine_mode orig_mode;
 
   /* The number of uses identified for this comparison.  */
   unsigned short n_uses;
@@ -140,7 +126,7 @@ static vec<comparison_struct_p> all_compares;
    the rtx for the COMPARE itself.  */
 
 static rtx
-conforming_compare (rtx_insn *insn)
+conforming_compare (rtx insn)
 {
   rtx set, src, dest;
 
@@ -170,7 +156,7 @@ conforming_compare (rtx_insn *insn)
    correct.  The term "arithmetic" may be somewhat misleading...  */
 
 static bool
-arithmetic_flags_clobber_p (rtx_insn *insn)
+arithmetic_flags_clobber_p (rtx insn)
 {
   rtx pat, x;
 
@@ -205,16 +191,16 @@ arithmetic_flags_clobber_p (rtx_insn *insn)
    it in CMP; otherwise indicate that we've missed a use.  */
 
 static void
-find_flags_uses_in_insn (struct comparison *cmp, rtx_insn *insn)
+find_flags_uses_in_insn (struct comparison *cmp, rtx insn)
 {
-  df_ref use;
+  df_ref *use_rec, use;
 
   /* If we've already lost track of uses, don't bother collecting more.  */
   if (cmp->missing_uses)
     return;
 
   /* Find a USE of the flags register.  */
-  FOR_EACH_INSN_USE (use, insn)
+  for (use_rec = DF_INSN_USES (insn); (use = *use_rec) != NULL; use_rec++)
     if (DF_REF_REGNO (use) == targetm.flags_regnum)
       {
 	rtx x, *loc;
@@ -274,9 +260,8 @@ void
 find_comparison_dom_walker::before_dom_children (basic_block bb)
 {
   struct comparison *last_cmp;
-  rtx_insn *insn, *next, *last_clobber;
+  rtx insn, next, last_clobber;
   bool last_cmp_valid;
-  bool need_purge = false;
   bitmap killed;
 
   killed = BITMAP_ALLOC (NULL);
@@ -306,7 +291,7 @@ find_comparison_dom_walker::before_dom_children (basic_block bb)
     {
       rtx src;
 
-      next = (insn == BB_END (bb) ? NULL : NEXT_INSN (insn));
+      next = (insn == BB_END (bb) ? NULL_RTX : NEXT_INSN (insn));
       if (!NONDEBUG_INSN_P (insn))
 	continue;
 
@@ -317,61 +302,45 @@ find_comparison_dom_walker::before_dom_children (basic_block bb)
       src = conforming_compare (insn);
       if (src)
 	{
-	  machine_mode src_mode = GET_MODE (src);
-	  rtx eh_note = NULL;
+	  enum machine_mode src_mode = GET_MODE (src);
 
-	  if (flag_non_call_exceptions)
-	    eh_note = find_reg_note (insn, REG_EH_REGION, NULL);
+	  /* Eliminate a compare that's redundant with the previous.  */
+	  if (last_cmp_valid
+	      && rtx_equal_p (last_cmp->in_a, XEXP (src, 0))
+	      && rtx_equal_p (last_cmp->in_b, XEXP (src, 1)))
+	    {
+	      rtx flags, x;
+	      enum machine_mode new_mode
+		= targetm.cc_modes_compatible (last_cmp->orig_mode, src_mode);
 
-	  if (!last_cmp_valid)
-	    goto dont_delete;
+	      /* New mode is incompatible with the previous compare mode.  */
+	      if (new_mode == VOIDmode)
+		continue;
 
-	  /* Take care that it's in the same EH region.  */
-	  if (flag_non_call_exceptions
-	      && !rtx_equal_p (eh_note, last_cmp->eh_note))
-	    goto dont_delete;
+	      if (new_mode != last_cmp->orig_mode)
+		{
+		  flags = gen_rtx_REG (src_mode, targetm.flags_regnum);
 
-	  /* Make sure the compare is redundant with the previous.  */
-	  if (!rtx_equal_p (last_cmp->in_a, XEXP (src, 0))
-	      || !rtx_equal_p (last_cmp->in_b, XEXP (src, 1)))
-	    goto dont_delete;
+		  /* Generate new comparison for substitution.  */
+		  x = gen_rtx_COMPARE (new_mode, XEXP (src, 0), XEXP (src, 1));
+		  x = gen_rtx_SET (VOIDmode, flags, x);
 
-	  /* New mode must be compatible with the previous compare mode.  */
-	  {
-	    machine_mode new_mode
-	      = targetm.cc_modes_compatible (last_cmp->orig_mode, src_mode);
-	    if (new_mode == VOIDmode)
-	      goto dont_delete;
+		  if (!validate_change (last_cmp->insn,
+					&PATTERN (last_cmp->insn), x, false))
+		    continue;
 
-	    if (new_mode != last_cmp->orig_mode)
-	      {
-		rtx x, flags = gen_rtx_REG (src_mode, targetm.flags_regnum);
+		  last_cmp->orig_mode = new_mode;
+		}
 
-		/* Generate new comparison for substitution.  */
-		x = gen_rtx_COMPARE (new_mode, XEXP (src, 0), XEXP (src, 1));
-		x = gen_rtx_SET (VOIDmode, flags, x);
+	      delete_insn (insn);
+	      continue;
+	    }
 
-		if (!validate_change (last_cmp->insn,
-				      &PATTERN (last_cmp->insn), x, false))
-		  goto dont_delete;
-
-		last_cmp->orig_mode = new_mode;
-	      }
-	  }
-
-	  /* All tests and substitutions succeeded!  */
-	  if (eh_note)
-	    need_purge = true;
-	  delete_insn (insn);
-	  continue;
-
-	dont_delete:
 	  last_cmp = XCNEW (struct comparison);
 	  last_cmp->insn = insn;
 	  last_cmp->prev_clobber = last_clobber;
 	  last_cmp->in_a = XEXP (src, 0);
 	  last_cmp->in_b = XEXP (src, 1);
-	  last_cmp->eh_note = eh_note;
 	  last_cmp->orig_mode = src_mode;
 	  all_compares.safe_push (last_cmp);
 
@@ -435,11 +404,6 @@ find_comparison_dom_walker::before_dom_children (basic_block bb)
 	    }
 	}
     }
-
-  /* If we deleted a compare with a REG_EH_REGION note, we may need to
-     remove EH edges.  */
-  if (need_purge)
-    purge_dead_edges (bb);
 }
 
 /* Find all comparisons in the function.  */
@@ -466,7 +430,7 @@ static rtx
 maybe_select_cc_mode (struct comparison *cmp, rtx a ATTRIBUTE_UNUSED,
 		      rtx b ATTRIBUTE_UNUSED)
 {
-  machine_mode sel_mode;
+  enum machine_mode sel_mode;
   const int n = cmp->n_uses;
   rtx flags = NULL;
 
@@ -498,7 +462,7 @@ maybe_select_cc_mode (struct comparison *cmp, rtx a ATTRIBUTE_UNUSED,
       sel_mode = SELECT_CC_MODE (cmp->uses[0].code, a, b);
       for (i = 1; i < n; ++i)
 	{
-	  machine_mode new_mode;
+	  enum machine_mode new_mode;
 	  new_mode = SELECT_CC_MODE (cmp->uses[i].code, a, b);
 	  if (new_mode != sel_mode)
 	    {
@@ -526,8 +490,7 @@ maybe_select_cc_mode (struct comparison *cmp, rtx a ATTRIBUTE_UNUSED,
 static bool
 try_eliminate_compare (struct comparison *cmp)
 {
-  rtx_insn *insn, *bb_head;
-  rtx x, flags, in_a, cmp_src;
+  rtx x, insn, bb_head, flags, in_a, cmp_src;
 
   /* We must have found an interesting "clobber" preceding the compare.  */
   if (cmp->prev_clobber == NULL)
@@ -559,7 +522,7 @@ try_eliminate_compare (struct comparison *cmp)
 	   | DF_REF_MUST_CLOBBER | DF_REF_SIGN_EXTRACT
 	   | DF_REF_ZERO_EXTRACT | DF_REF_STRICT_LOW_PART
 	   | DF_REF_PRE_POST_MODIFY);
-      df_ref def;
+      df_ref *def_rec, def;
 
       /* Note that the BB_HEAD is always either a note or a label, but in
 	 any case it means that IN_A is defined outside the block.  */
@@ -569,7 +532,7 @@ try_eliminate_compare (struct comparison *cmp)
 	continue;
 
       /* Find a possible def of IN_A in INSN.  */
-      FOR_EACH_INSN_DEF (def, insn)
+      for (def_rec = DF_INSN_DEFS (insn); (def = *def_rec) != NULL; def_rec++)
 	if (DF_REF_REGNO (def) == REGNO (in_a))
 	  break;
 
@@ -680,6 +643,15 @@ execute_compare_elim_after_reload (void)
   return 0;
 }
 
+static bool
+gate_compare_elim_after_reload (void)
+{
+  /* Setting this target hook value is how a backend indicates the need.  */
+  if (targetm.flags_regnum == INVALID_REGNUM)
+    return false;
+  return flag_compare_elim_after_reload;
+}
+
 namespace {
 
 const pass_data pass_data_compare_elim_after_reload =
@@ -687,12 +659,15 @@ const pass_data pass_data_compare_elim_after_reload =
   RTL_PASS, /* type */
   "cmpelim", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_NONE, /* tv_id */
   0, /* properties_required */
   0, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  ( TODO_df_finish | TODO_df_verify ), /* todo_flags_finish */
+  ( TODO_df_finish | TODO_df_verify
+    | TODO_verify_rtl_sharing ), /* todo_flags_finish */
 };
 
 class pass_compare_elim_after_reload : public rtl_opt_pass
@@ -703,18 +678,8 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *)
-    {
-      /* Setting this target hook value is how a backend indicates the need.  */
-      if (targetm.flags_regnum == INVALID_REGNUM)
-	return false;
-      return flag_compare_elim_after_reload;
-    }
-
-  virtual unsigned int execute (function *)
-    {
-      return execute_compare_elim_after_reload ();
-    }
+  bool gate () { return gate_compare_elim_after_reload (); }
+  unsigned int execute () { return execute_compare_elim_after_reload (); }
 
 }; // class pass_compare_elim_after_reload
 

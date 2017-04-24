@@ -78,11 +78,11 @@ along with GCC; see the file COPYING3.  If not see
 #include "config.h"
 #include "system.h"
 #include "coretypes.h"
-#include "gfortran.h"
 #include "tree.h"
 #include "gimple-expr.h"
 #include "diagnostic-core.h"	/* For internal_error/fatal_error.  */
 #include "flags.h"
+#include "gfortran.h"
 #include "constructor.h"
 #include "trans.h"
 #include "trans-stmt.h"
@@ -90,7 +90,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "trans-array.h"
 #include "trans-const.h"
 #include "dependency.h"
-#include "wide-int.h"
 
 static bool gfc_get_array_constructor_size (mpz_t *, gfc_constructor_base);
 
@@ -298,6 +297,7 @@ gfc_conv_descriptor_token (tree desc)
 
   type = TREE_TYPE (desc);
   gcc_assert (GFC_DESCRIPTOR_TYPE_P (type));
+  gcc_assert (GFC_TYPE_ARRAY_AKIND (type) == GFC_ARRAY_ALLOCATABLE);
   gcc_assert (gfc_option.coarray == GFC_FCOARRAY_LIB);
   field = gfc_advance_chain (TYPE_FIELDS (type), CAF_TOKEN_FIELD);
 
@@ -2045,15 +2045,11 @@ gfc_build_constant_array_constructor (gfc_expr * expr, tree type)
   TREE_CONSTANT (init) = 1;
   TREE_STATIC (init) = 1;
 
-  tmp = build_decl (input_location, VAR_DECL, create_tmp_var_name ("A"),
-		    tmptype);
-  DECL_ARTIFICIAL (tmp) = 1;
-  DECL_IGNORED_P (tmp) = 1;
+  tmp = gfc_create_var (tmptype, "A");
   TREE_STATIC (tmp) = 1;
   TREE_CONSTANT (tmp) = 1;
   TREE_READONLY (tmp) = 1;
   DECL_INITIAL (tmp) = init;
-  pushdecl (tmp);
 
   return tmp;
 }
@@ -3178,7 +3174,7 @@ gfc_conv_array_ref (gfc_se * se, gfc_array_ref * ar, gfc_expr *expr,
 	      && TREE_CODE (TREE_TYPE (se->expr)) == POINTER_TYPE)
 	    se->expr = build_fold_indirect_ref_loc (input_location, se->expr);
 
-	  /* Use the actual tree type and not the wrapped coarray.  */
+	  /* Use the actual tree type and not the wrapped coarray. */
 	  if (!se->want_pointer)
 	    se->expr = fold_convert (TYPE_MAIN_VARIANT (TREE_TYPE (se->expr)),
 				     se->expr);
@@ -4354,6 +4350,13 @@ gfc_conv_resolve_dependencies (gfc_loopinfo * loop, gfc_ss * dest,
 	      && ss_expr->rank)
 	    nDepend = gfc_check_dependency (dest_expr, ss_expr, true);
 
+	  /* Check for cases like   c(:)(1:2) = c(2)(2:3)  */
+	  if (!nDepend && dest_expr->rank > 0
+	      && dest_expr->ts.type == BT_CHARACTER
+	      && ss_expr->expr_type == EXPR_VARIABLE)
+	    
+	    nDepend = gfc_check_dependency (dest_expr, ss_expr, false);
+
 	  continue;
 	}
 
@@ -5300,7 +5303,7 @@ gfc_array_allocate (gfc_se * se, gfc_expr * expr, tree status, tree errmsg,
 
   gfc_add_expr_to_block (&se->pre, tmp);
 
-  /* Update the array descriptors.  */
+  /* Update the array descriptors. */
   if (dimension)
     gfc_conv_descriptor_offset_set (&set_descriptor_block, se->expr, offset);
 
@@ -5384,8 +5387,9 @@ gfc_conv_array_initializer (tree type, gfc_expr * expr)
 {
   gfc_constructor *c;
   tree tmp;
-  offset_int wtmp;
   gfc_se se;
+  HOST_WIDE_INT hi;
+  unsigned HOST_WIDE_INT lo;
   tree index, range;
   vec<constructor_elt, va_gc> *v = NULL;
 
@@ -5407,12 +5411,20 @@ gfc_conv_array_initializer (tree type, gfc_expr * expr)
       else
 	gfc_conv_structure (&se, expr, 1);
 
-      wtmp = wi::to_offset (TYPE_MAX_VALUE (TYPE_DOMAIN (type))) + 1;
+      tmp = TYPE_MAX_VALUE (TYPE_DOMAIN (type));
+      gcc_assert (tmp && INTEGER_CST_P (tmp));
+      hi = TREE_INT_CST_HIGH (tmp);
+      lo = TREE_INT_CST_LOW (tmp);
+      lo++;
+      if (lo == 0)
+	hi++;
       /* This will probably eat buckets of memory for large arrays.  */
-      while (wtmp != 0)
+      while (hi != 0 || lo != 0)
         {
 	  CONSTRUCTOR_APPEND_ELT (v, NULL_TREE, se.expr);
-	  wtmp -= 1;
+          if (lo == 0)
+            hi--;
+          lo--;
         }
       break;
 
@@ -6932,7 +6944,7 @@ gfc_conv_expr_descriptor (gfc_se *se, gfc_expr *expr)
 				subref_array_target, expr);
 
       if (((se->direct_byref || GFC_ARRAY_TYPE_P (TREE_TYPE (desc)))
-	   && !se->data_not_needed)
+	  && !se->data_not_needed)
 	  || (se->use_offset && base != NULL_TREE))
 	{
 	  /* Set the offset.  */
@@ -8478,7 +8490,7 @@ gfc_alloc_allocatable_for_assignment (gfc_loopinfo *loop,
   size2 = gfc_evaluate_now (size2, &fblock);
 
   /* Realloc expression.  Note that the scalarizer uses desc.data
-     in the array reference - (*desc.data)[<element>].  */
+     in the array reference - (*desc.data)[<element>]. */
   gfc_init_block (&realloc_block);
 
   if ((expr1->ts.type == BT_DERIVED)
@@ -8647,8 +8659,8 @@ gfc_trans_deferred_array (gfc_symbol * sym, gfc_wrapped_block * block)
       type = TREE_TYPE (descriptor);
     }
 
-  /* NULLIFY the data pointer, for non-saved allocatables.  */
-  if (GFC_DESCRIPTOR_TYPE_P (type) && !sym->attr.save && sym->attr.allocatable)
+  /* NULLIFY the data pointer.  */
+  if (GFC_DESCRIPTOR_TYPE_P (type) && !sym->attr.save)
     gfc_conv_descriptor_data_set (&init, descriptor, null_pointer_node);
 
   gfc_restore_backend_locus (&loc);

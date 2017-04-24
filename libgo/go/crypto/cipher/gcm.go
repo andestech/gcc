@@ -30,9 +30,9 @@ type AEAD interface {
 
 	// Open decrypts and authenticates ciphertext, authenticates the
 	// additional data and, if successful, appends the resulting plaintext
-	// to dst, returning the updated slice. The nonce must be NonceSize()
-	// bytes long and both it and the additional data must match the
-	// value passed to Seal.
+	// to dst, returning the updated slice and true. On error, nil and
+	// false is returned. The nonce must be NonceSize() bytes long and both
+	// it and the additional data must match the value passed to Seal.
 	//
 	// The ciphertext and dst may alias exactly or not at all.
 	Open(dst, nonce, ciphertext, data []byte) ([]byte, error)
@@ -258,11 +258,11 @@ func (g *gcm) update(y *gcmFieldElement, data []byte) {
 // gcmInc32 treats the final four bytes of counterBlock as a big-endian value
 // and increments it.
 func gcmInc32(counterBlock *[16]byte) {
+	c := 1
 	for i := gcmBlockSize - 1; i >= gcmBlockSize-4; i-- {
-		counterBlock[i]++
-		if counterBlock[i] != 0 {
-			break
-		}
+		c += int(counterBlock[i])
+		counterBlock[i] = byte(c)
+		c >>= 8
 	}
 }
 
@@ -289,7 +289,9 @@ func (g *gcm) counterCrypt(out, in []byte, counter *[gcmBlockSize]byte) {
 		g.cipher.Encrypt(mask[:], counter[:])
 		gcmInc32(counter)
 
-		xorWords(out, in, mask[:])
+		for i := range mask {
+			out[i] = in[i] ^ mask[i]
+		}
 		out = out[gcmBlockSize:]
 		in = in[gcmBlockSize:]
 	}
@@ -297,7 +299,10 @@ func (g *gcm) counterCrypt(out, in []byte, counter *[gcmBlockSize]byte) {
 	if len(in) > 0 {
 		g.cipher.Encrypt(mask[:], counter[:])
 		gcmInc32(counter)
-		xorBytes(out, in, mask[:])
+
+		for i := range in {
+			out[i] = in[i] ^ mask[i]
+		}
 	}
 }
 
@@ -316,7 +321,9 @@ func (g *gcm) auth(out, ciphertext, additionalData []byte, tagMask *[gcmTagSize]
 	putUint64(out, y.low)
 	putUint64(out[8:], y.high)
 
-	xorWords(out, out, tagMask[:])
+	for i := range tagMask {
+		out[i] ^= tagMask[i]
+	}
 }
 
 func getUint64(data []byte) uint64 {

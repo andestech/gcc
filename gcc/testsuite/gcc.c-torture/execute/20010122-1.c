@@ -1,4 +1,3 @@
-/* { dg-skip-if "requires frame pointers" { *-*-* } "-fomit-frame-pointer" "" } */
 
 extern void exit (int);
 extern void abort (void);

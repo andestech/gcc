@@ -35,7 +35,7 @@ namespace __sanitizer {
 
 namespace {
 
-# if SANITIZER_CP_DEMANGLE
+#if SANITIZER_CP_DEMANGLE
 struct CplusV3DemangleData {
   char *buf;
   uptr size, allocated;
@@ -62,13 +62,13 @@ static void CplusV3DemangleCallback(const char *s, size_t l, void *vdata) {
 }
 }  // extern "C"
 
-char *CplusV3Demangle(const char *name) {
+char *CplusV3Demangle(const char *name, bool always_alloc) {
   CplusV3DemangleData data;
   data.buf = 0;
   data.size = 0;
   data.allocated = 0;
   if (cplus_demangle_v3_callback(name, DMGL_PARAMS | DMGL_ANSI,
-                                 CplusV3DemangleCallback, &data)) {
+				 CplusV3DemangleCallback, &data)) {
     if (data.size + 64 > data.allocated)
       return data.buf;
     char *buf = internal_strdup(data.buf);
@@ -77,9 +77,17 @@ char *CplusV3Demangle(const char *name) {
   }
   if (data.buf)
     InternalFree(data.buf);
+  if (always_alloc)
+    return internal_strdup(name);
   return 0;
 }
-# endif  // SANITIZER_CP_DEMANGLE
+#else
+const char *CplusV3Demangle(const char *name, bool always_alloc) {
+  if (always_alloc)
+    return internal_strdup(name);
+  return 0;
+}
+#endif
 
 struct SymbolizeCodeData {
   AddressInfo *frames;
@@ -99,7 +107,7 @@ static int SymbolizeCodePCInfoCallback(void *vdata, uintptr_t addr,
     info->Clear();
     info->FillAddressAndModuleInfo(addr, cdata->module_name,
                                    cdata->module_offset);
-    info->function = LibbacktraceSymbolizer::Demangle(function, true);
+    info->function = CplusV3Demangle(function, true);
     if (filename)
       info->file = internal_strdup(filename);
     info->line = lineno;
@@ -117,7 +125,7 @@ static void SymbolizeCodeCallback(void *vdata, uintptr_t addr,
     info->Clear();
     info->FillAddressAndModuleInfo(addr, cdata->module_name,
                                    cdata->module_offset);
-    info->function = LibbacktraceSymbolizer::Demangle(symname, true);
+    info->function = CplusV3Demangle(symname, true);
     cdata->n_frames = 1;
   }
 }
@@ -126,7 +134,7 @@ static void SymbolizeDataCallback(void *vdata, uintptr_t, const char *symname,
                                   uintptr_t symval, uintptr_t symsize) {
   DataInfo *info = (DataInfo *)vdata;
   if (symname && symval) {
-    info->name = LibbacktraceSymbolizer::Demangle(symname, true);
+    info->name = CplusV3Demangle(symname, true);
     info->start = symval;
     info->size = symsize;
   }
@@ -171,6 +179,17 @@ bool LibbacktraceSymbolizer::SymbolizeData(DataInfo *info) {
   return true;
 }
 
+const char *LibbacktraceSymbolizer::Demangle(const char *name) {
+#if SANITIZER_CP_DEMANGLE
+  const char *demangled = CplusV3Demangle(name, false);
+  if (demangled)
+    return demangled;
+  return name;
+#else
+  return 0;
+#endif
+}
+
 #else  // SANITIZER_LIBBACKTRACE
 
 LibbacktraceSymbolizer *LibbacktraceSymbolizer::get(LowLevelAllocator *alloc) {
@@ -189,16 +208,10 @@ bool LibbacktraceSymbolizer::SymbolizeData(DataInfo *info) {
   return false;
 }
 
-#endif  // SANITIZER_LIBBACKTRACE
-
-char *LibbacktraceSymbolizer::Demangle(const char *name, bool always_alloc) {
-#if SANITIZER_LIBBACKTRACE && SANITIZER_CP_DEMANGLE
-  if (char *demangled = CplusV3Demangle(name))
-    return demangled;
-#endif
-  if (always_alloc)
-    return internal_strdup(name);
+const char *LibbacktraceSymbolizer::Demangle(const char *name) {
   return 0;
 }
+
+#endif  // SANITIZER_LIBBACKTRACE
 
 }  // namespace __sanitizer

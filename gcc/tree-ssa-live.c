@@ -27,16 +27,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "gimple-pretty-print.h"
 #include "bitmap.h"
 #include "sbitmap.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -57,7 +47,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "diagnostic-core.h"
 #include "debug.h"
 #include "flags.h"
-#include "tree-ssa.h"
 
 #ifdef ENABLE_CHECKING
 static void  verify_live_on_entry (tree_live_info_p);
@@ -108,10 +97,11 @@ var_map_base_init (var_map map)
 {
   int x, num_part;
   tree var;
+  hash_table <tree_int_map_hasher> tree_to_index;
   struct tree_int_map *m, *mapstorage;
 
   num_part = num_var_partitions (map);
-  hash_table<tree_int_map_hasher> tree_to_index (num_part);
+  tree_to_index.create (num_part);
   /* We can have at most num_part entries in the hash tables, so it's
      enough to allocate so many map elements once, saving some malloc
      calls.  */
@@ -159,6 +149,7 @@ var_map_base_init (var_map map)
   map->num_basevars = m - mapstorage;
 
   free (mapstorage);
+  tree_to_index. dispose ();
 }
 
 
@@ -616,7 +607,7 @@ remove_unused_scope_block_p (tree scope)
      ;
    /* When not generating debug info we can eliminate info on unused
       variables.  */
-   else if (!flag_auto_profile && debug_info_level == DINFO_LEVEL_NONE)
+   else if (debug_info_level == DINFO_LEVEL_NONE)
      {
        /* Even for -g0 don't prune outer scopes from artificial
 	  functions, otherwise diagnostics using tree_nonartificial_location
@@ -1104,10 +1095,6 @@ set_var_live_on_entry (tree ssa_name, tree_live_info_p live)
   else
     def_bb = ENTRY_BLOCK_PTR_FOR_FN (cfun);
 
-  /* An undefined local variable does not need to be very alive.  */
-  if (ssa_undefined_value_p (ssa_name, false))
-    return;
-
   /* Visit each use of SSA_NAME and if it isn't in the same block as the def,
      add it to the list of live on entry blocks.  */
   FOR_EACH_IMM_USE_FAST (use, imm_iter, ssa_name)
@@ -1444,11 +1431,6 @@ verify_live_on_entry (tree_live_info_p live)
 	  else
 	    if (d == var)
 	      {
-		/* An undefined local variable does not need to be very
-		   alive.  */
-		if (ssa_undefined_value_p (var, false))
-		  continue;
-
 		/* The only way this var shouldn't be marked live on entry is
 		   if it occurs in a PHI argument of the block.  */
 		size_t z;

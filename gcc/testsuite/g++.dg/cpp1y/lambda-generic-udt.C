@@ -1,6 +1,6 @@
 // Ensure that generic lambdas properly construct and destroy user types.
 // { dg-options "-DUSE_AUTO_SYNTAX" }
-// { dg-do run { target c++14 } }
+// { dg-do run { target c++1y } }
 
 int i = 3;
 

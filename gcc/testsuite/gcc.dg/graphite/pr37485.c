@@ -3,8 +3,6 @@
 typedef unsigned char   UChar;
 typedef int             Int32;
 typedef unsigned int    UInt32;
-void VPrintf0(const char *);
-void AssertH (int, int);
 
 void fallbackSort ( UInt32* fmap, 
                     UInt32* eclass, 

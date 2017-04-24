@@ -26,6 +26,7 @@ avx512f_test ()
 {
     __m128 source1, source2;
     __mmask8 dst, dst2, mask;
+    int i;
 
     mask = 1;
 

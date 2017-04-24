@@ -1,5 +1,5 @@
 // PR c++/60384
-// { dg-do compile { target c++14 } }
+// { dg-do compile { target c++1y } }
 
 template<typename> int foo();
 

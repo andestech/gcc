@@ -64,7 +64,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     inline std::shared_ptr<_NFA<_TraitsT>>
     __compile_nfa(const typename _TraitsT::char_type* __first,
 		  const typename _TraitsT::char_type* __last,
-		  const typename _TraitsT::locale_type& __loc,
+		  const _TraitsT& __traits,
 		  regex_constants::syntax_option_type __flags);
 
 _GLIBCXX_END_NAMESPACE_VERSION
@@ -97,11 +97,14 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     private:
       struct _RegexMask
 	{
-	  typedef std::ctype_base::mask _BaseType;
+	  typedef typename std::ctype<char_type>::mask _BaseType;
 	  _BaseType _M_base;
 	  unsigned char _M_extended;
 	  static constexpr unsigned char _S_under = 1 << 0;
-	  static constexpr unsigned char _S_valid_mask = 0x1;
+	  // FIXME: _S_blank should be removed in the future,
+	  // when locale's complete.
+	  static constexpr unsigned char _S_blank = 1 << 1;
+	  static constexpr unsigned char _S_valid_mask = 0x3;
 
 	  constexpr _RegexMask(_BaseType __base = 0,
 			       unsigned char __extended = 0)
@@ -430,7 +433,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        * character sequence.
        */
       basic_regex()
-      : _M_flags(ECMAScript), _M_loc(), _M_original_str(), _M_automaton(nullptr)
+      : _M_flags(ECMAScript), _M_automaton(nullptr)
       { }
 
       /**
@@ -446,7 +449,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        */
       explicit
       basic_regex(const _Ch_type* __p, flag_type __f = ECMAScript)
-      : basic_regex(__p, __p + _Rx_traits::length(__p), __f)
+      : basic_regex(__p, __p + char_traits<_Ch_type>::length(__p), __f)
       { }
 
       /**
@@ -471,14 +474,29 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        *
        * @param __rhs A @p regex object.
        */
-      basic_regex(const basic_regex& __rhs) = default;
+      basic_regex(const basic_regex& __rhs)
+      : _M_flags(__rhs._M_flags), _M_original_str(__rhs._M_original_str)
+      {
+	_M_traits.imbue(__rhs.getloc());
+	this->assign(_M_original_str, _M_flags);
+      }
 
       /**
        * @brief Move-constructs a basic regular expression.
        *
        * @param __rhs A @p regex object.
+       *
+       * The implementation is a workaround concerning ABI compatibility. See:
+       * https://gcc.gnu.org/ml/libstdc++/2014-09/msg00067.html
        */
-      basic_regex(basic_regex&& __rhs) noexcept = default;
+      basic_regex(basic_regex&& __rhs)
+      : _M_flags(__rhs._M_flags),
+      _M_original_str(std::move(__rhs._M_original_str))
+      {
+	_M_traits.imbue(__rhs.getloc());
+	this->assign(_M_original_str, _M_flags);
+	__rhs._M_automaton.reset();
+      }
 
       /**
        * @brief Constructs a basic regular expression from the string
@@ -514,13 +532,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	basic_regex(_FwdIter __first, _FwdIter __last,
 		    flag_type __f = ECMAScript)
 	: _M_flags(__f),
-	  _M_loc(),
 	  _M_original_str(__first, __last),
-	  _M_automaton(__detail::__compile_nfa<_Rx_traits>(
-	    _M_original_str.c_str(),
-	    _M_original_str.c_str() + _M_original_str.size(),
-	    _M_loc,
-	    _M_flags))
+	  _M_automaton(__detail::__compile_nfa(_M_original_str.c_str(),
+					       _M_original_str.c_str()
+						 + _M_original_str.size(),
+					       _M_traits,
+					       _M_flags))
 	{ }
 
       /**
@@ -550,9 +567,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       /**
        * @brief Move-assigns one regular expression to another.
+       *
+       * The implementation is a workaround concerning ABI compatibility. See:
+       * https://gcc.gnu.org/ml/libstdc++/2014-09/msg00067.html
        */
       basic_regex&
-      operator=(basic_regex&& __rhs) noexcept
+      operator=(basic_regex&& __rhs)
       { return this->assign(std::move(__rhs)); }
 
       /**
@@ -564,7 +584,19 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        */
       basic_regex&
       operator=(const _Ch_type* __p)
-      { return this->assign(__p, flags()); }
+      { return this->assign(__p); }
+
+      /**
+       * @brief Replaces a regular expression with a new one constructed from
+       * an initializer list.
+       *
+       * @param __l  The initializer list.
+       *
+       * @throws regex_error if @p __l is not a valid regular expression.
+       */
+      basic_regex&
+      operator=(initializer_list<_Ch_type> __l)
+      { return this->assign(__l.begin(), __l.end()); }
 
       /**
        * @brief Replaces a regular expression with a new one constructed from
@@ -572,10 +604,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        *
        * @param __s A pointer to a string containing a regular expression.
        */
-      template<typename _Ch_traits, typename _Alloc>
+      template<typename _Ch_typeraits, typename _Alloc>
 	basic_regex&
-	operator=(const basic_string<_Ch_type, _Ch_traits, _Alloc>& __s)
-	{ return this->assign(__s, flags()); }
+	operator=(const basic_string<_Ch_type, _Ch_typeraits, _Alloc>& __s)
+	{ return this->assign(__s); }
 
       // [7.8.3] assign
       /**
@@ -586,8 +618,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       basic_regex&
       assign(const basic_regex& __rhs)
       {
-	basic_regex __tmp(__rhs);
-	this->swap(__tmp);
+	_M_flags = __rhs._M_flags;
+	_M_original_str = __rhs._M_original_str;
+	_M_traits.imbue(__rhs.getloc());
+	this->assign(_M_original_str, _M_flags);
 	return *this;
       }
 
@@ -595,12 +629,18 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        * @brief The move-assignment operator.
        *
        * @param __rhs Another regular expression object.
+       *
+       * The implementation is a workaround concerning ABI compatibility. See:
+       * https://gcc.gnu.org/ml/libstdc++/2014-09/msg00067.html
        */
       basic_regex&
-      assign(basic_regex&& __rhs) noexcept
+      assign(basic_regex&& __rhs)
       {
-	basic_regex __tmp(std::move(__rhs));
-	this->swap(__tmp);
+	_M_flags = __rhs._M_flags;
+	_M_original_str = std::move(__rhs._M_original_str);
+	__rhs._M_automaton.reset();
+	_M_traits.imbue(__rhs.getloc());
+	this->assign(_M_original_str, _M_flags);
 	return *this;
       }
 
@@ -649,19 +689,15 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        * expression pattern interpreted according to @p __flags.  If
        * regex_error is thrown, *this remains unchanged.
        */
-      template<typename _Ch_traits, typename _Alloc>
+      template<typename _Ch_typeraits, typename _Alloc>
 	basic_regex&
-	assign(const basic_string<_Ch_type, _Ch_traits, _Alloc>& __s,
+	assign(const basic_string<_Ch_type, _Ch_typeraits, _Alloc>& __s,
 	       flag_type __flags = ECMAScript)
 	{
+	  _M_automaton = __detail::__compile_nfa(
+	    __s.data(), __s.data() + __s.size(), _M_traits, __flags);
+	  _M_original_str = __s;
 	  _M_flags = __flags;
-	  _M_original_str.assign(__s.begin(), __s.end());
-	  auto __p = _M_original_str.c_str();
-	  _M_automaton = __detail::__compile_nfa<_Rx_traits>(
-	    __p,
-	    __p + _M_original_str.size(),
-	    _M_loc,
-	    _M_flags);
 	  return *this;
 	}
 
@@ -706,7 +742,11 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        */
       unsigned int
       mark_count() const
-      { return _M_automaton->_M_sub_count() - 1; }
+      {
+	if (_M_automaton)
+	  return _M_automaton->_M_sub_count() - 1;
+	return 0;
+      }
 
       /**
        * @brief Gets the flags used to construct the regular expression
@@ -725,10 +765,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       locale_type
       imbue(locale_type __loc)
       {
-	std::swap(__loc, _M_loc);
-	if (_M_automaton != nullptr)
-	  this->assign(_M_original_str, _M_flags);
-	return __loc;
+	_M_automaton.reset();
+	return _M_traits.imbue(__loc);
       }
 
       /**
@@ -737,7 +775,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        */
       locale_type
       getloc() const
-      { return _M_loc; }
+      { return _M_traits.getloc(); }
 
       // [7.8.6] swap
       /**
@@ -749,9 +787,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       swap(basic_regex& __rhs)
       {
 	std::swap(_M_flags, __rhs._M_flags);
-	std::swap(_M_loc, __rhs._M_loc);
-	std::swap(_M_original_str, __rhs._M_original_str);
-	std::swap(_M_automaton, __rhs._M_automaton);
+	std::swap(_M_traits, __rhs._M_traits);
+	auto __tmp = std::move(_M_original_str);
+	this->assign(__rhs._M_original_str, _M_flags);
+	__rhs.assign(__tmp, __rhs._M_flags);
       }
 
 #ifdef _GLIBCXX_DEBUG
@@ -774,7 +813,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	friend class __detail::_Executor;
 
       flag_type              _M_flags;
-      locale_type            _M_loc;
+      _Rx_traits             _M_traits;
       basic_string<_Ch_type> _M_original_str;
       _AutomatonPtr          _M_automaton;
     };
@@ -1551,42 +1590,30 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        */
       explicit
       match_results(const _Alloc& __a = _Alloc())
-      : _Base_type(__a), _M_in_iterator(false)
+      : _Base_type(__a)
       { }
 
       /**
        * @brief Copy constructs a %match_results.
        */
-      match_results(const match_results& __rhs)
-      : _Base_type(__rhs), _M_in_iterator(false)
-      { }
+      match_results(const match_results& __rhs) = default;
 
       /**
        * @brief Move constructs a %match_results.
        */
-      match_results(match_results&& __rhs) noexcept
-      : _Base_type(std::move(__rhs)), _M_in_iterator(false)
-      { }
+      match_results(match_results&& __rhs) noexcept = default;
 
       /**
        * @brief Assigns rhs to *this.
        */
       match_results&
-      operator=(const match_results& __rhs)
-      {
-	match_results(__rhs).swap(*this);
-	return *this;
-      }
+      operator=(const match_results& __rhs) = default;
 
       /**
        * @brief Move-assigns rhs to *this.
        */
       match_results&
-      operator=(match_results&& __rhs)
-      {
-	match_results(std::move(__rhs)).swap(*this);
-	return *this;
-      }
+      operator=(match_results&& __rhs) = default;
 
       /**
        * @brief Destroys a %match_results object.
@@ -1673,13 +1700,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       difference_type
       position(size_type __sub = 0) const
       {
-	// [28.12.1.4.5]
-	if (_M_in_iterator)
-	  return __sub < size() ? std::distance(_M_begin,
-						(*this)[__sub].first) : -1;
-	else
-	  return __sub < size() ? std::distance(this->prefix().first,
-						(*this)[__sub].first) : -1;
+	return __sub < size() ? std::distance(_M_begin,
+					      (*this)[__sub].first) : -1;
       }
 
       /**
@@ -1761,7 +1783,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        */
       const_iterator
       cbegin() const
-      { return _Base_type::cbegin() + 2; }
+      { return this->begin(); }
 
       /**
        * @brief Gets an iterator to one-past-the-end of the collection.
@@ -1775,7 +1797,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        */
       const_iterator
       cend() const
-      { return _Base_type::cend(); }
+      { return this->end(); }
 
       //@}
 
@@ -1864,7 +1886,11 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        */
       void
       swap(match_results& __that)
-      { _Base_type::swap(__that); }
+      {
+	using std::swap;
+	_Base_type::swap(__that);
+	swap(_M_begin, __that._M_begin);
+      }
       //@}
 
     private:
@@ -2603,7 +2629,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 			     regex_constants::match_flag_type __m
 			     = regex_constants::match_default)
       : _M_position(__a, __b, __re, __m),
-      _M_subs(__submatches, *(&__submatches+1)), _M_n(0)
+      _M_subs(__submatches, __submatches + _Nm), _M_n(0)
       { _M_init(__a, __b); }
 
       /**
@@ -2612,12 +2638,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        */
       regex_token_iterator(const regex_token_iterator& __rhs)
       : _M_position(__rhs._M_position), _M_subs(__rhs._M_subs),
-      _M_suffix(__rhs._M_suffix), _M_n(__rhs._M_n), _M_result(__rhs._M_result),
-      _M_has_m1(__rhs._M_has_m1)
-      {
-	if (__rhs._M_result == &__rhs._M_suffix)
-	  _M_result = &_M_suffix;
-      }
+      _M_suffix(__rhs._M_suffix), _M_n(__rhs._M_n), _M_has_m1(__rhs._M_has_m1)
+      { _M_normalize_result(); }
 
       /**
        * @brief Assigns a %regex_token_iterator to another.
@@ -2688,6 +2710,18 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       constexpr bool
       _M_end_of_seq() const
       { return _M_result == nullptr; }
+
+      // [28.12.2.2.4]
+      void
+      _M_normalize_result()
+      {
+	if (_M_position != _Position())
+	  _M_result = &_M_current_match();
+	else if (_M_has_m1)
+	  _M_result = &_M_suffix;
+	else
+	  _M_result = nullptr;
+      }
 
       _Position         _M_position;
       std::vector<int>  _M_subs;

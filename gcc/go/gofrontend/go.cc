@@ -21,8 +21,7 @@ static Gogo* gogo;
 GO_EXTERN_C
 void
 go_create_gogo(int int_type_size, int pointer_size, const char *pkgpath,
-	       const char *prefix, const char *relative_import_path,
-	       bool check_divide_by_zero, bool check_divide_overflow)
+	       const char *prefix, const char *relative_import_path)
 {
   go_assert(::gogo == NULL);
   Linemap* linemap = go_get_linemap();
@@ -35,10 +34,9 @@ go_create_gogo(int int_type_size, int pointer_size, const char *pkgpath,
 
   if (relative_import_path != NULL)
     ::gogo->set_relative_import_path(relative_import_path);
-  if (check_divide_by_zero)
-    ::gogo->set_check_divide_by_zero(check_divide_by_zero);
-  if (check_divide_overflow)
-    ::gogo->set_check_divide_overflow(check_divide_overflow);
+
+  // FIXME: This should be in the gcc dependent code.
+  ::gogo->define_builtin_function_trees();
 }
 
 // Parse the input files.
@@ -96,6 +94,9 @@ go_parse_input_files(const char** filenames, unsigned int filename_count,
   // Create function descriptors as needed.
   ::gogo->create_function_descriptors();
 
+  // Write out queued up functions for hash and comparison of types.
+  ::gogo->write_specific_type_functions();
+
   // Now that we have seen all the names, verify that types are
   // correct.
   ::gogo->verify_types();
@@ -121,17 +122,14 @@ go_parse_input_files(const char** filenames, unsigned int filename_count,
   // Convert named types to backend representation.
   ::gogo->convert_named_types();
 
+  // Flatten the parse tree.
+  ::gogo->flatten();
+
   // Build thunks for functions which call recover.
   ::gogo->build_recover_thunks();
 
   // Convert complicated go and defer statements into simpler ones.
   ::gogo->simplify_thunk_statements();
-
-  // Write out queued up functions for hash and comparison of types.
-  ::gogo->write_specific_type_functions();
-
-  // Flatten the parse tree.
-  ::gogo->flatten();
 
   // Dump ast, use filename[0] as the base name
   ::gogo->dump_ast(filenames[0]);

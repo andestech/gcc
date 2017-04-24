@@ -30,7 +30,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-pretty-print.h"
 #include "tree-iterator.h"
 #include "diagnostic.h"
-#include "wide-int-print.h"
 
 /* The pretty-printer code is primarily designed to closely follow
    (GNU) C and C++ grammars.  That is to be contrasted with spaghetti
@@ -416,9 +415,7 @@ c_pretty_printer::simple_type_specifier (tree t)
     case UNION_TYPE:
     case RECORD_TYPE:
     case ENUMERAL_TYPE:
-      if (TYPE_NAME (t) && TREE_CODE (TYPE_NAME (t)) == TYPE_DECL)
-	/* Don't decorate the type if this is a typedef name.  */;
-      else if (code == UNION_TYPE)
+      if (code == UNION_TYPE)
 	pp_c_ws_string (this, "union");
       else if (code == RECORD_TYPE)
 	pp_c_ws_string (this, "struct");
@@ -908,22 +905,11 @@ pp_c_string_literal (c_pretty_printer *pp, tree s)
   pp_doublequote (pp);
 }
 
-/* Pretty-print a VOID_CST (void_node).  */
-
-static void
-pp_c_void_constant (c_pretty_printer *pp)
-{
-  pp_c_type_cast (pp, void_type_node);
-  pp_string (pp, "0");
-}
-
 /* Pretty-print an INTEGER literal.  */
 
 static void
 pp_c_integer_constant (c_pretty_printer *pp, tree i)
 {
-  int idx;
-
   /* We are going to compare the type of I to other types using
      pointer comparison so we need to use its canonical type.  */
   tree type =
@@ -937,14 +923,16 @@ pp_c_integer_constant (c_pretty_printer *pp, tree i)
     pp_unsigned_wide_integer (pp, tree_to_uhwi (i));
   else
     {
-      wide_int wi = i;
-
-      if (wi::lt_p (i, 0, TYPE_SIGN (TREE_TYPE (i))))
+      unsigned HOST_WIDE_INT low = TREE_INT_CST_LOW (i);
+      HOST_WIDE_INT high = TREE_INT_CST_HIGH (i);
+      if (tree_int_cst_sgn (i) < 0)
 	{
 	  pp_minus (pp);
-	  wi = -wi;
+	  high = ~high + !low;
+	  low = -low;
 	}
-      print_hex (wi, pp_buffer (pp)->digit_buffer);
+      sprintf (pp_buffer (pp)->digit_buffer, HOST_WIDE_INT_PRINT_DOUBLE_HEX,
+	       (unsigned HOST_WIDE_INT) high, (unsigned HOST_WIDE_INT) low);
       pp_string (pp, pp_buffer (pp)->digit_buffer);
     }
   if (TYPE_UNSIGNED (type))
@@ -954,17 +942,9 @@ pp_c_integer_constant (c_pretty_printer *pp, tree i)
   else if (type == long_long_integer_type_node
 	   || type == long_long_unsigned_type_node)
     pp_string (pp, "ll");
-  else for (idx = 0; idx < NUM_INT_N_ENTS; idx ++)
-    if (int_n_enabled_p[idx])
-      {
-	char buf[2+20];
-	if (type == int_n_trees[idx].signed_type
-	    || type == int_n_trees[idx].unsigned_type)
-	  {
-	    sprintf (buf, "I%d", int_n_data[idx].bitsize);
-	    pp_string (pp, buf);
-	  }
-      }
+  else if (type == int128_integer_type_node
+           || type == int128_unsigned_type_node)
+    pp_string (pp, "I128");
 }
 
 /* Print out a CHARACTER literal.  */
@@ -1157,10 +1137,6 @@ c_pretty_printer::constant (tree e)
 
   switch (code)
     {
-    case VOID_CST:
-      pp_c_void_constant (this);
-      break;
-
     case INTEGER_CST:
       {
 	tree type = TREE_TYPE (e);
@@ -1266,7 +1242,6 @@ c_pretty_printer::primary_expression (tree e)
       translate_string ("<return-value>");
       break;
 
-    case VOID_CST:
     case INTEGER_CST:
     case REAL_CST:
     case FIXED_CST:
@@ -2157,10 +2132,6 @@ c_pretty_printer::expression (tree e)
 {
   switch (TREE_CODE (e))
     {
-    case VOID_CST:
-      pp_c_void_constant (this);
-      break;
-
     case INTEGER_CST:
       pp_c_integer_constant (this, e);
       break;

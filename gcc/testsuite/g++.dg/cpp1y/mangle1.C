@@ -1,5 +1,5 @@
 // Test that the parens don't show up in the mangling
-// { dg-do compile { target c++14 } }
+// { dg-do compile { target c++1y } }
 // { dg-options "-Wno-return-local-addr" }
 // { dg-final { scan-assembler "_Z1gI1AEDTdtfp_1iET_" } }
 

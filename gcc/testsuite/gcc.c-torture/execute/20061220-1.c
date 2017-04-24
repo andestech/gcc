@@ -1,5 +1,4 @@
 /* PR middle-end/30262 */
-/* { dg-skip-if "asm statements do not work as expected" { rl78-*-* } "*" "" } */
 extern void abort (void);
 
 int

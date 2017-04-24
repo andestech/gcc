@@ -29,15 +29,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "stmt.h"
 #include "stor-layout.h"
 #include "hard-reg-set.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -56,8 +47,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "demangle.h"
 #include "langhooks.h"
 #include "bitmap.h"
-#include "stringpool.h"
-#include "tree-ssanames.h"
 
 
 /* All the tuples have their operand vector (if present) at the very bottom
@@ -191,7 +180,7 @@ gimple_build_with_ops_stat (enum gimple_code code, unsigned subcode,
 gimple
 gimple_build_return (tree retval)
 {
-  gimple s = gimple_build_with_ops (GIMPLE_RETURN, ERROR_MARK, 2);
+  gimple s = gimple_build_with_ops (GIMPLE_RETURN, ERROR_MARK, 1);
   if (retval)
     gimple_return_set_retval (s, retval);
   return s;
@@ -378,7 +367,6 @@ gimple_build_call_from_tree (tree t)
   gimple_call_set_va_arg_pack (call, CALL_EXPR_VA_ARG_PACK (t));
   gimple_call_set_nothrow (call, TREE_NOTHROW (t));
   gimple_set_no_warning (call, TREE_NO_WARNING (t));
-  gimple_call_set_with_bounds (call, CALL_WITH_BOUNDS_P (t));
 
   return call;
 }
@@ -556,7 +544,7 @@ gimple_build_asm_1 (const char *string, unsigned ninputs, unsigned noutputs,
      enforced by the front end.  */
   gcc_assert (nlabels == 0 || noutputs == 0);
 
-  p = as_a <gimple_statement_asm *> (
+  p = as_a <gimple_statement_asm> (
         gimple_build_with_ops (GIMPLE_ASM, ERROR_MARK,
 			       ninputs + noutputs + nclobbers + nlabels));
 
@@ -683,7 +671,7 @@ gimple_build_try (gimple_seq eval, gimple_seq cleanup,
   gimple_statement_try *p;
 
   gcc_assert (kind == GIMPLE_TRY_CATCH || kind == GIMPLE_TRY_FINALLY);
-  p = as_a <gimple_statement_try *> (gimple_alloc (GIMPLE_TRY, 0));
+  p = as_a <gimple_statement_try> (gimple_alloc (GIMPLE_TRY, 0));
   gimple_set_subcode (p, kind);
   if (eval)
     gimple_try_set_eval (p, eval);
@@ -714,7 +702,7 @@ gimple
 gimple_build_resx (int region)
 {
   gimple_statement_resx *p =
-    as_a <gimple_statement_resx *> (
+    as_a <gimple_statement_resx> (
       gimple_build_with_ops (GIMPLE_RESX, ERROR_MARK, 0));
   p->region = region;
   return p;
@@ -764,7 +752,7 @@ gimple
 gimple_build_eh_dispatch (int region)
 {
   gimple_statement_eh_dispatch *p =
-    as_a <gimple_statement_eh_dispatch *> (
+    as_a <gimple_statement_eh_dispatch> (
       gimple_build_with_ops (GIMPLE_EH_DISPATCH, ERROR_MARK, 0));
   p->region = region;
   return p;
@@ -841,13 +829,15 @@ gimple_build_omp_for (gimple_seq body, int kind, tree clauses, size_t collapse,
 		      gimple_seq pre_body)
 {
   gimple_statement_omp_for *p =
-    as_a <gimple_statement_omp_for *> (gimple_alloc (GIMPLE_OMP_FOR, 0));
+    as_a <gimple_statement_omp_for> (gimple_alloc (GIMPLE_OMP_FOR, 0));
   if (body)
     gimple_omp_set_body (p, body);
   gimple_omp_for_set_clauses (p, clauses);
   gimple_omp_for_set_kind (p, kind);
   p->collapse = collapse;
-  p->iter =  ggc_cleared_vec_alloc<gimple_omp_for_iter> (collapse);
+  p->iter =  static_cast <struct gimple_omp_for_iter *> (
+   ggc_internal_cleared_vec_alloc_stat (sizeof (*p->iter),
+					collapse MEM_STAT_INFO));
 
   if (pre_body)
     gimple_omp_for_set_pre_body (p, pre_body);
@@ -1188,21 +1178,6 @@ gimple_seq_add_seq (gimple_seq *dst_p, gimple_seq src)
 
   si = gsi_last (*dst_p);
   gsi_insert_seq_after (&si, src, GSI_NEW_STMT);
-}
-
-/* Append sequence SRC to the end of sequence *DST_P.  If *DST_P is
-   NULL, a new sequence is allocated.  This function is
-   similar to gimple_seq_add_seq, but does not scan the operands.  */
-
-void
-gimple_seq_add_seq_without_update (gimple_seq *dst_p, gimple_seq src)
-{
-  gimple_stmt_iterator si;
-  if (src == NULL)
-    return;
-
-  si = gsi_last (*dst_p);
-  gsi_insert_seq_after_without_update (&si, src, GSI_NEW_STMT);
 }
 
 /* Determine whether to assign a location to the statement GS.  */
@@ -1692,9 +1667,12 @@ gimple_copy (gimple stmt)
 	  gimple_omp_for_set_clauses (copy, t);
 	  {
 	    gimple_statement_omp_for *omp_for_copy =
-	      as_a <gimple_statement_omp_for *> (copy);
-	    omp_for_copy->iter = ggc_vec_alloc<gimple_omp_for_iter>
-	      ( gimple_omp_for_collapse (stmt));
+	      as_a <gimple_statement_omp_for> (copy);
+	    omp_for_copy->iter =
+	      static_cast <struct gimple_omp_for_iter *> (
+		  ggc_internal_vec_alloc_stat (sizeof (struct gimple_omp_for_iter),
+					       gimple_omp_for_collapse (stmt)
+					       MEM_STAT_INFO));
           }
 	  for (i = 0; i < gimple_omp_for_collapse (stmt); i++)
 	    {
@@ -1964,7 +1942,6 @@ get_gimple_rhs_num_ops (enum tree_code code)
       || (SYM) == WIDEN_MULT_PLUS_EXPR					    \
       || (SYM) == WIDEN_MULT_MINUS_EXPR					    \
       || (SYM) == DOT_PROD_EXPR						    \
-      || (SYM) == SAD_EXPR						    \
       || (SYM) == REALIGN_LOAD_EXPR					    \
       || (SYM) == VEC_COND_EXPR						    \
       || (SYM) == VEC_PERM_EXPR                                             \
@@ -2125,7 +2102,6 @@ static tree
 gimple_signed_or_unsigned_type (bool unsignedp, tree type)
 {
   tree type1;
-  int i;
 
   type1 = TYPE_MAIN_VARIANT (type);
   if (type1 == signed_char_type_node
@@ -2143,15 +2119,10 @@ gimple_signed_or_unsigned_type (bool unsignedp, tree type)
     return unsignedp
            ? long_long_unsigned_type_node
 	   : long_long_integer_type_node;
-
-  for (i = 0; i < NUM_INT_N_ENTS; i ++)
-    if (int_n_enabled_p[i]
-	&& (type1 == int_n_trees[i].unsigned_type
-	    || type1 == int_n_trees[i].signed_type))
-	return unsignedp
-	  ? int_n_trees[i].unsigned_type
-	  : int_n_trees[i].signed_type;
-
+  if (int128_integer_type_node && (type1 == int128_integer_type_node || type1 == int128_unsigned_type_node))
+    return unsignedp
+           ? int128_unsigned_type_node
+	   : int128_integer_type_node;
 #if HOST_BITS_PER_WIDE_INT >= 64
   if (type1 == intTI_type_node || type1 == unsigned_intTI_type_node)
     return unsignedp ? unsigned_intTI_type_node : intTI_type_node;
@@ -2264,14 +2235,10 @@ gimple_signed_or_unsigned_type (bool unsignedp, tree type)
     return (unsignedp
 	    ? long_long_unsigned_type_node
 	    : long_long_integer_type_node);
-
-  for (i = 0; i < NUM_INT_N_ENTS; i ++)
-    if (int_n_enabled_p[i]
-	&& TYPE_MODE (type) == int_n_data[i].m
-	&& TYPE_PRECISION (type) == int_n_data[i].bitsize)
-	return unsignedp
-	  ? int_n_trees[i].unsigned_type
-	  : int_n_trees[i].signed_type;
+  if (int128_integer_type_node && TYPE_OK (int128_integer_type_node))
+    return (unsignedp
+	    ? int128_unsigned_type_node
+	    : int128_integer_type_node);
 
 #if HOST_BITS_PER_WIDE_INT >= 64
   if (TYPE_OK (intTI_type_node))
@@ -2412,7 +2379,7 @@ validate_type (tree type1, tree type2)
    a decl of a builtin function.  */
 
 bool
-gimple_builtin_call_types_compatible_p (const_gimple stmt, tree fndecl)
+gimple_builtin_call_types_compatible_p (gimple stmt, tree fndecl)
 {
   gcc_checking_assert (DECL_BUILT_IN_CLASS (fndecl) != NOT_BUILT_IN);
 
@@ -2441,7 +2408,7 @@ gimple_builtin_call_types_compatible_p (const_gimple stmt, tree fndecl)
 /* Return true when STMT is builtins call.  */
 
 bool
-gimple_call_builtin_p (const_gimple stmt)
+gimple_call_builtin_p (gimple stmt)
 {
   tree fndecl;
   if (is_gimple_call (stmt)
@@ -2454,7 +2421,7 @@ gimple_call_builtin_p (const_gimple stmt)
 /* Return true when STMT is builtins call to CLASS.  */
 
 bool
-gimple_call_builtin_p (const_gimple stmt, enum built_in_class klass)
+gimple_call_builtin_p (gimple stmt, enum built_in_class klass)
 {
   tree fndecl;
   if (is_gimple_call (stmt)
@@ -2467,7 +2434,7 @@ gimple_call_builtin_p (const_gimple stmt, enum built_in_class klass)
 /* Return true when STMT is builtins call to CODE of CLASS.  */
 
 bool
-gimple_call_builtin_p (const_gimple stmt, enum built_in_function code)
+gimple_call_builtin_p (gimple stmt, enum built_in_function code)
 {
   tree fndecl;
   if (is_gimple_call (stmt)
@@ -2601,8 +2568,8 @@ infer_nonnull_range (gimple stmt, tree op, bool dereference, bool attribute)
 	    {
 	      for (unsigned int i = 0; i < gimple_call_num_args (stmt); i++)
 		{
-		  if (POINTER_TYPE_P (TREE_TYPE (gimple_call_arg (stmt, i)))
-		      && operand_equal_p (op, gimple_call_arg (stmt, i), 0))
+		  if (operand_equal_p (op, gimple_call_arg (stmt, i), 0)
+		      && POINTER_TYPE_P (TREE_TYPE (gimple_call_arg (stmt, i))))
 		    return true;
 		}
 	      return false;
@@ -2813,7 +2780,11 @@ preprocess_case_label_vec_for_gimple (vec<tree> labels,
 		  low = CASE_HIGH (labels[i - 1]);
 		  if (!low)
 		    low = CASE_LOW (labels[i - 1]);
-		  if (wi::add (low, 1) != high)
+		  if ((TREE_INT_CST_LOW (low) + 1
+		       != TREE_INT_CST_LOW (high))
+		      || (TREE_INT_CST_HIGH (low)
+			  + (TREE_INT_CST_LOW (high) == 0)
+			  != TREE_INT_CST_HIGH (high)))
 		    break;
 		}
 	      if (i == len)
@@ -2837,20 +2808,4 @@ gimple_seq_set_location (gimple_seq seq, location_t loc)
 {
   for (gimple_stmt_iterator i = gsi_start (seq); !gsi_end_p (i); gsi_next (&i))
     gimple_set_location (gsi_stmt (i), loc);
-}
-
-/* Release SSA_NAMEs in SEQ as well as the GIMPLE statements.  */
-
-void
-gimple_seq_discard (gimple_seq seq)
-{
-  gimple_stmt_iterator gsi;
-
-  for (gsi = gsi_start (seq); !gsi_end_p (gsi); )
-    {
-      gimple stmt = gsi_stmt (gsi);
-      gsi_remove (&gsi, true);
-      release_defs (stmt);
-      ggc_free (stmt);
-    }
 }

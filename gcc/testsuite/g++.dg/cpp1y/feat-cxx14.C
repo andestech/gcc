@@ -1,7 +1,7 @@
-// { dg-do compile { target c++14 } }
+// { dg-do compile { target c++1y } }
 // { dg-options "-I${srcdir}/g++.dg/cpp1y -I${srcdir}/g++.dg/cpp1y/testinc" }
 
-//  C++11 features:
+// Begin C++11 tests.
 
 #ifndef __cpp_unicode_characters
 #  error "__cpp_unicode_characters"
@@ -75,7 +75,7 @@
 #  error "__cpp_alias_templates != 200704"
 #endif
 
-//  C++14 features:
+// Begin C++14 tests.
 
 #ifndef __cpp_binary_literals
 #  error "__cpp_binary_literals"
@@ -114,16 +114,20 @@
 #  error "__cpp_return_type_deduction != 201304"
 #endif
 
-#ifndef __cpp_aggregate_nsdmi
-#  error "__cpp_aggregate_nsdmi"
-#elif __cpp_aggregate_nsdmi != 201304
-#  error "__cpp_aggregate_nsdmi != 201304"
+#ifndef __cpp_runtime_arrays
+#  error "__cpp_runtime_arrays"
+#elif __cpp_runtime_arrays != 201304
+#  error "__cpp_runtime_arrays != 201304"
 #endif
 
-#ifndef __cpp_variable_templates
+//  Aggregate initializers not in yet.
+#ifdef __cpp_aggregate_nsdmi
+#  error "__cpp_aggregate_nsdmi"
+#endif
+
+//  Variable templates not in yet.
+#ifdef __cpp_variable_templates
 #  error "__cpp_variable_templates"
-#elif __cpp_variable_templates != 201304
-#  error "__cpp_variable_templates != 201304"
 #endif
 
 #ifndef __cpp_digit_separators
@@ -132,28 +136,18 @@
 #  error "__cpp_digit_separators != 201309"
 #endif
 
-//  Sized deallocation not in yet.
-#ifdef __cpp_sized_deallocation
-#  error "__cpp_sized_deallocation"
-#endif
-
-//  Array TS features:
-
-#ifndef __cpp_runtime_arrays
-#  error "__cpp_runtime_arrays"
-#elif __cpp_runtime_arrays != 201304
-#  error "__cpp_runtime_arrays != 201304"
-#endif
-
-//  Attribute checks:
-
 #ifndef __cpp_attribute_deprecated
 #  error "__cpp_attribute_deprecated"
 #elif __cpp_attribute_deprecated != 201309
 #  error "__cpp_attribute_deprecated != 201309"
 #endif
 
-//  Include checks:
+//  Sized deallocation not in yet.
+#ifdef __cpp_sized_deallocation
+#  error "__cpp_sized_deallocation"
+#endif
+
+// Begin include checks.
 
 //  Check for __has_include macro.
 #ifndef __has_include

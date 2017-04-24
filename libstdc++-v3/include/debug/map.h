@@ -30,7 +30,6 @@
 #define _GLIBCXX_DEBUG_MAP_H 1
 
 #include <debug/safe_sequence.h>
-#include <debug/safe_container.h>
 #include <debug/safe_iterator.h>
 #include <utility>
 
@@ -42,55 +41,69 @@ namespace __debug
   template<typename _Key, typename _Tp, typename _Compare = std::less<_Key>,
 	   typename _Allocator = std::allocator<std::pair<const _Key, _Tp> > >
     class map
-    : public __gnu_debug::_Safe_container<
-	map<_Key, _Tp, _Compare, _Allocator>, _Allocator,
-	__gnu_debug::_Safe_node_sequence>,
-      public _GLIBCXX_STD_C::map<_Key, _Tp, _Compare, _Allocator>
+    : public _GLIBCXX_STD_C::map<_Key, _Tp, _Compare, _Allocator>,
+      public __gnu_debug::_Safe_sequence<map<_Key, _Tp, _Compare, _Allocator> >
     {
-      typedef _GLIBCXX_STD_C::map<
-	_Key, _Tp, _Compare, _Allocator>			_Base;
-      typedef __gnu_debug::_Safe_container<
-	map, _Allocator, __gnu_debug::_Safe_node_sequence>	_Safe;
+      typedef _GLIBCXX_STD_C::map<_Key, _Tp, _Compare, _Allocator> _Base;
 
-      typedef typename _Base::const_iterator	_Base_const_iterator;
-      typedef typename _Base::iterator		_Base_iterator;
+      typedef typename _Base::const_iterator _Base_const_iterator;
+      typedef typename _Base::iterator _Base_iterator;
       typedef __gnu_debug::_Equal_to<_Base_const_iterator> _Equal;
 
+#if __cplusplus >= 201103L
+      typedef __gnu_cxx::__alloc_traits<typename
+					_Base::allocator_type> _Alloc_traits;
+#endif
     public:
       // types:
-      typedef _Key					key_type;
-      typedef _Tp					mapped_type;
-      typedef std::pair<const _Key, _Tp>		value_type;
-      typedef _Compare					key_compare;
-      typedef _Allocator				allocator_type;
-      typedef typename _Base::reference			reference;
-      typedef typename _Base::const_reference		const_reference;
+      typedef _Key                                  key_type;
+      typedef _Tp                                   mapped_type;
+      typedef std::pair<const _Key, _Tp>            value_type;
+      typedef _Compare                              key_compare;
+      typedef _Allocator                            allocator_type;
+      typedef typename _Base::reference             reference;
+      typedef typename _Base::const_reference       const_reference;
 
       typedef __gnu_debug::_Safe_iterator<_Base_iterator, map>
-							iterator;
+                                                    iterator;
       typedef __gnu_debug::_Safe_iterator<_Base_const_iterator, map>
-							const_iterator;
+                                                    const_iterator;
 
-      typedef typename _Base::size_type			size_type;
-      typedef typename _Base::difference_type		difference_type;
-      typedef typename _Base::pointer			pointer;
-      typedef typename _Base::const_pointer		const_pointer;
-      typedef std::reverse_iterator<iterator>		reverse_iterator;
-      typedef std::reverse_iterator<const_iterator>	const_reverse_iterator;
+      typedef typename _Base::size_type             size_type;
+      typedef typename _Base::difference_type       difference_type;
+      typedef typename _Base::pointer               pointer;
+      typedef typename _Base::const_pointer         const_pointer;
+      typedef std::reverse_iterator<iterator>       reverse_iterator;
+      typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
       // 23.3.1.1 construct/copy/destroy:
 
-#if __cplusplus < 201103L
       map() : _Base() { }
+
+      explicit map(const _Compare& __comp,
+		   const _Allocator& __a = _Allocator())
+      : _Base(__comp, __a) { }
+
+      template<typename _InputIterator>
+        map(_InputIterator __first, _InputIterator __last,
+	    const _Compare& __comp = _Compare(),
+	    const _Allocator& __a = _Allocator())
+	: _Base(__gnu_debug::__base(__gnu_debug::__check_valid_range(__first,
+								     __last)),
+		__gnu_debug::__base(__last),
+		__comp, __a) { }
 
       map(const map& __x)
       : _Base(__x) { }
 
-      ~map() { }
-#else
-      map() = default;
-      map(const map&) = default;
-      map(map&&) = default;
+      map(const _Base& __x)
+      : _Base(__x) { }
+
+#if __cplusplus >= 201103L
+      map(map&& __x)
+      noexcept(is_nothrow_copy_constructible<_Compare>::value)
+      : _Base(std::move(__x))
+      { this->_M_swap(__x); }
 
       map(initializer_list<value_type> __l,
 	  const _Compare& __c = _Compare(),
@@ -105,53 +118,46 @@ namespace __debug
       : _Base(__m, __a) { }
 
       map(map&& __m, const allocator_type& __a)
-      : _Safe(std::move(__m._M_safe()), __a),
-	_Base(std::move(__m._M_base()), __a) { }
+      : _Base(std::move(__m._M_base()), __a) { }
 
       map(initializer_list<value_type> __l, const allocator_type& __a)
       : _Base(__l, __a) { }
 
       template<typename _InputIterator>
-	map(_InputIterator __first, _InputIterator __last,
+        map(_InputIterator __first, _InputIterator __last,
 	    const allocator_type& __a)
-	: _Base(__gnu_debug::__base(__gnu_debug::__check_valid_range(__first,
-								     __last)),
-		__gnu_debug::__base(__last), __a)
+	  : _Base(__gnu_debug::__base(__gnu_debug::__check_valid_range(__first,
+								       __last)),
+		  __gnu_debug::__base(__last), __a)
 	{ }
-
-      ~map() = default;
 #endif
 
-      map(const _Base& __x)
-      : _Base(__x) { }
+      ~map() _GLIBCXX_NOEXCEPT { }
 
-      explicit map(const _Compare& __comp,
-		   const _Allocator& __a = _Allocator())
-      : _Base(__comp, __a) { }
-
-      template<typename _InputIterator>
-	map(_InputIterator __first, _InputIterator __last,
-	    const _Compare& __comp = _Compare(),
-	    const _Allocator& __a = _Allocator())
-	: _Base(__gnu_debug::__base(__gnu_debug::__check_valid_range(__first,
-								     __last)),
-		__gnu_debug::__base(__last),
-		__comp, __a) { }
-
-#if __cplusplus < 201103L
       map&
       operator=(const map& __x)
       {
-	this->_M_safe() = __x;
 	_M_base() = __x;
+	this->_M_invalidate_all();
 	return *this;
       }
-#else
-      map&
-      operator=(const map&) = default;
 
+#if __cplusplus >= 201103L
       map&
-      operator=(map&&) = default;
+      operator=(map&& __x)
+      noexcept(_Alloc_traits::_S_nothrow_move())
+      {
+	__glibcxx_check_self_move_assign(__x);
+	bool __xfer_memory = _Alloc_traits::_S_propagate_on_move_assign()
+	    || __x.get_allocator() == this->get_allocator();
+	_M_base() = std::move(__x._M_base());
+	if (__xfer_memory)
+	  this->_M_swap(__x);
+	else
+	  this->_M_invalidate_all();
+	__x._M_invalidate_all();
+	return *this;
+      }
 
       map&
       operator=(initializer_list<value_type> __l)
@@ -167,7 +173,7 @@ namespace __debug
       using _Base::get_allocator;
 
       // iterators:
-      iterator
+      iterator 
       begin() _GLIBCXX_NOEXCEPT
       { return iterator(_Base::begin(), this); }
 
@@ -263,9 +269,9 @@ namespace __debug
       template<typename _Pair, typename = typename
 	       std::enable_if<std::is_constructible<value_type,
 						    _Pair&&>::value>::type>
-	std::pair<iterator, bool>
-	insert(_Pair&& __x)
-	{
+        std::pair<iterator, bool>
+        insert(_Pair&& __x)
+        {
 	  std::pair<_Base_iterator, bool> __res
 	    = _Base::insert(std::forward<_Pair>(__x));
 	  return std::pair<iterator, bool>(iterator(__res.first, this),
@@ -294,9 +300,9 @@ namespace __debug
       template<typename _Pair, typename = typename
 	       std::enable_if<std::is_constructible<value_type,
 						    _Pair&&>::value>::type>
-	iterator
-	insert(const_iterator __position, _Pair&& __x)
-	{
+        iterator
+        insert(const_iterator __position, _Pair&& __x)
+        {
 	  __glibcxx_check_insert(__position);
 	  return iterator(_Base::insert(__position.base(),
 					std::forward<_Pair>(__x)), this);
@@ -304,9 +310,9 @@ namespace __debug
 #endif
 
       template<typename _InputIterator>
-	void
-	insert(_InputIterator __first, _InputIterator __last)
-	{
+        void
+        insert(_InputIterator __first, _InputIterator __last)
+        {
 	  __glibcxx_check_valid_range(__first, __last);
 	  _Base::insert(__gnu_debug::__base(__first),
 			__gnu_debug::__base(__last));
@@ -389,11 +395,15 @@ namespace __debug
       void
       swap(map& __x)
 #if __cplusplus >= 201103L
-	noexcept( noexcept(declval<_Base>().swap(__x)) )
+      noexcept(_Alloc_traits::_S_nothrow_swap())
 #endif
       {
-	_Safe::_M_swap(__x);
+#if __cplusplus >= 201103L
+	if (!_Alloc_traits::_S_propagate_on_swap())
+	  __glibcxx_check_equal_allocs(__x);
+#endif
 	_Base::swap(__x);
+	this->_M_swap(__x);
       }
 
       void
@@ -453,10 +463,18 @@ namespace __debug
       }
 
       _Base&
-      _M_base() _GLIBCXX_NOEXCEPT	{ return *this; }
+      _M_base() _GLIBCXX_NOEXCEPT       { return *this; }
 
       const _Base&
-      _M_base() const _GLIBCXX_NOEXCEPT	{ return *this; }
+      _M_base() const _GLIBCXX_NOEXCEPT { return *this; }
+
+    private:
+      void
+      _M_invalidate_all()
+      {
+	typedef __gnu_debug::_Not_equal_to<_Base_const_iterator> _Not_equal;
+	this->_M_invalidate_if(_Not_equal(_M_base().end()));
+      }
     };
 
   template<typename _Key, typename _Tp,

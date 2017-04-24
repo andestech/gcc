@@ -11,7 +11,6 @@ inline int zero()
   return 0;
 }
 
-int
 foo (int k, int j)
 {
   if (k >= ten())

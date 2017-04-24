@@ -10,7 +10,6 @@ void sbar (short *);
 
 /* multiple loops */
 
-void
 foo (int n)
 {
   float a[N+1];

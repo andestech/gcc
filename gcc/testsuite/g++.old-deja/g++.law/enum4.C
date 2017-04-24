@@ -24,6 +24,7 @@ int main()
   Enum e = enumerator1;
   Struct s;
   int x = funct(e+1);// { dg-error "invalid" }
-  int y = s.getI(e+1);// { dg-error "invalid" }
+  int y = s.getI(e+1);// { dg-error "match" }
+  // { dg-message "candidate" "candidate note" { target *-*-* } 27 }
   return x+y;
 }

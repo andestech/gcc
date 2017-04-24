@@ -287,9 +287,9 @@ func StringsAreSorted(a []string) bool { return IsSorted(StringSlice(a)) }
 // Notes on stable sorting:
 // The used algorithms are simple and provable correct on all input and use
 // only logarithmic additional stack space.  They perform well if compared
-// experimentally to other stable in-place sorting algorithms.
+// experimentaly to other stable in-place sorting algorithms.
 //
-// Remarks on other algorithms evaluated:
+// Remarks on other algoritms evaluated:
 //  - GCC's 4.6.3 stable_sort with merge_without_buffer from libstdc++:
 //    Not faster.
 //  - GCC's __rotate for block rotations: Not faster.
@@ -349,7 +349,7 @@ func Stable(data Interface) {
 // The algorithm needs O((M+N)*log(M)) calls to data.Swap.
 //
 // The paper gives O((M+N)*log(M)) as the number of assignments assuming a
-// rotation algorithm which uses O(M+N+gcd(M+N)) assignments. The argumentation
+// rotation algorithm wich uses O(M+N+gcd(M+N)) assignments. The argumentation
 // in the paper carries through for Swap operations, especially as the block
 // swapping rotate uses only O(M+N) Swaps.
 func symMerge(data Interface, a, m, b int) {

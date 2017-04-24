@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-O -fdump-tree-einline -std=gnu89" } */
+/* { dg-options "-O -fdump-tree-einline" } */
 
 void foo0();
 inline void bar0() { foo0(); }

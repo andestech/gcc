@@ -24,7 +24,6 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 <http://www.gnu.org/licenses/>.  */
 
 #include <dlfcn.h>
-#include <stdbool.h>
 
 /* Function Name: __isPATrange
    Parameters passed into it:  address to check
@@ -140,38 +139,29 @@ s390_fallback_frame_state (struct _Unwind_Context *context,
 #define TPFAREA_SIZE STACK_POINTER_OFFSET-TPFAREA_OFFSET
 #define INVALID_RETURN 0
 
-void * __tpf_eh_return (void *target, void *origRA);
+void * __tpf_eh_return (void *target);
 
 void *
-__tpf_eh_return (void *target, void *origRA)
+__tpf_eh_return (void *target)
 {
   Dl_info targetcodeInfo, currentcodeInfo;
   int retval;
   void *current, *stackptr, *destination_frame;
-  unsigned long int shifter;
-  bool is_a_stub, frameDepth2, firstIteration;
+  unsigned long int shifter, is_a_stub;
 
-  is_a_stub = false;
-  frameDepth2 = false;
-  firstIteration = true;
+  is_a_stub = 0;
 
   /* Get code info for target return's address.  */
   retval = dladdr (target, &targetcodeInfo);
 
-  /* Check if original RA is a Pat stub.  If so set flag.  */
-  if (__isPATrange (origRA))
-    frameDepth2 = true;
-
   /* Ensure the code info is valid (for target).  */
   if (retval != INVALID_RETURN)
     {
-      /* Get the stack pointer of the first stack frame beyond the
-         unwinder or if exists the calling C++ runtime function (e.g.,
-         __cxa_throw).  */
-      if (!frameDepth2)
-        stackptr = (void *) *((unsigned long int *) (*(PREVIOUS_STACK_PTR())));
-      else
-        stackptr = (void *) *(PREVIOUS_STACK_PTR());
+
+      /* Get the stack pointer of the stack frame to be modified by
+         the exception unwinder.  So that we can begin our climb
+         there.  */
+      stackptr = (void *) *((unsigned long int *) (*(PREVIOUS_STACK_PTR())));
 
       /* Begin looping through stack frames.  Stop if invalid
          code information is retrieved or if a match between the
@@ -179,26 +169,18 @@ __tpf_eh_return (void *target, void *origRA)
          matches that of the target, calculated above.  */
       do
         {
-          if (!frameDepth2 || (frameDepth2 && !firstIteration))
-            {
-              /* Get return address based on our stackptr iterator.  */
-              current = (void *) *((unsigned long int *)
-                                   (stackptr + RA_OFFSET));
+          /* Get return address based on our stackptr iterator.  */
+          current = (void *) *((unsigned long int *)
+                      (stackptr+RA_OFFSET));
 
-              /* Is it a Pat Stub?  */
-              if (__isPATrange (current))
-                {
-                  /* Yes it was, get real return address in TPF stack area.  */
-                  current = (void *) *((unsigned long int *)
-                                       (stackptr + TPFRA_OFFSET))
-                  is_a_stub = true;
-                }
-            }
-          else
+          /* Is it a Pat Stub?  */
+          if (__isPATrange (current))
             {
+              /* Yes it was, get real return address
+                 in TPF stack area.  */
               current = (void *) *((unsigned long int *)
-                                   (stackptr + TPFRA_OFFSET));
-              is_a_stub = true;
+                          (stackptr+TPFRA_OFFSET));
+              is_a_stub = 1;
             }
 
           /* Get codeinfo on RA so that we can figure out
@@ -237,10 +219,8 @@ __tpf_eh_return (void *target, void *origRA)
                   This is necessary for CTOA stubs.
                   Otherwise we leap one byte past where we want to
                   go to in the TPF pat stub linkage code.  */
-               if (!frameDepth2 || (frameDepth2 && !firstIteration))
-                 shifter = *((unsigned long int *) (stackptr + RA_OFFSET));
-               else
-                 shifter = (unsigned long int) origRA;
+               shifter = *((unsigned long int *)
+                     (stackptr + RA_OFFSET));
 
                shifter &= ~1ul;
 
@@ -259,8 +239,7 @@ __tpf_eh_return (void *target, void *origRA)
              Bump stack frame iterator.  */
           stackptr = (void *) *(unsigned long int *) stackptr;
 
-          is_a_stub = false;
-          firstIteration = false;
+          is_a_stub = 0;
 
         }  while (stackptr && retval != INVALID_RETURN
                 && targetcodeInfo.dli_fbase != currentcodeInfo.dli_fbase);

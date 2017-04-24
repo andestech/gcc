@@ -1,8 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O1 -ftree-vectorize --param ggc-min-heapsize=0 --param ggc-min-expand=0" } */
 
-void unscrunch (unsigned char *, int *);
-
 int DES_CBCUpdate(unsigned char * output, int len)
 {
   int work[2];

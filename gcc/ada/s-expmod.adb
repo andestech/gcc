@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2009 Free Software Foundation, Inc.          --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -30,26 +30,34 @@
 ------------------------------------------------------------------------------
 
 package body System.Exp_Mod is
-   use System.Unsigned_Types;
 
    -----------------
    -- Exp_Modular --
    -----------------
 
    function Exp_Modular
-     (Left    : Unsigned;
-      Modulus : Unsigned;
-      Right   : Natural) return Unsigned
+     (Left    : Integer;
+      Modulus : Integer;
+      Right   : Natural)
+      return    Integer
    is
-      Result : Unsigned := 1;
-      Factor : Unsigned := Left;
+      Result : Integer := 1;
+      Factor : Integer := Left;
       Exp    : Natural := Right;
 
-      function Mult (X, Y : Unsigned) return Unsigned is
-        (Unsigned (Long_Long_Unsigned (X) * Long_Long_Unsigned (Y)
-                    mod Long_Long_Unsigned (Modulus)));
+      function Mult (X, Y : Integer) return Integer;
+      pragma Inline (Mult);
       --  Modular multiplication. Note that we can't take advantage of the
       --  compiler's circuit, because the modulus is not known statically.
+
+      function Mult (X, Y : Integer) return Integer is
+      begin
+         return Integer
+           (Long_Long_Integer (X) * Long_Long_Integer (Y)
+             mod Long_Long_Integer (Modulus));
+      end Mult;
+
+   --  Start of processing for Exp_Modular
 
    begin
       --  We use the standard logarithmic approach, Exp gets shifted right

@@ -24,7 +24,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "coretypes.h"
 #include "tm.h"
 #include "tree.h"
-#include "tm_p.h"
 #include "stringpool.h"
 #include "stor-layout.h"
 #include "cp-tree.h"
@@ -608,6 +607,10 @@ build_dynamic_cast_1 (tree type, tree expr, tsubst_flags_t complain)
 	  errstr = _("source is of incomplete class type");
 	  goto fail;
 	}
+
+      /* Apply trivial conversion T -> T& for dereferenced ptrs.  */
+      expr = convert_to_reference (exprtype, expr, CONV_IMPLICIT,
+				   LOOKUP_NORMAL, NULL_TREE, complain);
     }
 
   /* The dynamic_cast operator shall not cast away constness.  */
@@ -626,11 +629,6 @@ build_dynamic_cast_1 (tree type, tree expr, tsubst_flags_t complain)
     if (binfo)
       return build_static_cast (type, expr, complain);
   }
-
-  /* Apply trivial conversion T -> T& for dereferenced ptrs.  */
-  if (tc == REFERENCE_TYPE)
-    expr = convert_to_reference (exprtype, expr, CONV_IMPLICIT,
-				 LOOKUP_NORMAL, NULL_TREE, complain);
 
   /* Otherwise *exprtype must be a polymorphic class (have a vtbl).  */
   if (TYPE_POLYMORPHIC_P (TREE_TYPE (exprtype)))
@@ -1332,8 +1330,14 @@ get_pseudo_ti_index (tree type)
 		/* already created.  */
 		break;
 
-	      /* Create the array of __base_class_type_info entries.  */
-	      array_domain = build_index_type (size_int (num_bases - 1));
+	      /* Create the array of __base_class_type_info entries.
+		 G++ 3.2 allocated an array that had one too many
+		 entries, and then filled that extra entries with
+		 zeros.  */
+	      if (abi_version_at_least (2))
+		array_domain = build_index_type (size_int (num_bases - 1));
+	      else
+		array_domain = build_index_type (size_int (num_bases));
 	      base_array = build_array_type ((*tinfo_descs)[TK_BASE_TYPE].type,
 					     array_domain);
 
@@ -1461,44 +1465,6 @@ create_tinfo_types (void)
   pop_abi_namespace ();
 }
 
-/* Helper for emit_support_tinfos. Emits the type_info descriptor of
-   a single type.  */
-
-void
-emit_support_tinfo_1 (tree bltn)
-{
-  tree types[3];
-
-  if (bltn == NULL_TREE)
-    return;
-  types[0] = bltn;
-  types[1] = build_pointer_type (bltn);
-  types[2] = build_pointer_type (cp_build_qualified_type (bltn,
-							  TYPE_QUAL_CONST));
-
-  for (int i = 0; i < 3; ++i)
-    {
-      tree tinfo = get_tinfo_decl (types[i]);
-      TREE_USED (tinfo) = 1;
-      mark_needed (tinfo);
-      /* The C++ ABI requires that these objects be COMDAT.  But,
-	 On systems without weak symbols, initialized COMDAT
-	 objects are emitted with internal linkage.  (See
-	 comdat_linkage for details.)  Since we want these objects
-	 to have external linkage so that copies do not have to be
-	 emitted in code outside the runtime library, we make them
-	 non-COMDAT here.  
-
-	 It might also not be necessary to follow this detail of the
-	 ABI.  */
-      if (!flag_weak || ! targetm.cxx.library_rtti_comdat ())
-	{
-	  gcc_assert (TREE_PUBLIC (tinfo) && !DECL_COMDAT (tinfo));
-	  DECL_INTERFACE_KNOWN (tinfo) = 1;
-	}
-    }
-}
-
 /* Emit the type_info descriptors which are guaranteed to be in the runtime
    support.  Generating them here guarantees consistency with the other
    structures.  We use the following heuristic to determine when the runtime
@@ -1520,6 +1486,7 @@ emit_support_tinfos (void)
     &integer_type_node, &unsigned_type_node,
     &long_integer_type_node, &long_unsigned_type_node,
     &long_long_integer_type_node, &long_long_unsigned_type_node,
+    &int128_integer_type_node, &int128_unsigned_type_node,
     &float_type_node, &double_type_node, &long_double_type_node,
     &dfloat32_type_node, &dfloat64_type_node, &dfloat128_type_node,
     &nullptr_type_node,
@@ -1540,13 +1507,42 @@ emit_support_tinfos (void)
     return;
   doing_runtime = 1;
   for (ix = 0; fundamentals[ix]; ix++)
-    emit_support_tinfo_1 (*fundamentals[ix]);
-  for (ix = 0; ix < NUM_INT_N_ENTS; ix ++)
-    if (int_n_enabled_p[ix])
-      {
-	emit_support_tinfo_1 (int_n_trees[ix].signed_type);
-	emit_support_tinfo_1 (int_n_trees[ix].unsigned_type);
-      }
+    {
+      tree bltn = *fundamentals[ix];
+      tree types[3];
+      int i;
+
+      if (bltn == NULL_TREE)
+	continue;
+      types[0] = bltn;
+      types[1] = build_pointer_type (bltn);
+      types[2] = build_pointer_type (cp_build_qualified_type (bltn,
+							      TYPE_QUAL_CONST));
+
+      for (i = 0; i < 3; ++i)
+	{
+	  tree tinfo;
+
+	  tinfo = get_tinfo_decl (types[i]);
+	  TREE_USED (tinfo) = 1;
+	  mark_needed (tinfo);
+	  /* The C++ ABI requires that these objects be COMDAT.  But,
+	     On systems without weak symbols, initialized COMDAT
+	     objects are emitted with internal linkage.  (See
+	     comdat_linkage for details.)  Since we want these objects
+	     to have external linkage so that copies do not have to be
+	     emitted in code outside the runtime library, we make them
+	     non-COMDAT here.  
+
+	     It might also not be necessary to follow this detail of the
+	     ABI.  */
+	  if (!flag_weak || ! targetm.cxx.library_rtti_comdat ())
+	    {
+	      gcc_assert (TREE_PUBLIC (tinfo) && !DECL_COMDAT (tinfo));
+	      DECL_INTERFACE_KNOWN (tinfo) = 1;
+	    }
+	}
+    }
 }
 
 /* Finish a type info decl. DECL_PTR is a pointer to an unemitted
@@ -1597,12 +1593,6 @@ emit_tinfo_decl (tree decl)
       DECL_INITIAL (decl) = init;
       mark_used (decl);
       cp_finish_decl (decl, init, false, NULL_TREE, 0);
-      /* Avoid targets optionally bumping up the alignment to improve
-	 vector instruction accesses, tinfo are never accessed this way.  */
-#ifdef DATA_ABI_ALIGNMENT
-      DECL_ALIGN (decl) = DATA_ABI_ALIGNMENT (decl, TYPE_ALIGN (TREE_TYPE (decl)));
-      DECL_USER_ALIGN (decl) = true;
-#endif
       return true;
     }
   else

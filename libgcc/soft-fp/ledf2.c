@@ -42,7 +42,9 @@ __ledf2 (DFtype a, DFtype b)
   FP_INIT_EXCEPTIONS;
   FP_UNPACK_RAW_D (A, a);
   FP_UNPACK_RAW_D (B, b);
-  FP_CMP_D (r, A, B, 2, 2);
+  FP_CMP_D (r, A, B, 2);
+  if (r == 2)
+    FP_SET_EXCEPTION (FP_EX_INVALID);
   FP_HANDLE_EXCEPTIONS;
 
   return r;

@@ -83,9 +83,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       else if (_M_state == _S_state_in_brace)
 	_M_scan_in_brace();
       else
-	{
-	  _GLIBCXX_DEBUG_ASSERT(false);
-	}
+	_GLIBCXX_DEBUG_ASSERT(false);
     }
 
   // Differences between styles:
@@ -229,14 +227,14 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	    }
 	}
       // In POSIX, when encountering "[]" or "[^]", the ']' is interpreted
-      // literally. So "[]]" and "[^]]" are valid regexes. See the testcases
+      // literally. So "[]]" or "[^]]" is valid regex. See the testcases
       // `*/empty_range.cc`.
       else if (__c == ']' && (_M_is_ecma() || !_M_at_bracket_start))
 	{
 	  _M_token = _S_token_bracket_end;
 	  _M_state = _S_state_normal;
 	}
-      // ECMAScript and awk permits escaping in bracket.
+      // ECMAScirpt and awk permmits escaping in bracket.
       else if (__c == '\\' && (_M_is_ecma() || _M_is_awk()))
 	(this->*_M_eat_escape)();
       else
@@ -337,7 +335,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       else if (__c == 'x' || __c == 'u')
 	{
 	  _M_value.erase();
-	  for (int __i = 0; __i < (__c == 'x' ? 2 : 4); __i++)
+	  for (int i = 0; i < (__c == 'x' ? 2 : 4); i++)
 	    {
 	      if (_M_current == _M_end
 		  || !_M_ctype.is(_CtypeT::xdigit, *_M_current))
@@ -346,7 +344,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	    }
 	  _M_token = _S_token_hex_num;
 	}
-      // ECMAScript recognizes multi-digit back-references.
+      // ECMAScript recongnizes multi-digit back-references.
       else if (_M_ctype.is(_CtypeT::digit, __c))
 	{
 	  _M_value.assign(1, __c);
@@ -394,7 +392,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       else
 	{
 #ifdef __STRICT_ANSI__
-	  // POSIX says it is undefined to escape ordinary characters
 	  __throw_regex_error(regex_constants::error_escape);
 #else
 	  _M_token = _S_token_ord_char;
@@ -438,8 +435,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	__throw_regex_error(regex_constants::error_escape);
     }
 
-  // Eats a character class or throws an exception.
-  // __ch could be ':', '.' or '=', _M_current is the char after ']' when
+  // Eats a character class or throwns an exception.
+  // __ch cound be ':', '.' or '=', _M_current is the char after ']' when
   // returning.
   template<typename _CharT>
     void

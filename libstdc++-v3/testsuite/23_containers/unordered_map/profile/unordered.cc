@@ -1,4 +1,4 @@
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=gnu++0x" }
 /* testing the gcc instrumented */
 
 #include <unordered_map>

@@ -68,9 +68,6 @@ AC_DEFUN([ISL_INIT_FLAGS],
     ENABLE_ISL_CHECK=no
     AC_MSG_WARN([using in-tree ISL, disabling version check])
   fi
-
-  islinc="-DCLOOG_INT_GMP ${islinc}"
-  isllibs="${isllibs} -lisl"
 ]
 )
 
@@ -93,9 +90,20 @@ AC_DEFUN([ISL_REQUESTED],
 ]
 )
 
-# ISL_CHECK_VERSION ISL_CHECK_VERSION ()
+# _ISL_CHECK_CT_PROG(MAJOR, MINOR)
+# --------------------------------------------
+# Helper for verifying ISL compile time version.
+m4_define([_ISL_CHECK_CT_PROG],[AC_LANG_PROGRAM(
+  [#include <isl/version.h>
+   #include <string.h>],
+  [if (strncmp (isl_version (), "isl-$1.$2", strlen ("isl-$1.$2")) != 0)
+     return 1;
+   ])])
+
+# ISL_CHECK_VERSION ISL_CHECK_VERSION (MAJOR, MINOR)
 # ----------------------------------------------------------------
-# Test that ISL contains functionality added to the minimum expected version.
+# Test the found ISL to be exact of version MAJOR.MINOR and at least
+# REVISION.
 AC_DEFUN([ISL_CHECK_VERSION],
 [
   if test "${ENABLE_ISL_CHECK}" = yes ; then
@@ -107,10 +115,11 @@ AC_DEFUN([ISL_CHECK_VERSION],
     LDFLAGS="${_isl_saved_LDFLAGS} ${isllibs}"
     LIBS="${_isl_saved_LIBS} -lisl"
 
-    AC_MSG_CHECKING([for compatible ISL])
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <isl/val.h>]], [[;]])],
+    AC_MSG_CHECKING([for version $1.$2 of ISL])
+    AC_RUN_IFELSE([_ISL_CHECK_CT_PROG($1,$2)],
 	[gcc_cv_isl=yes],
-	[gcc_cv_isl=no])
+	[gcc_cv_isl=no],
+	[gcc_cv_isl=yes])
     AC_MSG_RESULT([$gcc_cv_isl])
 
     CFLAGS=$_isl_saved_CFLAGS

@@ -87,6 +87,4 @@
   { "netbsd_endfile_spec",	NETBSD_ENDFILE_SPEC },
 
 
-/* Use standard DWARF numbering for DWARF debugging information.  */
-#define RS6000_USE_DWARF_NUMBERING
-
+#define DBX_REGISTER_NUMBER(REGNO) rs6000_dbx_register_number (REGNO)

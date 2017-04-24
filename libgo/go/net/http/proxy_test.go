@@ -35,8 +35,12 @@ var UseProxyTests = []struct {
 }
 
 func TestUseProxy(t *testing.T) {
-	ResetProxyEnv()
-	os.Setenv("NO_PROXY", "foobar.com, .barbaz.net")
+	oldenv := os.Getenv("NO_PROXY")
+	defer os.Setenv("NO_PROXY", oldenv)
+
+	no_proxy := "foobar.com, .barbaz.net"
+	os.Setenv("NO_PROXY", no_proxy)
+
 	for _, test := range UseProxyTests {
 		if useProxy(test.host+":80") != test.match {
 			t.Errorf("useProxy(%v) = %v, want %v", test.host, !test.match, test.match)
@@ -67,15 +71,8 @@ func TestCacheKeys(t *testing.T) {
 			proxy = u
 		}
 		cm := connectMethod{proxy, tt.scheme, tt.addr}
-		if got := cm.key().String(); got != tt.key {
-			t.Fatalf("{%q, %q, %q} cache key = %q; want %q", tt.proxy, tt.scheme, tt.addr, got, tt.key)
+		if cm.String() != tt.key {
+			t.Fatalf("{%q, %q, %q} cache key %q; want %q", tt.proxy, tt.scheme, tt.addr, cm.String(), tt.key)
 		}
 	}
-}
-
-func ResetProxyEnv() {
-	for _, v := range []string{"HTTP_PROXY", "http_proxy", "NO_PROXY", "no_proxy"} {
-		os.Setenv(v, "")
-	}
-	ResetCachedEnvironment()
 }

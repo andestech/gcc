@@ -2434,7 +2434,7 @@
      rtx s0;
      rtx bcomp;
      rtx loc_ref;
-     machine_mode mode = GET_MODE (operands[0]);
+     enum machine_mode mode = GET_MODE (operands[0]);
 
      /* only deal with loop counters in SImode or DImode  */
      if (mode != SImode && mode != DImode)

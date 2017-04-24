@@ -7,4 +7,5 @@ class C
 int fn (C c) 
 { 
   return C::operator float(c); // { dg-error "operator float.C" }
+  // { dg-message "candidate" "candidate note" { target *-*-* } 9 }
 }

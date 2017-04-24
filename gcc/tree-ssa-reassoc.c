@@ -27,21 +27,10 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm_p.h"
 #include "tree.h"
 #include "stor-layout.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfganal.h"
 #include "basic-block.h"
 #include "gimple-pretty-print.h"
 #include "tree-inline.h"
-#include "hash-map.h"
+#include "pointer-set.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
 #include "gimple-fold.h"
@@ -71,10 +60,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "target.h"
 #include "params.h"
 #include "diagnostic-core.h"
-#include "builtins.h"
-#include "gimplify.h"
-#include "insn-codes.h"
-#include "optabs.h"
 
 /*  This is a simple global reassociation pass.  It is, in part, based
     on the LLVM pass of the same name (They do some things more/less
@@ -230,13 +215,7 @@ static int next_operand_entry_id;
 static long *bb_rank;
 
 /* Operand->rank hashtable.  */
-static hash_map<tree, long> *operand_rank;
-
-/* Vector of SSA_NAMEs on which after reassociate_bb is done with
-   all basic blocks the CFG should be adjusted - basic blocks
-   split right after that SSA_NAME's definition statement and before
-   the only use, which must be a bit ior.  */
-static vec<tree> reassoc_branch_fixups;
+static struct pointer_map_t *operand_rank;
 
 /* Forward decls.  */
 static long get_rank (tree);
@@ -382,8 +361,8 @@ propagate_rank (long rank, tree op)
 static inline long
 find_operand_rank (tree e)
 {
-  long *slot = operand_rank->get (e);
-  return slot ? *slot : -1;
+  void **slot = pointer_map_contains (operand_rank, e);
+  return slot ? (long) (intptr_t) *slot : -1;
 }
 
 /* Insert {E,RANK} into the operand rank hashtable.  */
@@ -391,8 +370,11 @@ find_operand_rank (tree e)
 static inline void
 insert_operand_rank (tree e, long rank)
 {
+  void **slot;
   gcc_assert (rank > 0);
-  gcc_assert (!operand_rank->put (e, rank));
+  slot = pointer_map_insert (operand_rank, e);
+  gcc_assert (!*slot);
+  *slot = (void *) (intptr_t) rank;
 }
 
 /* Given an expression E, return the rank of the expression.  */
@@ -1040,36 +1022,32 @@ static vec<oecount> cvec;
 
 /* Oecount hashtable helpers.  */
 
-struct oecount_hasher
+struct oecount_hasher : typed_noop_remove <void>
 {
-  typedef int value_type;
-  typedef int compare_type;
-  typedef int store_values_directly;
-  static inline hashval_t hash (const value_type &);
-  static inline bool equal (const value_type &, const compare_type &);
-  static bool is_deleted (int &v) { return v == 1; }
-  static void mark_deleted (int &e) { e = 1; }
-  static bool is_empty (int &v) { return v == 0; }
-  static void mark_empty (int &e) { e = 0; }
-  static void remove (int &) {}
+  /* Note that this hash table stores integers, not pointers.
+     So, observe the casting in the member functions.  */
+  typedef void value_type;
+  typedef void compare_type;
+  static inline hashval_t hash (const value_type *);
+  static inline bool equal (const value_type *, const compare_type *);
 };
 
 /* Hash function for oecount.  */
 
 inline hashval_t
-oecount_hasher::hash (const value_type &p)
+oecount_hasher::hash (const value_type *p)
 {
-  const oecount *c = &cvec[p - 42];
+  const oecount *c = &cvec[(size_t)p - 42];
   return htab_hash_pointer (c->op) ^ (hashval_t)c->oecode;
 }
 
 /* Comparison function for oecount.  */
 
 inline bool
-oecount_hasher::equal (const value_type &p1, const compare_type &p2)
+oecount_hasher::equal (const value_type *p1, const compare_type *p2)
 {
-  const oecount *c1 = &cvec[p1 - 42];
-  const oecount *c2 = &cvec[p2 - 42];
+  const oecount *c1 = &cvec[(size_t)p1 - 42];
+  const oecount *c2 = &cvec[(size_t)p2 - 42];
   return (c1->oecode == c2->oecode
 	  && c1->op == c2->op);
 }
@@ -1133,7 +1111,7 @@ decrement_power (gimple stmt)
       arg1 = gimple_call_arg (stmt, 1);
       c = TREE_REAL_CST (arg1);
       power = real_to_integer (&c) - 1;
-      real_from_integer (&cint, VOIDmode, power, SIGNED);
+      real_from_integer (&cint, VOIDmode, power, 0, 0);
       gimple_call_set_arg (stmt, 1, build_real (TREE_TYPE (arg1), cint));
       return power;
 
@@ -1426,6 +1404,7 @@ undistribute_ops_list (enum tree_code opcode,
   unsigned nr_candidates, nr_candidates2;
   sbitmap_iterator sbi0;
   vec<operand_entry_t> *subops;
+  hash_table <oecount_hasher> ctable;
   bool changed = false;
   int next_oecount_id = 0;
 
@@ -1473,9 +1452,7 @@ undistribute_ops_list (enum tree_code opcode,
 
   /* Build linearized sub-operand lists and the counting table.  */
   cvec.create (0);
-
-  hash_table<oecount_hasher> ctable (15);
-
+  ctable.create (15);
   /* ??? Macro arguments cannot have multi-argument template types in
      them.  This typedef is needed to workaround that limitation.  */
   typedef vec<operand_entry_t> vec_operand_entry_t_heap;
@@ -1494,26 +1471,27 @@ undistribute_ops_list (enum tree_code opcode,
       FOR_EACH_VEC_ELT (subops[i], j, oe1)
 	{
 	  oecount c;
-	  int *slot;
-	  int idx;
+	  void **slot;
+	  size_t idx;
 	  c.oecode = oecode;
 	  c.cnt = 1;
 	  c.id = next_oecount_id++;
 	  c.op = oe1->op;
 	  cvec.safe_push (c);
 	  idx = cvec.length () + 41;
-	  slot = ctable.find_slot (idx, INSERT);
+	  slot = ctable.find_slot ((void *)idx, INSERT);
 	  if (!*slot)
 	    {
-	      *slot = idx;
+	      *slot = (void *)idx;
 	    }
 	  else
 	    {
 	      cvec.pop ();
-	      cvec[*slot - 42].cnt++;
+	      cvec[(size_t)*slot - 42].cnt++;
 	    }
 	}
     }
+  ctable.dispose ();
 
   /* Sort the counting table.  */
   cvec.qsort (oecount_cmp);
@@ -2069,7 +2047,7 @@ range_entry_cmp (const void *a, const void *b)
 	      else
 		return -1;
 	    }
-	  else if (p->high != NULL_TREE)
+	  else if (q->high != NULL_TREE)
 	    return 1;
 	  /* If both ranges are the same, sort below by ascending idx.  */
 	}
@@ -2091,9 +2069,7 @@ range_entry_cmp (const void *a, const void *b)
 /* Helper routine of optimize_range_test.
    [EXP, IN_P, LOW, HIGH, STRICT_OVERFLOW_P] is a merged range for
    RANGE and OTHERRANGE through OTHERRANGE + COUNT - 1 ranges,
-   OPCODE and OPS are arguments of optimize_range_tests.  If OTHERRANGE
-   is NULL, OTHERRANGEP should not be and then OTHERRANGEP points to
-   an array of COUNT pointers to other ranges.  Return
+   OPCODE and OPS are arguments of optimize_range_tests.  Return
    true if the range merge has been successful.
    If OPCODE is ERROR_MARK, this is called from within
    maybe_optimize_range_tests and is performing inter-bb range optimization.
@@ -2102,10 +2078,9 @@ range_entry_cmp (const void *a, const void *b)
 
 static bool
 update_range_test (struct range_entry *range, struct range_entry *otherrange,
-		   struct range_entry **otherrangep,
 		   unsigned int count, enum tree_code opcode,
-		   vec<operand_entry_t> *ops, tree exp, gimple_seq seq,
-		   bool in_p, tree low, tree high, bool strict_overflow_p)
+		   vec<operand_entry_t> *ops, tree exp, bool in_p,
+		   tree low, tree high, bool strict_overflow_p)
 {
   operand_entry_t oe = (*ops)[range->idx];
   tree op = oe->op;
@@ -2113,11 +2088,9 @@ update_range_test (struct range_entry *range, struct range_entry *otherrange,
     last_stmt (BASIC_BLOCK_FOR_FN (cfun, oe->id));
   location_t loc = gimple_location (stmt);
   tree optype = op ? TREE_TYPE (op) : boolean_type_node;
-  tree tem = build_range_check (loc, optype, unshare_expr (exp),
-				in_p, low, high);
+  tree tem = build_range_check (loc, optype, exp, in_p, low, high);
   enum warn_strict_overflow_code wc = WARN_STRICT_OVERFLOW_COMPARISON;
   gimple_stmt_iterator gsi;
-  unsigned int i;
 
   if (tem == NULL_TREE)
     return false;
@@ -2137,12 +2110,8 @@ update_range_test (struct range_entry *range, struct range_entry *otherrange,
       fprintf (dump_file, ", ");
       print_generic_expr (dump_file, range->high, 0);
       fprintf (dump_file, "]");
-      for (i = 0; i < count; i++)
+      for (r = otherrange; r < otherrange + count; r++)
 	{
-	  if (otherrange)
-	    r = otherrange + i;
-	  else
-	    r = otherrangep[i];
 	  fprintf (dump_file, " and %c[", r->in_p ? '+' : '-');
 	  print_generic_expr (dump_file, r->low, 0);
 	  fprintf (dump_file, ", ");
@@ -2164,14 +2133,10 @@ update_range_test (struct range_entry *range, struct range_entry *otherrange,
      In that case we have to insert after the stmt rather then before
      it.  */
   if (op == range->exp)
-    {
-      gsi_insert_seq_after (&gsi, seq, GSI_CONTINUE_LINKING);
-      tem = force_gimple_operand_gsi (&gsi, tem, true, NULL_TREE, false,
-				      GSI_CONTINUE_LINKING);
-    }
+    tem = force_gimple_operand_gsi (&gsi, tem, true, NULL_TREE, false,
+				    GSI_CONTINUE_LINKING);
   else
     {
-      gsi_insert_seq_before (&gsi, seq, GSI_SAME_STMT);
       tem = force_gimple_operand_gsi (&gsi, tem, true, NULL_TREE, true,
 				      GSI_SAME_STMT);
       gsi_prev (&gsi);
@@ -2189,12 +2154,8 @@ update_range_test (struct range_entry *range, struct range_entry *otherrange,
   range->in_p = in_p;
   range->strict_overflow_p = false;
 
-  for (i = 0; i < count; i++)
+  for (range = otherrange; range < otherrange + count; range++)
     {
-      if (otherrange)
-	range = otherrange + i;
-      else
-	range = otherrangep[i];
       oe = (*ops)[range->idx];
       /* Now change all the other range test immediate uses, so that
 	 those tests will be optimized away.  */
@@ -2232,8 +2193,8 @@ optimize_range_tests_xor (enum tree_code opcode, tree type,
 			  struct range_entry *rangej)
 {
   tree lowxor, highxor, tem, exp;
-  /* Check lowi ^ lowj == highi ^ highj and
-     popcount (lowi ^ lowj) == 1.  */
+  /* Check highi ^ lowi == highj ^ lowj and
+     popcount (highi ^ lowi) == 1.  */
   lowxor = fold_binary (BIT_XOR_EXPR, type, lowi, lowj);
   if (lowxor == NULL_TREE || TREE_CODE (lowxor) != INTEGER_CST)
     return false;
@@ -2247,8 +2208,8 @@ optimize_range_tests_xor (enum tree_code opcode, tree type,
   exp = fold_build2 (BIT_AND_EXPR, type, rangei->exp, tem);
   lowj = fold_build2 (BIT_AND_EXPR, type, lowi, tem);
   highj = fold_build2 (BIT_AND_EXPR, type, highi, tem);
-  if (update_range_test (rangei, rangej, NULL, 1, opcode, ops, exp,
-			 NULL, rangei->in_p, lowj, highj,
+  if (update_range_test (rangei, rangej, 1, opcode, ops, exp,
+			 rangei->in_p, lowj, highj,
 			 rangei->strict_overflow_p
 			 || rangej->strict_overflow_p))
     return true;
@@ -2287,17 +2248,12 @@ optimize_range_tests_diff (enum tree_code opcode, tree type,
   if (!integer_pow2p (tem1))
     return false;
 
-  type = unsigned_type_for (type);
-  tem1 = fold_convert (type, tem1);
-  tem2 = fold_convert (type, tem2);
-  lowi = fold_convert (type, lowi);
   mask = fold_build1 (BIT_NOT_EXPR, type, tem1);
-  tem1 = fold_binary (MINUS_EXPR, type,
-		      fold_convert (type, rangei->exp), lowi);
+  tem1 = fold_binary (MINUS_EXPR, type, rangei->exp, lowi);
   tem1 = fold_build2 (BIT_AND_EXPR, type, tem1, mask);
   lowj = build_int_cst (type, 0);
-  if (update_range_test (rangei, rangej, NULL, 1, opcode, ops, tem1,
-			 NULL, rangei->in_p, lowj, tem2,
+  if (update_range_test (rangei, rangej, 1, opcode, ops, tem1,
+			 rangei->in_p, lowj, tem2,
 			 rangei->strict_overflow_p
 			 || rangej->strict_overflow_p))
     return true;
@@ -2360,255 +2316,6 @@ optimize_range_tests_1 (enum tree_code opcode, int first, int length,
 	      any_changes = true;
 	      break;
 	    }
-	}
-    }
-  return any_changes;
-}
-
-/* Helper function of optimize_range_tests_to_bit_test.  Handle a single
-   range, EXP, LOW, HIGH, compute bit mask of bits to test and return
-   EXP on success, NULL otherwise.  */
-
-static tree
-extract_bit_test_mask (tree exp, int prec, tree totallow, tree low, tree high,
-		       wide_int *mask, tree *totallowp)
-{
-  tree tem = int_const_binop (MINUS_EXPR, high, low);
-  if (tem == NULL_TREE
-      || TREE_CODE (tem) != INTEGER_CST
-      || TREE_OVERFLOW (tem)
-      || tree_int_cst_sgn (tem) == -1
-      || compare_tree_int (tem, prec) != -1)
-    return NULL_TREE;
-
-  unsigned HOST_WIDE_INT max = tree_to_uhwi (tem) + 1;
-  *mask = wi::shifted_mask (0, max, false, prec);
-  if (TREE_CODE (exp) == BIT_AND_EXPR
-      && TREE_CODE (TREE_OPERAND (exp, 1)) == INTEGER_CST)
-    {
-      widest_int msk = wi::to_widest (TREE_OPERAND (exp, 1));
-      msk = wi::zext (~msk, TYPE_PRECISION (TREE_TYPE (exp)));
-      if (wi::popcount (msk) == 1
-	  && wi::ltu_p (msk, prec - max))
-	{
-	  *mask |= wi::shifted_mask (msk.to_uhwi (), max, false, prec);
-	  max += msk.to_uhwi ();
-	  exp = TREE_OPERAND (exp, 0);
-	  if (integer_zerop (low)
-	      && TREE_CODE (exp) == PLUS_EXPR
-	      && TREE_CODE (TREE_OPERAND (exp, 1)) == INTEGER_CST)
-	    {
-	      widest_int bias
-	        = wi::neg (wi::sext (wi::to_widest (TREE_OPERAND (exp, 1)),
-				     TYPE_PRECISION (TREE_TYPE (low))));
-	      tree tbias = wide_int_to_tree (TREE_TYPE (low), bias);
-	      if (totallowp)
-		{
-		  *totallowp = tbias;
-		  exp = TREE_OPERAND (exp, 0);
-		  STRIP_NOPS (exp);
-		  return exp;
-		}
-	      else if (!tree_int_cst_lt (totallow, tbias))
-		return NULL_TREE;
-	      bias -= wi::to_widest (totallow);
-	      if (wi::ges_p (bias, 0) && wi::lts_p (bias, prec - max))
-		{
-		  *mask = wi::lshift (*mask, bias);
-		  exp = TREE_OPERAND (exp, 0);
-		  STRIP_NOPS (exp);
-		  return exp;
-		}
-	    }
-	}
-    }
-  if (totallowp)
-    return exp;
-  if (!tree_int_cst_lt (totallow, low))
-    return exp;
-  tem = int_const_binop (MINUS_EXPR, low, totallow);
-  if (tem == NULL_TREE
-      || TREE_CODE (tem) != INTEGER_CST
-      || TREE_OVERFLOW (tem)
-      || compare_tree_int (tem, prec - max) == 1)
-    return NULL_TREE;
-
-  *mask = wi::lshift (*mask, wi::to_widest (tem));
-  return exp;
-}
-
-/* Attempt to optimize small range tests using bit test.
-   E.g.
-   X != 43 && X != 76 && X != 44 && X != 78 && X != 49
-   && X != 77 && X != 46 && X != 75 && X != 45 && X != 82
-   has been by earlier optimizations optimized into:
-   ((X - 43U) & ~32U) > 3U && X != 49 && X != 82
-   As all the 43 through 82 range is less than 64 numbers,
-   for 64-bit word targets optimize that into:
-   (X - 43U) > 40U && ((1 << (X - 43U)) & 0x8F0000004FULL) == 0  */
-
-static bool
-optimize_range_tests_to_bit_test (enum tree_code opcode, int first, int length,
-				  vec<operand_entry_t> *ops,
-				  struct range_entry *ranges)
-{
-  int i, j;
-  bool any_changes = false;
-  int prec = GET_MODE_BITSIZE (word_mode);
-  auto_vec<struct range_entry *, 64> candidates;
-
-  for (i = first; i < length - 2; i++)
-    {
-      tree lowi, highi, lowj, highj, type;
-
-      if (ranges[i].exp == NULL_TREE || ranges[i].in_p)
-	continue;
-      type = TREE_TYPE (ranges[i].exp);
-      if (!INTEGRAL_TYPE_P (type))
-	continue;
-      lowi = ranges[i].low;
-      if (lowi == NULL_TREE)
-	lowi = TYPE_MIN_VALUE (type);
-      highi = ranges[i].high;
-      if (highi == NULL_TREE)
-	continue;
-      wide_int mask;
-      tree exp = extract_bit_test_mask (ranges[i].exp, prec, lowi, lowi,
-					highi, &mask, &lowi);
-      if (exp == NULL_TREE)
-	continue;
-      bool strict_overflow_p = ranges[i].strict_overflow_p;
-      candidates.truncate (0);
-      int end = MIN (i + 64, length);
-      for (j = i + 1; j < end; j++)
-	{
-	  tree exp2;
-	  if (ranges[j].exp == NULL_TREE || ranges[j].in_p)
-	    continue;
-	  if (ranges[j].exp == exp)
-	    ;
-	  else if (TREE_CODE (ranges[j].exp) == BIT_AND_EXPR)
-	    {
-	      exp2 = TREE_OPERAND (ranges[j].exp, 0);
-	      if (exp2 == exp)
-		;
-	      else if (TREE_CODE (exp2) == PLUS_EXPR)
-		{
-		  exp2 = TREE_OPERAND (exp2, 0);
-		  STRIP_NOPS (exp2);
-		  if (exp2 != exp)
-		    continue;
-		}
-	      else
-		continue;
-	    }
-	  else
-	    continue;
-	  lowj = ranges[j].low;
-	  if (lowj == NULL_TREE)
-	    continue;
-	  highj = ranges[j].high;
-	  if (highj == NULL_TREE)
-	    highj = TYPE_MAX_VALUE (type);
-	  wide_int mask2;
-	  exp2 = extract_bit_test_mask (ranges[j].exp, prec, lowi, lowj,
-					highj, &mask2, NULL);
-	  if (exp2 != exp)
-	    continue;
-	  mask |= mask2;
-	  strict_overflow_p |= ranges[j].strict_overflow_p;
-	  candidates.safe_push (&ranges[j]);
-	}
-
-      /* If we need otherwise 3 or more comparisons, use a bit test.  */
-      if (candidates.length () >= 2)
-	{
-	  tree high = wide_int_to_tree (TREE_TYPE (lowi),
-					wi::to_widest (lowi)
-					+ prec - 1 - wi::clz (mask));
-	  operand_entry_t oe = (*ops)[ranges[i].idx];
-	  tree op = oe->op;
-	  gimple stmt = op ? SSA_NAME_DEF_STMT (op)
-			   : last_stmt (BASIC_BLOCK_FOR_FN (cfun, oe->id));
-	  location_t loc = gimple_location (stmt);
-	  tree optype = op ? TREE_TYPE (op) : boolean_type_node;
-
-	  /* See if it isn't cheaper to pretend the minimum value of the
-	     range is 0, if maximum value is small enough.
-	     We can avoid then subtraction of the minimum value, but the
-	     mask constant could be perhaps more expensive.  */
-	  if (compare_tree_int (lowi, 0) > 0
-	      && compare_tree_int (high, prec) < 0)
-	    {
-	      int cost_diff;
-	      HOST_WIDE_INT m = tree_to_uhwi (lowi);
-	      rtx reg = gen_raw_REG (word_mode, 10000);
-	      bool speed_p = optimize_bb_for_speed_p (gimple_bb (stmt));
-	      cost_diff = set_rtx_cost (gen_rtx_PLUS (word_mode, reg,
-						      GEN_INT (-m)), speed_p);
-	      rtx r = immed_wide_int_const (mask, word_mode);
-	      cost_diff += set_src_cost (gen_rtx_AND (word_mode, reg, r),
-					 speed_p);
-	      r = immed_wide_int_const (wi::lshift (mask, m), word_mode);
-	      cost_diff -= set_src_cost (gen_rtx_AND (word_mode, reg, r),
-					 speed_p);
-	      if (cost_diff > 0)
-		{
-		  mask = wi::lshift (mask, m);
-		  lowi = build_zero_cst (TREE_TYPE (lowi));
-		}
-	    }
-
-	  tree tem = build_range_check (loc, optype, unshare_expr (exp),
-					false, lowi, high);
-	  if (tem == NULL_TREE || is_gimple_val (tem))
-	    continue;
-	  tree etype = unsigned_type_for (TREE_TYPE (exp));
-	  exp = fold_build2_loc (loc, MINUS_EXPR, etype,
-				 fold_convert_loc (loc, etype, exp),
-				 fold_convert_loc (loc, etype, lowi));
-	  exp = fold_convert_loc (loc, integer_type_node, exp);
-	  tree word_type = lang_hooks.types.type_for_mode (word_mode, 1);
-	  exp = fold_build2_loc (loc, LSHIFT_EXPR, word_type,
-				 build_int_cst (word_type, 1), exp);
-	  exp = fold_build2_loc (loc, BIT_AND_EXPR, word_type, exp,
-				 wide_int_to_tree (word_type, mask));
-	  exp = fold_build2_loc (loc, EQ_EXPR, optype, exp,
-				 build_zero_cst (word_type));
-	  if (is_gimple_val (exp))
-	    continue;
-
-	  /* The shift might have undefined behavior if TEM is true,
-	     but reassociate_bb isn't prepared to have basic blocks
-	     split when it is running.  So, temporarily emit a code
-	     with BIT_IOR_EXPR instead of &&, and fix it up in
-	     branch_fixup.  */
-	  gimple_seq seq;
-	  tem = force_gimple_operand (tem, &seq, true, NULL_TREE);
-	  gcc_assert (TREE_CODE (tem) == SSA_NAME);
-	  gimple_set_visited (SSA_NAME_DEF_STMT (tem), true);
-	  gimple_seq seq2;
-	  exp = force_gimple_operand (exp, &seq2, true, NULL_TREE);
-	  gimple_seq_add_seq_without_update (&seq, seq2);
-	  gcc_assert (TREE_CODE (exp) == SSA_NAME);
-	  gimple_set_visited (SSA_NAME_DEF_STMT (exp), true);
-	  gimple g
-	    = gimple_build_assign_with_ops (BIT_IOR_EXPR,
-					    make_ssa_name (optype, NULL),
-					    tem, exp);
-	  gimple_set_location (g, loc);
-	  gimple_seq_add_stmt_without_update (&seq, g);
-	  exp = gimple_assign_lhs (g);
-	  tree val = build_zero_cst (optype);
-	  if (update_range_test (&ranges[i], NULL, candidates.address (),
-				 candidates.length (), opcode, ops, exp,
-				 seq, false, val, val, strict_overflow_p))
-	    {
-	      any_changes = true;
-	      reassoc_branch_fixups.safe_push (tem);
-	    }
-	  else
-	    gimple_seq_discard (seq);
 	}
     }
   return any_changes;
@@ -2677,9 +2384,9 @@ optimize_range_tests (enum tree_code opcode,
       if (j == i + 1)
 	continue;
 
-      if (update_range_test (ranges + i, ranges + i + 1, NULL, j - i - 1,
-			     opcode, ops, ranges[i].exp, NULL, in_p,
-			     low, high, strict_overflow_p))
+      if (update_range_test (ranges + i, ranges + i + 1, j - i - 1, opcode,
+			     ops, ranges[i].exp, in_p, low, high,
+			     strict_overflow_p))
 	{
 	  i = j - 1;
 	  any_changes = true;
@@ -2698,9 +2405,6 @@ optimize_range_tests (enum tree_code opcode,
   if (BRANCH_COST (optimize_function_for_speed_p (cfun), false) >= 2)
     any_changes |= optimize_range_tests_1 (opcode, first, length, false,
 					   ops, ranges);
-  if (lshift_cheap_p (optimize_function_for_speed_p (cfun)))
-    any_changes |= optimize_range_tests_to_bit_test (opcode, first, length,
-						     ops, ranges);
 
   if (any_changes && opcode != ERROR_MARK)
     {
@@ -3641,7 +3345,7 @@ get_required_cycles (int ops_num, int cpu_width)
 
 static int
 get_reassociation_width (int ops_num, enum tree_code opc,
-			 machine_mode mode)
+			 enum machine_mode mode)
 {
   int param_width = PARAM_VALUE (PARAM_TREE_REASSOC_WIDTH);
   int width;
@@ -3988,6 +3692,9 @@ acceptable_pow_call (gimple stmt, tree *base, HOST_WIDE_INT *exponent)
   switch (DECL_FUNCTION_CODE (fndecl))
     {
     CASE_FLT_FN (BUILT_IN_POW):
+      if (flag_errno_math)
+	return false;
+
       *base = gimple_call_arg (stmt, 0);
       arg1 = gimple_call_arg (stmt, 1);
 
@@ -4000,7 +3707,8 @@ acceptable_pow_call (gimple stmt, tree *base, HOST_WIDE_INT *exponent)
 	return false;
 
       *exponent = real_to_integer (&c);
-      real_from_integer (&cint, VOIDmode, *exponent, SIGNED);
+      real_from_integer (&cint, VOIDmode, *exponent,
+			 *exponent < 0 ? -1 : 0, 0);
       if (!real_identical (&c, &cint))
 	return false;
 
@@ -4816,7 +4524,7 @@ reassociate_bb (basic_block bb)
 		}
 	      else
 		{
-		  machine_mode mode = TYPE_MODE (TREE_TYPE (lhs));
+		  enum machine_mode mode = TYPE_MODE (TREE_TYPE (lhs));
 		  int ops_num = ops.length ();
 		  int width = get_reassociation_width (ops_num, rhs_code, mode);
 		  tree new_lhs = lhs;
@@ -4868,82 +4576,6 @@ reassociate_bb (basic_block bb)
        son;
        son = next_dom_son (CDI_POST_DOMINATORS, son))
     reassociate_bb (son);
-}
-
-/* Add jumps around shifts for range tests turned into bit tests.
-   For each SSA_NAME VAR we have code like:
-   VAR = ...; // final stmt of range comparison
-   // bit test here...;
-   OTHERVAR = ...; // final stmt of the bit test sequence
-   RES = VAR | OTHERVAR;
-   Turn the above into:
-   VAR = ...;
-   if (VAR != 0)
-     goto <l3>;
-   else
-     goto <l2>;
-   <l2>:
-   // bit test here...;
-   OTHERVAR = ...;
-   <l3>:
-   # RES = PHI<1(l1), OTHERVAR(l2)>;  */
-
-static void
-branch_fixup (void)
-{
-  tree var;
-  unsigned int i;
-
-  FOR_EACH_VEC_ELT (reassoc_branch_fixups, i, var)
-    {
-      gimple def_stmt = SSA_NAME_DEF_STMT (var);
-      gimple use_stmt;
-      use_operand_p use;
-      bool ok = single_imm_use (var, &use, &use_stmt);
-      gcc_assert (ok
-		  && is_gimple_assign (use_stmt)
-		  && gimple_assign_rhs_code (use_stmt) == BIT_IOR_EXPR
-		  && gimple_bb (def_stmt) == gimple_bb (use_stmt));
-
-      basic_block cond_bb = gimple_bb (def_stmt);
-      basic_block then_bb = split_block (cond_bb, def_stmt)->dest;
-      basic_block merge_bb = split_block (then_bb, use_stmt)->dest;
-
-      gimple_stmt_iterator gsi = gsi_for_stmt (def_stmt);
-      gimple g = gimple_build_cond (NE_EXPR, var,
-				    build_zero_cst (TREE_TYPE (var)),
-				    NULL_TREE, NULL_TREE);
-      location_t loc = gimple_location (use_stmt);
-      gimple_set_location (g, loc);
-      gsi_insert_after (&gsi, g, GSI_NEW_STMT);
-
-      edge etrue = make_edge (cond_bb, merge_bb, EDGE_TRUE_VALUE);
-      etrue->probability = REG_BR_PROB_BASE / 2;
-      etrue->count = cond_bb->count / 2;
-      edge efalse = find_edge (cond_bb, then_bb);
-      efalse->flags = EDGE_FALSE_VALUE;
-      efalse->probability -= etrue->probability;
-      efalse->count -= etrue->count;
-      then_bb->count -= etrue->count;
-
-      tree othervar = NULL_TREE;
-      if (gimple_assign_rhs1 (use_stmt) == var)
-	othervar = gimple_assign_rhs2 (use_stmt);
-      else if (gimple_assign_rhs2 (use_stmt) == var)
-	othervar = gimple_assign_rhs1 (use_stmt);
-      else
-	gcc_unreachable ();
-      tree lhs = gimple_assign_lhs (use_stmt);
-      gimple phi = create_phi_node (lhs, merge_bb);
-      add_phi_arg (phi, build_one_cst (TREE_TYPE (lhs)), etrue, loc);
-      add_phi_arg (phi, othervar, single_succ_edge (then_bb), loc);
-      gsi = gsi_for_stmt (use_stmt);
-      gsi_remove (&gsi, true);
-
-      set_immediate_dominator (CDI_DOMINATORS, merge_bb, cond_bb);
-      set_immediate_dominator (CDI_POST_DOMINATORS, cond_bb, merge_bb);
-    }
-  reassoc_branch_fixups.release ();
 }
 
 void dump_ops_vector (FILE *file, vec<operand_entry_t> ops);
@@ -5002,7 +4634,7 @@ init_reassoc (void)
      deeper loops come later.  */
   pre_and_rev_post_order_compute (NULL, bbs, false);
   bb_rank = XCNEWVEC (long, last_basic_block_for_fn (cfun));
-  operand_rank = new hash_map<tree, long>;
+  operand_rank = pointer_map_create ();
 
   /* Give each default definition a distinct rank.  This includes
      parameters and the static chain.  Walk backwards over all
@@ -5043,7 +4675,7 @@ fini_reassoc (void)
   statistics_counter_event (cfun, "Built-in powi calls created",
 			    reassociate_stats.pows_created);
 
-  delete operand_rank;
+  pointer_map_destroy (operand_rank);
   free_alloc_pool (operand_entry_pool);
   free (bb_rank);
   plus_negates.release ();
@@ -5060,10 +4692,15 @@ execute_reassoc (void)
 
   do_reassoc ();
   repropagate_negates ();
-  branch_fixup ();
 
   fini_reassoc ();
   return 0;
+}
+
+static bool
+gate_tree_ssa_reassoc (void)
+{
+  return flag_tree_reassoc != 0;
 }
 
 namespace {
@@ -5073,12 +4710,16 @@ const pass_data pass_data_reassoc =
   GIMPLE_PASS, /* type */
   "reassoc", /* name */
   OPTGROUP_NONE, /* optinfo_flags */
+  true, /* has_gate */
+  true, /* has_execute */
   TV_TREE_REASSOC, /* tv_id */
   ( PROP_cfg | PROP_ssa ), /* properties_required */
   0, /* properties_provided */
   0, /* properties_destroyed */
   0, /* todo_flags_start */
-  TODO_update_ssa_only_virtuals, /* todo_flags_finish */
+  ( TODO_verify_ssa
+    | TODO_update_ssa_only_virtuals
+    | TODO_verify_flow ), /* todo_flags_finish */
 };
 
 class pass_reassoc : public gimple_opt_pass
@@ -5090,8 +4731,8 @@ public:
 
   /* opt_pass methods: */
   opt_pass * clone () { return new pass_reassoc (m_ctxt); }
-  virtual bool gate (function *) { return flag_tree_reassoc != 0; }
-  virtual unsigned int execute (function *) { return execute_reassoc (); }
+  bool gate () { return gate_tree_ssa_reassoc (); }
+  unsigned int execute () { return execute_reassoc (); }
 
 }; // class pass_reassoc
 

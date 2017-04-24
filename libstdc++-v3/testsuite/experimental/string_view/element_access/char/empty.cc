@@ -1,4 +1,4 @@
-// { dg-options "-std=gnu++14" }
+// { dg-options "-std=gnu++1y" }
 
 // Copyright (C) 3 Free Software Foundation, Inc.
 //

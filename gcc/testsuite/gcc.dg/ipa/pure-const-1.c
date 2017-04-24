@@ -1,5 +1,5 @@
 /* { dg-do compile { target nonpic } } */
-/* { dg-options "-O3 -fdump-tree-local-pure-const1 -fdump-ipa-pure-const -fdump-tree-optimized -fno-early-inlining -fgnu89-inline" } */
+/* { dg-options "-O3 -fdump-tree-local-pure-const1 -fdump-ipa-pure-const -fdump-tree-optimized -fno-early-inlining" } */
 void abort (void);
 int error_code;
 static int val;
@@ -32,20 +32,20 @@ call_callback(int (*fn)(int), int a)
   return fn(a);
 }
 
-__attribute__ ((noinline, noclone)) int
+__attribute__ ((noinline, noclone))
 i_am_const3(int a)
 {
   return call_callback (call_me, a);
 }
 
-__attribute__ ((noinline)) int
+__attribute__ ((noinline))
 explode_badly()
 {
   error_code = 0xbad;
   abort ();
 }
 
-__attribute__ ((noinline, noclone)) int
+__attribute__ ((noinline, noclone))
 i_am_pure4(int a)
 {
   if (a > 50)
@@ -53,7 +53,6 @@ i_am_pure4(int a)
   return a;
 }
 
-int
 test()
 {
   int s;

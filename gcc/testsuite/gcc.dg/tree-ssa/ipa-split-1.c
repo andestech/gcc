@@ -1,9 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O3 -fdump-tree-fnsplit" } */
-
-void do_something_big (void);
-
-int test2(int a)
+int test2(a)
 {
    if (a<100)
      return 1;
@@ -23,7 +20,6 @@ int test2(int a)
    return 0;
 }
 
-void
 test()
 {
   test2(10);

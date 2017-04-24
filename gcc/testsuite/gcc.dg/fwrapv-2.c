@@ -17,7 +17,6 @@ int test(int x)
   return (2*x)/2;
 }
 
-int
 main()
 {
   int x = INT_MAX;

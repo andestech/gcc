@@ -25,17 +25,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm.h"
 #include "tree.h"
 #include "rtl.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
-#include "cfganal.h"
 #include "basic-block.h"
 #include "tree-ssa.h"
 #include "timevar.h"
@@ -321,7 +310,7 @@ dump_bb_for_graph (pretty_printer *pp, basic_block bb)
     internal_error ("%s does not support dump_bb_for_graph",
 		    cfg_hooks->name);
   if (bb->count)
-    pp_printf (pp, "COUNT:" "%"PRId64, bb->count);
+    pp_printf (pp, "COUNT:" HOST_WIDEST_INT_PRINT_DEC, bb->count);
   pp_printf (pp, " FREQ:%i |", bb->frequency);
   pp_write_text_to_stream (pp);
   if (!(dump_flags & TDF_SLIM))
@@ -580,10 +569,14 @@ delete_basic_block (basic_block bb)
       struct loop *loop = bb->loop_father;
 
       /* If we remove the header or the latch of a loop, mark the loop for
-	 removal.  */
+	 removal by setting its header and latch to NULL.  */
       if (loop->latch == bb
 	  || loop->header == bb)
-	mark_loop_for_removal (loop);
+	{
+	  loop->header = NULL;
+	  loop->latch = NULL;
+	  loops_state_set (LOOPS_NEED_FIXUP);
+	}
 
       remove_bb_from_loops (bb);
     }
@@ -767,7 +760,11 @@ merge_blocks (basic_block a, basic_block b)
 	  /* ... we merge two loop headers, in which case we kill
 	     the inner loop.  */
 	  if (b->loop_father->header == b)
-	    mark_loop_for_removal (b->loop_father);
+	    {
+	      b->loop_father->header = NULL;
+	      b->loop_father->latch = NULL;
+	      loops_state_set (LOOPS_NEED_FIXUP);
+	    }
 	}
       /* If we merge a loop header into its predecessor, update the loop
 	 structure.  */
@@ -777,11 +774,6 @@ merge_blocks (basic_block a, basic_block b)
 	  add_bb_to_loop  (a, b->loop_father);
 	  a->loop_father->header = a;
 	}
-      /* If we merge a loop latch into its predecessor, update the loop
-         structure.  */
-      if (b->loop_father->latch
-	  && b->loop_father->latch == b)
-	b->loop_father->latch = a;
       remove_bb_from_loops (b);
     }
 
@@ -841,9 +833,6 @@ make_forwarder_block (basic_block bb, bool (*redirect_edge_p) (edge),
 
   fallthru = split_block_after_labels (bb);
   dummy = fallthru->src;
-  dummy->count = 0;
-  dummy->frequency = 0;
-  fallthru->count = 0;
   bb = fallthru->dest;
 
   /* Redirect back edges we want to keep.  */
@@ -853,12 +842,19 @@ make_forwarder_block (basic_block bb, bool (*redirect_edge_p) (edge),
 
       if (redirect_edge_p (e))
 	{
-	  dummy->frequency += EDGE_FREQUENCY (e);
-	  dummy->count += e->count;
-	  fallthru->count += e->count;
 	  ei_next (&ei);
 	  continue;
 	}
+
+      dummy->frequency -= EDGE_FREQUENCY (e);
+      dummy->count -= e->count;
+      if (dummy->frequency < 0)
+	dummy->frequency = 0;
+      if (dummy->count < 0)
+	dummy->count = 0;
+      fallthru->count -= e->count;
+      if (fallthru->count < 0)
+	fallthru->count = 0;
 
       e_src = e->src;
       jump = redirect_edge_and_branch_force (e, bb);
@@ -973,7 +969,7 @@ tidy_fallthru_edges (void)
 	  s = single_succ_edge (b);
 	  if (! (s->flags & EDGE_COMPLEX)
 	      && s->dest == c
-	      && !(JUMP_P (BB_END (b)) && CROSSING_JUMP_P (BB_END (b))))
+	      && !find_reg_note (BB_END (b), REG_CROSSING_JUMP, NULL_RTX))
 	    tidy_fallthru_edge (s);
 	}
     }
@@ -1107,7 +1103,9 @@ duplicate_block (basic_block bb, edge e, basic_block after)
 	  && cloop->header == bb)
 	{
 	  add_bb_to_loop (new_bb, loop_outer (cloop));
-	  mark_loop_for_removal (cloop);
+	  cloop->header = NULL;
+	  cloop->latch = NULL;
+	  loops_state_set (LOOPS_NEED_FIXUP);
 	}
       else
 	{

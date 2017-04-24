@@ -29,17 +29,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "tree-pretty-print.h"
 #include "cfgloop.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "tm.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
-#include "dominance.h"
-#include "cfg.h"
 #include "basic-block.h"
 #include "gimple-expr.h"
 #include "tree-ssa-loop-ivopts.h"
@@ -491,6 +480,7 @@ chrec_fold_multiply (tree type,
 static tree
 tree_fold_binomial (tree type, tree n, unsigned int k)
 {
+  double_int num, denom, idx, di_res;
   bool overflow;
   unsigned int i;
   tree res;
@@ -501,18 +491,21 @@ tree_fold_binomial (tree type, tree n, unsigned int k)
   if (k == 1)
     return fold_convert (type, n);
 
+  /* Numerator = n.  */
+  num = TREE_INT_CST (n);
+
   /* Check that k <= n.  */
-  if (wi::ltu_p (n, k))
+  if (num.ult (double_int::from_uhwi (k)))
     return NULL_TREE;
 
   /* Denominator = 2.  */
-  wide_int denom = wi::two (TYPE_PRECISION (TREE_TYPE (n)));
+  denom = double_int::from_uhwi (2);
 
   /* Index = Numerator-1.  */
-  wide_int idx = wi::sub (n, 1);
+  idx = num - double_int_one;
 
   /* Numerator = Numerator*Index = n*(n-1).  */
-  wide_int num = wi::smul (n, idx, &overflow);
+  num = num.mul_with_sign (idx, false, &overflow);
   if (overflow)
     return NULL_TREE;
 
@@ -522,17 +515,17 @@ tree_fold_binomial (tree type, tree n, unsigned int k)
       --idx;
 
       /* Numerator *= Index.  */
-      num = wi::smul (num, idx, &overflow);
+      num = num.mul_with_sign (idx, false, &overflow);
       if (overflow)
 	return NULL_TREE;
 
       /* Denominator *= i.  */
-      denom *= i;
+      denom *= double_int::from_uhwi (i);
     }
 
   /* Result = Numerator / Denominator.  */
-  wide_int di_res = wi::udiv_trunc (num, denom);
-  res = wide_int_to_tree (type, di_res);
+  di_res = num.div (denom, true, EXACT_DIV_EXPR);
+  res = build_int_cst_wide (type, di_res.low, di_res.high);
   return int_fits_type_p (res, type) ? res : NULL_TREE;
 }
 

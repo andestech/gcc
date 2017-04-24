@@ -1,5 +1,5 @@
 // PR c++/60311
-// { dg-do compile { target c++14 } }
+// { dg-do compile { target c++1y } }
 
 template<void(*)(auto)> struct A {}; // { dg-error "auto" }
 

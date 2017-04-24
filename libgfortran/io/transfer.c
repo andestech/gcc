@@ -475,7 +475,7 @@ read_block_form (st_parameter_dt *dtp, int * nbytes)
   if (norig != *nbytes)
     {
       /* Short read, this shouldn't happen.  */
-      if (dtp->u.p.current_unit->pad_status == PAD_NO)
+      if (!dtp->u.p.current_unit->pad_status == PAD_YES)
 	{
 	  generate_error (&dtp->common, LIBERROR_EOR, NULL);
 	  source = NULL;
@@ -2533,15 +2533,16 @@ data_transfer_init (st_parameter_dt *dtp, int read_flag)
 	  return;
 	}
 
-      if (dtp->u.p.current_unit->endfile == AFTER_ENDFILE)
-      	{
+      if (compile_options.warn_std &&
+          dtp->u.p.current_unit->endfile == AFTER_ENDFILE)
+	{
 	  generate_error (&dtp->common, LIBERROR_OPTION_CONFLICT,
 			"Sequential READ or WRITE not allowed after "
 			"EOF marker, possibly use REWIND or BACKSPACE");
 	  return;
 	}
-
     }
+
   /* Process the ADVANCE option.  */
 
   dtp->u.p.advance_status
@@ -2674,8 +2675,7 @@ data_transfer_init (st_parameter_dt *dtp, int read_flag)
   if (dtp->u.p.current_unit->delim_status == DELIM_UNSPECIFIED)
     {
       if (ionml && dtp->u.p.current_unit->flags.delim == DELIM_UNSPECIFIED)
-	dtp->u.p.current_unit->delim_status =
-	  compile_options.allow_std & GFC_STD_GNU ? DELIM_QUOTE : DELIM_NONE;
+	dtp->u.p.current_unit->delim_status = DELIM_QUOTE;
       else
 	dtp->u.p.current_unit->delim_status = dtp->u.p.current_unit->flags.delim;
     }
@@ -3512,7 +3512,7 @@ next_record (st_parameter_dt *dtp, int done)
     pre_position (dtp);
 
   fbuf_flush (dtp->u.p.current_unit, dtp->u.p.mode);
-  smarkeor (dtp->u.p.current_unit->s);
+  flush_if_unbuffered (dtp->u.p.current_unit->s);
 }
 
 

@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 2000-2014, Free Software Foundation, Inc.         --
+--          Copyright (C) 2000-2013, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -46,18 +46,15 @@ package GNAT.Source_Info is
    --  Historical note: this used to be Pure, but that was when we marked all
    --  intrinsics as not Pure, even in Pure units, so no problems arose.
 
-   function File return String with
-     Import, Convention => Intrinsic;
+   function File return String;
    --  Return the name of the current file, not including the path information.
    --  The result is considered to be a static string constant.
 
-   function Line return Positive with
-     Import, Convention => Intrinsic;
+   function Line return Positive;
    --  Return the current input line number. The result is considered to be a
    --  static expression.
 
-   function Source_Location return String with
-     Import, Convention => Intrinsic;
+   function Source_Location return String;
    --  Return a string literal of the form "name:line", where name is the
    --  current source file name without path information, and line is the
    --  current line number. In the event that instantiations are involved,
@@ -65,8 +62,7 @@ package GNAT.Source_Info is
    --  string " instantiated at ". The result is considered to be a static
    --  string constant.
 
-   function Enclosing_Entity return String with
-     Import, Convention => Intrinsic;
+   function Enclosing_Entity return String;
    --  Return the name of the current subprogram, package, task, entry or
    --  protected subprogram. The string is in exactly the form used for the
    --  declaration of the entity (casing and encoding conventions), and is
@@ -79,14 +75,9 @@ package GNAT.Source_Info is
    --  package itself. This is useful in identifying and logging information
    --  from within generic templates.
 
-   function Compilation_Date return String with
-     Import, Convention => Intrinsic;
-   --  Returns date of compilation as a static string "mmm dd yyyy". This is
-   --  in local time form, and is exactly compatible with C macro __DATE__.
-
-   function Compilation_Time return String with
-     Import, Convention => Intrinsic;
-   --  Returns GMT time of compilation as a static string "hh:mm:ss". This is
-   --  in local time form, and is exactly compatible with C macro __TIME__.
-
+private
+   pragma Import (Intrinsic, File);
+   pragma Import (Intrinsic, Line);
+   pragma Import (Intrinsic, Source_Location);
+   pragma Import (Intrinsic, Enclosing_Entity);
 end GNAT.Source_Info;

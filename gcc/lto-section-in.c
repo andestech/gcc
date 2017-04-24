@@ -24,14 +24,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "coretypes.h"
 #include "tm.h"
 #include "tree.h"
-#include "predict.h"
-#include "vec.h"
-#include "hashtab.h"
-#include "hash-set.h"
-#include "machmode.h"
-#include "hard-reg-set.h"
-#include "input.h"
-#include "function.h"
 #include "basic-block.h"
 #include "tree-ssa-alias.h"
 #include "internal-fn.h"
@@ -41,13 +33,12 @@ along with GCC; see the file COPYING3.  If not see
 #include "expr.h"
 #include "flags.h"
 #include "params.h"
+#include "input.h"
+#include "hashtab.h"
+#include "function.h"
 #include "diagnostic-core.h"
 #include "except.h"
 #include "timevar.h"
-#include "hash-map.h"
-#include "plugin-api.h"
-#include "ipa-ref.h"
-#include "cgraph.h"
 #include "lto-streamer.h"
 #include "lto-compress.h"
 
@@ -69,8 +60,7 @@ const char *lto_section_name[LTO_N_SECTION_TYPES] =
   "opts",
   "cgraphopt",
   "inline",
-  "ipcp_trans",
-  "icf"
+  "ipcp_trans"
 };
 
 
@@ -237,13 +227,19 @@ lto_create_simple_input_block (struct lto_file_decl_data *file_data,
   const struct lto_simple_header * header
     = (const struct lto_simple_header *) data;
 
+  struct lto_input_block* ib_main;
   int main_offset = sizeof (struct lto_simple_header);
 
   if (!data)
     return NULL;
 
+  ib_main = XNEW (struct lto_input_block);
+
   *datar = data;
-  return new lto_input_block (data + main_offset, header->main_size);
+  LTO_INIT_INPUT_BLOCK_PTR (ib_main, data + main_offset,
+			    0, header->main_size);
+
+  return ib_main;
 }
 
 
@@ -259,7 +255,7 @@ lto_destroy_simple_input_block (struct lto_file_decl_data *file_data,
 				struct lto_input_block *ib,
 				const char *data, size_t len)
 {
-  delete ib;
+  free (ib);
   lto_free_section_data (file_data, section_type, NULL, data, len);
 }
 
@@ -368,7 +364,7 @@ lto_get_decl_name_mapping (struct lto_file_decl_data *decl_data,
 struct lto_in_decl_state *
 lto_new_in_decl_state (void)
 {
-  return ggc_cleared_alloc<lto_in_decl_state> ();
+  return ggc_alloc_cleared_lto_in_decl_state ();
 }
 
 /* Delete STATE and its components. */

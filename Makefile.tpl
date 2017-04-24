@@ -222,7 +222,6 @@ HOST_EXPORTS = \
 	HOST_LIBS="$(STAGE1_LIBS)"; export HOST_LIBS; \
 	GMPLIBS="$(HOST_GMPLIBS)"; export GMPLIBS; \
 	GMPINC="$(HOST_GMPINC)"; export GMPINC; \
-	ISLLIBS="$(HOST_ISLLIBS)"; export ISLLIBS; \
 	ISLINC="$(HOST_ISLINC)"; export ISLINC; \
 	CLOOGLIBS="$(HOST_CLOOGLIBS)"; export CLOOGLIBS; \
 	CLOOGINC="$(HOST_CLOOGINC)"; export CLOOGINC; \
@@ -260,7 +259,6 @@ POSTSTAGE1_HOST_EXPORTS = \
 	  $(XGCC_FLAGS_FOR_TARGET) $$TFLAGS"; export CC; \
 	CC_FOR_BUILD="$$CC"; export CC_FOR_BUILD; \
 	$(POSTSTAGE1_CXX_EXPORT) \
-	$(LTO_EXPORTS) \
 	GNATBIND="$$r/$(HOST_SUBDIR)/prev-gcc/gnatbind"; export GNATBIND; \
 	LDFLAGS="$(POSTSTAGE1_LDFLAGS) $(BOOT_LDFLAGS)"; export LDFLAGS; \
 	HOST_LIBS="$(POSTSTAGE1_LIBS)"; export HOST_LIBS;
@@ -315,7 +313,6 @@ HOST_GMPLIBS = @gmplibs@
 HOST_GMPINC = @gmpinc@
 
 # Where to find ISL
-HOST_ISLLIBS = @isllibs@
 HOST_ISLINC = @islinc@
 
 # Where to find CLOOG
@@ -634,7 +631,6 @@ POSTSTAGE1_FLAGS_TO_PASS = \
 	GNATBIND="$${GNATBIND}" \
 	LDFLAGS="$${LDFLAGS}" \
 	HOST_LIBS="$${HOST_LIBS}" \
-	$(LTO_FLAGS_TO_PASS) \
 	"`echo 'ADAFLAGS=$(BOOT_ADAFLAGS)' | sed -e s'/[^=][^=]*=$$/XFOO=/'`"
 
 # Flags to pass down to makes which are built with the target environment.
@@ -1006,13 +1002,12 @@ configure-[+prefix+][+module+]: [+ IF bootstrap +][+ ELSE +]
 	  *) topdir=`echo [+subdir+]/[+module+]/ | \
 		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
 	esac; \
-	module_srcdir=[+? module_srcdir (get "module_srcdir") (get "module")+]; \
+	srcdiroption="--srcdir=$${topdir}/[+module+]"; \
+	libsrcdir="$$s/[+module+]"; \
 	[+ IF no-config-site +]rm -f no-such-file || : ; \
-	CONFIG_SITE=no-such-file [+ ENDIF +]$(SHELL) \
-	  $$s/$$module_srcdir/configure \
-	  --srcdir=$${topdir}/$$module_srcdir \
+	CONFIG_SITE=no-such-file [+ ENDIF +]$(SHELL) $${libsrcdir}/configure \
 	  [+args+] --build=${build_alias} --host=[+host_alias+] \
-	  --target=[+target_alias+] [+extra_configure_flags+] \
+	  --target=[+target_alias+] $${srcdiroption} [+extra_configure_flags+] \
 	  || exit 1
 @endif [+prefix+][+module+]
 
@@ -1060,12 +1055,12 @@ configure-stage[+id+]-[+prefix+][+module+]:
 	  *) topdir=`echo [+subdir+]/[+module+]/ | \
 		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
 	esac; \
-	module_srcdir=[+? module_srcdir (get "module_srcdir") (get "module")+]; \
-	$(SHELL) $$s/$$module_srcdir/configure \
-	  --srcdir=$${topdir}/$$module_srcdir \
+	srcdiroption="--srcdir=$${topdir}/[+module+]"; \
+	libsrcdir="$$s/[+module+]"; \
+	$(SHELL) $${libsrcdir}/configure \
 	  [+args+] --build=${build_alias} --host=[+host_alias+] \
-	  --target=[+target_alias+] \
-	  [+ IF prev +] --with-build-libsubdir=$(HOST_SUBDIR) [+ ENDIF prev +] \
+	  --target=[+target_alias+] $${srcdiroption} [+ IF prev +]\
+	  --with-build-libsubdir=$(HOST_SUBDIR) [+ ENDIF prev +]\
 	  $(STAGE[+id+]_CONFIGURE_FLAGS)[+ IF extra_configure_flags +] \
 	  [+extra_configure_flags+][+ ENDIF extra_configure_flags +]
 @endif [+prefix+][+module+]-bootstrap

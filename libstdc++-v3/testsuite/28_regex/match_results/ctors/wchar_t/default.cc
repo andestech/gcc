@@ -1,4 +1,4 @@
-// { dg-options "-std=gnu++11" }
+// { dg-options "-std=c++0x" }
 
 // 2009-06-05  Stephen M. Webb  <stephen.webb@bregmasoft.com>
 //
