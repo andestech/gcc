@@ -3280,7 +3280,7 @@ riscv_block_move_straight (rtx dest, rtx src, unsigned HOST_WIDE_INT length)
   unsigned HOST_WIDE_INT bits;
   int i;
   enum machine_mode mode;
-  rtx *regs;
+  rtx regs[32];
 
   bits = MAX (BITS_PER_UNIT,
 	      MIN (BITS_PER_WORD, MIN (MEM_ALIGN (src), MEM_ALIGN (dest))));
@@ -3288,9 +3288,6 @@ riscv_block_move_straight (rtx dest, rtx src, unsigned HOST_WIDE_INT length)
   mode = mode_for_size (bits, MODE_INT, 0).require ();
   delta = bits / BITS_PER_UNIT;
   stride = get_move_ratio(1) * delta;
-
-  /* Allocate a buffer for the temporary registers.  */
-  regs = XALLOCAVEC (rtx, stride / delta);
 
   for (stride_begin = 0, stride_end = stride_begin + stride;
        stride_begin + stride <= length;
