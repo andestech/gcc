@@ -4955,6 +4955,9 @@ riscv_option_override (void)
   if (BITS_PER_WORD != POINTER_SIZE)
     error ("ABI requires %<-march=rv%d%>", POINTER_SIZE);
 
+  if (riscv_movebytes_per_loop == 0)
+    riscv_movebytes_per_loop = UNITS_PER_WORD * 3;
+
   /* Validate -mpreferred-stack-boundary= value.  */
   riscv_stack_boundary = ABI_STACK_BOUNDARY;
   if (riscv_preferred_stack_boundary_arg)
