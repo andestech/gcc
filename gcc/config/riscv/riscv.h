@@ -132,7 +132,14 @@ along with GCC; see the file COPYING3.  If not see
 #define PARM_BOUNDARY BITS_PER_WORD
 
 /* Allocation boundary (in *bits*) for the code of a function.  */
-#define FUNCTION_BOUNDARY (TARGET_RVC ? 16 : 32)
+#define FUNCTION_BOUNDARY (TARGET_RVC && optimize_size ? 16 : 32)
+
+#define JUMP_ALIGN(x) \
+  (align_jumps_log ? align_jumps_log : (TARGET_RVC && optimize_size ? 1 : 2))
+#define LOOP_ALIGN(x) \
+  (align_loops_log ? align_loops_log : (TARGET_RVC && optimize_size ? 1 : 2))
+#define LABEL_ALIGN(x) \
+  (align_labels_log ? align_labels_log : (TARGET_RVC && optimize_size ? 1 : 2))
 
 /* The smallest supported stack boundary the calling convention supports.  */
 #define STACK_BOUNDARY \
