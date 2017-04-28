@@ -197,3 +197,18 @@ Enum(riscv_align_data) String(xlen) Value(riscv_align_data_type_xlen)
 
 EnumValue
 Enum(riscv_align_data) String(natural) Value(riscv_align_data_type_natural)
+
+; ---------------------------------------------------------------
+; The following options are designed for compatibility issue.
+; Hopefully these obsolete options will be removed one day.
+
+mace
+Target RejectNegative
+Compile with Andes ACE.
+
+mace-s2s=
+Target Joined RejectNegative
+Argument for pass to Andes's ACE source-to-source translator.
+
+
+; ---------------------------------------------------------------
