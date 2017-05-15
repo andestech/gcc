@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O -fdump-tree-optimized" } */
+/* { dg-additional-options "-mtune=size"  { target riscv*-*-* } } */
 
 typedef int w __attribute__((mode(word)));
 

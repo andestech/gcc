@@ -1,5 +1,6 @@
 /* { dg-do run } */
 /* { dg-options "-O2 -fdump-tree-strlen" } */
+/* { dg-additional-options "-mtune=size"  { target riscv*-*-* } } */
 
 #include "strlenopt.h"
 
