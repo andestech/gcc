@@ -536,6 +536,8 @@ static const struct attribute_spec riscv_attribute_table[] =
   { "interrupt", 0, 1, false, true, true, false,
     riscv_handle_type_attribute, NULL },
 
+  { "no_prologue",  0,  0, true, false, false, false, NULL, NULL },
+
   /* The last attribute spec is set to be NULL.  */
   { NULL,	0,  0, false, false, false, false, NULL, NULL }
 };
@@ -547,6 +549,15 @@ static const unsigned gpr_save_reg_order[] = {
   S5_REGNUM, S6_REGNUM, S7_REGNUM, S8_REGNUM, S9_REGNUM,
   S10_REGNUM, S11_REGNUM
 };
+
+/* Add some checking when inserting attributes.  */
+static void
+riscv_insert_attributes (tree decl, tree *attributes)
+{
+  if (TREE_CODE (decl) == FUNCTION_DECL
+      && lookup_attribute ("no_prologue", *attributes) != NULL)
+    *attributes = tree_cons (get_identifier ("naked"), NULL, *attributes);
+}
 
 /* A table describing all the processors GCC knows about.  */
 static const struct riscv_cpu_info riscv_cpu_info_table[] = {
@@ -5611,6 +5622,9 @@ riscv_gpr_save_operation_p (rtx op)
 
 #undef TARGET_ATTRIBUTE_TABLE
 #define TARGET_ATTRIBUTE_TABLE riscv_attribute_table
+
+#undef TARGET_INSERT_ATTRIBUTES
+#define TARGET_INSERT_ATTRIBUTES riscv_insert_attributes
 
 #undef TARGET_WARN_FUNC_RETURN
 #define TARGET_WARN_FUNC_RETURN riscv_warn_func_return
