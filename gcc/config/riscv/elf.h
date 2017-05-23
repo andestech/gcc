@@ -27,8 +27,21 @@ along with GCC; see the file COPYING3.  If not see
 #undef  LIB_SPEC
 #define LIB_SPEC "--start-group -lc %{!specs=nosys.specs:-lgloss} --end-group"
 
+#ifdef TARGET_MCULIB
+
 #undef  STARTFILE_SPEC
-#define STARTFILE_SPEC "crt0%O%s crtbegin%O%s"
+#define STARTFILE_SPEC \
+    " %{mctor-dtor|coverage:crt1.o%s;:crt0.o%s}" \
+    " %{mctor-dtor|coverage:crtbegin.o%s}"
 
 #undef  ENDFILE_SPEC
-#define ENDFILE_SPEC "crtend%O%s"
+#define ENDFILE_SPEC " %{mctor-dtor|coverage:crtend.o%s}"
+
+#define STARTFILE_CXX_SPEC \
+  " %{!mno-ctor-dtor:crt1.o%s;:crt0.o%s}" \
+  " %{!mno-ctor-dtor:crtbegin.o%s}"
+
+#define ENDFILE_CXX_SPEC \
+  " %{!mno-ctor-dtor:crtend.o%s}"
+
+#endif /* TARGET_MCULIB */

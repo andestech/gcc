@@ -2500,6 +2500,14 @@ riscv*-*-elf* | riscv*-*-rtems*)
 			  exit 1
 		  esac
 	  done
+	  # process --with-libc
+	  case "${with_libc}" in
+	  mculib)
+		  tm_defines="${tm_defines} TARGET_MCULIB=1"
+		  ;;
+	  *)
+		  ;;
+	  esac
 
 	esac
 	tmake_file="${tmake_file} riscv/t-riscv"

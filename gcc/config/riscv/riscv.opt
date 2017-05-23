@@ -216,3 +216,7 @@ Argument for pass to Andes's ACE source-to-source translator.
 
 
 ; ---------------------------------------------------------------
+
+mctor-dtor
+Target Report
+Enable constructor/destructor feature.
