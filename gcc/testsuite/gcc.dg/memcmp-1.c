@@ -19,7 +19,7 @@ int lib_strncmp(const char *a, const char *b, size_t n)
 
 #ifndef NRAND
 #ifdef TEST_ALL
-#define NRAND 10000
+#define NRAND 1000
 #else
 #define NRAND 500
 #endif
