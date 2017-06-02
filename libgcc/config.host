@@ -1293,7 +1293,9 @@ riscv*-*-*)
 	# process --with-libc
 	case "${with_libc}" in
 	mculib)
-		tmake_file="${tmake_file} riscv/t-riscv-mculib-generic"
+		if test "${host_address}" = 32; then
+			tmake_file="${tmake_file} riscv/t-riscv-mculib-generic"
+		fi
 		;;
 	*)
 		;;
