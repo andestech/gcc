@@ -2492,6 +2492,10 @@ riscv*-*-elf* | riscv*-*-rtems*)
 		  all )
 			  tmake_file="${tmake_file} riscv/t-elf-multilib riscv/t-elf-vh"
 			  ;;
+		  rv* )
+			  TM_MULTILIB_CONFIG="${TM_MULTILIB_CONFIG}/march=${riscv_multilib}"
+			  tmake_file="${tmake_file} riscv/t-elf-arch"
+			  ;;
 		  vh )
 			  tmake_file="${tmake_file} riscv/t-elf-vh"
 			  ;;
@@ -2500,6 +2504,7 @@ riscv*-*-elf* | riscv*-*-rtems*)
 			  exit 1
 		  esac
 	  done
+	  TM_MULTILIB_CONFIG=`echo $TM_MULTILIB_CONFIG | sed 's:^/::'`
 	  # process --with-libc
 	  case "${with_libc}" in
 	  mculib)
