@@ -43,5 +43,12 @@ along with GCC; see the file COPYING3.  If not see
 
 #define ENDFILE_CXX_SPEC \
   " %{!mno-ctor-dtor:crtend.o%s}"
+#else
+
+#undef  STARTFILE_SPEC
+#define STARTFILE_SPEC "crt0%O%s crtbegin%O%s"
+
+#undef  ENDFILE_SPEC
+#define ENDFILE_SPEC "crtend%O%s"
 
 #endif /* TARGET_MCULIB */
