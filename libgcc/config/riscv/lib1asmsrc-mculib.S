@@ -182,7 +182,7 @@ __divsi3:
 	.globl	__divdi3
 	.type	__divdi3,@function
 __divdi3:
-	addi	sp, sp, -8              ! 	push.s	$r6, $r6, {$lp}
+	addi	sp, sp, -16             ! 	push.s	$r6, $r6, {$lp}
 	sw	x9, 0(sp)
 	sw	ra, 4(sp)
 	xor	x9, x11, x13            ! 	xor	$r6, $r1, $r3
@@ -212,7 +212,7 @@ __divdi3:
 .L82:
 	lw	x9, 0(sp)               ! 	pop.s	$r6, $r6, {$lp}
 	lw	ra, 4(sp)
-	addi	sp, sp, 8
+	addi	sp, sp, 16
 	ret                             ! 	ret	$lp
 .Ltmp0:
 	.size	__divdi3, .Ltmp0-__divdi3
@@ -469,7 +469,7 @@ fudiv_qrnnd:
 	.globl	__udivmoddi4
 	.type	__udivmoddi4,@function
 __udivmoddi4:
-	addi	sp, sp, -40             ! 	addi	$sp, $sp, #-40
+	addi	sp, sp, -48             ! 	addi	$sp, $sp, #-40
 	sw	x9, 0(sp)               ! 	smw.bi	$r6, [$sp], $r10, #10
 	sw	x18, 4(sp)
 	sw	x19, 8(sp)
@@ -623,7 +623,7 @@ __udivmoddi4:
 	lw	x21, 16(sp)
 	lw	x8, 20(sp)
 	lw	ra, 24(sp)
-	addi	sp, sp, 40              ! 	addi	$sp, $sp, #40
+	addi	sp, sp, 48              ! 	addi	$sp, $sp, #40
 	ret                             ! 	ret	$lp
 .LZskipnorm2:
 	li	x13, 0                  ! 	move	$r3, #0
@@ -690,14 +690,14 @@ __umodsi3:
 	.globl	__umoddi3
 	.type	__umoddi3,@function
 __umoddi3:
-	addi	sp, sp, -12             ! 	addi	$sp, $sp, #-12
+	addi	sp, sp, -16             ! 	addi	$sp, $sp, #-12
 	sw	ra, 0(sp)               ! 	swi	$lp, [$sp + #0]
 	addi	x14, sp, 4              ! 	addi	$r4, $sp, #4
 	call	__udivmoddi4            ! 	bal	__udivmoddi4
 	lw	x10, 4(sp)              ! 	lwi	$r0, [$sp + #4]
 	lw	x11, 8(sp)              ! 	lwi	$r1, [$sp + #8]
 	lw	ra, 0(sp)               ! 	lwi.bi	$lp, [$sp], #12
-	addi	sp, sp, 12
+	addi	sp, sp, 16
 	ret                             ! 	ret	$lp
 .Ltmp0:
 	.size	__umoddi3, .Ltmp0-__umoddi3
@@ -736,7 +736,7 @@ __subdf3:
 	.type	__adddf3,@function
 __adddf3:
 	slli	x14, x11, 1             ! 	slli	$r4, $r1, #1
-	addi	sp, sp, -24             ! 	push.s	$r6, $r10, {$lp}
+	addi	sp, sp, -32             ! 	push.s	$r6, $r10, {$lp}
 	sw	x9, 0(sp)
 	sw	x18, 4(sp)
 	sw	x19, 8(sp)
@@ -887,7 +887,7 @@ __adddf3:
 	lw	x20, 12(sp)
 	lw	x21, 16(sp)
 	lw	ra, 20(sp)
-	addi	sp, sp, 24
+	addi	sp, sp, 32
 	ret                             ! 	ret5	$lp
 .LEadd:
 	add	x10, x10, x12           ! 	add	$r0, $r0, $r2
@@ -1940,7 +1940,7 @@ __extendsfdf2:
 	.globl	__truncdfsf2
 	.type	__truncdfsf2,@function
 __truncdfsf2:
-	addi	sp, sp, -12             ! 	pushm	$r6, $r8
+	addi	sp, sp, -16             ! 	pushm	$r6, $r8
 	sw	x9, 0(sp)
 	sw	x18, 4(sp)
 	sw	x19, 8(sp)
@@ -1977,7 +1977,7 @@ __truncdfsf2:
 	lw	x9, 0(sp)               ! 	popm	$r6, $r8
 	lw	x18, 4(sp)
 	lw	x19, 8(sp)
-	addi	sp, sp, 12
+	addi	sp, sp, 16
 	ret                             ! 	ret5	$lp
 .LKspec:
 	li	x17, 1151               ! 	subri	$ta, $r4, #1151
@@ -2131,7 +2131,7 @@ __fixsfsi:
 	.globl	__fixdfdi
 	.type	__fixdfdi,@function
 __fixdfdi:
-	addi	sp, sp, -4              ! 	pushm	$r6, $r6
+	addi	sp, sp, -16             ! 	pushm	$r6, $r6
 	sw	x9, 0(sp)
 	slli	x15, x11, 1             ! 	slli	$r5, $r1, #1
 	srli	x15, x15, 21            ! 	srli	$r5, $r5, #21
@@ -2174,7 +2174,7 @@ __fixdfdi:
 	mv	x10, x13                ! 	move	$r0, $r3
 	mv	x11, x14                ! 	move	$r1, $r4
 	lw	x9, 0(sp)               ! 	popm	$r6, $r6
-	addi	sp, sp, 4
+	addi	sp, sp, 16
 	ret                             ! 	ret5	$lp
 .LCnaninf:
 	slti	tp, x11, 0              ! 	sltsi	$ta, $r1, #0
@@ -2372,7 +2372,7 @@ __fixunssfdi:
 	.globl	__fixunsdfdi
 	.type	__fixunsdfdi,@function
 __fixunsdfdi:
-	addi	sp, sp, -4              ! 	pushm	$r6, $r6
+	addi	sp, sp, -16             ! 	pushm	$r6, $r6
 	sw	x9, 0(sp)
 	slli	x15, x11, 1             ! 	slli	$r5, $r1, #1
 	srli	x15, x15, 21            ! 	srli	$r5, $r5, #21
@@ -2415,7 +2415,7 @@ __fixunsdfdi:
 	mv	x10, x13                ! 	move	$r0, $r3
 	mv	x11, x14                ! 	move	$r1, $r4
 	lw	x9, 0(sp)               ! 	popm	$r6, $r6
-	addi	sp, sp, 4
+	addi	sp, sp, 16
 	ret                             ! 	ret5	$lp
 .LDnaninf:
 	li	x14, 2147483648         ! 	move	$r4, #2147483648
@@ -2477,7 +2477,7 @@ __floatsisf:
 	.globl	__floatsidf
 	.type	__floatsidf,@function
 __floatsidf:
-	addi	sp, sp, -8              ! 	push.s	$r6, $r6, {$lp}
+	addi	sp, sp, -16             ! 	push.s	$r6, $r6, {$lp}
 	sw	x9, 0(sp)
 	sw	ra, 4(sp)
 	li	x11, 0                  ! 	move	$r1, #0
@@ -2500,13 +2500,13 @@ __floatsidf:
 	sw	x11, 4(sp)
 	sw	x12, 8(sp)
 	sw	x13, 12(sp)
-	addi	sp, sp, -4              ! 	push	$r5
+	addi	sp, sp, -16             ! 	push	$r5
 	sw	x15, 0(sp)
 	mv	x10, x12                ! 	move	$r0, $r2
 	call	__clzsi2                ! 	bal	__clzsi2
 	mv	x14, x10                ! 	move	$r4, $r0
 	lw	x15, 0(sp)              ! 	pop	$r5
-	addi	sp, sp, 4
+	addi	sp, sp, 16
 	lw	x10, 0(sp)              ! 	popm	$r0, $r3
 	lw	x11, 4(sp)
 	lw	x12, 8(sp)
@@ -2527,7 +2527,7 @@ __floatsidf:
 	mv	x11, x15                ! 	move	$r1, $r5
 	lw	x9, 0(sp)               ! 	pop.s	$r6, $r6, {$lp}
 	lw	ra, 4(sp)
-	addi	sp, sp, 8
+	addi	sp, sp, 16
 	ret                             ! 	ret5	$lp
 .Ltmp0:
 	.size	__floatsidf, .Ltmp0-__floatsidf
@@ -2541,7 +2541,7 @@ __floatsidf:
 	.globl	__floatdisf
 	.type	__floatdisf,@function
 __floatdisf:
-	addi	sp, sp, -12             ! 	push.s	$r6, $r7, {$lp}
+	addi	sp, sp, -16             ! 	push.s	$r6, $r7, {$lp}
 	sw	x9, 0(sp)
 	sw	x18, 4(sp)
 	sw	ra, 8(sp)
@@ -2570,7 +2570,7 @@ __floatdisf:
 	li	x9, 32                  ! 	move	$r6, #32
 	sub	x14, x14, x9            ! 	sub	$r4, $r4, $r6
 .LL2:
-	addi	sp, sp, -24             ! 	pushm	$r0, $r5
+	addi	sp, sp, -32             ! 	pushm	$r0, $r5
 	sw	x10, 0(sp)
 	sw	x11, 4(sp)
 	sw	x12, 8(sp)
@@ -2586,7 +2586,7 @@ __floatdisf:
 	lw	x13, 12(sp)
 	lw	x14, 16(sp)
 	lw	x15, 20(sp)
-	addi	sp, sp, 24
+	addi	sp, sp, 32
 	beqz	x9, .LL4                ! 	beqz	$r6, .LL4
 	sub	x14, x14, x9            ! 	sub	$r4, $r4, $r6
 	li	x17, 32                 ! 	subri	$r0, $r6, #32
@@ -2616,7 +2616,7 @@ __floatdisf:
 	lw	x9, 0(sp)               ! 	pop.s	$r6, $r7, {$lp}
 	lw	x18, 4(sp)
 	lw	ra, 8(sp)
-	addi	sp, sp, 12
+	addi	sp, sp, 16
 	ret                             ! 	ret5	$lp
 .Ltmp0:
 	.size	__floatdisf, .Ltmp0-__floatdisf
@@ -2661,7 +2661,7 @@ __floatdidf:
 	li	x9, 32                  ! 	move	$r6, #32
 	sub	x14, x14, x9            ! 	sub	$r4, $r4, $r6
 .LL2:
-	addi	sp, sp, -24             ! 	pushm	$r0, $r5
+	addi	sp, sp, -32             ! 	pushm	$r0, $r5
 	sw	x10, 0(sp)
 	sw	x11, 4(sp)
 	sw	x12, 8(sp)
@@ -2677,7 +2677,7 @@ __floatdidf:
 	lw	x13, 12(sp)
 	lw	x14, 16(sp)
 	lw	x15, 20(sp)
-	addi	sp, sp, 24
+	addi	sp, sp, 32
 	beqz	x9, .LL4                ! 	beqz	$r6, .LL4
 	sub	x14, x14, x9            ! 	sub	$r4, $r4, $r6
 	li	x17, 32                 ! 	subri	$r5, $r6, #32
@@ -2765,7 +2765,7 @@ __floatunsisf:
 	.globl	__floatunsidf
 	.type	__floatunsidf,@function
 __floatunsidf:
-	addi	sp, sp, -8              ! 	push.s	$r6, $r6, {$lp}
+	addi	sp, sp, -16             ! 	push.s	$r6, $r6, {$lp}
 	sw	x9, 0(sp)
 	sw	ra, 4(sp)
 	li	x11, 0                  ! 	move	$r1, #0
@@ -2773,7 +2773,7 @@ __floatunsidf:
 	mv	x12, x10                ! 	move	$r2, $r0
 	beqz	x12, .Li41              ! 	beqz	$r2, .Li41
 	li	x13, 1054               ! 	move	$r3, #1054
-	addi	sp, sp, -20             ! 	pushm	$r0, $r4
+	addi	sp, sp, -32             ! 	pushm	$r0, $r4
 	sw	x10, 0(sp)
 	sw	x11, 4(sp)
 	sw	x12, 8(sp)
@@ -2787,7 +2787,7 @@ __floatunsidf:
 	lw	x12, 8(sp)
 	lw	x13, 12(sp)
 	lw	x14, 16(sp)
-	addi	sp, sp, 20
+	addi	sp, sp, 32
 	sub	x13, x13, x15           ! 	sub	$r3, $r3, $r5
 	sll	x12, x12, x15           ! 	sll	$r2, $r2, $r5
 .Li41:
@@ -2802,7 +2802,7 @@ __floatunsidf:
 	mv	x11, x15                ! 	move	$r1, $r5
 	lw	x9, 0(sp)               ! 	pop.s	$r6, $r6, {$lp}
 	lw	ra, 4(sp)
-	addi	sp, sp, 8
+	addi	sp, sp, 16
 	ret                             ! 	ret5	$lp
 .Ltmp0:
 	.size	__floatunsidf, .Ltmp0-__floatunsidf
@@ -2816,7 +2816,7 @@ __floatunsidf:
 	.globl	__floatundisf
 	.type	__floatundisf,@function
 __floatundisf:
-	addi	sp, sp, -8              ! 	push.s	$r6, $r6, {$lp}
+	addi	sp, sp, -16             ! 	push.s	$r6, $r6, {$lp}
 	sw	x9, 0(sp)
 	sw	ra, 4(sp)
 	mv	x13, x11                ! 	move	$r3, $r1
@@ -2834,7 +2834,7 @@ __floatundisf:
 	li	x15, 32                 ! 	move	$r5, #32
 	sub	x14, x14, x15           ! 	sub	$r4, $r4, $r5
 .LL5:
-	addi	sp, sp, -20             ! 	pushm	$r0, $r4
+	addi	sp, sp, -32             ! 	pushm	$r0, $r4
 	sw	x10, 0(sp)
 	sw	x11, 4(sp)
 	sw	x12, 8(sp)
@@ -2848,7 +2848,7 @@ __floatundisf:
 	lw	x12, 8(sp)
 	lw	x13, 12(sp)
 	lw	x14, 16(sp)
-	addi	sp, sp, 20
+	addi	sp, sp, 32
 	beqz	x15, .LL7               ! 	beqz	$r5, .LL7
 	sub	x14, x14, x15           ! 	sub	$r4, $r4, $r5
 	li	x17, 32                 ! 	subri	$r0, $r5, #32
@@ -2877,7 +2877,7 @@ __floatundisf:
 .LB999:
 	lw	x9, 0(sp)               ! 	pop.s	$r6, $r6, {$lp}
 	lw	ra, 4(sp)
-	addi	sp, sp, 8
+	addi	sp, sp, 16
 	ret                             ! 	ret5	$lp
 .Ltmp0:
 	.size	__floatundisf, .Ltmp0-__floatundisf
@@ -2891,7 +2891,7 @@ __floatundisf:
 	.globl	__floatundidf
 	.type	__floatundidf,@function
 __floatundidf:
-	addi	sp, sp, -12             ! 	push.s	$r6, $r7, {$lp}
+	addi	sp, sp, -16             ! 	push.s	$r6, $r7, {$lp}
 	sw	x9, 0(sp)
 	sw	x18, 4(sp)
 	sw	ra, 8(sp)
@@ -2911,7 +2911,7 @@ __floatundidf:
 	li	x9, 32                  ! 	move	$r6, #32
 	sub	x14, x14, x9            ! 	sub	$r4, $r4, $r6
 .LL8:
-	addi	sp, sp, -24             ! 	pushm	$r0, $r5
+	addi	sp, sp, -32             ! 	pushm	$r0, $r5
 	sw	x10, 0(sp)
 	sw	x11, 4(sp)
 	sw	x12, 8(sp)
@@ -2927,7 +2927,7 @@ __floatundidf:
 	lw	x13, 12(sp)
 	lw	x14, 16(sp)
 	lw	x15, 20(sp)
-	addi	sp, sp, 24
+	addi	sp, sp, 32
 	beqz	x9, .LL10               ! 	beqz	$r6, .LL10
 	sub	x14, x14, x9            ! 	sub	$r4, $r4, $r6
 	li	x17, 32                 ! 	subri	$r5, $r6, #32
@@ -2962,7 +2962,7 @@ __floatundidf:
 	lw	x9, 0(sp)               ! 	pop.s	$r6, $r7, {$lp}
 	lw	x18, 4(sp)
 	lw	ra, 8(sp)
-	addi	sp, sp, 12
+	addi	sp, sp, 16
 	ret                             ! 	ret5	$lp
 .Ltmp0:
 	.size	__floatundidf, .Ltmp0-__floatundidf
