@@ -136,7 +136,9 @@ Mask(64BIT)
 
 Mask(MUL)
 
-Mask(ATOMIC)
+matomic
+Target Report Mask(ATOMIC)
+Use atomic extension instructions.
 
 Mask(HARD_FLOAT)
 
