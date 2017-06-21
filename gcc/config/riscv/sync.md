@@ -64,7 +64,7 @@
       [(match_operand:GPR 1 "reg_or_0_operand" "rJ")
        (match_operand:SI 2 "const_int_operand")]      ;; model
       UNSPEC_ATOMIC_STORE))]
-  "TARGET_ATOMIC || TARGET_ERROR_ON_NO_ATOMIC"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
 {
   if (!TARGET_ATOMIC)
     error ("Atomic not support, try -matomic");
@@ -81,7 +81,7 @@
 		     (match_operand:GPR 1 "reg_or_0_operand" "rJ"))
 	   (match_operand:SI 2 "const_int_operand")] ;; model
 	 UNSPEC_SYNC_OLD_OP))]
-  "TARGET_ATOMIC || TARGET_ERROR_ON_NO_ATOMIC"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
 {
   if (!TARGET_ATOMIC)
     error ("Atomic not support, try -matomic");
@@ -99,7 +99,7 @@
 		     (match_operand:GPR 2 "reg_or_0_operand" "rJ"))
 	   (match_operand:SI 3 "const_int_operand")] ;; model
 	 UNSPEC_SYNC_OLD_OP))]
-  "TARGET_ATOMIC || TARGET_ERROR_ON_NO_ATOMIC"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
 {
   if (!TARGET_ATOMIC)
     error ("Atomic not support, try -matomic");
@@ -116,7 +116,7 @@
 	  UNSPEC_SYNC_EXCHANGE))
    (set (match_dup 1)
 	(match_operand:GPR 2 "register_operand" "0"))]
-  "TARGET_ATOMIC || TARGET_ERROR_ON_NO_ATOMIC"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
 {
   if (!TARGET_ATOMIC)
     error ("Atomic not support, try -matomic");
@@ -135,7 +135,7 @@
 			      (match_operand:SI 5 "const_int_operand")] ;; mod_f
 	 UNSPEC_COMPARE_AND_SWAP))
    (clobber (match_scratch:GPR 6 "=&r"))]
-  "TARGET_ATOMIC || TARGET_ERROR_ON_NO_ATOMIC"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
 {
   if (!TARGET_ATOMIC)
     error ("Atomic not support, try -matomic");
@@ -153,7 +153,7 @@
    (match_operand:SI 5 "const_int_operand" "")  ;; is_weak
    (match_operand:SI 6 "const_int_operand" "")  ;; mod_s
    (match_operand:SI 7 "const_int_operand" "")] ;; mod_f
-  "TARGET_ATOMIC || TARGET_ERROR_ON_NO_ATOMIC"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
 {
   if (!TARGET_ATOMIC)
     error ("Atomic not support, try -matomic");
@@ -185,7 +185,7 @@
   [(match_operand:QI 0 "register_operand" "")     ;; bool output
    (match_operand:QI 1 "memory_operand" "+A")    ;; memory
    (match_operand:SI 2 "const_int_operand" "")]   ;; model
-  "TARGET_ATOMIC || TARGET_ERROR_ON_NO_ATOMIC"
+  "TARGET_ATOMIC || flags_error_on_no_atomic"
 {
   if (!TARGET_ATOMIC)
     error ("Atomic not support, try -matomic");
