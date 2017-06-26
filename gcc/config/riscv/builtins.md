@@ -50,10 +50,26 @@
   DONE;
 })
 
+(define_expand "riscv_get_current_spdi"
+  [(match_operand:DI 0 "register_operand" "")]
+  ""
+{
+  emit_move_insn (operands[0], gen_rtx_REG (DImode, SP_REGNUM));
+  DONE;
+})
+
 (define_expand "riscv_set_current_sp"
   [(match_operand:SI 0 "register_operand" "")]
   ""
 {
   emit_move_insn (gen_rtx_REG (SImode, SP_REGNUM), operands[0]);
+  DONE;
+})
+
+(define_expand "riscv_set_current_spdi"
+  [(match_operand:DI 0 "register_operand" "")]
+  ""
+{
+  emit_move_insn (gen_rtx_REG (DImode, SP_REGNUM), operands[0]);
   DONE;
 })

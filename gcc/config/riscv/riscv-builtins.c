@@ -135,6 +135,7 @@ AVAIL (normal, 1)
 /* Argument types.  */
 #define RISCV_ATYPE_VOID void_type_node
 #define RISCV_ATYPE_USI unsigned_intSI_type_node
+#define RISCV_ATYPE_ULONG long_unsigned_type_node
 
 /* RISCV_FTYPE_ATYPESN takes N RISCV_FTYPES-like type codes and lists
    their associated RISCV_ATYPEs.  */
@@ -150,8 +151,8 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_NO_TARGET_BUILTIN (fsflags, RISCV_VOID_FTYPE_USI, FSFLAGS, hard_float),
   DIRECT_BUILTIN (csrr, RISCV_USI_FTYPE_USI, CSRR, normal),
   DIRECT_NO_TARGET_BUILTIN (csrw, RISCV_VOID_FTYPE_USI_USI, CSRW, normal),
-  DIRECT_BUILTIN (get_current_sp, RISCV_USI_FTYPE_VOID, GET_SP, normal),
-  DIRECT_NO_TARGET_BUILTIN (set_current_sp, RISCV_VOID_FTYPE_USI,
+  DIRECT_BUILTIN (get_current_sp, RISCV_ULONG_FTYPE_VOID, GET_SP, normal),
+  DIRECT_NO_TARGET_BUILTIN (set_current_sp, RISCV_VOID_FTYPE_ULONG,
 			    SET_SP, normal)
 };
 
@@ -284,6 +285,23 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
   tree fndecl = TREE_OPERAND (CALL_EXPR_FN (exp), 0);
   unsigned int fcode = DECL_MD_FUNCTION_CODE (fndecl);
   const struct riscv_builtin_description *d = &riscv_builtins[fcode];
+  enum insn_code icode = d->icode;
+
+  switch (fcode)
+    {
+    case RISCV_BUILTIN_GET_SP:
+      {
+	if (TARGET_64BIT)
+          icode = CODE_FOR_riscv_get_current_spdi;
+	return riscv_expand_builtin_direct (icode, target, exp, true);
+      }
+    case RISCV_BUILTIN_SET_SP:
+      {
+	if (TARGET_64BIT)
+          icode = CODE_FOR_riscv_set_current_spdi;
+	return riscv_expand_builtin_direct (icode, target, exp, false);
+      }
+    }
 
   switch (d->builtin_type)
     {
