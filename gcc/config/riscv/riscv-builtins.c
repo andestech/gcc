@@ -149,8 +149,8 @@ AVAIL (normal, 1)
 static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_BUILTIN (frflags, RISCV_USI_FTYPE, FRFLAGS, hard_float),
   DIRECT_NO_TARGET_BUILTIN (fsflags, RISCV_VOID_FTYPE_USI, FSFLAGS, hard_float),
-  DIRECT_BUILTIN (csrr, RISCV_USI_FTYPE_USI, CSRR, normal),
-  DIRECT_NO_TARGET_BUILTIN (csrw, RISCV_VOID_FTYPE_USI_USI, CSRW, normal),
+  DIRECT_BUILTIN (csrr, RISCV_ULONG_FTYPE_USI, CSRR, normal),
+  DIRECT_NO_TARGET_BUILTIN (csrw, RISCV_VOID_FTYPE_ULONG_USI, CSRW, normal),
   DIRECT_BUILTIN (get_current_sp, RISCV_ULONG_FTYPE_VOID, GET_SP, normal),
   DIRECT_NO_TARGET_BUILTIN (set_current_sp, RISCV_VOID_FTYPE_ULONG,
 			    SET_SP, normal)
@@ -299,6 +299,18 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
       {
 	if (TARGET_64BIT)
           icode = CODE_FOR_riscv_set_current_spdi;
+	return riscv_expand_builtin_direct (icode, target, exp, false);
+      }
+    case RISCV_BUILTIN_CSRR:
+      {
+	if (TARGET_64BIT)
+          icode = CODE_FOR_riscv_csrrdi;
+	return riscv_expand_builtin_direct (icode, target, exp, true);
+      }
+    case RISCV_BUILTIN_CSRW:
+      {
+	if (TARGET_64BIT)
+          icode = CODE_FOR_riscv_csrwdi;
 	return riscv_expand_builtin_direct (icode, target, exp, false);
       }
     }

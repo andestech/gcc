@@ -36,8 +36,20 @@
   ""
   "csrr\t%0, %V1")
 
+(define_insn "riscv_csrrdi"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+        (unspec_volatile:DI [(match_operand:SI 1 "immediate_operand" "i")] UNSPECV_CSRR))]
+  ""
+  "csrr\t%0, %V1")
+
 (define_insn "riscv_csrw"
   [(unspec_volatile:SI [(match_operand:SI 0 "register_operand" "r")
+                        (match_operand:SI 1 "immediate_operand" "i")] UNSPECV_CSRW)]
+  ""
+  "csrw\t%V1, %0")
+
+(define_insn "riscv_csrwdi"
+  [(unspec_volatile:DI [(match_operand:DI 0 "register_operand" "r")
                         (match_operand:SI 1 "immediate_operand" "i")] UNSPECV_CSRW)]
   ""
   "csrw\t%V1, %0")
