@@ -193,7 +193,10 @@ enum riscv_csrs
   NDS_MHPMCOUNTER28H,
   NDS_MHPMCOUNTER29H,
   NDS_MHPMCOUNTER30H,
-  NDS_MHPMCOUNTER31H
+  NDS_MHPMCOUNTER31H,
+  NDS_MICM_CFG,
+  NDS_MDCM_CFG,
+  NDS_MMSC_CFG
 };
 
 #define __nds__msync_all() asm volatile ("fence" : : : "memory")

@@ -516,7 +516,10 @@ static const char * const riscv_csr_register_names[] =
   "mhpmcounter28h",
   "mhpmcounter29h",
   "mhpmcounter30h",
-  "mhpmcounter31h"
+  "mhpmcounter31h",
+  "micm_cfg",
+  "mdcm_cfg",
+  "mmsc_cfg",
 };
 
 static tree riscv_handle_fndecl_attribute (tree *, tree, tree, int, bool *);
