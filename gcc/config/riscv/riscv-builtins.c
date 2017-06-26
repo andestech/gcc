@@ -59,6 +59,16 @@ enum riscv_builtin_type {
   RISCV_BUILTIN_DIRECT_NO_TARGET
 };
 
+enum riscv_builtins
+{
+  RISCV_BUILTIN_FRFLAGS,
+  RISCV_BUILTIN_FSFLAGS,
+  RISCV_BUILTIN_CSRR,
+  RISCV_BUILTIN_CSRW,
+  RISCV_BUILTIN_GET_SP,
+  RISCV_BUILTIN_SET_SP
+};
+
 /* Declare an availability predicate for built-in functions.  */
 #define AVAIL(NAME, COND)		\
  static unsigned int			\
@@ -82,6 +92,9 @@ struct riscv_builtin_description {
   /* The function's prototype.  */
   enum riscv_function_type prototype;
 
+  /* Identifies which built-in operation it is.  */
+  enum riscv_builtins fcode;
+
   /* Whether the function is available.  */
   unsigned int (*avail) (void);
 };
@@ -101,22 +114,23 @@ AVAIL (normal, 1)
 
    AVAIL is the name of the availability predicate, without the leading
    riscv_builtin_avail_.  */
-#define RISCV_BUILTIN(INSN, NAME, BUILTIN_TYPE,	FUNCTION_TYPE, AVAIL)	\
+#define RISCV_BUILTIN(INSN, NAME, BUILTIN_TYPE,	FUNCTION_TYPE, FCODE, AVAIL) \
   { CODE_FOR_riscv_ ## INSN, "__builtin_riscv_" NAME,			\
-    BUILTIN_TYPE, FUNCTION_TYPE, riscv_builtin_avail_ ## AVAIL }
+    BUILTIN_TYPE, FUNCTION_TYPE, RISCV_BUILTIN_ ## FCODE,		\
+    riscv_builtin_avail_ ## AVAIL }
 
 /* Define __builtin_riscv_<INSN>, which is a RISCV_BUILTIN_DIRECT function
    mapped to instruction CODE_FOR_riscv_<INSN>,  FUNCTION_TYPE and AVAIL
    are as for RISCV_BUILTIN.  */
-#define DIRECT_BUILTIN(INSN, FUNCTION_TYPE, AVAIL)			\
-  RISCV_BUILTIN (INSN, #INSN, RISCV_BUILTIN_DIRECT, FUNCTION_TYPE, AVAIL)
+#define DIRECT_BUILTIN(INSN, FUNCTION_TYPE, FCODE, AVAIL)		\
+  RISCV_BUILTIN (INSN, #INSN, RISCV_BUILTIN_DIRECT, FUNCTION_TYPE, FCODE, AVAIL)
 
 /* Define __builtin_riscv_<INSN>, which is a RISCV_BUILTIN_DIRECT_NO_TARGET
    function mapped to instruction CODE_FOR_riscv_<INSN>,  FUNCTION_TYPE
    and AVAIL are as for RISCV_BUILTIN.  */
-#define DIRECT_NO_TARGET_BUILTIN(INSN, FUNCTION_TYPE, AVAIL)		\
+#define DIRECT_NO_TARGET_BUILTIN(INSN, FUNCTION_TYPE, FCODE, AVAIL)	\
   RISCV_BUILTIN (INSN, #INSN, RISCV_BUILTIN_DIRECT_NO_TARGET,		\
-		FUNCTION_TYPE, AVAIL)
+		FUNCTION_TYPE, FCODE, AVAIL)
 
 /* Argument types.  */
 #define RISCV_ATYPE_VOID void_type_node
@@ -132,12 +146,13 @@ AVAIL (normal, 1)
   RISCV_ATYPE_##A, RISCV_ATYPE_##B, RISCV_ATYPE_##C
 
 static const struct riscv_builtin_description riscv_builtins[] = {
-  DIRECT_BUILTIN (frflags, RISCV_USI_FTYPE, hard_float),
-  DIRECT_NO_TARGET_BUILTIN (fsflags, RISCV_VOID_FTYPE_USI, hard_float),
-  DIRECT_BUILTIN (csrr, RISCV_USI_FTYPE_USI, normal),
-  DIRECT_NO_TARGET_BUILTIN (csrw, RISCV_VOID_FTYPE_USI_USI, normal),
-  DIRECT_BUILTIN (get_current_sp, RISCV_USI_FTYPE_VOID, normal),
-  DIRECT_NO_TARGET_BUILTIN (set_current_sp, RISCV_VOID_FTYPE_USI, normal)
+  DIRECT_BUILTIN (frflags, RISCV_USI_FTYPE, FRFLAGS, hard_float),
+  DIRECT_NO_TARGET_BUILTIN (fsflags, RISCV_VOID_FTYPE_USI, FSFLAGS, hard_float),
+  DIRECT_BUILTIN (csrr, RISCV_USI_FTYPE_USI, CSRR, normal),
+  DIRECT_NO_TARGET_BUILTIN (csrw, RISCV_VOID_FTYPE_USI_USI, CSRW, normal),
+  DIRECT_BUILTIN (get_current_sp, RISCV_USI_FTYPE_VOID, GET_SP, normal),
+  DIRECT_NO_TARGET_BUILTIN (set_current_sp, RISCV_VOID_FTYPE_USI,
+			    SET_SP, normal)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
