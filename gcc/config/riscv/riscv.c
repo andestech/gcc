@@ -4950,6 +4950,11 @@ riscv_option_override (void)
   /* Function to allocate machine-dependent function status.  */
   init_machine_status = &riscv_init_machine_status;
 
+  /* Always prefer medlow than medany for RV32 since medlow can access
+     full address space. */
+  if (!TARGET_64BIT && riscv_cmodel == CM_MEDANY)
+    riscv_cmodel = CM_MEDLOW;
+
   if (flag_pic)
     riscv_cmodel = CM_PIC;
 
