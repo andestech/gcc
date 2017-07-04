@@ -117,7 +117,7 @@ EnumValue
 Enum(code_model) String(medium) Value(CM_MEDANY)
 
 EnumValue
-Enum(code_model) String(large) Value(CM_MEDANY)
+Enum(code_model) String(large) Value(CM_LARGE)
 
 mexplicit-relocs
 Target Report Mask(EXPLICIT_RELOCS)
