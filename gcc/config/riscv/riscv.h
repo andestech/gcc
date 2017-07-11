@@ -131,15 +131,18 @@ along with GCC; see the file COPYING3.  If not see
 /* Allocation boundary (in *bits*) for storing arguments in argument list.  */
 #define PARM_BOUNDARY BITS_PER_WORD
 
+#define TARGET_NEED_ALIGN \
+  (!TARGET_RVC || !optimize_size || TARGET_ALWAYS_ALIGN)
+
 /* Allocation boundary (in *bits*) for the code of a function.  */
-#define FUNCTION_BOUNDARY (TARGET_RVC && optimize_size ? 16 : 32)
+#define FUNCTION_BOUNDARY (TARGET_NEED_ALIGN ? 32 : 16)
 
 #define JUMP_ALIGN(x) \
-  (align_jumps_log ? align_jumps_log : (TARGET_RVC && optimize_size ? 1 : 2))
+  (align_jumps.levels[0].log ? align_jumps : (TARGET_NEED_ALIGN ? 2 : 1))
 #define LOOP_ALIGN(x) \
-  (align_loops_log ? align_loops_log : (TARGET_RVC && optimize_size ? 1 : 2))
+  (align_loops.levels[0].log ? align_loops : (TARGET_NEED_ALIGN ? 2 : 1))
 #define LABEL_ALIGN(x) \
-  (align_labels_log ? align_labels_log : (TARGET_RVC && optimize_size ? 1 : 2))
+  (align_labels.levels[0].log ? align_labels : (TARGET_NEED_ALIGN ? 2 : 1))
 
 /* The smallest supported stack boundary the calling convention supports.  */
 #define STACK_BOUNDARY \

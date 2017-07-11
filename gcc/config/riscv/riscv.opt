@@ -190,6 +190,10 @@ mmove-bytes-per-loop=
 Target RejectNegative Joined UInteger Var(riscv_movebytes_per_loop) Init(0)
 -mmove-byte-per-loop=N Set <N> bytes of data movement can be handled per loop iteration.
 
+malways-align
+Target Mask(ALWAYS_ALIGN)
+Always align function entry, jump target and return address.
+
 mriscv-attribute
 Target Report Var(riscv_emit_attribute_p) Init(-1)
 Emit RISC-V ELF attribute.
