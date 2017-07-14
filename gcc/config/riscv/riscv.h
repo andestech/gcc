@@ -67,6 +67,7 @@ along with GCC; see the file COPYING3.  If not see
 %{" FPIE_OR_FPIC_SPEC ":-fpic} \
 %{march=*:-march=%*%{matomic:a}} \
 %{mabi=*} \
+%{mno-16-bit} \
 %(subtarget_asm_spec)"
 
 #define TARGET_DEFAULT_CMODEL CM_MEDLOW
