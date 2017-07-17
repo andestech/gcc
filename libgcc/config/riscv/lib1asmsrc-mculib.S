@@ -13,7 +13,7 @@ __subsf3:
 __addsf3:
 	slli	x12, x10, 1             ! 	slli	$r2, $r0, #1
 	slli	x13, x11, 1             ! 	slli	$r3, $r1, #1
-	li	x6, 2147483648          ! 	move	$r17, #2147483648
+	li	x7, 2147483648          ! 	move	$r17, #2147483648
 	sltu	tp, x12, x13            ! 	slt	$ta, $r2, $r3
 	beqz	tp, .LEcont             ! 	beqz	$ta, .LEcont
 	mv	x15, x10                ! 	move	$r5, $r0
@@ -23,37 +23,37 @@ __addsf3:
 	slli	x13, x11, 1             ! 	slli	$r3, $r1, #1
 .LEcont:
 	xor	x11, x11, x10           ! 	xor	$r1, $r1, $r0
-	and	x11, x11, x6            ! 	and	$r1, $r1, $r17
+	and	x11, x11, x7            ! 	and	$r1, $r1, $r17
 	srli	x14, x12, 24            ! 	srli	$r4, $r2, #24
-	srli	x7, x13, 24             ! 	srli	$r18, $r3, #24
+	srli	x28, x13, 24            ! 	srli	$r18, $r3, #24
 	slli	x5, x12, 7              ! 	slli	$r16, $r2, #7
-	slli	x28, x13, 7             ! 	slli	$r19, $r3, #7
+	slli	x29, x13, 7             ! 	slli	$r19, $r3, #7
 	li	x17, 255                ! 	beqc	$r4, #255, .LEinfnan
 	beq	x14, x17, .LEinfnan
 	beqz	x12, .LEzeroP           ! 	beqz	$r2, .LEzeroP
 	beqz	x13, .LEretA            ! 	beqz	$r3, .LEretA
-	sub	x15, x14, x7            ! 	sub	$r5, $r4, $r18
+	sub	x15, x14, x28           ! 	sub	$r5, $r4, $r18
 	sltiu	tp, x14, 2              ! 	slti	$ta, $r4, #2
 	bnez	tp, .LElab2             ! 	bnez	$ta, .LElab2
 	slti	tp, x15, 32             ! 	sltsi	$ta, $r5, #32
 	beqz	tp, .LEretA             ! 	beqz	$ta, .LEretA
-	or	x5, x5, x6              ! 	or	$r16, $r16, $r17
-	beqz	x7, .LElab1             ! 	beqz	$r18, .LElab1
-	or	x28, x28, x6            ! 	or	$r19, $r19, $r17
+	or	x5, x5, x7              ! 	or	$r16, $r16, $r17
+	beqz	x28, .LElab1            ! 	beqz	$r18, .LElab1
+	or	x29, x29, x7            ! 	or	$r19, $r19, $r17
 .LElab1:
 	addi	tp, x15, -1             ! 	addi	$ta, $r5, #-1
-	bne	x7, zero, .Ltmp0        ! 	cmovz	$r5, $ta, $r18
+	bne	x28, zero, .Ltmp0       ! 	cmovz	$r5, $ta, $r18
 	addi	x15, tp, 0
 .Ltmp0:
-	mv	tp, x28                 ! 	move	$ta, $r19
-	srl	x28, x28, x15           ! 	srl	$r19, $r19, $r5
-	sll	x15, x28, x15           ! 	sll	$r5, $r19, $r5
+	mv	tp, x29                 ! 	move	$ta, $r19
+	srl	x29, x29, x15           ! 	srl	$r19, $r19, $r5
+	sll	x15, x29, x15           ! 	sll	$r5, $r19, $r5
 	beq	x15, tp, .LElab2        ! 	beq	$r5, $ta, .LElab2
-	ori	x28, x28, 2             ! 	ori	$r19, $r19, #2
+	ori	x29, x29, 2             ! 	ori	$r19, $r19, #2
 .LElab2:
 	bnez	x11, .LEsub             ! 	bnez	$r1, .LEsub
-	add	x5, x5, x28             ! 	add	$r16, $r16, $r19
-	sltu	tp, x5, x28             ! 	slt	$ta, $r16, $r19
+	add	x5, x5, x29             ! 	add	$r16, $r16, $r19
+	sltu	tp, x5, x29             ! 	slt	$ta, $r16, $r19
 	beqz	tp, .LEaddnoover        ! 	beqz	$ta, .LEaddnoover
 	li	x17, 254                ! 	beqc	$r4, #254, .LEinf
 	beq	x14, x17, .LEinf
@@ -72,12 +72,12 @@ __addsf3:
 	tail	.LEpack                 ! 	b	.LEpack
 .LEsub:
 	beq	x12, x13, .LEzero       ! 	beq	$r2, $r3, .LEzero
-	sltu	tp, x5, x28             ! 	slt	$ta, $r16, $r19
+	sltu	tp, x5, x29             ! 	slt	$ta, $r16, $r19
 	beqz	tp, .LEsub2             ! 	beqz	$ta, .LEsub2
-	srli	x28, x28, 1             ! 	srli	$r19, $r19, #1
+	srli	x29, x29, 1             ! 	srli	$r19, $r19, #1
 	addi	x14, x14, -1            ! 	addi	$r4, $r4, #-1
 .LEsub2:
-	sub	x5, x5, x28             ! 	sub	$r16, $r16, $r19
+	sub	x5, x5, x29             ! 	sub	$r16, $r16, $r19
 	sltiu	tp, x14, 2              ! 	slti	$ta, $r4, #2
 	bnez	tp, .LEdenorm           ! 	bnez	$ta, .LEdenorm
 	tail	.LEloopC2               ! 	b	.LEloopC2
@@ -86,7 +86,7 @@ __addsf3:
 	beqz	x14, .LEround           ! 	beqz	$r4, .LEround
 	add	x5, x5, x5              ! 	add	$r16, $r16, $r16
 .LEloopC2:
-	sltu	tp, x5, x6              ! 	slt	$ta, $r16, $r17
+	sltu	tp, x5, x7              ! 	slt	$ta, $r16, $r17
 	bnez	tp, .LEloopC            ! 	bnez	$ta, .LEloopC
 .LEround:
 	addi	x5, x5, 128             ! 	addi	$r16, $r16, #128
@@ -100,7 +100,7 @@ __addsf3:
 	slli	x11, x14, 23            ! 	slli	$r1, $r4, #23
 	or	x5, x5, x11             ! 	or	$r16, $r16, $r1
 .LEpack:
-	and	x10, x10, x6            ! 	and	$r0, $r0, $r17
+	and	x10, x10, x7            ! 	and	$r0, $r0, $r17
 	or	x10, x10, x5            ! 	or	$r0, $r0, $r16
 .LEretA:
 .LEret:
@@ -111,9 +111,9 @@ __addsf3:
 	li	x10, 0                  ! 	move	$r0, #0
 	tail	.LEret                  ! 	b	.LEret
 .LEinfnan:
-	bne	x5, x6, .LEnan          ! 	bne	$r16, $r17, .LEnan
+	bne	x5, x7, .LEnan          ! 	bne	$r16, $r17, .LEnan
 	li	x17, 255                ! 	bnec	$r18, #255, .LEretA
-	bne	x7, x17, .LEretA
+	bne	x28, x17, .LEretA
 	beqz	x11, .LEretA            ! 	beqz	$r1, .LEretA
 .LEnan:
 	li	x10, 4290772992         ! 	move	$r0, #4290772992
@@ -953,13 +953,13 @@ __adddf3:
 	.globl	__mulsf3
 	.type	__mulsf3,@function
 __mulsf3:
-	xor	x7, x11, x10            ! 	xor	$r18, $r1, $r0
+	xor	x28, x11, x10           ! 	xor	$r18, $r1, $r0
 	li	x14, 2147483648         ! 	move	$r4, #2147483648
-	and	x7, x7, x14             ! 	and	$r18, $r18, $r4
+	and	x28, x28, x14           ! 	and	$r18, $r18, $r4
 	slli	x13, x10, 1             ! 	slli	$r3, $r0, #1
 	slli	x11, x11, 1             ! 	slli	$r1, $r1, #1
 	srli	x5, x13, 24             ! 	srli	$r16, $r3, #24
-	srli	x6, x11, 24             ! 	srli	$r17, $r1, #24
+	srli	x7, x11, 24             ! 	srli	$r17, $r1, #24
 	slli	x12, x13, 7             ! 	slli	$r2, $r3, #7
 	slli	x10, x11, 7             ! 	slli	$r0, $r1, #7
 	beqz	x5, .LFzeroAexp         ! 	beqz	$r16, .LFzeroAexp
@@ -967,9 +967,9 @@ __mulsf3:
 	beq	x5, x17, .LFinfnanA
 	or	x12, x12, x14           ! 	or	$r2, $r2, $r4
 .LFlab1:
-	beqz	x6, .LFzeroB            ! 	beqz	$r17, .LFzeroB
+	beqz	x7, .LFzeroB            ! 	beqz	$r17, .LFzeroB
 	li	x17, 255                ! 	beqc	$r17, #255, .LFinfnanB
-	beq	x6, x17, .LFinfnanB
+	beq	x7, x17, .LFinfnanB
 	or	x10, x10, x14           ! 	or	$r0, $r0, $r4
 .LFlab2:
 	mulhu	x11, x12, x10           ! 	mulr64	$r0, $r2, $r0
@@ -983,7 +983,7 @@ __mulsf3:
 	slli	x12, x12, 1             ! 	slli	$r2, $r2, #1
 	addi	x5, x5, -1              ! 	addi	$r16, $r16, #-1
 .Li18:
-	addi	x15, x6, -126           ! 	addi	$r5, $r17, #-126
+	addi	x15, x7, -126           ! 	addi	$r5, $r17, #-126
 	add	x5, x5, x15             ! 	add	$r16, $r16, $r5
 	blez	x5, .LFunder            ! 	blez	$r16, .LFunder
 	sltiu	tp, x5, 255             ! 	slti	$ta, $r16, #255
@@ -1000,15 +1000,15 @@ __mulsf3:
 	slli	x10, x5, 23             ! 	slli	$r0, $r16, #23
 	or	x10, x10, x12           ! 	or	$r0, $r0, $r2
 .LFpack:
-	or	x10, x10, x7            ! 	or	$r0, $r0, $r18
+	or	x10, x10, x28           ! 	or	$r0, $r0, $r18
 .LFret:
 	ret                             ! 	ret5	$lp
 .LFzeroAexp:
 	bnez	x12, .LFloopA2          ! 	bnez	$r2, .LFloopA2
 	li	x17, 255                ! 	beqc	$r17, #255, .LFnan
-	beq	x6, x17, .LFnan
+	beq	x7, x17, .LFnan
 .LFzero:
-	mv	x10, x7                 ! 	move	$r0, $r18
+	mv	x10, x28                ! 	move	$r0, $r18
 	tail	.LFret                  ! 	b	.LFret
 .LFloopA:
 	addi	x5, x5, -1              ! 	addi	$r16, $r16, #-1
@@ -1021,7 +1021,7 @@ __mulsf3:
 	bne	x12, x14, .LFnan        ! 	bne	$r2, $r4, .LFnan
 	beqz	x11, .LFnan             ! 	beqz	$r1, .LFnan
 	li	x17, 255                ! 	bnec	$r17, #255, .LFinf
-	bne	x6, x17, .LFinf
+	bne	x7, x17, .LFinf
 .LFinfnanB:
 	bne	x10, x14, .LFnan        ! 	bne	$r0, $r4, .LFnan
 .LFinf:
@@ -1031,7 +1031,7 @@ __mulsf3:
 	bnez	x10, .LFloopB2          ! 	bnez	$r0, .LFloopB2
 	tail	.LFzero                 ! 	b	.LFzero
 .LFloopB:
-	addi	x6, x6, -1              ! 	addi	$r17, $r17, #-1
+	addi	x7, x7, -1              ! 	addi	$r17, $r17, #-1
 .LFloopB2:
 	add	x10, x10, x10           ! 	add	$r0, $r0, $r0
 	sltu	tp, x10, x14            ! 	slt	$ta, $r0, $r4
@@ -1328,13 +1328,13 @@ __muldf3:
 	.globl	__divsf3
 	.type	__divsf3,@function
 __divsf3:
-	xor	x7, x11, x10            ! 	xor	$r18, $r1, $r0
+	xor	x28, x11, x10           ! 	xor	$r18, $r1, $r0
 	li	x14, 2147483648         ! 	move	$r4, #2147483648
-	and	x7, x7, x14             ! 	and	$r18, $r18, $r4
+	and	x28, x28, x14           ! 	and	$r18, $r18, $r4
 	slli	x12, x10, 1             ! 	slli	$r2, $r0, #1
 	slli	x11, x11, 1             ! 	slli	$r1, $r1, #1
 	srli	x5, x12, 24             ! 	srli	$r16, $r2, #24
-	srli	x6, x11, 24             ! 	srli	$r17, $r1, #24
+	srli	x7, x11, 24             ! 	srli	$r17, $r1, #24
 	slli	x12, x12, 7             ! 	slli	$r2, $r2, #7
 	slli	x13, x11, 7             ! 	slli	$r3, $r1, #7
 	beqz	x5, .LGzeroAexp         ! 	beqz	$r16, .LGzeroAexp
@@ -1342,9 +1342,9 @@ __divsf3:
 	beq	x5, x17, .LGinfnanA
 	or	x12, x12, x14           ! 	or	$r2, $r2, $r4
 .LGlab1:
-	beqz	x6, .LGzeroB            ! 	beqz	$r17, .LGzeroB
+	beqz	x7, .LGzeroB            ! 	beqz	$r17, .LGzeroB
 	li	x17, 255                ! 	beqc	$r17, #255, .LGinfnanB
-	beq	x6, x17, .LGinfnanB
+	beq	x7, x17, .LGinfnanB
 	or	x13, x13, x14           ! 	or	$r3, $r3, $r4
 .LGlab2:
 	sltu	tp, x12, x13            ! 	slt	$ta, $r2, $r3
@@ -1354,10 +1354,10 @@ __divsf3:
 .LGlab3:
 	srli	x15, x13, 14            ! 	srli	$r5, $r3, #14
 	li	x17, 16383              ! 	andi	$r19, $r3, #16383
-	and	x28, x13, x17
+	and	x29, x13, x17
 	divu	x11, x12, x15           ! 	divr	$r1, $r0, $r2, $r5
 	remu	x10, x12, x15
-	mul	x12, x28, x11           ! 	mul	$r2, $r19, $r1
+	mul	x12, x29, x11           ! 	mul	$r2, $r19, $r1
 	slli	x10, x10, 14            ! 	slli	$r0, $r0, #14
 	sltu	tp, x10, x12            ! 	slt	$ta, $r0, $r2
 	beqz	tp, .LGlab4             ! 	beqz	$ta, .LGlab4
@@ -1367,22 +1367,22 @@ __divsf3:
 	sub	x10, x10, x12           ! 	sub	$r0, $r0, $r2
 	divu	x12, x10, x15           ! 	divr	$r2, $r0, $r0, $r5
 	remu	x10, x10, x15
-	mul	x28, x28, x12           ! 	mul	$r19, $r19, $r2
+	mul	x29, x29, x12           ! 	mul	$r19, $r19, $r2
 	slli	x10, x10, 14            ! 	slli	$r0, $r0, #14
-	sltu	tp, x10, x28            ! 	slt	$ta, $r0, $r19
+	sltu	tp, x10, x29            ! 	slt	$ta, $r0, $r19
 	beqz	tp, .LGlab5             ! 	beqz	$ta, .LGlab5
 	addi	x12, x12, -1            ! 	addi	$r2, $r2, #-1
 	add	x10, x10, x13           ! 	add	$r0, $r0, $r3
 .LGlab5:
-	sub	x10, x10, x28           ! 	sub	$r0, $r0, $r19
-	slli	x28, x11, 14            ! 	slli	$r19, $r1, #14
-	add	x12, x12, x28           ! 	add	$r2, $r2, $r19
+	sub	x10, x10, x29           ! 	sub	$r0, $r0, $r19
+	slli	x29, x11, 14            ! 	slli	$r19, $r1, #14
+	add	x12, x12, x29           ! 	add	$r2, $r2, $r19
 	slli	x12, x12, 4             ! 	slli	$r2, $r2, #4
 	beqz	x10, .LGlab6            ! 	beqz	$r0, .LGlab6
 	ori	x12, x12, 1             ! 	ori	$r2, $r2, #1
 .LGlab6:
 	li	x17, 126                ! 	subri	$r5, $r17, #126
-	sub	x15, x17, x6
+	sub	x15, x17, x7
 	add	x5, x5, x15             ! 	add	$r16, $r16, $r5
 	blez	x5, .LGunder            ! 	blez	$r16, .LGunder
 	sltiu	tp, x5, 255             ! 	slti	$ta, $r16, #255
@@ -1399,7 +1399,7 @@ __divsf3:
 	slli	x10, x5, 23             ! 	slli	$r0, $r16, #23
 	or	x10, x10, x12           ! 	or	$r0, $r0, $r2
 .LGpack:
-	or	x10, x10, x7            ! 	or	$r0, $r0, $r18
+	or	x10, x10, x28           ! 	or	$r0, $r0, $r18
 .LGret:
 	ret                             ! 	ret5	$lp
 .LGzeroAexp:
@@ -1418,14 +1418,14 @@ __divsf3:
 	sltu	tp, x15, x11            ! 	slt	$ta, $r5, $r1
 	bnez	tp, .LGnan              ! 	bnez	$ta, .LGnan
 .LGzero:
-	mv	x10, x7                 ! 	move	$r0, $r18
+	mv	x10, x28                ! 	move	$r0, $r18
 	tail	.LGret                  ! 	b	.LGret
 .LGinfnanA:
 	bne	x12, x14, .LGnan        ! 	bne	$r2, $r4, .LGnan
-	beq	x6, x5, .LGnan          ! 	beq	$r17, $r16, .LGnan
+	beq	x7, x5, .LGnan          ! 	beq	$r17, $r16, .LGnan
 .LGinf:
 	li	x10, 2139095040         ! 	move	$r0, #2139095040
-	or	x10, x10, x7            ! 	or	$r0, $r0, $r18
+	or	x10, x10, x28           ! 	or	$r0, $r0, $r18
 	tail	.LGret                  ! 	b	.LGret
 .LGinfnanB:
 	beq	x13, x14, .LGzero       ! 	beq	$r3, $r4, .LGzero
@@ -1436,7 +1436,7 @@ __divsf3:
 	bnez	x13, .LGloopB2          ! 	bnez	$r3, .LGloopB2
 	tail	.LGinf                  ! 	b	.LGinf
 .LGloopB:
-	addi	x6, x6, -1              ! 	addi	$r17, $r17, #-1
+	addi	x7, x7, -1              ! 	addi	$r17, $r17, #-1
 .LGloopB2:
 	add	x13, x13, x13           ! 	add	$r3, $r3, $r3
 	sltu	tp, x13, x14            ! 	slt	$ta, $r3, $r4
@@ -3078,16 +3078,16 @@ __cmpdf2:
 	li	x14, 1                  ! 	move	$r4, #1
 .LA:
 	li	x15, 0                  ! 	move	$r5, #0
-	li	x7, 4292870144          ! 	move	$r18, #4292870144
+	li	x28, 4292870144         ! 	move	$r18, #4292870144
 	slli	x5, x11, 1              ! 	slli	$r16, $r1, #1
 	sltu	tp, x15, x10            ! 	slt	$ta, $r5, $r0
-	add	x28, x5, tp             ! 	add	$r19, $r16, $ta
-	sltu	tp, x7, x28             ! 	slt	$ta, $r18, $r19
+	add	x29, x5, tp             ! 	add	$r19, $r16, $ta
+	sltu	tp, x28, x29            ! 	slt	$ta, $r18, $r19
 	bnez	tp, .LMnan              ! 	bnez	$ta, .LMnan
-	slli	x6, x13, 1              ! 	slli	$r17, $r3, #1
+	slli	x7, x13, 1              ! 	slli	$r17, $r3, #1
 	sltu	tp, x15, x12            ! 	slt	$ta, $r5, $r2
-	add	x28, x6, tp             ! 	add	$r19, $r17, $ta
-	sltu	tp, x7, x28             ! 	slt	$ta, $r18, $r19
+	add	x29, x7, tp             ! 	add	$r19, $r17, $ta
+	sltu	tp, x28, x29            ! 	slt	$ta, $r18, $r19
 	bnez	tp, .LMnan              ! 	bnez	$ta, .LMnan
 	xor	x14, x11, x13           ! 	xor	$r4, $r1, $r3
 	bltz	x14, .LMdiff            ! 	bltz	$r4, .LMdiff
@@ -3114,7 +3114,7 @@ __cmpdf2:
 	ret                             ! 	ret5	$lp
 	.p2align	2
 .LMdiff:
-	or	x15, x5, x6             ! 	or	$r5, $r16, $r17
+	or	x15, x5, x7             ! 	or	$r5, $r16, $r17
 	or	x14, x10, x12           ! 	or	$r4, $r0, $r2
 	or	x15, x15, x14           ! 	or	$r5, $r5, $r4
 	beqz	x15, .LMret             ! 	beqz	$r5, .LMret
