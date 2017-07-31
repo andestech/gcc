@@ -396,6 +396,8 @@ enum reg_class
   FP_REGS,			/* floating-point registers */
   FRAME_REGS,			/* arg pointer and frame pointer */
   ALL_REGS,			/* all registers */
+  T0_REG,			/* T0 register */
+  A7_REG,			/* A7 register */
   LIM_REG_CLASSES		/* max value + 1 */
 };
 
@@ -415,6 +417,8 @@ enum reg_class
   "GR_REGS",								\
   "FP_REGS",								\
   "FRAME_REGS",								\
+  "T0_REG",								\
+  "A7_REG",								\
   "ALL_REGS"								\
 }
 
@@ -437,6 +441,8 @@ enum reg_class
   { 0xffffffff, 0x00000000, 0x00000000 },	/* GR_REGS */		\
   { 0x00000000, 0xffffffff, 0x00000000 },	/* FP_REGS */		\
   { 0x00000000, 0x00000000, 0x00000003 },	/* FRAME_REGS */	\
+  { 0x00000020, 0x00000000, 0x00000000 },	/* T0_REG */		\
+  { 0x00020000, 0x00000000, 0x00000000 },	/* A7_REG */		\
   { 0xffffffff, 0xffffffff, 0x00000003 }	/* ALL_REGS */		\
 }
 

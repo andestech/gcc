@@ -210,6 +210,21 @@ enum riscv_csrs
 #define __nds__mtsr(val, srname) \
   (__builtin_riscv_csrw ((val), (srname)))
 
+#define __nds__ecall(sysid) \
+  (__builtin_riscv_ecall ((sysid)))
+#define __nds__ecall1(sysid, a) \
+  (__builtin_riscv_csrw ((sysid), (a)))
+#define __nds__ecall2(sysid, a, b) \
+  (__builtin_riscv_csrw ((sysid), (a), (b)))
+#define __nds__ecall3(sysid, a, b, c) \
+  (__builtin_riscv_csrw ((sysid), (a), (b), (c)))
+#define __nds__ecall1(sysid, a, b, c, d) \
+  (__builtin_riscv_csrw ((sysid), (a), (b), (c), (d)))
+#define __nds__ecall1(sysid, a, b, c, d, e) \
+  (__builtin_riscv_csrw ((sysid), (a), (b), (c), (d), (e)))
+#define __nds__ecall1(sysid, a, b, c, d, e, f) \
+  (__builtin_riscv_csrw ((sysid), (a), (b), (c), (d), (e), (f)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 

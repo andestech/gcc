@@ -85,3 +85,98 @@
   emit_move_insn (gen_rtx_REG (DImode, SP_REGNUM), operands[0]);
   DONE;
 })
+
+(define_insn "riscv_ecall"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec_volatile:SI [(match_operand:SI 1 "ecall_register_operand" "e")] UNSPECV_SCALL))
+   (use (reg:SI A0_REGNUM))]
+
+  ""
+  "ecall %0, %1"
+)
+
+(define_insn "riscv_ecall1"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec_volatile:SI [(match_operand:SI 1 "ecall_register_operand" "e")
+			     (match_operand:SI 2 "register_operand" "r")] UNSPECV_SCALL))]
+  ""
+  "ecall %0, %1, %2"
+)
+
+(define_insn "riscv_ecall2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec_volatile:SI [(match_operand:SI 1 "ecall_register_operand" "e")
+			     (match_operand:SI 2 "register_operand" "r")
+			     (match_operand:SI 3 "register_operand" "r")] UNSPECV_SCALL))
+   (use (reg:SI A0_REGNUM))
+   (use (reg:SI A1_REGNUM))]
+  ""
+  "ecall %0, %1, %2, %3"
+)
+
+(define_insn "riscv_ecall3"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec_volatile:SI [(match_operand:SI 1 "ecall_register_operand" "e")
+			     (match_operand:SI 2 "register_operand" "r")
+			     (match_operand:SI 3 "register_operand" "r")
+			     (match_operand:SI 4 "register_operand" "r")] UNSPECV_SCALL))
+   (use (reg:SI A0_REGNUM))
+   (use (reg:SI A1_REGNUM))
+   (use (reg:SI A2_REGNUM))]
+
+  ""
+  "ecall %0, %1, %2, %3, %4"
+)
+
+(define_insn "riscv_ecall4"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec_volatile:SI [(match_operand:SI 1 "ecall_register_operand" "e")
+			     (match_operand:SI 2 "register_operand" "r")
+			     (match_operand:SI 3 "register_operand" "r")
+			     (match_operand:SI 4 "register_operand" "r")
+			     (match_operand:SI 5 "register_operand" "r")] UNSPECV_SCALL))
+   (use (reg:SI A0_REGNUM))
+   (use (reg:SI A1_REGNUM))
+   (use (reg:SI A2_REGNUM))
+   (use (reg:SI A3_REGNUM))]
+
+  ""
+  "ecall %0, %1, %2, %3, %4, %5"
+)
+
+(define_insn "riscv_ecall5"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec_volatile:SI [(match_operand:SI 1 "ecall_register_operand" "e")
+			     (match_operand:SI 2 "register_operand" "r")
+			     (match_operand:SI 3 "register_operand" "r")
+			     (match_operand:SI 4 "register_operand" "r")
+			     (match_operand:SI 5 "register_operand" "r")
+			     (match_operand:SI 6 "register_operand" "r")] UNSPECV_SCALL))
+   (use (reg:SI A0_REGNUM))
+   (use (reg:SI A1_REGNUM))
+   (use (reg:SI A2_REGNUM))
+   (use (reg:SI A3_REGNUM))
+   (use (reg:SI A4_REGNUM))]
+
+  ""
+  "ecall %0, %1, %2, %3, %4, %5, %6"
+)
+
+(define_insn "riscv_ecall6"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec_volatile:SI [(match_operand:SI 1 "ecall_register_operand" "e")
+			     (match_operand:SI 2 "register_operand" "r")
+			     (match_operand:SI 3 "register_operand" "r")
+			     (match_operand:SI 4 "register_operand" "r")
+			     (match_operand:SI 5 "register_operand" "r")
+			     (match_operand:SI 6 "register_operand" "r")
+			     (match_operand:SI 7 "register_operand" "r")] UNSPECV_SCALL))
+   (use (reg:SI A0_REGNUM))
+   (use (reg:SI A1_REGNUM))
+   (use (reg:SI A2_REGNUM))
+   (use (reg:SI A3_REGNUM))
+   (use (reg:SI A4_REGNUM))
+   (use (reg:SI A5_REGNUM))]
+  ""
+  "ecall %0, %1, %2, %3, %4, %5, %6, %7"
+)

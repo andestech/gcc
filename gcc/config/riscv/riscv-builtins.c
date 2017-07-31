@@ -41,6 +41,16 @@ along with GCC; see the file COPYING3.  If not see
 #define RISCV_FTYPE_NAME0(A) RISCV_##A##_FTYPE
 #define RISCV_FTYPE_NAME1(A, B) RISCV_##A##_FTYPE_##B
 #define RISCV_FTYPE_NAME2(A, B, C) RISCV_##A##_FTYPE_##B##_##C
+#define RISCV_FTYPE_NAME3(A, B, C, D) \
+  RISCV_##A##_FTYPE_##B##_##C##_##D
+#define RISCV_FTYPE_NAME4(A, B, C, D, E) \
+  RISCV_##A##_FTYPE_##B##_##C##_##D##_##E
+#define RISCV_FTYPE_NAME5(A, B, C, D, E, F) \
+  RISCV_##A##_FTYPE_##B##_##C##_##D##_##E##_##F
+#define RISCV_FTYPE_NAME6(A, B, C, D, E, F, G) \
+  RISCV_##A##_FTYPE_##B##_##C##_##D##_##E##_##F##_##G
+#define RISCV_FTYPE_NAME7(A, B, C, D, E, F, G, H) \
+  RISCV_##A##_FTYPE_##B##_##C##_##D##_##E##_##F##_##G##_##H
 
 /* Classifies the prototype of a built-in function.  */
 enum riscv_function_type {
@@ -66,7 +76,8 @@ enum riscv_builtins
   RISCV_BUILTIN_CSRR,
   RISCV_BUILTIN_CSRW,
   RISCV_BUILTIN_GET_SP,
-  RISCV_BUILTIN_SET_SP
+  RISCV_BUILTIN_SET_SP,
+  RISCV_BUILTIN_ECALL
 };
 
 /* Declare an availability predicate for built-in functions.  */
@@ -136,6 +147,7 @@ AVAIL (normal, 1)
 #define RISCV_ATYPE_VOID void_type_node
 #define RISCV_ATYPE_USI unsigned_intSI_type_node
 #define RISCV_ATYPE_ULONG long_unsigned_type_node
+#define RISCV_ATYPE_LONG long_integer_type_node
 
 /* RISCV_FTYPE_ATYPESN takes N RISCV_FTYPES-like type codes and lists
    their associated RISCV_ATYPEs.  */
@@ -145,6 +157,20 @@ AVAIL (normal, 1)
   RISCV_ATYPE_##A, RISCV_ATYPE_##B
 #define RISCV_FTYPE_ATYPES2(A, B, C) \
   RISCV_ATYPE_##A, RISCV_ATYPE_##B, RISCV_ATYPE_##C
+#define RISCV_FTYPE_ATYPES3(A, B, C, D) \
+  RISCV_ATYPE_##A, RISCV_ATYPE_##B, RISCV_ATYPE_##C, RISCV_ATYPE_##D
+#define RISCV_FTYPE_ATYPES4(A, B, C, D, E) \
+  RISCV_ATYPE_##A, RISCV_ATYPE_##B, RISCV_ATYPE_##C, RISCV_ATYPE_##D, \
+  RISCV_ATYPE_##E
+#define RISCV_FTYPE_ATYPES5(A, B, C, D, E, F) \
+  RISCV_ATYPE_##A, RISCV_ATYPE_##B, RISCV_ATYPE_##C, RISCV_ATYPE_##D, \
+  RISCV_ATYPE_##E, RISCV_ATYPE_##F
+#define RISCV_FTYPE_ATYPES6(A, B, C, D, E, F, G) \
+  RISCV_ATYPE_##A, RISCV_ATYPE_##B, RISCV_ATYPE_##C, RISCV_ATYPE_##D, \
+  RISCV_ATYPE_##E, RISCV_ATYPE_##F, RISCV_ATYPE_##G
+#define RISCV_FTYPE_ATYPES7(A, B, C, D, E, F, G, H) \
+  RISCV_ATYPE_##A, RISCV_ATYPE_##B, RISCV_ATYPE_##C, RISCV_ATYPE_##D, \
+  RISCV_ATYPE_##E, RISCV_ATYPE_##F, RISCV_ATYPE_##G, RISCV_ATYPE_##H
 
 static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_BUILTIN (frflags, RISCV_USI_FTYPE, FRFLAGS, hard_float),
@@ -153,7 +179,18 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_NO_TARGET_BUILTIN (csrw, RISCV_VOID_FTYPE_ULONG_USI, CSRW, normal),
   DIRECT_BUILTIN (get_current_sp, RISCV_ULONG_FTYPE_VOID, GET_SP, normal),
   DIRECT_NO_TARGET_BUILTIN (set_current_sp, RISCV_VOID_FTYPE_ULONG,
-			    SET_SP, normal)
+			    SET_SP, normal),
+  DIRECT_BUILTIN (ecall, RISCV_LONG_FTYPE_LONG, ECALL, normal),
+  DIRECT_BUILTIN (ecall1, RISCV_LONG_FTYPE_LONG_LONG, ECALL, normal),
+  DIRECT_BUILTIN (ecall2, RISCV_LONG_FTYPE_LONG_LONG_LONG, ECALL, normal),
+  DIRECT_BUILTIN (ecall3, RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG,
+		  ECALL, normal),
+  DIRECT_BUILTIN (ecall4, RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG,
+		  ECALL, normal),
+  DIRECT_BUILTIN (ecall5, RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG_LONG,
+		  ECALL, normal),
+  DIRECT_BUILTIN (ecall6, RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG_LONG_LONG,
+		  ECALL, normal)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
@@ -275,6 +312,45 @@ riscv_expand_builtin_direct (enum insn_code icode, rtx target, tree exp,
   return riscv_expand_builtin_insn (icode, opno, ops, has_target_p);
 }
 
+/* Expand a RISCV_BUILTIN_ECALL function, the ecall return value
+   store in A0 register, the first pass argument save in A7/T0 register,
+   and other pass argument store in A0 to A6 register.  */
+static rtx
+riscv_expand_builtin_ecall (enum insn_code icode, rtx target, tree exp)
+{
+  struct expand_operand ops[MAX_RECOG_OPERANDS];
+  rtx reg_arg0 = TARGET_RVE ? gen_rtx_REG (Pmode, T0_REGNUM)
+			     : gen_rtx_REG (Pmode, A7_REGNUM);
+  rtx retval = gen_rtx_REG (Pmode, A0_REGNUM);
+  /* Map any target to operand 0.  */
+  int opno = 0;
+
+  create_output_operand (&ops[opno++], target, TYPE_MODE (TREE_TYPE (exp)));
+  /* Store return value in A0 register.  */
+  emit_move_insn (retval, target);
+
+  /* Map the arguments to the other operands.  */
+  gcc_assert (opno + call_expr_nargs (exp)
+	      == insn_data[icode].n_generator_args);
+
+  /* Process first argument save in T0/A7 register.  */
+  emit_move_insn (reg_arg0, expand_normal (CALL_EXPR_ARG (exp, 0)));
+  create_input_operand (&ops[opno++], reg_arg0,
+			TYPE_MODE (TREE_TYPE (CALL_EXPR_ARG (exp, 0))));
+
+  /* Process other arguments.  */
+  for (int argno = 1; argno < call_expr_nargs (exp); argno++)
+    {
+      rtx reg_argno = gen_rtx_REG (Pmode, S1_REGNUM + argno);
+      tree arg = CALL_EXPR_ARG (exp, argno);
+      emit_move_insn (reg_argno, expand_normal (arg));
+      create_input_operand (&ops[opno++], reg_argno,
+			    TYPE_MODE (TREE_TYPE (arg)));
+    }
+
+  return riscv_expand_builtin_insn (icode, opno, ops, true);
+}
+
 /* Implement TARGET_EXPAND_BUILTIN.  */
 
 rtx
@@ -287,7 +363,7 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
   const struct riscv_builtin_description *d = &riscv_builtins[fcode];
   enum insn_code icode = d->icode;
 
-  switch (fcode)
+  switch (d->fcode)
     {
     case RISCV_BUILTIN_GET_SP:
       {
@@ -313,6 +389,8 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
           icode = CODE_FOR_riscv_csrwdi;
 	return riscv_expand_builtin_direct (icode, target, exp, false);
       }
+    case RISCV_BUILTIN_ECALL:
+      return riscv_expand_builtin_ecall (d->icode, target, exp);
     }
 
   switch (d->builtin_type)

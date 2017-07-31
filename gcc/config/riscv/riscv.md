@@ -49,6 +49,7 @@
   ;; builtin
   UNSPECV_CSRR
   UNSPECV_CSRW
+  UNSPECV_SCALL
 ])
 
 (define_c_enum "unspecv" [
@@ -80,6 +81,14 @@
    (T1_REGNUM			6)
    (S0_REGNUM			8)
    (S1_REGNUM			9)
+   (A0_REGNUM			10)
+   (A1_REGNUM			11)
+   (A2_REGNUM			12)
+   (A3_REGNUM			13)
+   (A4_REGNUM			14)
+   (A5_REGNUM			15)
+   (A6_REGNUM			16)
+   (A7_REGNUM			17)
    (S2_REGNUM			18)
    (S3_REGNUM			19)
    (S4_REGNUM			20)

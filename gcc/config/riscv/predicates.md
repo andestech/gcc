@@ -212,3 +212,13 @@
 {
   return riscv_gpr_save_operation_p (op);
 })
+
+(define_predicate "ecall_register_operand"
+  (match_code "reg,subreg")
+{
+  if (GET_CODE (op) == SUBREG)
+    op = SUBREG_REG (op);
+
+  return (REG_P (op)
+	  && REGNO (op) == T0_REGNUM);
+})
