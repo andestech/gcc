@@ -94,6 +94,8 @@ struct riscv_builtin_description {
      for more information.  */
   enum insn_code icode;
 
+  enum insn_code icode64;
+
   /* The name of the built-in function.  */
   const char *name;
 
@@ -126,7 +128,7 @@ AVAIL (normal, 1)
    AVAIL is the name of the availability predicate, without the leading
    riscv_builtin_avail_.  */
 #define RISCV_BUILTIN(INSN, NAME, BUILTIN_TYPE,	FUNCTION_TYPE, FCODE, AVAIL) \
-  { CODE_FOR_riscv_ ## INSN, "__builtin_riscv_" NAME,			\
+  { CODE_FOR_riscv_ ##INSN##si, CODE_FOR_riscv_ ##INSN##di,  "__builtin_riscv_" NAME,	\
     BUILTIN_TYPE, FUNCTION_TYPE, RISCV_BUILTIN_ ## FCODE,		\
     riscv_builtin_avail_ ## AVAIL }
 
@@ -413,8 +415,8 @@ riscv_atomic_assign_expand_fenv (tree *hold, tree *clear, tree *update)
   if (!TARGET_HARD_FLOAT)
     return;
 
-  tree frflags = GET_BUILTIN_DECL (CODE_FOR_riscv_frflags);
-  tree fsflags = GET_BUILTIN_DECL (CODE_FOR_riscv_fsflags);
+  tree frflags = GET_BUILTIN_DECL (CODE_FOR_riscv_frflagssi);
+  tree fsflags = GET_BUILTIN_DECL (CODE_FOR_riscv_fsflagssi);
   tree old_flags = create_tmp_var_raw (RISCV_ATYPE_USI);
 
   *hold = build4 (TARGET_EXPR, RISCV_ATYPE_USI, old_flags,
