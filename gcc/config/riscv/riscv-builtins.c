@@ -332,7 +332,7 @@ riscv_expand_builtin_direct (enum insn_code icode, rtx target, tree exp,
    store in A0 register, the first pass argument save in A7/T0 register,
    and other pass argument store in A0 to A6 register.  */
 static rtx
-riscv_expand_builtin_ecall (enum insn_code icode, rtx target, tree exp)
+riscv_expand_builtin_ecall (enum insn_code icode, tree exp)
 {
   struct expand_operand ops[MAX_RECOG_OPERANDS];
   rtx reg_arg0 = TARGET_RVE ? gen_rtx_REG (Pmode, T0_REGNUM)
@@ -341,9 +341,8 @@ riscv_expand_builtin_ecall (enum insn_code icode, rtx target, tree exp)
   /* Map any target to operand 0.  */
   int opno = 0;
 
-  create_output_operand (&ops[opno++], target, TYPE_MODE (TREE_TYPE (exp)));
   /* Store return value in A0 register.  */
-  emit_move_insn (retval, target);
+  create_output_operand (&ops[opno++], retval, TYPE_MODE (TREE_TYPE (exp)));
 
   /* Map the arguments to the other operands.  */
   gcc_assert (opno + call_expr_nargs (exp)
@@ -364,7 +363,10 @@ riscv_expand_builtin_ecall (enum insn_code icode, rtx target, tree exp)
 			    TYPE_MODE (TREE_TYPE (arg)));
     }
 
-  return riscv_expand_builtin_insn (icode, opno, ops, true);
+  if (!maybe_expand_insn (icode, opno, ops))
+    error ("invalid argument to built-in function");
+
+  return retval;
 }
 
 /* Implement TARGET_EXPAND_BUILTIN.  */
@@ -382,7 +384,7 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
   switch (d->fcode)
     {
     case RISCV_BUILTIN_ECALL:
-      return riscv_expand_builtin_ecall (icode, target, exp);
+      return riscv_expand_builtin_ecall (icode, exp);
     }
 
   switch (d->builtin_type)
