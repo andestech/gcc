@@ -19,14 +19,14 @@
 ;; along with GCC; see the file COPYING3.  If not see
 ;; <http://www.gnu.org/licenses/>.
 
-(define_insn "riscv_frflags<GPR:mode>"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
+(define_insn "riscv_frflags"
+  [(set (match_operand:SI 0 "register_operand" "=r")
 	(unspec_volatile [(const_int 0)] UNSPECV_FRFLAGS))]
   "TARGET_HARD_FLOAT"
   "frflags %0")
 
-(define_insn "riscv_fsflags<GPR:mode>"
-  [(unspec_volatile [(match_operand:GPR 0 "csr_operand" "rK")] UNSPECV_FSFLAGS)]
+(define_insn "riscv_fsflags"
+  [(unspec_volatile [(match_operand:SI 0 "csr_operand" "rK")] UNSPECV_FSFLAGS)]
   "TARGET_HARD_FLOAT"
   "fsflags %0")
 
@@ -164,3 +164,22 @@
   ""
   "fence.i")
 
+(define_insn "riscv_frcsr"
+   [(set (match_operand:SI 0 "register_operand" "=r")
+	 (unspec_volatile:SI [(const_int 0)] UNSPECV_FRCSR))]
+  "TARGET_HARD_FLOAT"
+  "frcsr\t%0"
+)
+
+(define_insn "riscv_fscsr<GPR:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (unspec_volatile:GPR [(match_operand:GPR 1 "register_operand" "r")] UNSPECV_FSCSR))]
+  "TARGET_HARD_FLOAT"
+  "fscsr\t%0, %1"
+)
+
+(define_insn "riscv_fwcsr<GPR:mode>"
+  [(unspec_volatile:GPR [(match_operand:GPR 0 "register_operand" "r")] UNSPECV_FWCSR)]
+  "TARGET_HARD_FLOAT"
+  "fscsr\tx0, %0"
+)

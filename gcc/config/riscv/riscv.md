@@ -50,6 +50,9 @@
   UNSPECV_CSRR
   UNSPECV_CSRW
   UNSPECV_SCALL
+  UNSPECV_FRCSR
+  UNSPECV_FSCSR
+  UNSPECV_FWCSR
 ])
 
 (define_c_enum "unspecv" [

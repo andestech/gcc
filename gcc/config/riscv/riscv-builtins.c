@@ -79,7 +79,10 @@ enum riscv_builtins
   RISCV_BUILTIN_SET_SP,
   RISCV_BUILTIN_ECALL,
   RISCV_BUILTIN_FENCE,
-  RISCV_BUILTIN_FENCEI
+  RISCV_BUILTIN_FENCEI,
+  RISCV_BUILTIN_FRCSR,
+  RISCV_BUILTIN_FSCSR,
+  RISCV_BUILTIN_FWCSR
 };
 
 /* Declare an availability predicate for built-in functions.  */
@@ -181,9 +184,9 @@ AVAIL (normal, 1)
   RISCV_ATYPE_##E, RISCV_ATYPE_##F, RISCV_ATYPE_##G, RISCV_ATYPE_##H
 
 static const struct riscv_builtin_description riscv_builtins[] = {
-  DIRECT_BUILTIN (frflagssi, frflagsdi, frflags,
+  DIRECT_BUILTIN (frflags, frflags, frflags,
 		  RISCV_USI_FTYPE, FRFLAGS, hard_float),
-  DIRECT_NO_TARGET_BUILTIN (fsflagssi, fsflagsdi, fsflags,
+  DIRECT_NO_TARGET_BUILTIN (fsflags, fsflags, fsflags,
 			    RISCV_VOID_FTYPE_USI, FSFLAGS, hard_float),
   DIRECT_BUILTIN (csrrsi, csrrdi, csrr,
 		  RISCV_ULONG_FTYPE_USI, CSRR, normal),
@@ -212,7 +215,13 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_NO_TARGET_BUILTIN (fence, fence, fence,
 			    RISCV_VOID_FTYPE_USI_USI, FENCE, normal),
   DIRECT_NO_TARGET_BUILTIN (fencei, fencei, fencei,
-			    RISCV_VOID_FTYPE_VOID, FENCEI, normal)
+			    RISCV_VOID_FTYPE_VOID, FENCEI, normal),
+  DIRECT_BUILTIN (frcsr, frcsr, frcsr,
+		  RISCV_USI_FTYPE, FRCSR, hard_float),
+  DIRECT_BUILTIN (fscsrsi, fscsrdi, fscsr,
+		  RISCV_ULONG_FTYPE_ULONG, FSCSR, hard_float),
+  DIRECT_NO_TARGET_BUILTIN (fwcsrsi, fwcsrdi, fwcsr,
+			    RISCV_VOID_FTYPE_ULONG, FWCSR, hard_float)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
@@ -399,10 +408,10 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
   switch (d->builtin_type)
     {
     case RISCV_BUILTIN_DIRECT:
-      return riscv_expand_builtin_direct (d->icode, target, exp, true);
+      return riscv_expand_builtin_direct (icode, target, exp, true);
 
     case RISCV_BUILTIN_DIRECT_NO_TARGET:
-      return riscv_expand_builtin_direct (d->icode, target, exp, false);
+      return riscv_expand_builtin_direct (icode, target, exp, false);
     }
 
   gcc_unreachable ();
@@ -416,8 +425,8 @@ riscv_atomic_assign_expand_fenv (tree *hold, tree *clear, tree *update)
   if (!TARGET_HARD_FLOAT)
     return;
 
-  tree frflags = GET_BUILTIN_DECL (CODE_FOR_riscv_frflagssi);
-  tree fsflags = GET_BUILTIN_DECL (CODE_FOR_riscv_fsflagssi);
+  tree frflags = GET_BUILTIN_DECL (CODE_FOR_riscv_frflags);
+  tree fsflags = GET_BUILTIN_DECL (CODE_FOR_riscv_fsflags);
   tree old_flags = create_tmp_var_raw (RISCV_ATYPE_USI);
 
   *hold = build4 (TARGET_EXPR, RISCV_ATYPE_USI, old_flags,

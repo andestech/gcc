@@ -243,11 +243,16 @@ enum riscv_fence
   (__builtin_riscv_ecall5 ((sysid), (a), (b), (c), (d), (e)))
 #define __nds__ecall6(sysid, a, b, c, d, e, f) \
   (__builtin_riscv_ecall6 ((sysid), (a), (b), (c), (d), (e), (f)))
-
 #define __nds__fence(a, b) \
   (__builtin_riscv_fence ((a), (b)))
 #define __nds__fencei() \
   (__builtin_riscv_fencei ())
+#define __nds__frcsr() \
+  (__builtin_riscv_frcsr ())
+#define __nds__fscsr(a) \
+  (__builtin_riscv_fscsr ((a)))
+#define __nds__fwcsr(a) \
+  (__builtin_riscv_fwcsr ((a)))
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
