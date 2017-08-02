@@ -522,6 +522,25 @@ static const char * const riscv_csr_register_names[] =
   "mmsc_cfg",
 };
 
+static const char * const riscv_fence_operations [] =
+{
+  "w",
+  "r",
+  "rw",
+  "o",
+  "ow",
+  "or",
+  "orw",
+  "i",
+  "iw",
+  "ir",
+  "irw",
+  "io",
+  "iow",
+  "ior",
+  "iorw"
+};
+
 static tree riscv_handle_fndecl_attribute (tree *, tree, tree, int, bool *);
 static tree riscv_handle_type_attribute (tree *, tree, tree, int, bool *);
 
@@ -3576,6 +3595,21 @@ riscv_print_operand (FILE *file, rtx op, int letter)
       if (riscv_memmodel_needs_amo_acquire ((enum memmodel) INTVAL (op)))
 	fputs (".aq", file);
       break;
+
+    case 'E':
+      {
+	gcc_assert (CONST_INT_P (op));
+
+	HOST_WIDE_INT op_value = INTVAL (op);
+
+       /* Print fence operations with enum data,
+	  there are 15 types for fence.  */
+	if (op_value >= 1 && op_value <= 15)
+	  fprintf (file, "%s", riscv_fence_operations [op_value - 1]);
+	else
+	  error ("intrinsic __nds__fence () argument is out of range");
+	break;
+      }
 
     case 'F':
       if (riscv_memmodel_needs_release_fence ((enum memmodel) INTVAL (op)))

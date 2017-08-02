@@ -152,3 +152,15 @@
   ""
   "ecall"
 )
+
+(define_insn "riscv_fence"
+  [(unspec_volatile [(match_operand:SI 0 "immediate_operand" "i")
+		     (match_operand:SI 1 "immediate_operand" "i")] UNSPECV_FENCE)]
+  ""
+  "fence\t%E0, %E1")
+
+(define_insn "riscv_fencei"
+  [(unspec_volatile [(const_int 0)] UNSPECV_FENCE_I)]
+  ""
+  "fence.i")
+

@@ -77,7 +77,9 @@ enum riscv_builtins
   RISCV_BUILTIN_CSRW,
   RISCV_BUILTIN_GET_SP,
   RISCV_BUILTIN_SET_SP,
-  RISCV_BUILTIN_ECALL
+  RISCV_BUILTIN_ECALL,
+  RISCV_BUILTIN_FENCE,
+  RISCV_BUILTIN_FENCEI
 };
 
 /* Declare an availability predicate for built-in functions.  */
@@ -206,7 +208,11 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		  ECALL, normal),
   DIRECT_BUILTIN (ecall6si, ecall6di, ecall6,
 		  RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG_LONG_LONG,
-		  ECALL, normal)
+		  ECALL, normal),
+  DIRECT_NO_TARGET_BUILTIN (fence, fence, fence,
+			    RISCV_VOID_FTYPE_USI_USI, FENCE, normal),
+  DIRECT_NO_TARGET_BUILTIN (fencei, fencei, fencei,
+			    RISCV_VOID_FTYPE_VOID, FENCEI, normal)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
@@ -385,6 +391,9 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
     {
     case RISCV_BUILTIN_ECALL:
       return riscv_expand_builtin_ecall (icode, exp);
+    case RISCV_BUILTIN_FENCEI:
+      emit_insn (gen_riscv_fencei ());
+      return target;
     }
 
   switch (d->builtin_type)

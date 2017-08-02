@@ -199,6 +199,25 @@ enum riscv_csrs
   NDS_MMSC_CFG
 };
 
+enum riscv_fence
+{
+  FENCE_W = 1,
+  FENCE_R,
+  FENCE_RW,
+  FENCE_O,
+  FENCE_OW,
+  FENCE_OR,
+  FENCE_ORW,
+  FENCE_I,
+  FENCE_IW,
+  FENCE_IR,
+  FENCE_IRW,
+  FENCE_IO,
+  FENCE_IOW,
+  FENCE_IOR,
+  FENCE_IORW
+};
+
 #define __nds__msync_all() asm volatile ("fence" : : : "memory")
 
 #define __nds__cctl_l1d_wball_one_lvl()
@@ -224,6 +243,11 @@ enum riscv_csrs
   (__builtin_riscv_ecall5 ((sysid), (a), (b), (c), (d), (e)))
 #define __nds__ecall6(sysid, a, b, c, d, e, f) \
   (__builtin_riscv_ecall6 ((sysid), (a), (b), (c), (d), (e), (f)))
+
+#define __nds__fence(a, b) \
+  (__builtin_riscv_fence ((a), (b)))
+#define __nds__fencei() \
+  (__builtin_riscv_fencei ())
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
