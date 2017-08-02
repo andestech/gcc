@@ -94,6 +94,7 @@ struct riscv_builtin_description {
      for more information.  */
   enum insn_code icode;
 
+  /* The code for RV64 instruction.  */
   enum insn_code icode64;
 
   /* The name of the built-in function.  */
@@ -127,23 +128,26 @@ AVAIL (normal, 1)
 
    AVAIL is the name of the availability predicate, without the leading
    riscv_builtin_avail_.  */
-#define RISCV_BUILTIN(INSN, NAME, BUILTIN_TYPE,	FUNCTION_TYPE, FCODE, AVAIL) \
-  { CODE_FOR_riscv_ ##INSN##si, CODE_FOR_riscv_ ##INSN##di,  "__builtin_riscv_" NAME,	\
-    BUILTIN_TYPE, FUNCTION_TYPE, RISCV_BUILTIN_ ## FCODE,		\
-    riscv_builtin_avail_ ## AVAIL }
+#define RISCV_BUILTIN(ICODE, ICODE64, NAME,				\
+		      BUILTIN_TYPE, FUNCTION_TYPE, FCODE, AVAIL)	\
+  { CODE_FOR_riscv_ ##ICODE, CODE_FOR_riscv_ ##ICODE64,			\
+    "__builtin_riscv_" NAME, BUILTIN_TYPE, FUNCTION_TYPE,		\
+    RISCV_BUILTIN_ ## FCODE, riscv_builtin_avail_ ## AVAIL }
 
 /* Define __builtin_riscv_<INSN>, which is a RISCV_BUILTIN_DIRECT function
-   mapped to instruction CODE_FOR_riscv_<INSN>,  FUNCTION_TYPE and AVAIL
-   are as for RISCV_BUILTIN.  */
-#define DIRECT_BUILTIN(INSN, FUNCTION_TYPE, FCODE, AVAIL)		\
-  RISCV_BUILTIN (INSN, #INSN, RISCV_BUILTIN_DIRECT, FUNCTION_TYPE, FCODE, AVAIL)
+   mapped to instruction CODE_FOR_riscv_<ICODE/ICODE64>, FUNCTION_TYPE
+   and AVAIL are as for RISCV_BUILTIN.  */
+#define DIRECT_BUILTIN(ICODE, ICODE64, INSN, FUNCTION_TYPE, FCODE, AVAIL) \
+  RISCV_BUILTIN (ICODE, ICODE64, #INSN, RISCV_BUILTIN_DIRECT,		  \
+		 FUNCTION_TYPE, FCODE, AVAIL)
 
 /* Define __builtin_riscv_<INSN>, which is a RISCV_BUILTIN_DIRECT_NO_TARGET
-   function mapped to instruction CODE_FOR_riscv_<INSN>,  FUNCTION_TYPE
-   and AVAIL are as for RISCV_BUILTIN.  */
-#define DIRECT_NO_TARGET_BUILTIN(INSN, FUNCTION_TYPE, FCODE, AVAIL)	\
-  RISCV_BUILTIN (INSN, #INSN, RISCV_BUILTIN_DIRECT_NO_TARGET,		\
-		FUNCTION_TYPE, FCODE, AVAIL)
+   function mapped to instruction CODE_FOR_riscv_<ICODE/ICODE64>,
+   FUNCTION_TYPE and AVAIL are as for RISCV_BUILTIN.  */
+#define DIRECT_NO_TARGET_BUILTIN(ICODE, ICODE64, INSN,		\
+				 FUNCTION_TYPE, FCODE, AVAIL)	\
+  RISCV_BUILTIN (ICODE, ICODE64, #INSN, RISCV_BUILTIN_DIRECT_NO_TARGET,	\
+		 FUNCTION_TYPE, FCODE, AVAIL)
 
 /* Argument types.  */
 #define RISCV_ATYPE_VOID void_type_node
@@ -175,23 +179,33 @@ AVAIL (normal, 1)
   RISCV_ATYPE_##E, RISCV_ATYPE_##F, RISCV_ATYPE_##G, RISCV_ATYPE_##H
 
 static const struct riscv_builtin_description riscv_builtins[] = {
-  DIRECT_BUILTIN (frflags, RISCV_USI_FTYPE, FRFLAGS, hard_float),
-  DIRECT_NO_TARGET_BUILTIN (fsflags, RISCV_VOID_FTYPE_USI, FSFLAGS, hard_float),
-  DIRECT_BUILTIN (csrr, RISCV_ULONG_FTYPE_USI, CSRR, normal),
-  DIRECT_NO_TARGET_BUILTIN (csrw, RISCV_VOID_FTYPE_ULONG_USI, CSRW, normal),
-  DIRECT_BUILTIN (get_current_sp, RISCV_ULONG_FTYPE_VOID, GET_SP, normal),
-  DIRECT_NO_TARGET_BUILTIN (set_current_sp, RISCV_VOID_FTYPE_ULONG,
-			    SET_SP, normal),
-  DIRECT_BUILTIN (ecall, RISCV_LONG_FTYPE_LONG, ECALL, normal),
-  DIRECT_BUILTIN (ecall1, RISCV_LONG_FTYPE_LONG_LONG, ECALL, normal),
-  DIRECT_BUILTIN (ecall2, RISCV_LONG_FTYPE_LONG_LONG_LONG, ECALL, normal),
-  DIRECT_BUILTIN (ecall3, RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG,
+  DIRECT_BUILTIN (frflagssi, frflagsdi, frflags,
+		  RISCV_USI_FTYPE, FRFLAGS, hard_float),
+  DIRECT_NO_TARGET_BUILTIN (fsflagssi, fsflagsdi, fsflags,
+			    RISCV_VOID_FTYPE_USI, FSFLAGS, hard_float),
+  DIRECT_BUILTIN (csrrsi, csrrdi, csrr,
+		  RISCV_ULONG_FTYPE_USI, CSRR, normal),
+  DIRECT_NO_TARGET_BUILTIN (csrwsi, csrwdi, csrw,
+			    RISCV_VOID_FTYPE_ULONG_USI, CSRW, normal),
+  DIRECT_BUILTIN (get_current_spsi, get_current_spdi, get_current_sp,
+		  RISCV_ULONG_FTYPE_VOID, GET_SP, normal),
+  DIRECT_NO_TARGET_BUILTIN (set_current_spsi, set_current_spdi, set_current_sp,
+			    RISCV_VOID_FTYPE_ULONG, SET_SP, normal),
+  DIRECT_BUILTIN (ecallsi, ecalldi, ecall,
+		  RISCV_LONG_FTYPE_LONG, ECALL, normal),
+  DIRECT_BUILTIN (ecall1si, ecall1di, ecall1,
+		  RISCV_LONG_FTYPE_LONG_LONG, ECALL, normal),
+  DIRECT_BUILTIN (ecall2si, ecall2di, ecall2,
+		  RISCV_LONG_FTYPE_LONG_LONG_LONG, ECALL, normal),
+  DIRECT_BUILTIN (ecall3si, ecall3di, ecall3,
+		  RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG, ECALL, normal),
+  DIRECT_BUILTIN (ecall4si, ecall4di, ecall4,
+		  RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG, ECALL, normal),
+  DIRECT_BUILTIN (ecall5si, ecall5di, ecall5,
+		  RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG_LONG,
 		  ECALL, normal),
-  DIRECT_BUILTIN (ecall4, RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG,
-		  ECALL, normal),
-  DIRECT_BUILTIN (ecall5, RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG_LONG,
-		  ECALL, normal),
-  DIRECT_BUILTIN (ecall6, RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG_LONG_LONG,
+  DIRECT_BUILTIN (ecall6si, ecall6di, ecall6,
+		  RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG_LONG_LONG,
 		  ECALL, normal)
 };
 
@@ -363,36 +377,12 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
   tree fndecl = TREE_OPERAND (CALL_EXPR_FN (exp), 0);
   unsigned int fcode = DECL_MD_FUNCTION_CODE (fndecl);
   const struct riscv_builtin_description *d = &riscv_builtins[fcode];
-  enum insn_code icode = d->icode;
+  enum insn_code icode = TARGET_64BIT ? d->icode64 : d->icode;
 
   switch (d->fcode)
     {
-    case RISCV_BUILTIN_GET_SP:
-      {
-	if (TARGET_64BIT)
-          icode = CODE_FOR_riscv_get_current_spdi;
-	return riscv_expand_builtin_direct (icode, target, exp, true);
-      }
-    case RISCV_BUILTIN_SET_SP:
-      {
-	if (TARGET_64BIT)
-          icode = CODE_FOR_riscv_set_current_spdi;
-	return riscv_expand_builtin_direct (icode, target, exp, false);
-      }
-    case RISCV_BUILTIN_CSRR:
-      {
-	if (TARGET_64BIT)
-          icode = CODE_FOR_riscv_csrrdi;
-	return riscv_expand_builtin_direct (icode, target, exp, true);
-      }
-    case RISCV_BUILTIN_CSRW:
-      {
-	if (TARGET_64BIT)
-          icode = CODE_FOR_riscv_csrwdi;
-	return riscv_expand_builtin_direct (icode, target, exp, false);
-      }
     case RISCV_BUILTIN_ECALL:
-      return riscv_expand_builtin_ecall (d->icode, target, exp);
+      return riscv_expand_builtin_ecall (icode, target, exp);
     }
 
   switch (d->builtin_type)
