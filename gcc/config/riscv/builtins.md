@@ -64,7 +64,7 @@
    (use (reg:GPR A0_REGNUM))]
 
   ""
-  "ecall %0, %1"
+  "ecall"
 )
 
 (define_insn "riscv_ecall1<GPR:mode>"
@@ -72,7 +72,7 @@
         (unspec_volatile:GPR [(match_operand:GPR 1 "ecall_register_operand" "e")
 			     (match_operand:GPR 2 "register_operand" "r")] UNSPECV_SCALL))]
   ""
-  "ecall %0, %1, %2"
+  "ecall"
 )
 
 (define_insn "riscv_ecall2<GPR:mode>"
@@ -83,7 +83,7 @@
    (use (reg:GPR A0_REGNUM))
    (use (reg:GPR A1_REGNUM))]
   ""
-  "ecall %0, %1, %2, %3"
+  "ecall"
 )
 
 (define_insn "riscv_ecall3<GPR:mode>"
@@ -97,7 +97,7 @@
    (use (reg:GPR A2_REGNUM))]
 
   ""
-  "ecall %0, %1, %2, %3, %4"
+  "ecall"
 )
 
 (define_insn "riscv_ecall4<GPR:mode>"
@@ -113,7 +113,7 @@
    (use (reg:GPR A3_REGNUM))]
 
   ""
-  "ecall %0, %1, %2, %3, %4, %5"
+  "ecall"
 )
 
 (define_insn "riscv_ecall5<GPR:mode>"
@@ -131,7 +131,7 @@
    (use (reg:GPR A4_REGNUM))]
 
   ""
-  "ecall %0, %1, %2, %3, %4, %5, %6"
+  "ecall"
 )
 
 (define_insn "riscv_ecall6<GPR:mode>"
@@ -150,5 +150,5 @@
    (use (reg:GPR A4_REGNUM))
    (use (reg:GPR A5_REGNUM))]
   ""
-  "ecall %0, %1, %2, %3, %4, %5, %6, %7"
+  "ecall"
 )
