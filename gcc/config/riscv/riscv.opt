@@ -234,3 +234,7 @@ Enable constructor/destructor feature.
 mno-16-bit
 Target Report RejectNegative
 Do not genearte C extension instructions.
+
+mex9
+Target Report Mask(EX9)
+Use special directives to guide linker doing ex9 optimization.

@@ -2514,6 +2514,11 @@ riscv*-*-elf* | riscv*-*-rtems*)
 		  ;;
 	  esac
 
+	  # Handle --enable-Os-default-ex9 setting.
+	  if test x${enable_Os_default_ex9} = xyes; then
+		  tm_defines="${tm_defines} TARGET_OS_DEFAULT_EX9=1"
+	  fi
+
 	esac
 	tmake_file="${tmake_file} riscv/t-riscv"
 	gnu_ld=yes

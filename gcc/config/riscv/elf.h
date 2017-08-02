@@ -17,10 +17,17 @@ You should have received a copy of the GNU General Public License
 along with GCC; see the file COPYING3.  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#ifdef TARGET_OS_DEFAULT_EX9
+#define NDS32_EX9_SPEC " %{Os3|Os|mex9:%{!mno-ex9:--mex9}}"
+#else
+#define NDS32_EX9_SPEC " %{mex9:--mex9}"
+#endif
+
 #define LINK_SPEC "\
 -melf" XLEN_SPEC "lriscv \
 %{mno-relax:--no-relax} \
-%{shared}"
+%{shared}" \
+NDS32_EX9_SPEC
 
 /* Link against Newlib libraries, because the ELF backend assumes Newlib.
    Handle the circular dependence between libc and libgloss. */
