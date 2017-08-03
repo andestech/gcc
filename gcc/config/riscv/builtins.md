@@ -183,3 +183,27 @@
   "TARGET_HARD_FLOAT"
   "fscsr\tx0, %0"
 )
+
+(define_insn "riscv_frrm<GPR:mode>"
+   [(set (match_operand:GPR 0 "register_operand" "=r")
+	 (unspec_volatile:GPR [(const_int 0)] UNSPECV_FRRM))]
+  "TARGET_HARD_FLOAT"
+  "frrm\t%0"
+)
+
+(define_insn "riscv_fsrm<GPR:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r, r")
+        (unspec_volatile:GPR [(match_operand:GPR 1 "frm_operand" "r, u03")] UNSPECV_FSRM))]
+  "TARGET_HARD_FLOAT"
+  "@
+   fsrm\t%0, %1
+   fsrmi\t%0, %1"
+)
+
+(define_insn "riscv_fwrm<GPR:mode>"
+  [(unspec_volatile:GPR [(match_operand:GPR 0 "frm_operand" "r, u03")] UNSPECV_FWRM)]
+  "TARGET_HARD_FLOAT"
+  "@
+   fsrm\tx0, %0
+   fsrmi\tx0, %0"
+)

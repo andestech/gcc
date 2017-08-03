@@ -82,7 +82,10 @@ enum riscv_builtins
   RISCV_BUILTIN_FENCEI,
   RISCV_BUILTIN_FRCSR,
   RISCV_BUILTIN_FSCSR,
-  RISCV_BUILTIN_FWCSR
+  RISCV_BUILTIN_FWCSR,
+  RISCV_BUILTIN_FRRM,
+  RISCV_BUILTIN_FSRM,
+  RISCV_BUILTIN_FWRM
 };
 
 /* Declare an availability predicate for built-in functions.  */
@@ -221,7 +224,13 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_BUILTIN (fscsrsi, fscsrdi, fscsr,
 		  RISCV_ULONG_FTYPE_ULONG, FSCSR, hard_float),
   DIRECT_NO_TARGET_BUILTIN (fwcsrsi, fwcsrdi, fwcsr,
-			    RISCV_VOID_FTYPE_ULONG, FWCSR, hard_float)
+			    RISCV_VOID_FTYPE_ULONG, FWCSR, hard_float),
+  DIRECT_BUILTIN (frrmsi, frrmdi, frrm,
+		  RISCV_ULONG_FTYPE_VOID, FRRM, hard_float),
+  DIRECT_BUILTIN (fsrmsi, fsrmdi, fsrm,
+		  RISCV_ULONG_FTYPE_ULONG, FSRM, hard_float),
+  DIRECT_NO_TARGET_BUILTIN (fwrmsi, fwrmdi, fwrm,
+			    RISCV_VOID_FTYPE_ULONG, FWRM, hard_float)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the

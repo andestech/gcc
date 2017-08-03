@@ -43,6 +43,14 @@
   (ior (match_operand 0 "const_csr_operand")
        (match_operand 0 "register_operand")))
 
+(define_predicate "const_frm_operand"
+  (and (match_code "const_int")
+       (match_test "IN_RANGE (INTVAL (op), 0, 7)")))
+
+(define_predicate "frm_operand"
+  (ior (match_operand 0 "const_frm_operand")
+       (match_operand 0 "register_operand")))
+
 (define_predicate "sle_operand"
   (and (match_code "const_int")
        (match_test "SMALL_OPERAND (INTVAL (op) + 1)")))

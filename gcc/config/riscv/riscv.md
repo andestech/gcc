@@ -53,6 +53,9 @@
   UNSPECV_FRCSR
   UNSPECV_FSCSR
   UNSPECV_FWCSR
+  UNSPECV_FRRM
+  UNSPECV_FSRM
+  UNSPECV_FWRM
 ])
 
 (define_c_enum "unspecv" [
