@@ -56,6 +56,7 @@
   UNSPECV_FRRM
   UNSPECV_FSRM
   UNSPECV_FWRM
+  UNSPECV_FWFLAGS
 ])
 
 (define_c_enum "unspecv" [

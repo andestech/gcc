@@ -259,6 +259,12 @@ enum riscv_fence
   (__builtin_riscv_fsrm ((a)))
 #define __nds__fwrm(a) \
   (__builtin_riscv_fwrm ((a)))
+#define __nds__frflags() \
+  (__builtin_riscv_frflags ())
+#define __nds__fsflags(a) \
+  (__builtin_riscv_fsflags ((a)))
+#define __nds__fwflags(a) \
+  (__builtin_riscv_fwflags ((a)))
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));

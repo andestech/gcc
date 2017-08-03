@@ -207,3 +207,27 @@
    fsrm\tx0, %0
    fsrmi\tx0, %0"
 )
+
+(define_insn "riscv_frflags<GPR:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+	(unspec_volatile:GPR [(const_int 0)] UNSPECV_FRFLAGS))]
+  "TARGET_HARD_FLOAT"
+  "frflags\t%0"
+)
+
+(define_insn "riscv_fsflags<GPR:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r, r")
+        (unspec_volatile:GPR [(match_operand:GPR 1 "csr_operand" "r, K")] UNSPECV_FSFLAGS))]
+  "TARGET_HARD_FLOAT"
+  "@
+   fsflags\t%0, %1
+   fsflagsi\t%0, %1"
+)
+
+(define_insn "riscv_fwflags<GPR:mode>"
+  [(unspec_volatile:GPR [(match_operand:GPR 0 "csr_operand" "r, K")] UNSPECV_FWFLAGS)]
+  "TARGET_HARD_FLOAT"
+  "@
+   fsflags\tx0, %0
+   fsflagsi\tx0, %0"
+)

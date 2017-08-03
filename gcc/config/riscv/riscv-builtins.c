@@ -71,8 +71,8 @@ enum riscv_builtin_type {
 
 enum riscv_builtins
 {
-  RISCV_BUILTIN_FRFLAGS,
-  RISCV_BUILTIN_FSFLAGS,
+  RISCV_BUILTIN_FRFLAGS_FENV,
+  RISCV_BUILTIN_FSFLAGS_FENV,
   RISCV_BUILTIN_CSRR,
   RISCV_BUILTIN_CSRW,
   RISCV_BUILTIN_GET_SP,
@@ -85,7 +85,10 @@ enum riscv_builtins
   RISCV_BUILTIN_FWCSR,
   RISCV_BUILTIN_FRRM,
   RISCV_BUILTIN_FSRM,
-  RISCV_BUILTIN_FWRM
+  RISCV_BUILTIN_FWRM,
+  RISCV_BUILTIN_FRFLAGS,
+  RISCV_BUILTIN_FSFLAGS,
+  RISCV_BUILTIN_FWFLAGS
 };
 
 /* Declare an availability predicate for built-in functions.  */
@@ -187,10 +190,10 @@ AVAIL (normal, 1)
   RISCV_ATYPE_##E, RISCV_ATYPE_##F, RISCV_ATYPE_##G, RISCV_ATYPE_##H
 
 static const struct riscv_builtin_description riscv_builtins[] = {
-  DIRECT_BUILTIN (frflags, frflags, frflags,
-		  RISCV_USI_FTYPE, FRFLAGS, hard_float),
-  DIRECT_NO_TARGET_BUILTIN (fsflags, fsflags, fsflags,
-			    RISCV_VOID_FTYPE_USI, FSFLAGS, hard_float),
+  DIRECT_BUILTIN (frflags, frflags, frflags_fenv,
+		  RISCV_USI_FTYPE, FRFLAGS_FENV, hard_float),
+  DIRECT_NO_TARGET_BUILTIN (fsflags, fsflags, fsflags_fenv,
+			    RISCV_VOID_FTYPE_USI, FSFLAGS_FENV, hard_float),
   DIRECT_BUILTIN (csrrsi, csrrdi, csrr,
 		  RISCV_ULONG_FTYPE_USI, CSRR, normal),
   DIRECT_NO_TARGET_BUILTIN (csrwsi, csrwdi, csrw,
@@ -230,7 +233,13 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_BUILTIN (fsrmsi, fsrmdi, fsrm,
 		  RISCV_ULONG_FTYPE_ULONG, FSRM, hard_float),
   DIRECT_NO_TARGET_BUILTIN (fwrmsi, fwrmdi, fwrm,
-			    RISCV_VOID_FTYPE_ULONG, FWRM, hard_float)
+			    RISCV_VOID_FTYPE_ULONG, FWRM, hard_float),
+  DIRECT_BUILTIN (frflagssi, frflagsdi, frflags,
+		  RISCV_ULONG_FTYPE_VOID, FRFLAGS, hard_float),
+  DIRECT_BUILTIN (fsflagssi, fsflagsdi, fsflags,
+		  RISCV_ULONG_FTYPE_ULONG, FSFLAGS, hard_float),
+  DIRECT_NO_TARGET_BUILTIN (fwflagssi, fwflagsdi, fwflags,
+			    RISCV_VOID_FTYPE_ULONG, FWFLAGS, hard_float)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
