@@ -218,6 +218,14 @@ enum riscv_fence
   FENCE_IORW
 };
 
+enum riscv_order
+{
+  UNORDER,
+  RELEASE,
+  ACQUIRE,
+  SEQUENTIAL
+};
+
 #define __nds__msync_all() asm volatile ("fence" : : : "memory")
 
 #define __nds__cctl_l1d_wball_one_lvl()
@@ -265,6 +273,10 @@ enum riscv_fence
   (__builtin_riscv_fsflags ((a)))
 #define __nds__fwflags(a) \
   (__builtin_riscv_fwflags ((a)))
+#define __nds__lrw(a, b) \
+  (__builtin_riscv_lrw ((a), (b)))
+#define __nds__lrd(a, b) \
+  (__builtin_riscv_lrd ((a), (b)))
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));

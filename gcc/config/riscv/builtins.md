@@ -231,3 +231,19 @@
    fsflags\tx0, %0
    fsflagsi\tx0, %0"
 )
+
+(define_insn "riscv_lrw<GPR:mode>"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec_volatile:SI [(mem:SI (match_operand:GPR 1 "register_operand" "r"))
+			     (match_operand:SI 2 "immediate_operand" "i")] UNSPECV_LRW))]
+  ""
+  "lr.w%B2\t%0, (%1)"
+)
+
+(define_insn "riscv_lrd"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+        (unspec_volatile:DI [(mem:DI (match_operand:DI 1 "register_operand" "r"))
+			     (match_operand:DI 2 "immediate_operand" "i")] UNSPECV_LRD))]
+  ""
+  "lr.d%B2\t%0, (%1)"
+)

@@ -3596,6 +3596,31 @@ riscv_print_operand (FILE *file, rtx op, int letter)
 	fputs (".aq", file);
       break;
 
+    case 'B':
+      {
+	gcc_assert (CONST_INT_P (op));
+
+	HOST_WIDE_INT op_value = INTVAL (op);
+
+	switch (op_value)
+	  {
+	  case 0:
+	    break;
+	  case 1:
+	    fputs (".rl", file);
+	    break;
+	  case 2:
+	    fputs (".aq", file);
+	    break;
+	  case 3:
+	    fputs (".aqrl", file);
+	    break;
+	  default:
+	    error ("Memory ordering is out of range");
+	  }
+	break;
+      }
+
     case 'E':
       {
 	gcc_assert (CONST_INT_P (op));

@@ -88,7 +88,9 @@ enum riscv_builtins
   RISCV_BUILTIN_FWRM,
   RISCV_BUILTIN_FRFLAGS,
   RISCV_BUILTIN_FSFLAGS,
-  RISCV_BUILTIN_FWFLAGS
+  RISCV_BUILTIN_FWFLAGS,
+  RISCV_BUILTIN_LRW,
+  RISCV_BUILTIN_LRD
 };
 
 /* Declare an availability predicate for built-in functions.  */
@@ -124,6 +126,7 @@ struct riscv_builtin_description {
   unsigned int (*avail) (void);
 };
 
+AVAIL (rv64, TARGET_64BIT)
 AVAIL (hard_float, TARGET_HARD_FLOAT)
 AVAIL (normal, 1)
 
@@ -162,9 +165,14 @@ AVAIL (normal, 1)
 
 /* Argument types.  */
 #define RISCV_ATYPE_VOID void_type_node
+#define RISCV_ATYPE_SI intSI_type_node
 #define RISCV_ATYPE_USI unsigned_intSI_type_node
 #define RISCV_ATYPE_ULONG long_unsigned_type_node
 #define RISCV_ATYPE_LONG long_integer_type_node
+#define RISCV_ATYPE_LLONG long_long_integer_type_node
+#define RISCV_ATYPE_PSI build_pointer_type (integer_type_node)
+#define RISCV_ATYPE_PLLONG build_pointer_type (long_long_integer_type_node)
+
 
 /* RISCV_FTYPE_ATYPESN takes N RISCV_FTYPES-like type codes and lists
    their associated RISCV_ATYPEs.  */
@@ -239,7 +247,11 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_BUILTIN (fsflagssi, fsflagsdi, fsflags,
 		  RISCV_ULONG_FTYPE_ULONG, FSFLAGS, hard_float),
   DIRECT_NO_TARGET_BUILTIN (fwflagssi, fwflagsdi, fwflags,
-			    RISCV_VOID_FTYPE_ULONG, FWFLAGS, hard_float)
+			    RISCV_VOID_FTYPE_ULONG, FWFLAGS, hard_float),
+  DIRECT_BUILTIN (lrwsi, lrwdi, lrw,
+		  RISCV_SI_FTYPE_PSI_USI, LRW, normal),
+  DIRECT_BUILTIN (lrd, lrd, lrd,
+		  RISCV_LLONG_FTYPE_PLLONG_USI, LRD, rv64)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
