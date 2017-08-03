@@ -282,6 +282,43 @@ enum riscv_order
 #define __nds__scd(a, b, c) \
   (__builtin_riscv_scd ((a), (b), (c)))
 
+#define __nds__amoaddw(a, b, c) \
+  (__builtin_riscv_amoaddw ((a), (b), (c)))
+#define __nds__amominw(a, b, c) \
+  (__builtin_riscv_amominw ((a), (b), (c)))
+#define __nds__amomaxw(a, b, c) \
+  (__builtin_riscv_amomaxw ((a), (b), (c)))
+#define __nds__amoswapw(a, b, c) \
+  (__builtin_riscv_amoswapw ((a), (b), (c)))
+#define __nds__amoxorw(a, b, c) \
+  (__builtin_riscv_amoxorw ((a), (b), (c)))
+#define __nds__amoandw(a, b, c) \
+  (__builtin_riscv_amoandw ((a), (b), (c)))
+#define __nds__amoorw(a, b, c) \
+  (__builtin_riscv_amoorw ((a), (b), (c)))
+#define __nds__amominuw(a, b, c) \
+  (__builtin_riscv_amominuw ((a), (b), (c)))
+#define __nds__amomaxuw(a, b, c) \
+  (__builtin_riscv_amomaxuw ((a), (b), (c)))
+#define __nds__amoaddd(a, b, c) \
+  (__builtin_riscv_amoaddd ((a), (b), (c)))
+#define __nds__amomind(a, b, c) \
+  (__builtin_riscv_amomind ((a), (b), (c)))
+#define __nds__amomaxd(a, b, c) \
+  (__builtin_riscv_amomaxd ((a), (b), (c)))
+#define __nds__amoswapd(a, b, c) \
+  (__builtin_riscv_amoswapd ((a), (b), (c)))
+#define __nds__amoxord(a, b, c) \
+  (__builtin_riscv_amoxord ((a), (b), (c)))
+#define __nds__amoandd(a, b, c) \
+  (__builtin_riscv_amoandd ((a), (b), (c)))
+#define __nds__amoord(a, b, c) \
+  (__builtin_riscv_amoord ((a), (b), (c)))
+#define __nds__amominud(a, b, c) \
+  (__builtin_riscv_amominud ((a), (b), (c)))
+#define __nds__amomaxud(a, b, c) \
+  (__builtin_riscv_amomaxud ((a), (b), (c)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 

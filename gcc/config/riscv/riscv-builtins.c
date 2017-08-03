@@ -92,7 +92,9 @@ enum riscv_builtins
   RISCV_BUILTIN_LRW,
   RISCV_BUILTIN_LRD,
   RISCV_BUILTIN_SCW,
-  RISCV_BUILTIN_SCD
+  RISCV_BUILTIN_SCD,
+  RISCV_BUILTIN_AMOW,
+  RISCV_BUILTIN_AMOD
 };
 
 /* Declare an availability predicate for built-in functions.  */
@@ -128,6 +130,8 @@ struct riscv_builtin_description {
   unsigned int (*avail) (void);
 };
 
+AVAIL (atomic, TARGET_ATOMIC)
+AVAIL (atomic64, TARGET_ATOMIC && TARGET_64BIT)
 AVAIL (rv64, TARGET_64BIT)
 AVAIL (hard_float, TARGET_HARD_FLOAT)
 AVAIL (normal, 1)
@@ -172,9 +176,11 @@ AVAIL (normal, 1)
 #define RISCV_ATYPE_ULONG long_unsigned_type_node
 #define RISCV_ATYPE_LONG long_integer_type_node
 #define RISCV_ATYPE_LLONG long_long_integer_type_node
+#define RISCV_ATYPE_ULLONG  long_long_unsigned_type_node
 #define RISCV_ATYPE_PSI build_pointer_type (integer_type_node)
+#define RISCV_ATYPE_PUSI build_pointer_type (unsigned_type_node)
 #define RISCV_ATYPE_PLLONG build_pointer_type (long_long_integer_type_node)
-
+#define RISCV_ATYPE_PULLONG build_pointer_type (long_long_unsigned_type_node)
 
 /* RISCV_FTYPE_ATYPESN takes N RISCV_FTYPES-like type codes and lists
    their associated RISCV_ATYPEs.  */
@@ -257,7 +263,43 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_BUILTIN (scwsi, scwdi, scw,
 		  RISCV_SI_FTYPE_SI_PSI_USI, SCW, normal),
   DIRECT_BUILTIN (scd, scd, scd,
-		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, SCD, rv64)
+		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, SCD, rv64),
+  DIRECT_BUILTIN (amowswapsi, amowswapdi, amoswapw,
+		  RISCV_SI_FTYPE_SI_PSI_USI, AMOW, atomic),
+  DIRECT_BUILTIN (amowaddsi, amowadddi, amoaddw,
+		  RISCV_SI_FTYPE_SI_PSI_USI, AMOW, atomic),
+  DIRECT_BUILTIN (amowminsi, amowmindi, amominw,
+		  RISCV_SI_FTYPE_SI_PSI_USI, AMOW, atomic),
+  DIRECT_BUILTIN (amowmaxsi, amowmaxdi, amomaxw,
+		  RISCV_SI_FTYPE_SI_PSI_USI, AMOW, atomic),
+  DIRECT_BUILTIN (amowxorsi, amowxordi, amoxorw,
+		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW, atomic),
+  DIRECT_BUILTIN (amowandsi, amowanddi, amoandw,
+		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW, atomic),
+  DIRECT_BUILTIN (amoworsi, amowordi, amoorw,
+		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW, atomic),
+  DIRECT_BUILTIN (amowminusi, amowminudi, amominuw,
+		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW, atomic),
+  DIRECT_BUILTIN (amowmaxusi, amowmaxudi, amomaxuw,
+		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW, atomic),
+  DIRECT_BUILTIN (amodswap, amodswap, amoswapd,
+		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, AMOD, atomic64),
+  DIRECT_BUILTIN (amodadd, amodadd, amoaddd,
+		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, AMOD, atomic64),
+  DIRECT_BUILTIN (amodmin, amodmin, amomind,
+		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, AMOD, atomic64),
+  DIRECT_BUILTIN (amodmax, amodmax, amomaxd,
+		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, AMOD, atomic64),
+  DIRECT_BUILTIN (amodxor, amodxor, amoxord,
+		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64),
+  DIRECT_BUILTIN (amodand, amodand, amoandd,
+		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64),
+  DIRECT_BUILTIN (amodor, amodor, amoord,
+		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64),
+  DIRECT_BUILTIN (amodminu, amodminu, amominud,
+		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64),
+  DIRECT_BUILTIN (amodmaxu, amodmaxu, amomaxud,
+		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the

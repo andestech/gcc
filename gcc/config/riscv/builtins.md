@@ -19,6 +19,11 @@
 ;; along with GCC; see the file COPYING3.  If not see
 ;; <http://www.gnu.org/licenses/>.
 
+(define_code_iterator any_amo [plus xor and ior smax smin umax umin])
+(define_code_attr amo_optab
+  [(plus "add") (xor "xor") (and "and") (ior "or")
+   (smax "max") (smin "min")  (umax "maxu") (umin "minu")])
+
 (define_insn "riscv_frflags"
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(unspec_volatile [(const_int 0)] UNSPECV_FRFLAGS))]
@@ -264,4 +269,41 @@
                              (match_operand:DI 3 "immediate_operand" "i")] UNSPECV_SCD))]
   ""
   "sc.d%B3\t%0, %1, (%2)"
+)
+
+(define_insn "riscv_amowswap<GPR:mode>"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec_volatile:SI [(match_operand:SI 1 "register_operand" "r")
+			     (mem:SI (match_operand:GPR 2 "register_operand" "r"))
+                             (match_operand:SI 3 "immediate_operand" "i")] UNSPECV_AMOWSWAP))]
+  ""
+  "amoswap.w%B3\t%0, %1, (%2)"
+)
+
+(define_insn "riscv_amow<amo_optab><GPR:mode>"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec_volatile:SI [(any_amo:SI (match_operand:SI 1 "register_operand" "r")
+			     		 (mem:SI (match_operand:GPR 2 "register_operand" "r")))
+                             (match_operand:SI 3 "immediate_operand" "i")] UNSPECV_AMOW))]
+  ""
+  "amo<amo_optab>.w%B3\t%0, %1, (%2)"
+)
+
+(define_insn "riscv_amodswap"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+        (unspec_volatile:DI [(match_operand:DI 1 "register_operand" "r")
+			     (mem:DI (match_operand:DI 2 "register_operand" "r"))
+                             (match_operand:DI 3 "immediate_operand" "i")] UNSPECV_AMODSWAP))]
+  ""
+  "amoswap.d%B3\t%0, %1, (%2)"
+)
+
+
+(define_insn "riscv_amod<amo_optab>"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+        (unspec_volatile:DI [(any_amo:DI (match_operand:DI 1 "register_operand" "r")
+			     		 (mem:DI (match_operand:DI 2 "register_operand" "r")))
+                             (match_operand:DI 3 "immediate_operand" "i")] UNSPECV_AMOD))]
+  ""
+  "amo<amo_optab>.d%B3\t%0, %1, (%2)"
 )
