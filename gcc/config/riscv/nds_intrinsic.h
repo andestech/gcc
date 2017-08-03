@@ -277,6 +277,10 @@ enum riscv_order
   (__builtin_riscv_lrw ((a), (b)))
 #define __nds__lrd(a, b) \
   (__builtin_riscv_lrd ((a), (b)))
+#define __nds__scw(a, b, c) \
+  (__builtin_riscv_scw ((a), (b), (c)))
+#define __nds__scd(a, b, c) \
+  (__builtin_riscv_scd ((a), (b), (c)))
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));

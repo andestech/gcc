@@ -247,3 +247,21 @@
   ""
   "lr.d%B2\t%0, (%1)"
 )
+
+(define_insn "riscv_scw<GPR:mode>"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec_volatile:SI [(match_operand:SI 1 "register_operand" "r")
+			     (mem:SI (match_operand:GPR 2 "register_operand" "r"))
+                             (match_operand:SI 3 "immediate_operand" "i")] UNSPECV_SCW))]
+  ""
+  "sc.w%B3\t%0, %1, (%2)"
+)
+
+(define_insn "riscv_scd"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+        (unspec_volatile:DI [(match_operand:DI 1 "register_operand" "r")
+			     (mem:DI (match_operand:DI 2 "register_operand" "r"))
+                             (match_operand:DI 3 "immediate_operand" "i")] UNSPECV_SCD))]
+  ""
+  "sc.d%B3\t%0, %1, (%2)"
+)

@@ -90,7 +90,9 @@ enum riscv_builtins
   RISCV_BUILTIN_FSFLAGS,
   RISCV_BUILTIN_FWFLAGS,
   RISCV_BUILTIN_LRW,
-  RISCV_BUILTIN_LRD
+  RISCV_BUILTIN_LRD,
+  RISCV_BUILTIN_SCW,
+  RISCV_BUILTIN_SCD
 };
 
 /* Declare an availability predicate for built-in functions.  */
@@ -251,7 +253,11 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_BUILTIN (lrwsi, lrwdi, lrw,
 		  RISCV_SI_FTYPE_PSI_USI, LRW, normal),
   DIRECT_BUILTIN (lrd, lrd, lrd,
-		  RISCV_LLONG_FTYPE_PLLONG_USI, LRD, rv64)
+		  RISCV_LLONG_FTYPE_PLLONG_USI, LRD, rv64),
+  DIRECT_BUILTIN (scwsi, scwdi, scw,
+		  RISCV_SI_FTYPE_SI_PSI_USI, SCW, normal),
+  DIRECT_BUILTIN (scd, scd, scd,
+		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, SCD, rv64)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
