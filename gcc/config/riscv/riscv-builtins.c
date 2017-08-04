@@ -103,14 +103,6 @@ enum riscv_builtins
   RISCV_BUILTIN_CSRC
 };
 
-/* Declare an availability predicate for built-in functions.  */
-#define AVAIL(NAME, COND)		\
- static unsigned int			\
- riscv_builtin_avail_##NAME (void)	\
- {					\
-   return (COND);			\
- }
-
 /* This structure describes a single built-in function.  */
 struct riscv_builtin_description {
   /* The code of the main .md file instruction.  See riscv_builtin_type
@@ -131,16 +123,7 @@ struct riscv_builtin_description {
 
   /* Identifies which built-in operation it is.  */
   enum riscv_builtins fcode;
-
-  /* Whether the function is available.  */
-  unsigned int (*avail) (void);
 };
-
-AVAIL (atomic, TARGET_ATOMIC)
-AVAIL (atomic64, TARGET_ATOMIC && TARGET_64BIT)
-AVAIL (rv64, TARGET_64BIT)
-AVAIL (hard_float, TARGET_HARD_FLOAT)
-AVAIL (normal, 1)
 
 /* Construct a riscv_builtin_description from the given arguments.
 
@@ -155,25 +138,25 @@ AVAIL (normal, 1)
    AVAIL is the name of the availability predicate, without the leading
    riscv_builtin_avail_.  */
 #define RISCV_BUILTIN(ICODE, ICODE64, NAME,				\
-		      BUILTIN_TYPE, FUNCTION_TYPE, FCODE, AVAIL)	\
+		      BUILTIN_TYPE, FUNCTION_TYPE, FCODE)		\
   { CODE_FOR_riscv_ ##ICODE, CODE_FOR_riscv_ ##ICODE64,			\
     "__builtin_riscv_" NAME, BUILTIN_TYPE, FUNCTION_TYPE,		\
-    RISCV_BUILTIN_ ## FCODE, riscv_builtin_avail_ ## AVAIL }
+    RISCV_BUILTIN_ ## FCODE}
 
 /* Define __builtin_riscv_<INSN>, which is a RISCV_BUILTIN_DIRECT function
    mapped to instruction CODE_FOR_riscv_<ICODE/ICODE64>, FUNCTION_TYPE
    and AVAIL are as for RISCV_BUILTIN.  */
-#define DIRECT_BUILTIN(ICODE, ICODE64, INSN, FUNCTION_TYPE, FCODE, AVAIL) \
-  RISCV_BUILTIN (ICODE, ICODE64, #INSN, RISCV_BUILTIN_DIRECT,		  \
-		 FUNCTION_TYPE, FCODE, AVAIL)
+#define DIRECT_BUILTIN(ICODE, ICODE64, INSN, FUNCTION_TYPE, FCODE)	\
+  RISCV_BUILTIN (ICODE, ICODE64, #INSN, RISCV_BUILTIN_DIRECT,		\
+		 FUNCTION_TYPE, FCODE)
 
 /* Define __builtin_riscv_<INSN>, which is a RISCV_BUILTIN_DIRECT_NO_TARGET
    function mapped to instruction CODE_FOR_riscv_<ICODE/ICODE64>,
    FUNCTION_TYPE and AVAIL are as for RISCV_BUILTIN.  */
 #define DIRECT_NO_TARGET_BUILTIN(ICODE, ICODE64, INSN,		\
-				 FUNCTION_TYPE, FCODE, AVAIL)	\
+				 FUNCTION_TYPE, FCODE)		\
   RISCV_BUILTIN (ICODE, ICODE64, #INSN, RISCV_BUILTIN_DIRECT_NO_TARGET,	\
-		 FUNCTION_TYPE, FCODE, AVAIL)
+		 FUNCTION_TYPE, FCODE)
 
 /* Argument types.  */
 #define RISCV_ATYPE_VOID void_type_node
@@ -213,111 +196,111 @@ AVAIL (normal, 1)
 
 static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_BUILTIN (frflags, frflags, frflags_fenv,
-		  RISCV_USI_FTYPE, FRFLAGS_FENV, hard_float),
+		  RISCV_USI_FTYPE, FRFLAGS_FENV),
   DIRECT_NO_TARGET_BUILTIN (fsflags, fsflags, fsflags_fenv,
-			    RISCV_VOID_FTYPE_USI, FSFLAGS_FENV, hard_float),
+			    RISCV_VOID_FTYPE_USI, FSFLAGS_FENV),
   DIRECT_BUILTIN (csrrsi, csrrdi, csrr,
-		  RISCV_ULONG_FTYPE_USI, CSRR, normal),
+		  RISCV_ULONG_FTYPE_USI, CSRR),
   DIRECT_NO_TARGET_BUILTIN (csrwsi, csrwdi, csrw,
-			    RISCV_VOID_FTYPE_ULONG_USI, CSRW, normal),
+			    RISCV_VOID_FTYPE_ULONG_USI, CSRW),
   DIRECT_NO_TARGET_BUILTIN (csrssi, csrsdi, csrs,
-			    RISCV_VOID_FTYPE_ULONG_USI, CSRS, normal),
+			    RISCV_VOID_FTYPE_ULONG_USI, CSRS),
   DIRECT_NO_TARGET_BUILTIN (csrcsi, csrcdi, csrc,
-			    RISCV_VOID_FTYPE_ULONG_USI, CSRC, normal),
+			    RISCV_VOID_FTYPE_ULONG_USI, CSRC),
   DIRECT_BUILTIN (get_current_spsi, get_current_spdi, get_current_sp,
-		  RISCV_ULONG_FTYPE_VOID, GET_SP, normal),
+		  RISCV_ULONG_FTYPE_VOID, GET_SP),
   DIRECT_NO_TARGET_BUILTIN (set_current_spsi, set_current_spdi, set_current_sp,
-			    RISCV_VOID_FTYPE_ULONG, SET_SP, normal),
+			    RISCV_VOID_FTYPE_ULONG, SET_SP),
   DIRECT_BUILTIN (ecallsi, ecalldi, ecall,
-		  RISCV_LONG_FTYPE_LONG, ECALL, normal),
+		  RISCV_LONG_FTYPE_LONG, ECALL),
   DIRECT_BUILTIN (ecall1si, ecall1di, ecall1,
-		  RISCV_LONG_FTYPE_LONG_LONG, ECALL, normal),
+		  RISCV_LONG_FTYPE_LONG_LONG, ECALL),
   DIRECT_BUILTIN (ecall2si, ecall2di, ecall2,
-		  RISCV_LONG_FTYPE_LONG_LONG_LONG, ECALL, normal),
+		  RISCV_LONG_FTYPE_LONG_LONG_LONG, ECALL),
   DIRECT_BUILTIN (ecall3si, ecall3di, ecall3,
-		  RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG, ECALL, normal),
+		  RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG, ECALL),
   DIRECT_BUILTIN (ecall4si, ecall4di, ecall4,
-		  RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG, ECALL, normal),
+		  RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG, ECALL),
   DIRECT_BUILTIN (ecall5si, ecall5di, ecall5,
 		  RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG_LONG,
-		  ECALL, normal),
+		  ECALL),
   DIRECT_BUILTIN (ecall6si, ecall6di, ecall6,
 		  RISCV_LONG_FTYPE_LONG_LONG_LONG_LONG_LONG_LONG_LONG,
-		  ECALL, normal),
+		  ECALL),
   DIRECT_NO_TARGET_BUILTIN (fence, fence, fence,
-			    RISCV_VOID_FTYPE_USI_USI, FENCE, normal),
+			    RISCV_VOID_FTYPE_USI_USI, FENCE),
   DIRECT_NO_TARGET_BUILTIN (fencei, fencei, fencei,
-			    RISCV_VOID_FTYPE_VOID, FENCEI, normal),
+			    RISCV_VOID_FTYPE_VOID, FENCEI),
   DIRECT_BUILTIN (frcsr, frcsr, frcsr,
-		  RISCV_USI_FTYPE, FRCSR, hard_float),
+		  RISCV_USI_FTYPE, FRCSR),
   DIRECT_BUILTIN (fscsrsi, fscsrdi, fscsr,
-		  RISCV_ULONG_FTYPE_ULONG, FSCSR, hard_float),
+		  RISCV_ULONG_FTYPE_ULONG, FSCSR),
   DIRECT_NO_TARGET_BUILTIN (fwcsrsi, fwcsrdi, fwcsr,
-			    RISCV_VOID_FTYPE_ULONG, FWCSR, hard_float),
+			    RISCV_VOID_FTYPE_ULONG, FWCSR),
   DIRECT_BUILTIN (frrmsi, frrmdi, frrm,
-		  RISCV_ULONG_FTYPE_VOID, FRRM, hard_float),
+		  RISCV_ULONG_FTYPE_VOID, FRRM),
   DIRECT_BUILTIN (fsrmsi, fsrmdi, fsrm,
-		  RISCV_ULONG_FTYPE_ULONG, FSRM, hard_float),
+		  RISCV_ULONG_FTYPE_ULONG, FSRM),
   DIRECT_NO_TARGET_BUILTIN (fwrmsi, fwrmdi, fwrm,
-			    RISCV_VOID_FTYPE_ULONG, FWRM, hard_float),
+			    RISCV_VOID_FTYPE_ULONG, FWRM),
   DIRECT_BUILTIN (frflagssi, frflagsdi, frflags,
-		  RISCV_ULONG_FTYPE_VOID, FRFLAGS, hard_float),
+		  RISCV_ULONG_FTYPE_VOID, FRFLAGS),
   DIRECT_BUILTIN (fsflagssi, fsflagsdi, fsflags,
-		  RISCV_ULONG_FTYPE_ULONG, FSFLAGS, hard_float),
+		  RISCV_ULONG_FTYPE_ULONG, FSFLAGS),
   DIRECT_NO_TARGET_BUILTIN (fwflagssi, fwflagsdi, fwflags,
-			    RISCV_VOID_FTYPE_ULONG, FWFLAGS, hard_float),
+			    RISCV_VOID_FTYPE_ULONG, FWFLAGS),
   DIRECT_BUILTIN (lrwsi, lrwdi, lrw,
-		  RISCV_SI_FTYPE_PSI_USI, LRW, normal),
+		  RISCV_SI_FTYPE_PSI_USI, LRW),
   DIRECT_BUILTIN (lrd, lrd, lrd,
-		  RISCV_LLONG_FTYPE_PLLONG_USI, LRD, rv64),
+		  RISCV_LLONG_FTYPE_PLLONG_USI, LRD),
   DIRECT_BUILTIN (scwsi, scwdi, scw,
-		  RISCV_SI_FTYPE_SI_PSI_USI, SCW, normal),
+		  RISCV_SI_FTYPE_SI_PSI_USI, SCW),
   DIRECT_BUILTIN (scd, scd, scd,
-		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, SCD, rv64),
+		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, SCD),
   DIRECT_BUILTIN (amowswapsi, amowswapdi, amoswapw,
-		  RISCV_SI_FTYPE_SI_PSI_USI, AMOW, atomic),
+		  RISCV_SI_FTYPE_SI_PSI_USI, AMOW),
   DIRECT_BUILTIN (amowaddsi, amowadddi, amoaddw,
-		  RISCV_SI_FTYPE_SI_PSI_USI, AMOW, atomic),
+		  RISCV_SI_FTYPE_SI_PSI_USI, AMOW),
   DIRECT_BUILTIN (amowminsi, amowmindi, amominw,
-		  RISCV_SI_FTYPE_SI_PSI_USI, AMOW, atomic),
+		  RISCV_SI_FTYPE_SI_PSI_USI, AMOW),
   DIRECT_BUILTIN (amowmaxsi, amowmaxdi, amomaxw,
-		  RISCV_SI_FTYPE_SI_PSI_USI, AMOW, atomic),
+		  RISCV_SI_FTYPE_SI_PSI_USI, AMOW),
   DIRECT_BUILTIN (amowxorsi, amowxordi, amoxorw,
-		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW, atomic),
+		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW),
   DIRECT_BUILTIN (amowandsi, amowanddi, amoandw,
-		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW, atomic),
+		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW),
   DIRECT_BUILTIN (amoworsi, amowordi, amoorw,
-		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW, atomic),
+		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW),
   DIRECT_BUILTIN (amowminusi, amowminudi, amominuw,
-		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW, atomic),
+		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW),
   DIRECT_BUILTIN (amowmaxusi, amowmaxudi, amomaxuw,
-		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW, atomic),
+		  RISCV_USI_FTYPE_USI_PUSI_USI, AMOW),
   DIRECT_BUILTIN (amodswap, amodswap, amoswapd,
-		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, AMOD, atomic64),
+		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, AMOD),
   DIRECT_BUILTIN (amodadd, amodadd, amoaddd,
-		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, AMOD, atomic64),
+		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, AMOD),
   DIRECT_BUILTIN (amodmin, amodmin, amomind,
-		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, AMOD, atomic64),
+		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, AMOD),
   DIRECT_BUILTIN (amodmax, amodmax, amomaxd,
-		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, AMOD, atomic64),
+		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, AMOD),
   DIRECT_BUILTIN (amodxor, amodxor, amoxord,
-		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64),
+		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOD),
   DIRECT_BUILTIN (amodand, amodand, amoandd,
-		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64),
+		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOD),
   DIRECT_BUILTIN (amodor, amodor, amoord,
-		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64),
+		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOD),
   DIRECT_BUILTIN (amodminu, amodminu, amominud,
-		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64),
+		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOD),
   DIRECT_BUILTIN (amodmaxu, amodmaxu, amomaxud,
-		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64),
+		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOD),
   DIRECT_BUILTIN (ebreaksi, ebreakdi, ebreak,
-		  RISCV_VOID_FTYPE_ULONG, EBREAK, normal),
+		  RISCV_VOID_FTYPE_ULONG, EBREAK),
   DIRECT_BUILTIN (csrrwsi, csrrwdi, csrrw,
-		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRW, normal),
+		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRW),
   DIRECT_BUILTIN (csrrssi, csrrsdi, csrrs,
-		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRS, normal),
+		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRS),
   DIRECT_BUILTIN (csrrcsi, csrrcdi, csrrc,
-		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRC, normal)
+		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRC)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
@@ -364,13 +347,10 @@ riscv_init_builtins (void)
   for (size_t i = 0; i < ARRAY_SIZE (riscv_builtins); i++)
     {
       const struct riscv_builtin_description *d = &riscv_builtins[i];
-      if (d->avail ())
-	{
-	  tree type = riscv_build_function_type (d->prototype);
-	  riscv_builtin_decls[i]
-	    = add_builtin_function (d->name, type, i, BUILT_IN_MD, NULL, NULL);
-	  riscv_builtin_decl_index[d->icode] = i;
-	}
+      tree type = riscv_build_function_type (d->prototype);
+      riscv_builtin_decls[i]
+	= add_builtin_function (d->name, type, i, BUILT_IN_MD, NULL, NULL);
+      riscv_builtin_decl_index[d->icode] = i;
     }
 }
 
@@ -512,6 +492,59 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
   unsigned int fcode = DECL_MD_FUNCTION_CODE (fndecl);
   const struct riscv_builtin_description *d = &riscv_builtins[fcode];
   enum insn_code icode = TARGET_64BIT ? d->icode64 : d->icode;
+
+  switch (d->fcode)
+    {
+    case RISCV_BUILTIN_FRFLAGS_FENV:
+    case RISCV_BUILTIN_FSFLAGS_FENV:
+    case RISCV_BUILTIN_FRCSR:
+    case RISCV_BUILTIN_FSCSR:
+    case RISCV_BUILTIN_FWCSR:
+    case RISCV_BUILTIN_FRRM:
+    case RISCV_BUILTIN_FSRM:
+    case RISCV_BUILTIN_FWRM:
+    case RISCV_BUILTIN_FRFLAGS:
+    case RISCV_BUILTIN_FSFLAGS:
+    case RISCV_BUILTIN_FWFLAGS:
+      if (!TARGET_HARD_FLOAT)
+	{
+	  error ("this builtin function is only available "
+                 "on enable Floating-Point Instruction Extension.");
+          return NULL_RTX;
+	}
+      break;
+
+    case RISCV_BUILTIN_AMOW:
+      if (!TARGET_ATOMIC)
+	{
+	  error ("this builtin function is only available "
+                 "on enable Atomic Instruction Extension.");
+          return NULL_RTX;
+	}
+      break;
+
+    case RISCV_BUILTIN_AMOD:
+      if (!(TARGET_64BIT && TARGET_ATOMIC))
+	{
+	  error ("this builtin function is only available "
+                 "on enable 64-bit Atomic Instruction Extension.");
+          return NULL_RTX;
+	}
+      break;
+
+    case RISCV_BUILTIN_LRD:
+    case RISCV_BUILTIN_SCD:
+      if (!TARGET_64BIT)
+	{
+	  error ("this builtin function is only available "
+                 "on the 64-bit toolchain");
+          return NULL_RTX;
+	}
+      break;
+
+    default:
+      break;
+    }
 
   switch (d->fcode)
     {
