@@ -95,7 +95,12 @@ enum riscv_builtins
   RISCV_BUILTIN_SCD,
   RISCV_BUILTIN_AMOW,
   RISCV_BUILTIN_AMOD,
-  RISCV_BUILTIN_EBREAK
+  RISCV_BUILTIN_EBREAK,
+  RISCV_BUILTIN_CSRRW,
+  RISCV_BUILTIN_CSRRS,
+  RISCV_BUILTIN_CSRRC,
+  RISCV_BUILTIN_CSRS,
+  RISCV_BUILTIN_CSRC
 };
 
 /* Declare an availability predicate for built-in functions.  */
@@ -215,6 +220,10 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		  RISCV_ULONG_FTYPE_USI, CSRR, normal),
   DIRECT_NO_TARGET_BUILTIN (csrwsi, csrwdi, csrw,
 			    RISCV_VOID_FTYPE_ULONG_USI, CSRW, normal),
+  DIRECT_NO_TARGET_BUILTIN (csrssi, csrsdi, csrs,
+			    RISCV_VOID_FTYPE_ULONG_USI, CSRS, normal),
+  DIRECT_NO_TARGET_BUILTIN (csrcsi, csrcdi, csrc,
+			    RISCV_VOID_FTYPE_ULONG_USI, CSRC, normal),
   DIRECT_BUILTIN (get_current_spsi, get_current_spdi, get_current_sp,
 		  RISCV_ULONG_FTYPE_VOID, GET_SP, normal),
   DIRECT_NO_TARGET_BUILTIN (set_current_spsi, set_current_spdi, set_current_sp,
@@ -302,7 +311,13 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_BUILTIN (amodmaxu, amodmaxu, amomaxud,
 		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64),
   DIRECT_BUILTIN (ebreaksi, ebreakdi, ebreak,
-		  RISCV_VOID_FTYPE_ULONG, EBREAK, normal)
+		  RISCV_VOID_FTYPE_ULONG, EBREAK, normal),
+  DIRECT_BUILTIN (csrrwsi, csrrwdi, csrrw,
+		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRW, normal),
+  DIRECT_BUILTIN (csrrssi, csrrsdi, csrrs,
+		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRS, normal),
+  DIRECT_BUILTIN (csrrcsi, csrrcdi, csrrc,
+		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRC, normal)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the

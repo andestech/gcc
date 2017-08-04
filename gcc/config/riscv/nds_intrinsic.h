@@ -236,6 +236,14 @@ enum riscv_order
   (__builtin_riscv_csrr ((srname)))
 #define __nds__mtsr(val, srname) \
   (__builtin_riscv_csrw ((val), (srname)))
+#define __nds__csrr(srname) \
+  (__builtin_riscv_csrr ((srname)))
+#define __nds__csrw(val, srname) \
+  (__builtin_riscv_csrw ((val), (srname)))
+#define __nds__csrs(val, srname) \
+  (__builtin_riscv_csrs ((val), (srname)))
+#define __nds__csrc(val, srname) \
+  (__builtin_riscv_csrc ((val), (srname)))
 
 #define __nds__ecall(sysid) \
   (__builtin_riscv_ecall ((sysid)))
@@ -320,6 +328,16 @@ enum riscv_order
   (__builtin_riscv_amomaxud ((a), (b), (c)))
 #define __nds__ebreak(a) \
   (__builtin_riscv_ebreak ((a)))
+#define __nds__csrrw(a, b) \
+  (__builtin_riscv_csrrw ((a), (b)))
+#define __nds__csrrs(a, b) \
+  (__builtin_riscv_csrrs ((a), (b)))
+#define __nds__csrrc(a, b) \
+  (__builtin_riscv_csrrc ((a), (b)))
+#define __nds__csrs(a, b) \
+  (__builtin_riscv_csrs ((a), (b)))
+#define __nds__csrc(a, b) \
+  (__builtin_riscv_csrc ((a), (b)))
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));

@@ -24,6 +24,15 @@
   [(plus "add") (xor "xor") (and "and") (ior "or")
    (smax "max") (smin "min")  (umax "maxu") (umin "minu")])
 
+(define_int_iterator UVCSR [UNSPECV_CSRW UNSPECV_CSRS UNSPECV_CSRC])
+(define_int_iterator UVCSRR [UNSPECV_CSRRW UNSPECV_CSRRS UNSPECV_CSRRC])
+(define_int_attr csr_pat [(UNSPECV_CSRRW "rw")
+			  (UNSPECV_CSRRS "rs")
+			  (UNSPECV_CSRRC "rc")
+			  (UNSPECV_CSRW "w")
+			  (UNSPECV_CSRS "s")
+			  (UNSPECV_CSRC "c")])
+
 (define_insn "riscv_frflags"
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(unspec_volatile [(const_int 0)] UNSPECV_FRFLAGS))]
@@ -41,11 +50,13 @@
   ""
   "csrr\t%0, %V1")
 
-(define_insn "riscv_csrw<GPR:mode>"
-  [(unspec_volatile:GPR [(match_operand:GPR 0 "register_operand" "r")
-                        (match_operand:GPR 1 "immediate_operand" "i")] UNSPECV_CSRW)]
+(define_insn "riscv_csr<csr_pat><GPR:mode>"
+  [(unspec_volatile:GPR [(match_operand:GPR 0 "immediate_operand" "i, i")
+			 (match_operand:SI  1 "csr_operand" "r, K")] UVCSR)]
   ""
-  "csrw\t%V1, %0")
+  "@
+   csr<csr_pat>\t%V0,%1
+   csr<csr_pat>\t%V0,%1")
 
 (define_expand "riscv_get_current_sp<GPR:mode>"
   [(match_operand:GPR 0 "register_operand" "")]
@@ -312,4 +323,14 @@
                              (match_operand:DI 3 "immediate_operand" "i")] UNSPECV_AMOD))]
   ""
   "amo<amo_optab>.d%B3\t%0, %1, (%2)"
+)
+
+(define_insn "riscv_csr<csr_pat><GPR:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r, r")
+        (unspec_volatile:GPR [(match_operand:GPR 1 "immediate_operand" "i, i")
+			      (match_operand:SI 2 "csr_operand" "r, K")] UVCSRR))]
+  ""
+  "@
+   csr<csr_pat>\t%0, %V1, %2
+   csr<csr_pat>i\t%0, %V1, %2"
 )
