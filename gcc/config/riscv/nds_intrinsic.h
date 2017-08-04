@@ -318,6 +318,8 @@ enum riscv_order
   (__builtin_riscv_amominud ((a), (b), (c)))
 #define __nds__amomaxud(a, b, c) \
   (__builtin_riscv_amomaxud ((a), (b), (c)))
+#define __nds__ebreak(a) \
+  (__builtin_riscv_ebreak ((a)))
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));

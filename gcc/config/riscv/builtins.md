@@ -121,6 +121,12 @@
   "ecall"
 )
 
+(define_insn "riscv_ebreak<GPR:mode>"
+  [(unspec_volatile:GPR [(match_operand:GPR 0 "ecall_register_operand" "e")] UNSPECV_SBREAK)]
+  ""
+  "ebreak"
+)
+
 (define_insn "riscv_ecall5<GPR:mode>"
   [(set (match_operand:GPR 0 "register_operand" "=r")
         (unspec_volatile:GPR [(match_operand:GPR 1 "ecall_register_operand" "e")

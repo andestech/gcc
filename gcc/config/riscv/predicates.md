@@ -228,5 +228,6 @@
     op = SUBREG_REG (op);
 
   return (REG_P (op)
-	  && REGNO (op) == T0_REGNUM);
+	  && ((TARGET_RVC && REGNO (op) == T0_REGNUM)
+	      || (!TARGET_RVC && REGNO (op) == A7_REGNUM)));
 })

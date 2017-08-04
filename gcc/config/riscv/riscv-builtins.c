@@ -94,7 +94,8 @@ enum riscv_builtins
   RISCV_BUILTIN_SCW,
   RISCV_BUILTIN_SCD,
   RISCV_BUILTIN_AMOW,
-  RISCV_BUILTIN_AMOD
+  RISCV_BUILTIN_AMOD,
+  RISCV_BUILTIN_EBREAK
 };
 
 /* Declare an availability predicate for built-in functions.  */
@@ -299,7 +300,9 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_BUILTIN (amodminu, amodminu, amominud,
 		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64),
   DIRECT_BUILTIN (amodmaxu, amodmaxu, amomaxud,
-		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64)
+		  RISCV_ULLONG_FTYPE_ULLONG_PULLONG_USI, AMOW, atomic64),
+  DIRECT_BUILTIN (ebreaksi, ebreakdi, ebreak,
+		  RISCV_VOID_FTYPE_ULONG, EBREAK, normal)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
@@ -462,6 +465,27 @@ riscv_expand_builtin_ecall (enum insn_code icode, tree exp)
   return retval;
 }
 
+/* Expand a RISCV_BUILTIN_ECALL function, the ebreak instruction
+   pass argument save in A7/T0 register.  */
+static rtx
+riscv_expand_builtin_ebreak (enum insn_code icode, tree exp)
+{
+  struct expand_operand ops[MAX_RECOG_OPERANDS];
+  rtx reg_arg0 = TARGET_RVE ? gen_rtx_REG (Pmode, T0_REGNUM)
+			     : gen_rtx_REG (Pmode, A7_REGNUM);
+  int opno = 0;
+
+  /* Process first argument save in T0/A7 register.  */
+  emit_move_insn (reg_arg0, expand_normal (CALL_EXPR_ARG (exp, 0)));
+  create_input_operand (&ops[opno++], reg_arg0,
+			TYPE_MODE (TREE_TYPE (CALL_EXPR_ARG (exp, 0))));
+
+  if (!maybe_expand_insn (icode, opno, ops))
+    error ("invalid argument to built-in function");
+
+  return const0_rtx;
+}
+
 /* Implement TARGET_EXPAND_BUILTIN.  */
 
 rtx
@@ -481,6 +505,8 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
     case RISCV_BUILTIN_FENCEI:
       emit_insn (gen_riscv_fencei ());
       return target;
+    case RISCV_BUILTIN_EBREAK:
+      return riscv_expand_builtin_ebreak (icode, exp);
     }
 
   switch (d->builtin_type)

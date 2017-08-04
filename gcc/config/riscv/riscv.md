@@ -65,6 +65,7 @@
   UNSPECV_AMOD
   UNSPECV_AMOWSWAP
   UNSPECV_AMODSWAP
+  UNSPECV_SBREAK
 ])
 
 (define_c_enum "unspecv" [
