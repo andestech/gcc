@@ -238,3 +238,7 @@ Do not genearte C extension instructions.
 mex9
 Target Report Mask(EX9)
 Use special directives to guide linker doing ex9 optimization.
+
+minnermost-loop
+Target Report Mask(INNERMOST_LOOP)
+Insert the innermost loop directive.

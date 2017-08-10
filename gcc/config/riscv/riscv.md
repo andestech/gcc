@@ -46,6 +46,10 @@
   ;; Stack tie
   UNSPEC_TIE
 
+  ;; innermost loop
+  UNSPECV_INNERMOST_LOOP_BEGIN
+  UNSPECV_INNERMOST_LOOP_END
+
   ;; builtin
   UNSPECV_CSRR
   UNSPECV_CSRW
@@ -2524,6 +2528,20 @@
 	(reg:P TP_REGNUM))]
   ""
 {})
+
+(define_insn "innermost_loop_begin"
+  [(unspec_volatile:SI [(const_int 0)] UNSPECV_INNERMOST_LOOP_BEGIN)]
+  ""
+  ".innermost_loop_begin"
+  [(set_attr "length" "0")]
+)
+
+(define_insn "innermost_loop_end"
+  [(unspec_volatile:SI [(const_int 0)] UNSPECV_INNERMOST_LOOP_END)]
+  ""
+  ".innermost_loop_end"
+  [(set_attr "length" "0")]
+)
 
 (include "sync.md")
 (include "peephole.md")
