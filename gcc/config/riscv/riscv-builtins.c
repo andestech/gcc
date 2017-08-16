@@ -368,10 +368,20 @@ riscv_builtin_decl (unsigned int code, bool initialize_p ATTRIBUTE_UNUSED)
    an expand operand.  Store the operand in *OP.  */
 
 static void
-riscv_prepare_builtin_arg (struct expand_operand *op, tree exp, unsigned argno)
+riscv_prepare_builtin_arg (struct expand_operand *op, tree exp, unsigned argno,
+			   enum insn_code icode, bool has_target_p)
 {
-  tree arg = CALL_EXPR_ARG (exp, argno);
-  create_input_operand (op, expand_normal (arg), TYPE_MODE (TREE_TYPE (arg)));
+  enum machine_mode mode = insn_data[icode].operand[argno + has_target_p].mode;
+  rtx arg = expand_normal (CALL_EXPR_ARG (exp, argno));
+  rtx tmp_rtx = gen_reg_rtx (mode);
+
+  if (!(*insn_data[icode].operand[argno + has_target_p].predicate) (arg, mode))
+    {
+      convert_move (tmp_rtx, arg, false);
+      arg = tmp_rtx;
+    }
+
+  create_input_operand (op, arg, mode);
 }
 
 /* Expand instruction ICODE as part of a built-in function sequence.
@@ -407,14 +417,25 @@ riscv_expand_builtin_direct (enum insn_code icode, rtx target, tree exp,
 
   /* Map any target to operand 0.  */
   int opno = 0;
+  enum machine_mode mode = insn_data[icode].operand[opno].mode;
+
   if (has_target_p)
-    create_output_operand (&ops[opno++], target, TYPE_MODE (TREE_TYPE (exp)));
+    {
+      if (! target
+	  || GET_MODE (target) != mode
+	  || ! (*insn_data[icode].operand[opno].predicate) (target, mode))
+	target = gen_reg_rtx (mode);
+
+      create_output_operand (&ops[opno++], target, TYPE_MODE (TREE_TYPE (exp)));
+    }
 
   /* Map the arguments to the other operands.  */
   gcc_assert (opno + call_expr_nargs (exp)
 	      == insn_data[icode].n_generator_args);
+
   for (int argno = 0; argno < call_expr_nargs (exp); argno++)
-    riscv_prepare_builtin_arg (&ops[opno++], exp, argno);
+    riscv_prepare_builtin_arg (&ops[opno++], exp, argno, icode, has_target_p);
+
   return riscv_expand_builtin_insn (icode, opno, ops, has_target_p);
 }
 
@@ -538,6 +559,20 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
 	  error ("this builtin function is only available "
                  "on the 64-bit toolchain");
           return NULL_RTX;
+	}
+      break;
+
+    case RISCV_BUILTIN_CSRRW:
+    case RISCV_BUILTIN_CSRRS:
+    case RISCV_BUILTIN_CSRRC:
+    case RISCV_BUILTIN_CSRW:
+    case RISCV_BUILTIN_CSRS:
+    case RISCV_BUILTIN_CSRC:
+      if (!CONST_INT_P (expand_normal (CALL_EXPR_ARG (exp, 0))))
+	{
+	  error ("invalid argument to built-in function, "
+		 "the first pass argument must be constant value in -O0 level.");
+	  return NULL_RTX;
 	}
       break;
 
