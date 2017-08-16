@@ -393,6 +393,10 @@ enum riscv_order
   (__builtin_riscv_csrs ((a), (b)))
 #define __nds__csrc(a, b) \
   (__builtin_riscv_csrc ((a), (b)))
+#define __nds__get_current_sp() \
+  (__builtin_riscv_get_current_sp ())
+#define __nds__set_current_sp(a) \
+  (__builtin_riscv_set_current_sp ((a)))
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));

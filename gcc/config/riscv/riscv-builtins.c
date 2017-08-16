@@ -415,7 +415,6 @@ riscv_expand_builtin_direct (enum insn_code icode, rtx target, tree exp,
 	      == insn_data[icode].n_generator_args);
   for (int argno = 0; argno < call_expr_nargs (exp); argno++)
     riscv_prepare_builtin_arg (&ops[opno++], exp, argno);
-
   return riscv_expand_builtin_insn (icode, opno, ops, has_target_p);
 }
 
