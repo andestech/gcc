@@ -188,7 +188,7 @@ Enum(riscv_mul_type) String(slow) Value(MUL_TYPE_SLOW)
 
 mmove-bytes-per-loop=
 Target RejectNegative Joined UInteger Var(riscv_movebytes_per_loop) Init(0)
--mmove-byte-per-loop=N Set <N> bytes of data movement can be handled per loop iteration.
+-mmove-bytes-per-loop=N Set <N> bytes of data movement can be handled per loop iteration.
 
 malways-align
 Target Mask(ALWAYS_ALIGN)

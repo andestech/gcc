@@ -885,7 +885,10 @@ while (0)
 
 /* The maximum number of bytes copied by one iteration of a cpymemsi loop.  */
 
-#define RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER riscv_movebytes_per_loop
+#define RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER 		\
+  ((riscv_movebytes_per_loop < UNITS_PER_WORD)		\
+	? UNITS_PER_WORD				\
+	: riscv_movebytes_per_loop)
 
 /* The maximum number of bytes that can be copied by a straight-line
    cpymemsi implementation.  */

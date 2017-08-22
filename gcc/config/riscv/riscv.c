@@ -5094,6 +5094,8 @@ riscv_option_override (void)
 
   if (riscv_movebytes_per_loop == 0)
     riscv_movebytes_per_loop = UNITS_PER_WORD * 3;
+  else if (riscv_movebytes_per_loop < UNITS_PER_WORD)
+    riscv_movebytes_per_loop = UNITS_PER_WORD;
 
   /* Validate -mpreferred-stack-boundary= value.  */
   riscv_stack_boundary = ABI_STACK_BOUNDARY;
