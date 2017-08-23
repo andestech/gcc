@@ -1024,6 +1024,10 @@ fargument-noalias-anything
 Common Ignore
 Does nothing. Preserved for backward compatibility.
 
+fargument-restrict
+Common Report Var(flag_argument_restrict) Optimization
+Force pointer arguments to be qualified with restrict keyword.
+
 fsanitize=
 Common Driver Report Joined
 Select what to sanitize.
