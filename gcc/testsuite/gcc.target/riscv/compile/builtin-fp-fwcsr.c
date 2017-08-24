@@ -7,9 +7,7 @@
 #include <nds_intrinsic.h>
 
 void
-func (void)
+func (unsigned long src)
 {
-  unsigned long src;
-  src = 0x60;
   __nds__fscsr (src);
 }

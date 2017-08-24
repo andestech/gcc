@@ -12,9 +12,9 @@ func (void)
 }
 
 long
-func1 (void)
+func1 (long id, long arg1)
 {
-  return __nds__ecall1 (0x12341234, 0x23452345);
+  return __nds__ecall1 (id, arg1);
 }
 
 long
@@ -24,9 +24,9 @@ func2 (void)
 }
 
 long
-func3 (void)
+func3 (long id, long arg1, long arg2, long arg3)
 {
-  return __nds__ecall3 (0x12341234, 0x23452345, 0x34563456, 0x45674567);
+  return __nds__ecall3 (id, arg1, arg2, arg3);
 }
 
 long
@@ -37,10 +37,9 @@ func4 (void)
 }
 
 long
-func5 (void)
+func5 (long id, long arg1, long arg2, long arg3, long arg4, long arg5)
 {
-  return __nds__ecall5 (0x12341234, 0x23452345, 0x34563456, 0x45674567,
-			0x56785678, 0x67896789);
+  return __nds__ecall5 (id, arg1, arg2, arg3, arg4, arg5);
 }
 
 long

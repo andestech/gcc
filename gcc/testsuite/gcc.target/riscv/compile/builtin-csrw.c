@@ -8,15 +8,13 @@
 #include <nds_intrinsic.h>
 
 void
-func (void)
+func (unsigned long src)
 {
-  unsigned long src = 0x123;
-  __nds__csrw (src, 0x456);
+  __nds__csrw (src, 0x304);
 }
 
 void
 func_i (void)
 {
-  unsigned long src = 0x123;
-  __nds__csrw (src, 0x4);
+  __nds__csrw (0x4, 0x304);
 }
