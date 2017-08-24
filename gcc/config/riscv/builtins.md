@@ -51,12 +51,12 @@
   "csrr\t%0, %V1")
 
 (define_insn "riscv_csr<csr_pat><GPR:mode>"
-  [(unspec_volatile:GPR [(match_operand:GPR 0 "immediate_operand" "i, i")
-			 (match_operand:SI  1 "csr_operand" "r, K")] UVCSR)]
+  [(unspec_volatile:GPR [(match_operand:SI  0 "csr_operand" "r, K")
+			 (match_operand:GPR 1 "immediate_operand" "i, i")] UVCSR)]
   ""
   "@
-   csr<csr_pat>\t%V0,%1
-   csr<csr_pat>\t%V0,%1")
+   csr<csr_pat>\t%V1,%0
+   csr<csr_pat>i\t%V1,%0")
 
 (define_expand "riscv_get_current_sp<GPR:mode>"
   [(match_operand:GPR 0 "register_operand" "")]
@@ -327,10 +327,10 @@
 
 (define_insn "riscv_csr<csr_pat><GPR:mode>"
   [(set (match_operand:GPR 0 "register_operand" "=r, r")
-        (unspec_volatile:GPR [(match_operand:GPR 1 "immediate_operand" "i, i")
-			      (match_operand:SI 2 "csr_operand" "r, K")] UVCSRR))]
+        (unspec_volatile:GPR [(match_operand:GPR 1 "csr_operand" "r, K")
+			      (match_operand:SI 2 "immediate_operand" "i, i")] UVCSRR))]
   ""
   "@
-   csr<csr_pat>\t%0, %V1, %2
-   csr<csr_pat>i\t%0, %V1, %2"
+   csr<csr_pat>\t%0, %V2, %1
+   csr<csr_pat>i\t%0, %V2, %1"
 )

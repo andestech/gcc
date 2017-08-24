@@ -568,7 +568,7 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
     case RISCV_BUILTIN_CSRW:
     case RISCV_BUILTIN_CSRS:
     case RISCV_BUILTIN_CSRC:
-      if (!CONST_INT_P (expand_normal (CALL_EXPR_ARG (exp, 0))))
+      if (!CONST_INT_P (expand_normal (CALL_EXPR_ARG (exp, 1))))
 	{
 	  error ("invalid argument to built-in function, "
 		 "the first pass argument must be constant value in -O0 level.");
