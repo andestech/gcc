@@ -9,5 +9,5 @@ void
 func (void)
 {
   unsigned long data;
-  data = __nds__csrr (0x123);
+  data = __nds__csrr (0x304);
 }
