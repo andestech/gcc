@@ -833,6 +833,10 @@ Wvector-operation-performance
 Common Var(warn_vector_operation_performance) Warning
 Warn when a vector operation is compiled outside the SIMD.
 
+Wargument-restrict
+Common Var(warn_argument_restrict) Warning
+Warn when an argument is set to restrict by -fargument-restrict option.
+
 Xassembler
 Driver Separate
 

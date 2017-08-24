@@ -7159,7 +7159,11 @@ grokdeclarator (const struct c_declarator *declarator,
             if (flag_argument_restrict
                && POINTER_TYPE_P (type)
                && C_TYPE_OBJECT_OR_INCOMPLETE_P (TREE_TYPE (type)))
-              type_quals |= TYPE_QUAL_RESTRICT;
+	      {
+		type_quals |= TYPE_QUAL_RESTRICT;
+		if (name && warn_argument_restrict)
+		  warning_at (loc, OPT_Wargument_restrict, "%qE array parameter is set to restrict", name);
+	      }
 
 	    if (type_quals)
 	      type = c_build_qualified_type (type, type_quals);
@@ -7193,7 +7197,11 @@ grokdeclarator (const struct c_declarator *declarator,
 	    if (flag_argument_restrict
 	       && POINTER_TYPE_P (type)
 	       && C_TYPE_OBJECT_OR_INCOMPLETE_P (TREE_TYPE (type)))
-	      type_quals |= TYPE_QUAL_RESTRICT;
+	      {
+		type_quals |= TYPE_QUAL_RESTRICT;
+		if (name && warn_argument_restrict)
+		  warning_at (loc, OPT_Wargument_restrict, "%qE parameter is set to restrict", name);
+	      }
 
 	    if (type_quals)
 	      type = c_build_qualified_type (type, type_quals);
