@@ -568,11 +568,16 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
     case RISCV_BUILTIN_CSRW:
     case RISCV_BUILTIN_CSRS:
     case RISCV_BUILTIN_CSRC:
-      if (optimize == 0
-	  && !CONST_INT_P (expand_normal (CALL_EXPR_ARG (exp, 1))))
+      if (!CONST_INT_P (expand_normal (CALL_EXPR_ARG (exp, 1))))
 	{
-	  error ("invalid argument to built-in function, "
-		 "the second argument must be constant value in -O0 level.");
+	  if (optimize == 0)
+	    error ("Invalid argument to built-in function, "
+		   "the second argument must be constant value, if that is"
+		   "constant value try to compile with higher optimization"
+		   " level (e.g. -O1).");
+	  else
+	    error ("Invalid argument to built-in function, "
+		   "the second argument must be constant value.");
 	  return NULL_RTX;
 	}
       break;
