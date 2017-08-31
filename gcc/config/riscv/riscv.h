@@ -395,9 +395,9 @@ enum reg_class
   GR_REGS,			/* integer registers */
   FP_REGS,			/* floating-point registers */
   FRAME_REGS,			/* arg pointer and frame pointer */
-  ALL_REGS,			/* all registers */
   T0_REG,			/* T0 register */
   A7_REG,			/* A7 register */
+  ALL_REGS,			/* all registers */
   LIM_REG_CLASSES		/* max value + 1 */
 };
 
