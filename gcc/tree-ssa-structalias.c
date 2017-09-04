@@ -8724,7 +8724,7 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *) { return flag_reduce_passed_addressof; }
+  virtual bool gate (function *) { return flag_ipa_escape_analysis; }
   virtual unsigned int execute (function *) { return find_referenced_ptrargs (); }
 }; // class pass_referenced_ptrargs
 
@@ -8766,7 +8766,7 @@ reduce_passed_addressof (void)
   gimple_stmt_iterator si;
   struct function *func;
 
-  if (!flag_reduce_passed_addressof)
+  if (!flag_ipa_escape_analysis)
     return 0;
 
   if (dump_file)
@@ -8888,7 +8888,7 @@ public:
   {}
 
   /* opt_pass methods: */
-  virtual bool gate (function *) { return flag_reduce_passed_addressof; }
+  virtual bool gate (function *) { return flag_ipa_escape_analysis; }
   virtual unsigned int execute (function *) { return reduce_passed_addressof (); }
 }; // class pass_referenced_ptrargs
 

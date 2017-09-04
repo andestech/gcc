@@ -1032,8 +1032,8 @@ fargument-restrict
 Common Report Var(flag_argument_restrict) Optimization
 Force pointer arguments to be qualified with restrict keyword.
 
-freduce-passed-addressof
-Common Report Var(flag_reduce_passed_addressof) Optimization
+mipa-escape-analysis
+Common Report Var(flag_ipa_escape_analysis) Optimization
 Try to reduce the number of passing &var argument for improving points-to analysis.
 
 fsanitize=
