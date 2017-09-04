@@ -7156,13 +7156,13 @@ grokdeclarator (const struct c_declarator *declarator,
 	    type = c_build_pointer_type (type);
 	    type_quals = array_ptr_quals;
 
-            if (flag_argument_restrict
+            if (flag_restrict_argument
                && POINTER_TYPE_P (type)
                && C_TYPE_OBJECT_OR_INCOMPLETE_P (TREE_TYPE (type)))
 	      {
 		type_quals |= TYPE_QUAL_RESTRICT;
 		if (name && warn_argument_restrict)
-		  warning_at (loc, OPT_Wargument_restrict, "%qE array parameter is set to restrict", name);
+		  warning_at (loc, OPT_Wrestrict_argument, "%qE array parameter is set to restrict", name);
 	      }
 
 	    if (type_quals)
@@ -7194,13 +7194,13 @@ grokdeclarator (const struct c_declarator *declarator,
 	  }
 	else
 	  {
-	    if (flag_argument_restrict
+	    if (flag_restrict_argument
 	       && POINTER_TYPE_P (type)
 	       && C_TYPE_OBJECT_OR_INCOMPLETE_P (TREE_TYPE (type)))
 	      {
 		type_quals |= TYPE_QUAL_RESTRICT;
 		if (name && warn_argument_restrict)
-		  warning_at (loc, OPT_Wargument_restrict, "%qE parameter is set to restrict", name);
+		  warning_at (loc, OPT_Wrestrict_argument, "%qE parameter is set to restrict", name);
 	      }
 
 	    if (type_quals)
