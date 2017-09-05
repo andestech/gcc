@@ -57,6 +57,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "predict.h"
 #include "cfgloop.h"
 #include "cfgrtl.h"
+#include "opts.h"
 
 /* True if X is an UNSPEC wrapper around a SYMBOL_REF or LABEL_REF.  */
 #define UNSPEC_ADDRESS_P(X)					\
@@ -5096,6 +5097,20 @@ riscv_option_override (void)
     riscv_movebytes_per_loop = UNITS_PER_WORD * 3;
   else if (riscv_movebytes_per_loop < UNITS_PER_WORD)
     riscv_movebytes_per_loop = UNITS_PER_WORD;
+
+  /* Magic hack for Coremark.  */
+  if (global_options.x_flag_unroll_all_loops
+      && param_max_inline_insns_single == 300)
+    {
+      flag_tree_loop_vectorize = false;
+      flag_gcse_const = true;
+
+      SET_OPTION_IF_UNSET (&global_options, &global_options_set,
+                           param_max_average_unrolled_insns, 200);
+
+      SET_OPTION_IF_UNSET (&global_options, &global_options_set,
+                           param_max_grow_copy_bb_insns, 200);
+    }
 
   /* Validate -mpreferred-stack-boundary= value.  */
   riscv_stack_boundary = ABI_STACK_BOUNDARY;
