@@ -1944,6 +1944,15 @@ riscv_rtx_costs (rtx x, machine_mode mode, int outer_code, int opno ATTRIBUTE_UN
       *total = COSTS_N_INSNS (GET_MODE_SIZE (mode) > UNITS_PER_WORD ? 2 : 1);
       return false;
 
+    case SIGN_EXTRACT:
+      if (TARGET_BFO)
+	{
+	  *total = COSTS_N_INSNS (1);
+	  return true;
+	}
+      else
+	return false;
+
     case AND:
     case IOR:
     case XOR:
@@ -1952,6 +1961,12 @@ riscv_rtx_costs (rtx x, machine_mode mode, int outer_code, int opno ATTRIBUTE_UN
       return false;
 
     case ZERO_EXTRACT:
+      if (TARGET_BFO)
+	{
+	  *total = COSTS_N_INSNS (1);
+	  return true;
+	}
+
       /* This is an SImode shift.  */
       if (outer_code == SET
 	  && CONST_INT_P (XEXP (x, 1))

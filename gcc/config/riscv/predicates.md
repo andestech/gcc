@@ -231,3 +231,19 @@
 	  && ((TARGET_RVE && (REGNO (op) == T0_REGNUM))
 	      || (!TARGET_RVE && (REGNO (op) == A7_REGNUM))));
 })
+
+(define_predicate "extract_size_imm_si"
+  (and (match_code "const_int")
+         (match_test "IN_RANGE (INTVAL (op), 1, 32)")))
+
+(define_predicate "extract_loc_imm_si"
+  (and (match_code "const_int")
+         (match_test "IN_RANGE (INTVAL (op), 0, 31)")))
+
+(define_predicate "extract_size_imm_di"
+  (and (match_code "const_int")
+         (match_test "IN_RANGE (INTVAL (op), 1, 64)")))
+
+(define_predicate "extract_loc_imm_di"
+  (and (match_code "const_int")
+         (match_test "IN_RANGE (INTVAL (op), 0, 63)")))

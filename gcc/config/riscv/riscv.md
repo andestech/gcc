@@ -330,6 +330,9 @@
 ;; Iterator for hardware-supported integer modes.
 (define_mode_iterator ANYI [QI HI SI (DI "TARGET_64BIT")])
 
+;; Iterator for hardware-supported integer modes.
+(define_mode_iterator ANY32 [QI HI SI])
+
 ;; Iterator for hardware-supported floating-point modes.
 (define_mode_iterator ANYF [(SF "TARGET_HARD_FLOAT")
 			    (DF "TARGET_DOUBLE_FLOAT")])
@@ -378,6 +381,12 @@
 ;; the controlling mode.
 (define_mode_attr HALFMODE [(DF "SI") (DI "SI") (TF "DI")])
 
+;; Give the number of bits in the mode
+(define_mode_attr sizen [(QI "8") (HI "16") (SI "32") (DI "64")])
+
+;; Give the number of shift limitation in the mode
+(define_mode_attr sh_limit [(QI "7") (HI "15") (SI "31") (DI "63")])
+
 ;; Iterator and attributes for floating-point rounding instructions.
 (define_int_iterator RINT [UNSPEC_LRINT UNSPEC_LROUND])
 (define_int_attr rint_pattern [(UNSPEC_LRINT "rint") (UNSPEC_LROUND "round")])
@@ -390,6 +399,10 @@
 ;; This code iterator allows signed and unsigned widening multiplications
 ;; to use the same template.
 (define_code_iterator any_extend [sign_extend zero_extend])
+
+;; This code iterator allows signed and unsigned extract
+;; to use the same template.
+(define_code_iterator any_extract [sign_extract zero_extract])
 
 ;; This code iterator allows the two right shift instructions to be
 ;; generated from the same template.
@@ -426,8 +439,8 @@
 		     (lt "") (ltu "u")
 		     (le "") (leu "u")])
 
-;; <su> is like <u>, but the signed form expands to "s" rather than "".
-(define_code_attr su [(sign_extend "s") (zero_extend "u")])
+;; <sz> is like <u>, but the signed form expands to "s" rather than "".
+(define_code_attr sz [(sign_extend "s") (zero_extend "z") (sign_extract "s") (zero_extract "z")])
 
 ;; <optab> expands to the name of the optab for a particular code.
 (define_code_attr optab [(ashift "ashl")
@@ -445,7 +458,9 @@
 			 (xor "xor")
 			 (and "and")
 			 (plus "add")
-			 (minus "sub")])
+			 (minus "sub")
+			 (sign_extend "extend")
+			 (zero_extend "zero_extend")])
 
 ;; <insn> expands to the name of the insn that implements a particular code.
 (define_code_attr insn [(ashift "sll")
@@ -1095,12 +1110,13 @@
 (define_insn_and_split "zero_extendsidi2"
   [(set (match_operand:DI     0 "register_operand"     "=r,r")
 	(zero_extend:DI
-	    (match_operand:SI 1 "nonimmediate_operand" " r,m")))]
+	   (match_operand:SI 1 "nonimmediate_operand" " r,m")))]
   "TARGET_64BIT"
   "@
-   #
+   bfoz\t%0,%1,31,0
    lwu\t%0,%1"
   "&& reload_completed
+   && !TARGET_BFO
    && REG_P (operands[1])
    && !paradoxical_subreg_p (operands[0])"
   [(set (match_dup 0)
@@ -1114,12 +1130,13 @@
 (define_insn_and_split "zero_extendhi<GPR:mode>2"
   [(set (match_operand:GPR    0 "register_operand"     "=r,r")
 	(zero_extend:GPR
-	    (match_operand:HI 1 "nonimmediate_operand" " r,m")))]
+	   (match_operand:HI 1 "nonimmediate_operand" " r,m")))]
   ""
   "@
-   #
+   bfoz\t%0,%1,15,0
    lhu\t%0,%1"
   "&& reload_completed
+   && !TARGET_BFO
    && REG_P (operands[1])
    && !paradoxical_subreg_p (operands[0])"
   [(set (match_dup 0)
@@ -1156,9 +1173,20 @@
 	(sign_extend:DI
 	    (match_operand:SI 1 "nonimmediate_operand" " r,m")))]
   "TARGET_64BIT"
-  "@
-   sext.w\t%0,%1
-   lw\t%0,%1"
+{
+  switch (which_alternative)
+    {
+      case 0:
+	if (TARGET_BFO)
+	  return "bfos\t%0,%1,31,0";
+	else
+	  return "sext.w\t%0,%1";
+      case 1:
+	return "lw\t%0,%1";
+      default:
+	gcc_unreachable ();
+    }
+}
   [(set_attr "move_type" "move,load")
    (set_attr "mode" "DI")])
 
@@ -1168,9 +1196,10 @@
 	    (match_operand:SHORT 1 "nonimmediate_operand" " r,m")))]
   ""
   "@
-   #
+   bfos\t%0,%1,<SHORT:sh_limit>,0
    l<SHORT:size>\t%0,%1"
   "&& reload_completed
+   && !TARGET_BFO
    && REG_P (operands[1])
    && !paradoxical_subreg_p (operands[0])"
   [(set (match_dup 0) (ashift:SI (match_dup 1) (match_dup 2)))
@@ -2541,6 +2570,145 @@
   ""
   ".innermost_loop_end"
   [(set_attr "length" "0")]
+)
+
+;;
+;;  ....................
+;;
+;;	BIT FIELD OPERATION
+;;
+;;  ....................
+;;
+
+;; BFO[SZ]: msb >= lsb: Extract sequence bits.
+(define_insn "*bfo_<sz>extra<mode>4"
+  [(set (match_operand:GPR 0 "register_operand"                      "=r")
+	(any_extract:GPR (match_operand:GPR 1 "register_operand"     " r")
+			  (match_operand 2 "extract_size_imm_<mode>" " n")
+			  (match_operand 3 "extract_loc_imm_<mode>"  " n")))]
+  "TARGET_BFO
+   && IN_RANGE (INTVAL (operands[2]) + INTVAL (operands[3]),
+                1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[2] = GEN_INT (INTVAL (operands[2]) + INTVAL (operands[3]) - 1);
+    return "bfo<sz>\t%0,%1,%2,%3";
+  }
+)
+
+;; BFOZ: msb >= lsb: Extract sequence bits.
+(define_insn "*zero_extend<GPR:mode>_lshr<SHORT:mode>"
+  [(set (match_operand:GPR 0 "register_operand"                                    "=r")
+	(zero_extend:GPR (lshiftrt:SHORT (match_operand:SHORT 1 "register_operand" " r")
+			 (match_operand 2 "const_int_operand"                      " n"))))]
+  "TARGET_BFO
+   && UINTVAL (operands[2]) < GET_MODE_BITSIZE (<SHORT:MODE>mode)"
+  "bfoz\t%0, %1, <SHORT:sh_limit>, %2"
+  [(set_attr "type" "shift")
+   (set_attr "mode" "<GPR:MODE>")])
+
+;; BFOS: msb >= lsb
+(define_insn "*extend<GPR:mode>_ashr<SHORT:mode>"
+  [(set (match_operand:GPR 0 "register_operand"                                    "=r")
+	(sign_extend:GPR (ashiftrt:SHORT (match_operand:SHORT 1 "register_operand" " r")
+					 (match_operand 2 "const_int_operand"      " n"))))]
+  "TARGET_BFO
+   && UINTVAL (operands[2]) < GET_MODE_BITSIZE (<SHORT:MODE>mode)"
+  "bfos\t%0, %1, <SHORT:sh_limit>, %2"
+  [(set_attr "type" "shift")
+   (set_attr "mode" "<GPR:MODE>")])
+
+;; BFO[SZ]: msb < lsb: Combine pass doesn't convert (and (ashift) Y) to
+;; zero_extract when exact_log2 (Y + 1) < 0.
+(define_insn "*bfoz<mode>4"
+  [(set (match_operand:GPR 0 "register_operand"                        "=r")
+	(and:GPR (ashift:GPR (match_operand:GPR 1 "register_operand"   " r")
+			     (match_operand 2 "extract_loc_imm_<mode>" " n"))
+		 (match_operand 3 "const_int_operand"                  " i")))]
+  "TARGET_BFO
+   && (UINTVAL (operands[2]) != 0)
+   && (exact_log2 ((UINTVAL (operands[3]) >> UINTVAL (operands[2])) + 1) > 1)
+   && ((UINTVAL (operands[3]) & ((1 << UINTVAL (operands[2])) - 1)) == 0)"
+  {
+    operands[3] =
+      GEN_INT (exact_log2 ((UINTVAL (operands[3]) >> UINTVAL (operands[2])) + 1)
+	       + UINTVAL (operands[2]) - 1) ;
+    return "bfoz\t%0,%1,%2,%3";
+  }
+)
+
+;; BFOZ: msb = 0.
+(define_insn "*bfoz0<mode>4"
+  [(set (match_operand:GPR 0 "register_operand"                        "=r")
+	(and:GPR (ashift:GPR (match_operand:GPR 1 "register_operand"   " r")
+			     (match_operand 2 "extract_loc_imm_<mode>" " n"))
+		 (match_operand 3 "const_int_operand"                  " i")))]
+  "TARGET_BFO
+   && (UINTVAL (operands[2]) != 0)
+   && (exact_log2 ((UINTVAL (operands[3]) >> UINTVAL (operands[2])) + 1) == 1)
+   && ((UINTVAL (operands[3]) & ((1 << UINTVAL (operands[2])) - 1)) == 0)"
+  {
+    return "bfoz\t%0,%1,0,%2";
+  }
+)
+
+;; BFO: msb = 0.
+(define_insn "*bfos0<mode>4"
+  [(set (match_operand:GPR 0 "register_operand"                              "=r")
+	(ashift:GPR (any_extract:GPR (match_operand:GPR 1 "register_operand" " r")
+				     (const_int 1)
+				     (const_int 0))
+		    (match_operand 2 "extract_loc_imm_<mode>"                " n")))]
+  "TARGET_BFO"
+  {
+    return "bfo<sz>\t%0,%1,0,%2";
+  }
+)
+
+;; BFO: msb < lsb.
+(define_insn "*bfos_<sz>extra_<mode>4"
+  [(set (match_operand:GPR 0 "register_operand"                                 "=r")
+	(ashift:GPR (any_extract:GPR (match_operand:GPR 1 "register_operand"    " r")
+				     (match_operand 2 "extract_size_imm_<mode>" " n")
+				     (const_int 0))
+		    (match_operand 3 "extract_loc_imm_<mode>"                   " n")))]
+  "TARGET_BFO
+   && UINTVAL (operands[2]) != 1"
+  {
+    operands[2] =  GEN_INT (UINTVAL (operands[2]) + UINTVAL (operands[3]) - 1);
+    return "bfo<sz>\t%0,%1,%3,%2";
+  }
+)
+
+;; BFO: msb < lsb
+(define_insn "*<optab><ANY32:mode>_shft_<GPR:mode>"
+  [(set (match_operand:GPR 0 "register_operand"               "=r")
+	(ashift:GPR (any_extend:GPR
+		    (match_operand:ANY32 1 "register_operand" " r"))
+		    (match_operand 2 "const_int_operand"      " n")))]
+  "TARGET_BFO
+   && (UINTVAL (operands[2]) < <GPR:sizen>)
+   && ((INTVAL (operands[2]) + <ANY32:sizen>) <= <GPR:sizen>)"
+{
+  operands[3] = GEN_INT (<ANY32:sizen> + INTVAL (operands[2]) - 1);
+  return "bfo<sz>\t%0, %1, %2, %3";
+}
+  [(set_attr "type" "shift")]
+)
+
+;; BFO: msb < lsb
+(define_insn "*<optab><GPR:mode>_ashl<ANY32:mode>"
+  [(set (match_operand:GPR 0 "register_operand"                 "=r")
+	(any_extend:GPR
+	(ashift:ANY32 (match_operand:ANY32 1 "register_operand" " r")
+		      (match_operand 2 "const_int_operand"      " n"))))]
+  "TARGET_BFO
+   && UINTVAL (operands[2]) < GET_MODE_BITSIZE (<ANY32:MODE>mode)
+   && ((INTVAL (operands[2]) + <ANY32:sizen>) <= <GPR:sizen>)"
+{
+  operands[3] = GEN_INT (<ANY32:sizen> + INTVAL (operands[2]) - 1);
+  return "bfo<sz>\t%0, %1, %2, %3";
+}
+  [(set_attr "type" "shift")]
 )
 
 (include "sync.md")

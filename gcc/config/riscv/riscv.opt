@@ -140,6 +140,10 @@ matomic
 Target Report Mask(ATOMIC)
 Use atomic extension instructions.
 
+mbfo
+Target Report Mask(BFO)
+Use hardware instructions for bitfields extract: bfos, bfoz.
+
 Mask(HARD_FLOAT)
 
 Mask(DOUBLE_FLOAT)
