@@ -1983,14 +1983,19 @@
 	    (match_operator 0 "equality_operator"
 	        [(zero_extract:X (match_operand:X 2 "register_operand" "r")
 				 (const_int 1)
-				 (match_operand 3 "branch_on_bit_operand"))
+				 (match_operand 3 "branch_bbcs_operand"))
 				 (const_int 0)])
 	    (label_ref (match_operand 1))
 	    (pc)))
    (clobber (match_scratch:X 4 "=&r"))]
   ""
-  "#"
-  "reload_completed"
+{
+  if (GET_CODE (operands[0]) == EQ)
+    return "bbc\t%2,%3,%1";
+  else
+    return "bbs\t%2,%3,%1";
+}
+  "reload_completed && !TARGET_BBCS"
   [(set (match_dup 4)
 	(ashift:X (match_dup 2) (match_dup 3)))
    (set (pc)

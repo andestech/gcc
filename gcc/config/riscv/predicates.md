@@ -72,6 +72,16 @@
   (and (match_code "const_int")
        (match_test "INTVAL (op) >= IMM_BITS - 1")))
 
+;; Only use branch-on-one-bit when TARGET_BBCS is on.
+(define_predicate "branch_bbcs_operand"
+  (match_code "const_int")
+{
+  if (TARGET_BBCS && (INTVAL (op) >= 0))
+    return true;
+
+  return (INTVAL (op) >= IMM_BITS - 1);
+})
+
 ;; A legitimate CONST_INT operand that takes more than one instruction
 ;; to load.
 (define_predicate "splittable_const_int_operand"
