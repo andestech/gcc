@@ -152,6 +152,10 @@ mbimm
 Target Report Mask(BIMM)
 Use hardware instructions: beqc, bnec.
 
+mlea
+Target Report Mask(LEA)
+Use hardware load effective address instructions: lea.
+
 Mask(HARD_FLOAT)
 
 Mask(DOUBLE_FLOAT)

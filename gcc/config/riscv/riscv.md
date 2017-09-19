@@ -2741,6 +2741,117 @@
   [(set_attr "type" "shift")]
 )
 
+;;
+;;  ....................
+;;
+;;	LOAD ADDRESS
+;;
+;;  ....................
+;;
+
+(define_insn "lea_h<mode>"
+  [(set (match_operand:P                   0 "register_operand" "=r")
+	(plus:P (ashift:P (match_operand:P 1 "register_operand" " r")
+			  (const_int 1))
+		(match_operand:P           2 "register_operand" " r")))]
+  "TARGET_LEA"
+  { return "lea.h\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")])
+
+(define_insn "lea_w<mode>"
+  [(set (match_operand:P                   0 "register_operand" "=r")
+	(plus:P (ashift:P (match_operand:P 1 "register_operand" " r")
+			  (const_int 2))
+		(match_operand:P           2 "register_operand" " r")))]
+  "TARGET_LEA"
+  { return "lea.w\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")])
+
+(define_insn "lea_d<mode>"
+  [(set (match_operand:P                   0 "register_operand" "=r")
+	(plus:P (ashift:P (match_operand:P 1 "register_operand" " r")
+			  (const_int 3))
+		(match_operand:P           2 "register_operand" " r")))]
+  "TARGET_LEA"
+  { return "lea.d\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")])
+
+(define_insn "lea_b_ze"
+  [(set (match_operand:DI 0 "register_operand"                          "=r")
+	(plus:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+		 (match_operand:DI 2 "register_operand"                 " r")))]
+  "TARGET_64BIT && TARGET_LEA"
+  { return "lea.b.ze\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "lea_h_ze"
+  [(set (match_operand:DI 0 "register_operand"                                     "=r")
+	(plus:DI (ashift:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+			    (const_int 1))
+		 (match_operand:DI 2 "register_operand"                            " r")))]
+  "TARGET_64BIT && TARGET_LEA"
+  { return "lea.h.ze\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "lea_w_ze"
+  [(set (match_operand:DI 0 "register_operand"                                     "=r")
+	(plus:DI (ashift:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+			    (const_int 2))
+		 (match_operand:DI 2 "register_operand"                            " r")))]
+  "TARGET_64BIT && TARGET_LEA"
+  { return "lea.w.ze\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "lea_d_ze"
+  [(set (match_operand:DI 0 "register_operand"                                     "=r")
+	(plus:DI (ashift:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+			    (const_int 3))
+		 (match_operand:DI 2 "register_operand"                            " r")))]
+  "TARGET_64BIT && TARGET_LEA"
+  { return "lea.d.ze\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn_and_split "lea_andim_ashift"
+  [(set (match_operand:DI 0 "register_operand")
+	(plus:DI (and:DI (ashift:DI (match_operand:DI 1 "register_operand")
+				    (match_operand 2 "const_int_operand"))
+			 (match_operand 3 "const_int_operand"))
+	(match_operand:DI 4 "register_operand")))]
+  "TARGET_64BIT && TARGET_LEA
+   && IN_RANGE (UINTVAL (operands[2]), 0, 3)
+   && exact_log2 ((INTVAL (operands[3]) >> INTVAL (operands[2])) + 1) >= 0
+   && (INTVAL (operands[3]) & ((1 << INTVAL (operands[2])) - 1)) == 0"
+{
+  switch (UINTVAL (operands[2]))
+    {
+    case 0:
+      return "lea.b.ze %0, %4, %1";
+    case 1:
+      return "lea.h.ze %0, %4, %1";
+    case 2:
+      return "lea.w.ze %0, %4, %1";
+    case 3:
+      return "lea.d.ze %0, %4, %1";
+    default:
+      gcc_unreachable ();
+    }
+}
+  ""
+  [(set (match_dup 0)
+	(plus:DI (ashift:DI (zero_extend:DI (match_dup 5))
+			    (match_dup 2))
+		 (match_dup 4)))]
+{
+  operands[5] = gen_lowpart (SImode, operands[1]);
+})
+
 (include "sync.md")
 (include "peephole.md")
 (include "pic.md")
