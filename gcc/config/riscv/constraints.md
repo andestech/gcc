@@ -89,3 +89,8 @@
    A constant @code{move_operand}."
   (and (match_operand 0 "move_operand")
        (match_test "CONSTANT_P (op)")))
+
+(define_constraint "Bz07"
+  "Zero extended immediate 7-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 7) && ival >= 0")))

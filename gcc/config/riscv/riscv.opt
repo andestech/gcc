@@ -148,6 +148,10 @@ mbbcs
 Target Report Mask(BBCS)
 Use hardware instructions for bit testing branch: bbc, bbs.
 
+mbimm
+Target Report Mask(BIMM)
+Use hardware instructions: beqc, bnec.
+
 Mask(HARD_FLOAT)
 
 Mask(DOUBLE_FLOAT)

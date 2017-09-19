@@ -257,3 +257,12 @@
 (define_predicate "extract_loc_imm_di"
   (and (match_code "const_int")
          (match_test "IN_RANGE (INTVAL (op), 0, 63)")))
+
+(define_predicate "branch_bimm_operand"
+  (match_code "const_int")
+{
+  if (TARGET_BIMM)
+    return satisfies_constraint_Bz07 (op);
+  else
+    return true;
+})

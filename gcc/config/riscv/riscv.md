@@ -203,7 +203,7 @@
 ;; nop		no operation
 ;; ghost	an instruction that produces no real code
 (define_attr "type"
-  "unknown,branch,jump,call,load,fpload,store,fpstore,
+  "unknown,branch,branch_imm,jump,call,load,fpload,store,fpstore,
    mtc,mfc,const,arith,logical,shift,slt,imul,idiv,move,fmove,fadd,fmul,
    fmadd,fdiv,fcmp,fcvt,fsqrt,multi,auipc,sfb_alu,nop,ghost"
   (cond [(eq_attr "got" "load") (const_string "load")
@@ -243,6 +243,13 @@
 	  (eq_attr "type" "branch")
 	  (if_then_else (and (le (minus (match_dup 0) (pc)) (const_int 4088))
 				  (le (minus (pc) (match_dup 0)) (const_int 4092)))
+	  (const_int 4)
+	  (const_int 8))
+
+	  ;; Branches further than +/- 1 KiB require two instructions.
+	  (eq_attr "type" "branch_imm")
+	  (if_then_else (and (le (minus (match_dup 0) (pc)) (const_int 1016))
+			     (le (minus (pc) (match_dup 0)) (const_int 1020)))
 	  (const_int 4)
 	  (const_int 8))
 
@@ -431,6 +438,9 @@
 (define_code_iterator any_lt [lt ltu])
 (define_code_iterator any_le [le leu])
 
+;; Equality operators.
+(define_code_iterator equality_op [eq ne])
+
 ;; <u> expands to an empty string when doing a signed operation and
 ;; "u" when doing an unsigned operation.
 (define_code_attr u [(sign_extend "") (zero_extend "u")
@@ -460,7 +470,9 @@
 			 (plus "add")
 			 (minus "sub")
 			 (sign_extend "extend")
-			 (zero_extend "zero_extend")])
+			 (zero_extend "zero_extend")
+			 (eq "eq")
+			 (ne "ne")])
 
 ;; <insn> expands to the name of the insn that implements a particular code.
 (define_code_attr insn [(ashift "sll")
@@ -2037,6 +2049,19 @@
 {
   operands[3] = GEN_INT (GET_MODE_BITSIZE (<MODE>mode) - INTVAL (operands[3]));
 })
+
+(define_insn "*branch_imms7<mode>"
+  [(set (pc)
+	(if_then_else
+	  (equality_op (match_operand:X 1 "register_operand" "r")
+			     (match_operand:X 2 "branch_bimm_operand" "Bz07"))
+	(label_ref (match_operand 0 "" ""))
+	(pc)))]
+  "TARGET_BIMM"
+  "b<optab>c\t%1,%2,%0"
+  [(set_attr "type" "branch_imm")
+   (set_attr "mode" "none")])
+
 
 ;;
 ;;  ....................
