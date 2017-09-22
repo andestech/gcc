@@ -625,6 +625,20 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
   if (subset_list->lookup ("c"))
     *flags |= MASK_RVC;
 
+  if (subset_list->lookup ("x"))
+    {
+      if (strcmp (isa, "v5m") == 0)
+	{
+	  *flags |= MASK_V5M;
+	  *flags |= MASK_BFO;
+	  *flags |= MASK_BBCS;
+	  *flags |= MASK_BIMM;
+	  *flags |= MASK_LEA;
+	}
+      else
+	error_at (loc, "-march=%s: unsupported NSE ISA substring", isa);
+    }
+
   if (current_subset_list)
     delete current_subset_list;
 

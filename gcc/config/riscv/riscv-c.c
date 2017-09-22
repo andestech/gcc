@@ -101,4 +101,18 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
       builtin_define ("__riscv_cmodel_pic");
       break;
     }
+
+  if (TARGET_V5M)
+    {
+      builtin_define ("__riscv_v5m");
+      builtin_define ("__riscv_ex9");
+    }
+  if (TARGET_BFO)
+    builtin_define ("__riscv_bfo");
+  if (TARGET_LEA)
+    builtin_define ("__riscv_lea");
+  if (TARGET_BBCS)
+    builtin_define ("__riscv_bbcs");
+  if (TARGET_BIMM)
+    builtin_define ("__riscv_bimm");
 }

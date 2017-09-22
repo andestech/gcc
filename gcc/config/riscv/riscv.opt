@@ -136,6 +136,8 @@ Mask(64BIT)
 
 Mask(MUL)
 
+Mask(V5M)
+
 matomic
 Target Report Mask(ATOMIC)
 Use atomic extension instructions.
