@@ -300,6 +300,21 @@ enum riscv_order
 #define __nds__csrc(val, srname) \
   (__builtin_riscv_csrc ((val), (srname)))
 
+#define __nds__swap_csr(val, srname) \
+  (__builtin_riscv_csrrw ((val), (srname)))
+#define __nds__read_and_set_csr(val, srname) \
+  (__builtin_riscv_csrrs ((val), (srname)))
+#define __nds__read_and_clear_csr(val, srname) \
+  (__builtin_riscv_csrrc ((val), (srname)))
+#define __nds__read_csr(srname) \
+  (__builtin_riscv_csrr ((srname)))
+#define __nds__write_csr(val, srname) \
+  (__builtin_riscv_csrw ((val), (srname)))
+#define __nds__set_csr_bits(val, srname) \
+  (__builtin_riscv_csrs ((val), (srname)))
+#define __nds__clear_csr_bits(val, srname) \
+  (__builtin_riscv_csrc ((val), (srname)))
+
 #define __nds__ecall(sysid) \
   (__builtin_riscv_ecall ((sysid)))
 #define __nds__ecall1(sysid, a) \
