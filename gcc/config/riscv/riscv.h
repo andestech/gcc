@@ -65,7 +65,8 @@ along with GCC; see the file COPYING3.  If not see
 #define ASM_SPEC "\
 %(subtarget_asm_debugging_spec) \
 %{" FPIE_OR_FPIC_SPEC ":-fpic} \
-%{march=*:-march=%*%{matomic:a}} \
+%{march=*} \
+%{matomic} \
 %{mabi=*} \
 %{mno-16-bit} \
 %(subtarget_asm_spec)"
