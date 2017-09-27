@@ -538,7 +538,7 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
       if (!TARGET_ATOMIC)
 	{
 	  error ("this builtin function is only available "
-                 "on enable Atomic Instruction Extension.");
+                 "on enable Atomic Instruction Extension. try -matomic");
           return NULL_RTX;
 	}
       break;
@@ -547,7 +547,7 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
       if (!(TARGET_64BIT && TARGET_ATOMIC))
 	{
 	  error ("this builtin function is only available "
-                 "on enable 64-bit Atomic Instruction Extension.");
+                 "on enable 64-bit Atomic Instruction Extension. try -matomic");
           return NULL_RTX;
 	}
       break;
