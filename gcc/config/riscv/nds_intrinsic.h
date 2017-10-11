@@ -251,7 +251,9 @@ enum riscv_csrs
   NDS_MDBOUND,
   NDS_DSCRATCH0,
   NDS_DSCRATCH1,
-  NDS_DCAUSE
+  NDS_DCAUSE,
+  NDS_MCACHE_CTL,
+  NDS_MDCAUSE
 };
 
 enum riscv_fence

@@ -577,7 +577,9 @@ static const char * const riscv_csr_register_names[] =
   "mdbound",
   "dscratch0",
   "dscratch1",
-  "dcause"
+  "dcause",
+  "mcache_ctl",
+  "mdcause"
 };
 
 static const char * const riscv_fence_operations [] =
