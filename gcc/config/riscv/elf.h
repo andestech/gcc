@@ -23,12 +23,19 @@ along with GCC; see the file COPYING3.  If not see
 #define NDS32_EX9_SPEC " %{mex9:--mex9}"
 #endif
 
+#ifdef TARGET_DEFAULT_GP_RELAX
+#define NDS32_GP_RELAX_SPEC " %{!mno-gp-insn-relax:--mgp-insn}"
+#else
+#define NDS32_GP_RELAX_SPEC " %{mgp-insn-relax:--mgp-insn}"
+#endif
+
 #define LINK_SPEC "\
 -melf" XLEN_SPEC "lriscv \
 %{mno-relax:--no-relax} \
 %{minnermost-loop:-mexecit-loop-aware} \
 %{shared}" \
-NDS32_EX9_SPEC
+NDS32_EX9_SPEC \
+NDS32_GP_RELAX_SPEC
 
 /* Link against Newlib libraries, because the ELF backend assumes Newlib.
    Handle the circular dependence between libc and libgloss. */

@@ -2519,6 +2519,11 @@ riscv*-*-elf* | riscv*-*-rtems*)
 		  tm_defines="${tm_defines} TARGET_OS_DEFAULT_EX9=1"
 	  fi
 
+	  # Handle --enable-gp-insn-relax-default setting.
+	  if test x${enable_gp_insn_relax_default=} = xyes; then
+		  tm_defines="${tm_defines} TARGET_DEFAULT_GP_RELAX=1"
+	  fi
+
 	esac
 	tmake_file="${tmake_file} riscv/t-riscv"
 	gnu_ld=yes

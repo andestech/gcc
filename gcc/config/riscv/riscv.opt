@@ -260,3 +260,7 @@ Use special directives to guide linker doing ex9 optimization.
 minnermost-loop
 Target Report Mask(INNERMOST_LOOP)
 Insert the innermost loop directive.
+
+mgp-insn-relax
+Target Report
+Use special directives to guide linker doing gp insn relax optimization.
