@@ -104,15 +104,15 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
 
   if (TARGET_V5M)
     {
-      builtin_define ("__riscv_v5m");
-      builtin_define ("__riscv_ex9");
+      builtin_define ("__nds_v5m");
+      builtin_define ("__nds_ex9");
     }
   if (TARGET_BFO)
-    builtin_define ("__riscv_bfo");
+    builtin_define ("__nds_bfo");
   if (TARGET_LEA)
-    builtin_define ("__riscv_lea");
+    builtin_define ("__nds_lea");
   if (TARGET_BBCS)
-    builtin_define ("__riscv_bbcs");
+    builtin_define ("__nds_bbcs");
   if (TARGET_BIMM)
-    builtin_define ("__riscv_bimm");
+    builtin_define ("__nds_bimm");
 }
