@@ -58,7 +58,7 @@ along with GCC; see the file COPYING3.  If not see
 #undef  CC1_SPEC
 #define CC1_SPEC \
   " %{Os1:-Os -mno-save-restore}" \
-  " %{Os2:-Os}" \
+  " %{Os2:-Os -minnermost-loop}" \
   " %{Os3:-Os}"
 
 #undef ASM_SPEC
