@@ -7,6 +7,10 @@
 extern "C" {
 #endif
 
+/* PLIC Feature Flags */
+#define NDS_PLIC_FEATURE_PREEMPT        (1 << 0)
+#define NDS_PLIC_FEATURE_VECTORED       (1 << 1)
+
 /* Priority Register - 32 bits per source */
 #define PLIC_PRIORITY_OFFSET            (0x00000000UL)
 #define PLIC_PRIORITY_SHIFT_PER_SOURCE  2
@@ -29,6 +33,12 @@ extern "C" {
 
 
 #ifdef NDS_PLIC_BASE
+
+__attribute__((always_inline)) static inline void __nds__plic_set_feature (unsigned int feature)
+{
+  volatile unsigned int *feature_ptr = (volatile unsigned int *)NDS_PLIC_BASE;
+  *feature_ptr = feature;
+}
 
 __attribute__((always_inline)) static inline void __nds__plic_set_threshold (unsigned int threshold)
 {
