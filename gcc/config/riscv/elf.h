@@ -19,8 +19,10 @@ along with GCC; see the file COPYING3.  If not see
 
 #ifdef TARGET_OS_DEFAULT_EX9
 #define NDS32_EX9_SPEC " %{Os3|Os|mex9:%{!mno-ex9:--mex9}}"
+#define NDS32_EX9_DRIVER_SPEC " %{Os3|Os:%{!mno-ex9:-mex9}}"
 #else
 #define NDS32_EX9_SPEC " %{mex9:--mex9}"
+#define NDS32_EX9_DRIVER_SPEC ""
 #endif
 
 #ifdef TARGET_DEFAULT_GP_RELAX
@@ -36,6 +38,9 @@ along with GCC; see the file COPYING3.  If not see
 %{shared}" \
 NDS32_EX9_SPEC \
 NDS32_GP_RELAX_SPEC
+
+#define DRIVER_SELF_SPECS \
+  NDS32_EX9_DRIVER_SPEC
 
 /* Link against Newlib libraries, because the ELF backend assumes Newlib.
    Handle the circular dependence between libc and libgloss. */
