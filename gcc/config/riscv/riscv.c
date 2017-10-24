@@ -4944,6 +4944,9 @@ riscv_file_start (void)
 
   if (riscv_emit_attribute_p)
     riscv_emit_attribute ();
+
+  if (TARGET_EX9)
+    fprintf (asm_out_file, "\t.option ex9\n");
 }
 
 /* Implement TARGET_ASM_OUTPUT_MI_THUNK.  Generate rtl rather than asm text
