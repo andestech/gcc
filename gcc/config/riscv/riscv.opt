@@ -136,8 +136,6 @@ Mask(64BIT)
 
 Mask(MUL)
 
-Mask(V5M)
-
 matomic
 Target Report Mask(ATOMIC)
 Use atomic extension instructions.
@@ -157,6 +155,10 @@ Use hardware instructions: beqc, bnec.
 mlea
 Target Report Mask(LEA)
 Use hardware load effective address instructions: lea.
+
+mv5m
+Target Report Mask(V5M)
+Enable all v5m instructions.
 
 Mask(HARD_FLOAT)
 

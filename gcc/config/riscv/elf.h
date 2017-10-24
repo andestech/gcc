@@ -31,6 +31,10 @@ along with GCC; see the file COPYING3.  If not see
 #define NDS32_GP_RELAX_SPEC " %{mgp-insn-relax:--mgp-insn}"
 #endif
 
+#define V5M_DRIVER_SPEC \
+  " %{mv5m:-mbfo -mbbcs -mbimm -mlea}" \
+  " %{mno-v5m:-mno-bfo -mno-bbcs -mno-bimm -mno-lea -mno-ex9 -mno-gp-insn-relax}"
+
 #define LINK_SPEC "\
 -melf" XLEN_SPEC "lriscv \
 %{mno-relax:--no-relax} \
@@ -40,7 +44,8 @@ NDS32_EX9_SPEC \
 NDS32_GP_RELAX_SPEC
 
 #define DRIVER_SELF_SPECS \
-  NDS32_EX9_DRIVER_SPEC
+  NDS32_EX9_DRIVER_SPEC \
+  V5M_DRIVER_SPEC
 
 /* Link against Newlib libraries, because the ELF backend assumes Newlib.
    Handle the circular dependence between libc and libgloss. */
