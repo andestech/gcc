@@ -2499,6 +2499,9 @@ riscv*-*-elf* | riscv*-*-rtems*)
 		  vh )
 			  tmake_file="${tmake_file} riscv/t-elf-vh"
 			  ;;
+		  no-v5m )
+			  tmake_file="${tmake_file} riscv/t-elf-no-v5m"
+			  ;;
 		  *)
 			  echo "--with-multilib-list=${riscv_multilib} not supported."
 			  exit 1
