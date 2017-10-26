@@ -1,1 +1,1 @@
-MULTILIB_OPTIONS += mno-v5m
+MULTILIB_OPTIONS += mno-v5m-nds

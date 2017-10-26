@@ -32,8 +32,8 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #define V5M_DRIVER_SPEC \
-  " %{mv5m:-mbfo -mbbcs -mbimm -mlea}" \
-  " %{mno-v5m:-mno-bfo -mno-bbcs -mno-bimm -mno-lea -mno-ex9 -mno-gp-insn-relax}"
+  " %{mv5m-nds:-mbfo -mbbcs -mbimm -mlea}" \
+  " %{mno-v5m-nds:-mno-bfo -mno-bbcs -mno-bimm -mno-lea -mno-ex9 -mno-gp-insn-relax}"
 
 #define LINK_SPEC "\
 -melf" XLEN_SPEC "lriscv \
