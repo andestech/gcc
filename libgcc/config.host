@@ -1288,16 +1288,16 @@ riscv*-*-*)
 		;;
 	*)
 		tmake_file="${tmake_file} riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}"
-		;;
-	esac
-	# process --with-libc
-	case "${with_libc}" in
-	mculib)
-		if test "${host_address}" = 32; then
-			tmake_file="${tmake_file} riscv/t-riscv-mculib-generic"
-		fi
-		;;
-	*)
+		# process --with-libc
+		case "${with_libc}" in
+		mculib)
+			if test "${host_address}" = 32; then
+				tmake_file="${tmake_file} riscv/t-riscv-mculib-generic"
+			fi
+			;;
+		*)
+			;;
+		esac
 		;;
 	esac
 
