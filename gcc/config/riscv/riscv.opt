@@ -170,11 +170,11 @@ Mask(RVE)
 
 Os1
 Target
-Optimize for size level 1. This option will disable IFC and EX9 to prevent performance drop.
+Optimize for size level 1. This option will disable EX9 to prevent performance drop.
 
 Os2
 Target
-Optimize for size level 2. This option will disable IFC and EX9 for innermost loop to prevent performance drop.
+Optimize for size level 2. This option will disable EX9 for innermost loop to prevent performance drop.
 
 Os3
 Target
