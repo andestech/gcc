@@ -904,13 +904,19 @@ Objective-C and Objective-C++ Dialects}.
 -mreduced-regs -mfull-regs @gol
 -mcmov -mno-cmov @gol
 -mperf-ext -mno-perf-ext @gol
+-mperf2-ext -mno-perf2-ext @gol
+-mstring-ext -mno-string-ext @gol
 -mv3push -mno-v3push @gol
 -m16bit -mno-16bit @gol
+-mgp-direct -mno-gp-direct @gol
 -misr-vector-size=@var{num} @gol
 -mcache-block-size=@var{num} @gol
 -march=@var{arch} @gol
--mcmodel=@var{code-model} @gol
--mctor-dtor -mrelax}
+-mcpu=@var{cpu} @gol
+-mmemory-model=@var{cpu} @gol
+-mconfig-register-ports=@var{ports} @gol
+-mforce-fp-as-gp -mforbid-fp-as-gp @gol
+-mex9 -mctor-dtor -mrelax}
 
 @emph{Nios II Options}
 @gccoptlist{-G @var{num} -mgpopt=@var{option} -mgpopt -mno-gpopt @gol
@@ -5006,7 +5012,7 @@ example, warn if an unsigned variable is compared against zero with
 @opindex Wbad-function-cast
 @opindex Wno-bad-function-cast
 Warn when a function call is cast to a non-matching type.
-For example, warn if a call to a function returning an integer type 
+For example, warn if a call to a function returning an integer type
 is cast to a pointer type.
 
 @item -Wc90-c99-compat @r{(C and Objective-C only)}
@@ -19089,6 +19095,22 @@ Generate performance extension instructions.
 @opindex mno-perf-ext
 Do not generate performance extension instructions.
 
+@item -mperf2-ext
+@opindex mperf2-ext
+Generate performance extension version 2 instructions.
+
+@item -mno-perf2-ext
+@opindex mno-perf2-ext
+Do not generate performance extension version 2 instructions.
+
+@item -mstring-ext
+@opindex mstring-ext
+Generate string extension instructions.
+
+@item -mno-string-ext
+@opindex mno-string-ext
+Do not generate string extension instructions.
+
 @item -mv3push
 @opindex mv3push
 Generate v3 push25/pop25 instructions.
@@ -19105,6 +19127,14 @@ Generate 16-bit instructions.
 @opindex mno-16-bit
 Do not generate 16-bit instructions.
 
+@item -mgp-direct
+@opindex mgp-direct
+Generate GP base instructions directly.
+
+@item -mno-gp-direct
+@opindex mno-gp-direct
+Do no generate GP base instructions directly.
+
 @item -misr-vector-size=@var{num}
 @opindex misr-vector-size
 Specify the size of each interrupt vector, which must be 4 or 16.
@@ -19118,20 +19148,33 @@ which must be a power of 2 between 4 and 512.
 @opindex march
 Specify the name of the target architecture.
 
-@item -mcmodel=@var{code-model}
-@opindex mcmodel
-Set the code model to one of
-@table @asis
-@item @samp{small}
-All the data and read-only data segments must be within 512KB addressing space.
-The text segment must be within 16MB addressing space.
-@item @samp{medium}
-The data segment must be within 512KB while the read-only data segment can be
-within 4GB addressing space.  The text segment should be still within 16MB
-addressing space.
-@item @samp{large}
-All the text and data segments can be within 4GB addressing space.
-@end table
+@item -mcpu=@var{cpu}
+@opindex mcpu
+Specify the cpu for pipeline model.
+
+@item -mmemory-model=@var{cpu}
+@opindex mmemory-model
+Specify fast or slow memory model.
+
+@item -mconfig-register-ports=@var{ports}
+@opindex mconfig-register-ports
+Specify how many read/write ports for n9/n10 cores.
+The value should be 3r2w or 2r1w.
+
+@item -mforce-fp-as-gp
+@opindex mforce-fp-as-gp
+Prevent $fp being allocated during register allocation so that compiler
+is able to force performing fp-as-gp optimization.
+
+@item -mforbid-fp-as-gp
+@opindex mforbid-fp-as-gp
+Forbid using $fp to access static and global variables.
+This option strictly forbids fp-as-gp optimization
+regardless of @option{-mforce-fp-as-gp}.
+
+@item -mex9
+@opindex mex9
+Use special directives to guide linker doing ex9 optimization.
 
 @item -mctor-dtor
 @opindex mctor-dtor
@@ -19159,55 +19202,15 @@ Put global and static objects less than or equal to @var{num} bytes
 into the small data or BSS sections instead of the normal data or BSS
 sections.  The default value of @var{num} is 8.
 
-@item -mgpopt=@var{option}
 @item -mgpopt
 @itemx -mno-gpopt
 @opindex mgpopt
 @opindex mno-gpopt
-Generate (do not generate) GP-relative accesses.  The following 
-@var{option} names are recognized:
-
-@table @samp
-
-@item none
-Do not generate GP-relative accesses.
-
-@item local
-Generate GP-relative accesses for small data objects that are not 
-external, weak, or uninitialized common symbols.  
-Also use GP-relative addressing for objects that
-have been explicitly placed in a small data section via a @code{section}
-attribute.
-
-@item global
-As for @samp{local}, but also generate GP-relative accesses for
-small data objects that are external, weak, or common.  If you use this option,
-you must ensure that all parts of your program (including libraries) are
-compiled with the same @option{-G} setting.
-
-@item data
-Generate GP-relative accesses for all data objects in the program.  If you
-use this option, the entire data and BSS segments
-of your program must fit in 64K of memory and you must use an appropriate
-linker script to allocate them within the addressable range of the
-global pointer.
-
-@item all
-Generate GP-relative addresses for function pointers as well as data
-pointers.  If you use this option, the entire text, data, and BSS segments
-of your program must fit in 64K of memory and you must use an appropriate
-linker script to allocate them within the addressable range of the
-global pointer.
-
-@end table
-
-@option{-mgpopt} is equivalent to @option{-mgpopt=local}, and
-@option{-mno-gpopt} is equivalent to @option{-mgpopt=none}.
-
-The default is @option{-mgpopt} except when @option{-fpic} or
-@option{-fPIC} is specified to generate position-independent code.
-Note that the Nios II ABI does not permit GP-relative accesses from
-shared libraries.
+Generate (do not generate) GP-relative accesses for objects in the
+small data or BSS sections.  The default is @option{-mgpopt} except
+when @option{-fpic} or @option{-fPIC} is specified to generate
+position-independent code.  Note that the Nios II ABI does not permit
+GP-relative accesses from shared libraries.
 
 You may need to specify @option{-mno-gpopt} explicitly when building
 programs that include large amounts of small data, including large

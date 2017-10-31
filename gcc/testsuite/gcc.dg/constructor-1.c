@@ -1,6 +1,7 @@
 /* { dg-do run } */
 /* { dg-options "-O2" } */
 /* { dg-skip-if "" { ! global_constructor } { "*" } { "" } } */
+/* { dg-options "-O2 -mctor-dtor" { target { nds32*-*-* } } } */
 
 /* The ipa-split pass pulls the body of the if(!x) block
    into a separate function to make foo a better inlining

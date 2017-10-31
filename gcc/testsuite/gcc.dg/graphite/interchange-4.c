@@ -1,4 +1,6 @@
 /* { dg-require-effective-target size32plus } */
+/* { dg-require-effective-target nds32_full_addr_space { target nds32*-*-elf* } } */
+/* { dg-additional-options "-mcmodel=large" { target nds32*-*-elf* } } */
 
 /* Formerly known as ltrans-4.c */
 

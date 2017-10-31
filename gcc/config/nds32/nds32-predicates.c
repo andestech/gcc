@@ -24,14 +24,41 @@
 #include "system.h"
 #include "coretypes.h"
 #include "backend.h"
-#include "target.h"
-#include "rtl.h"
 #include "tree.h"
-#include "tm_p.h"
-#include "optabs.h"		/* For GEN_FCN.  */
+#include "rtl.h"
+#include "df.h"
+#include "alias.h"
+#include "stor-layout.h"
+#include "varasm.h"
+#include "calls.h"
+#include "regs.h"
+#include "insn-config.h"	/* Required by recog.h.  */
+#include "conditions.h"
+#include "output.h"
+#include "insn-attr.h"		/* For DFA state_t.  */
+#include "insn-codes.h"		/* For CODE_FOR_xxx.  */
+#include "reload.h"		/* For push_reload().  */
+#include "flags.h"
+#include "insn-config.h"
+#include "expmed.h"
+#include "dojump.h"
+#include "explow.h"
 #include "emit-rtl.h"
+#include "stmt.h"
+#include "expr.h"
 #include "recog.h"
+#include "diagnostic-core.h"
+#include "cfgrtl.h"
+#include "cfganal.h"
+#include "lcm.h"
+#include "cfgbuild.h"
+#include "cfgcleanup.h"
+#include "tm_p.h"
 #include "tm-constrs.h"
+#include "optabs.h"		/* For GEN_FCN.  */
+#include "target.h"
+#include "langhooks.h"		/* For add_builtin_function().  */
+#include "builtins.h"
 
 /* ------------------------------------------------------------------------ */
 
@@ -98,21 +125,33 @@ nds32_consecutive_registers_load_store_p (rtx op,
    We have to extract reg and mem of every element and
    check if the information is valid for multiple load/store operation.  */
 bool
-nds32_valid_multiple_load_store (rtx op, bool load_p)
+nds32_valid_multiple_load_store_p (rtx op, bool load_p, bool bim_p)
 {
   int count;
   int first_elt_regno;
+  int update_base_elt_idx;
+  int offset;
   rtx elt;
+  rtx update_base;
 
-  /* Get the counts of elements in the parallel rtx.  */
-  count = XVECLEN (op, 0);
-  /* Pick up the first element.  */
-  elt = XVECEXP (op, 0, 0);
+  /* Get the counts of elements in the parallel rtx.
+     Last one is update base register if bim_p.
+     and pick up the first element.  */
+  if (bim_p)
+    {
+      count = XVECLEN (op, 0) - 1;
+      elt = XVECEXP (op, 0, 1);
+    }
+  else
+    {
+      count = XVECLEN (op, 0);
+      elt = XVECEXP (op, 0, 0);
+    }
 
   /* Perform some quick check for the first element in the parallel rtx.  */
   if (GET_CODE (elt) != SET
       || count <= 1
-      || count > 8)
+      || count > 25)
     return false;
 
   /* Pick up regno of first element for further detail checking.
@@ -138,10 +177,28 @@ nds32_valid_multiple_load_store (rtx op, bool load_p)
      Refer to nds32-multiple.md for more information
      about following checking.
      The starting element of parallel rtx is index 0.  */
-  if (!nds32_consecutive_registers_load_store_p (op, load_p, 0,
+  if (!nds32_consecutive_registers_load_store_p (op, load_p, bim_p ? 1 : 0,
 						 first_elt_regno,
 						 count))
     return false;
+
+  if (bim_p)
+    {
+      update_base_elt_idx = 0;
+      update_base = XVECEXP (op, 0, update_base_elt_idx);
+      if (!REG_P (SET_DEST (update_base)))
+	return false;
+      if (GET_CODE (SET_SRC (update_base)) != PLUS)
+	return false;
+      else
+	{
+	  offset = count * UNITS_PER_WORD;
+	  elt = XEXP (SET_SRC (update_base), 1);
+	  if (GET_CODE (elt) != CONST_INT
+	      || (INTVAL (elt) != offset))
+	    return false;
+	}
+    }
 
   /* Pass all test, this is a valid rtx.  */
   return true;
@@ -174,47 +231,47 @@ nds32_valid_stack_push_pop_p (rtx op, bool push_p)
     {
       elt = XVECEXP (op, 0, index);
       if (GET_CODE (elt) != SET)
-        return false;
+	return false;
     }
 
   /* For push operation, the parallel rtx looks like:
      (parallel [(set (mem (plus (reg:SI SP_REGNUM) (const_int -32)))
-                     (reg:SI Rb))
-                (set (mem (plus (reg:SI SP_REGNUM) (const_int -28)))
-                     (reg:SI Rb+1))
-                ...
-                (set (mem (plus (reg:SI SP_REGNUM) (const_int -16)))
-                     (reg:SI Re))
-                (set (mem (plus (reg:SI SP_REGNUM) (const_int -12)))
-                     (reg:SI FP_REGNUM))
-                (set (mem (plus (reg:SI SP_REGNUM) (const_int -8)))
-                     (reg:SI GP_REGNUM))
-                (set (mem (plus (reg:SI SP_REGNUM) (const_int -4)))
-                     (reg:SI LP_REGNUM))
-                (set (reg:SI SP_REGNUM)
-                     (plus (reg:SI SP_REGNUM) (const_int -32)))])
+		     (reg:SI Rb))
+		(set (mem (plus (reg:SI SP_REGNUM) (const_int -28)))
+		     (reg:SI Rb+1))
+		...
+		(set (mem (plus (reg:SI SP_REGNUM) (const_int -16)))
+		     (reg:SI Re))
+		(set (mem (plus (reg:SI SP_REGNUM) (const_int -12)))
+		     (reg:SI FP_REGNUM))
+		(set (mem (plus (reg:SI SP_REGNUM) (const_int -8)))
+		     (reg:SI GP_REGNUM))
+		(set (mem (plus (reg:SI SP_REGNUM) (const_int -4)))
+		     (reg:SI LP_REGNUM))
+		(set (reg:SI SP_REGNUM)
+		     (plus (reg:SI SP_REGNUM) (const_int -32)))])
 
      For pop operation, the parallel rtx looks like:
      (parallel [(set (reg:SI Rb)
-                     (mem (reg:SI SP_REGNUM)))
-                (set (reg:SI Rb+1)
-                     (mem (plus (reg:SI SP_REGNUM) (const_int 4))))
-                ...
-                (set (reg:SI Re)
-                     (mem (plus (reg:SI SP_REGNUM) (const_int 16))))
-                (set (reg:SI FP_REGNUM)
-                     (mem (plus (reg:SI SP_REGNUM) (const_int 20))))
-                (set (reg:SI GP_REGNUM)
-                     (mem (plus (reg:SI SP_REGNUM) (const_int 24))))
-                (set (reg:SI LP_REGNUM)
-                     (mem (plus (reg:SI SP_REGNUM) (const_int 28))))
-                (set (reg:SI SP_REGNUM)
-                     (plus (reg:SI SP_REGNUM) (const_int 32)))]) */
+		     (mem (reg:SI SP_REGNUM)))
+		(set (reg:SI Rb+1)
+		     (mem (plus (reg:SI SP_REGNUM) (const_int 4))))
+		...
+		(set (reg:SI Re)
+		     (mem (plus (reg:SI SP_REGNUM) (const_int 16))))
+		(set (reg:SI FP_REGNUM)
+		     (mem (plus (reg:SI SP_REGNUM) (const_int 20))))
+		(set (reg:SI GP_REGNUM)
+		     (mem (plus (reg:SI SP_REGNUM) (const_int 24))))
+		(set (reg:SI LP_REGNUM)
+		     (mem (plus (reg:SI SP_REGNUM) (const_int 28))))
+		(set (reg:SI SP_REGNUM)
+		     (plus (reg:SI SP_REGNUM) (const_int 32)))]) */
 
   /* 1. Consecutive registers push/pop operations.
-        We need to calculate how many registers should be consecutive.
-        The $sp adjustment rtx, $fp push rtx, $gp push rtx,
-        and $lp push rtx are excluded.  */
+	We need to calculate how many registers should be consecutive.
+	The $sp adjustment rtx, $fp push rtx, $gp push rtx,
+	and $lp push rtx are excluded.  */
 
   /* Detect whether we have $fp, $gp, or $lp in the parallel rtx.  */
   save_fp = reg_mentioned_p (gen_rtx_REG (SImode, FP_REGNUM), op);
@@ -238,19 +295,19 @@ nds32_valid_stack_push_pop_p (rtx op, bool push_p)
       first_regno = REGNO (elt_reg);
 
       /* The 'push' operation is a kind of store operation.
-         The 'pop' operation is a kind of load operation.
-         Pass corresponding false/true as second argument (bool load_p).
-         The par_index is supposed to start with index 0.  */
+	 The 'pop' operation is a kind of load operation.
+	 Pass corresponding false/true as second argument (bool load_p).
+	 The par_index is supposed to start with index 0.  */
       if (!nds32_consecutive_registers_load_store_p (op,
 						     !push_p ? true : false,
 						     0,
 						     first_regno,
 						     rest_count))
-        return false;
+	return false;
     }
 
   /* 2. Valid $fp/$gp/$lp push/pop operations.
-        Remember to set start index for checking them.  */
+	Remember to set start index for checking them.  */
 
   /* The rest_count is the start index for checking $fp/$gp/$lp.  */
   index = rest_count;
@@ -269,9 +326,9 @@ nds32_valid_stack_push_pop_p (rtx op, bool push_p)
       index++;
 
       if (GET_CODE (elt_mem) != MEM
-          || GET_CODE (elt_reg) != REG
-          || REGNO (elt_reg) != FP_REGNUM)
-        return false;
+	  || GET_CODE (elt_reg) != REG
+	  || REGNO (elt_reg) != FP_REGNUM)
+	return false;
     }
   if (save_gp)
     {
@@ -281,9 +338,9 @@ nds32_valid_stack_push_pop_p (rtx op, bool push_p)
       index++;
 
       if (GET_CODE (elt_mem) != MEM
-          || GET_CODE (elt_reg) != REG
-          || REGNO (elt_reg) != GP_REGNUM)
-        return false;
+	  || GET_CODE (elt_reg) != REG
+	  || REGNO (elt_reg) != GP_REGNUM)
+	return false;
     }
   if (save_lp)
     {
@@ -293,16 +350,16 @@ nds32_valid_stack_push_pop_p (rtx op, bool push_p)
       index++;
 
       if (GET_CODE (elt_mem) != MEM
-          || GET_CODE (elt_reg) != REG
-          || REGNO (elt_reg) != LP_REGNUM)
-        return false;
+	  || GET_CODE (elt_reg) != REG
+	  || REGNO (elt_reg) != LP_REGNUM)
+	return false;
     }
 
   /* 3. The last element must be stack adjustment rtx.
-        Its form of rtx should be:
-          (set (reg:SI SP_REGNUM)
-               (plus (reg:SI SP_REGNUM) (const_int X)))
-        The X could be positive or negative value.  */
+	Its form of rtx should be:
+	  (set (reg:SI SP_REGNUM)
+	       (plus (reg:SI SP_REGNUM) (const_int X)))
+	The X could be positive or negative value.  */
 
   /* Pick up the last element.  */
   elt = XVECEXP (op, 0, total_count - 1);
@@ -322,54 +379,57 @@ nds32_valid_stack_push_pop_p (rtx op, bool push_p)
 }
 
 /* Function to check if 'bclr' instruction can be used with IVAL.  */
-int
-nds32_can_use_bclr_p (int ival)
+bool
+nds32_can_use_bclr_p (HOST_WIDE_INT ival)
 {
   int one_bit_count;
+  unsigned HOST_WIDE_INT mask = GET_MODE_MASK (SImode);
 
   /* Calculate the number of 1-bit of (~ival), if there is only one 1-bit,
      it means the original ival has only one 0-bit,
      So it is ok to perform 'bclr' operation.  */
 
-  one_bit_count = popcount_hwi ((unsigned HOST_WIDE_INT) (~ival));
+  one_bit_count = popcount_hwi ((unsigned HOST_WIDE_INT) (~ival) & mask);
 
   /* 'bclr' is a performance extension instruction.  */
-  return (TARGET_PERF_EXT && (one_bit_count == 1));
+  return (TARGET_EXT_PERF && (one_bit_count == 1));
 }
 
 /* Function to check if 'bset' instruction can be used with IVAL.  */
-int
-nds32_can_use_bset_p (int ival)
+bool
+nds32_can_use_bset_p (HOST_WIDE_INT ival)
 {
   int one_bit_count;
+  unsigned HOST_WIDE_INT mask = GET_MODE_MASK (SImode);
 
   /* Caculate the number of 1-bit of ival, if there is only one 1-bit,
      it is ok to perform 'bset' operation.  */
 
-  one_bit_count = popcount_hwi ((unsigned HOST_WIDE_INT) (ival));
+  one_bit_count = popcount_hwi ((unsigned HOST_WIDE_INT) (ival) & mask);
 
   /* 'bset' is a performance extension instruction.  */
-  return (TARGET_PERF_EXT && (one_bit_count == 1));
+  return (TARGET_EXT_PERF && (one_bit_count == 1));
 }
 
 /* Function to check if 'btgl' instruction can be used with IVAL.  */
-int
-nds32_can_use_btgl_p (int ival)
+bool
+nds32_can_use_btgl_p (HOST_WIDE_INT ival)
 {
   int one_bit_count;
+  unsigned HOST_WIDE_INT mask = GET_MODE_MASK (SImode);
 
   /* Caculate the number of 1-bit of ival, if there is only one 1-bit,
      it is ok to perform 'btgl' operation.  */
 
-  one_bit_count = popcount_hwi ((unsigned HOST_WIDE_INT) (ival));
+  one_bit_count = popcount_hwi ((unsigned HOST_WIDE_INT) (ival) & mask);
 
   /* 'btgl' is a performance extension instruction.  */
-  return (TARGET_PERF_EXT && (one_bit_count == 1));
+  return (TARGET_EXT_PERF && (one_bit_count == 1));
 }
 
 /* Function to check if 'bitci' instruction can be used with IVAL.  */
-int
-nds32_can_use_bitci_p (int ival)
+bool
+nds32_can_use_bitci_p (HOST_WIDE_INT ival)
 {
   /* If we are using V3 ISA, we have 'bitci' instruction.
      Try to see if we can present 'andi' semantic with
@@ -379,6 +439,288 @@ nds32_can_use_bitci_p (int ival)
   return (TARGET_ISA_V3
 	  && (ival < 0)
 	  && satisfies_constraint_Iu15 (gen_int_mode (~ival, SImode)));
+}
+
+/* Return true if is load/store with SYMBOL_REF addressing mode
+   and memory mode is SImode.  */
+bool
+nds32_symbol_load_store_p (rtx_insn *insn)
+{
+  rtx mem_src = NULL_RTX;
+
+  switch (get_attr_type (insn))
+    {
+    case TYPE_LOAD:
+      mem_src = SET_SRC (PATTERN (insn));
+      break;
+    case TYPE_STORE:
+      mem_src = SET_DEST (PATTERN (insn));
+      break;
+    default:
+      break;
+    }
+
+  /* Find load/store insn with addressing mode is SYMBOL_REF.  */
+  if (mem_src != NULL_RTX)
+    {
+      if ((GET_CODE (mem_src) == ZERO_EXTEND)
+	  || (GET_CODE (mem_src) == SIGN_EXTEND))
+	mem_src = XEXP (mem_src, 0);
+
+      if ((GET_CODE (XEXP (mem_src, 0)) == SYMBOL_REF)
+	   || (GET_CODE (XEXP (mem_src, 0)) == LO_SUM))
+	return true;
+    }
+
+  return false;
+}
+
+/* Vaild memory operand for floating-point loads and stores */
+bool
+nds32_float_mem_operand_p (rtx op)
+{
+  enum machine_mode mode = GET_MODE (op);
+  rtx addr = XEXP (op, 0);
+
+  /* Not support [symbol] [const] memory */
+  if (GET_CODE (addr) == SYMBOL_REF
+      || GET_CODE (addr) == CONST
+      || GET_CODE (addr) == LO_SUM)
+    return false;
+
+  if (GET_CODE (addr) == PLUS)
+    {
+      if (GET_CODE (XEXP (addr, 0)) == SYMBOL_REF)
+	return false;
+
+      /* Restrict const range: (imm12s << 2) */
+      if (GET_CODE (XEXP (addr, 1)) == CONST_INT)
+	{
+	  if ((mode == SImode || mode == SFmode)
+	      && NDS32_SINGLE_WORD_ALIGN_P (INTVAL (XEXP (addr, 1)))
+	      && !satisfies_constraint_Is14 ( XEXP(addr, 1)))
+	    return false;
+
+	  if ((mode == DImode || mode == DFmode)
+	      && NDS32_DOUBLE_WORD_ALIGN_P (INTVAL (XEXP (addr, 1)))
+	      && !satisfies_constraint_Is14 (XEXP (addr, 1)))
+	    return false;
+	}
+    }
+
+  return true;
+}
+
+int
+nds32_cond_move_p (rtx cmp_rtx)
+{
+  enum machine_mode cmp0_mode = GET_MODE (XEXP (cmp_rtx, 0));
+  enum machine_mode cmp1_mode = GET_MODE (XEXP (cmp_rtx, 1));
+  enum rtx_code cond = GET_CODE (cmp_rtx);
+
+  if ((cmp0_mode == DFmode || cmp0_mode == SFmode)
+      && (cmp1_mode == DFmode || cmp1_mode == SFmode)
+      && (cond == ORDERED || cond == UNORDERED))
+    return true;
+  return false;
+}
+
+/* Return true if the addresses in mem1 and mem2 are suitable for use in
+   an fldi or fsdi instruction.
+
+   This can only happen when addr1 and addr2, the addresses in mem1
+   and mem2, are consecutive memory locations (addr1 + 4 == addr2).
+   addr1 must also be aligned on a 64-bit boundary.  */
+bool
+nds32_memory_merge_peep_p (rtx mem1, rtx mem2)
+{
+  rtx addr1, addr2;
+  unsigned int reg1;
+  HOST_WIDE_INT offset1;
+
+  /* The mems cannot be volatile.  */
+  if (MEM_VOLATILE_P (mem1) || MEM_VOLATILE_P (mem2))
+    return false;
+
+  /* MEM1 should be aligned on a 64-bit boundary.  */
+  if (MEM_ALIGN (mem1) < 64)
+    return false;
+
+  addr1 = XEXP (mem1, 0);
+  addr2 = XEXP (mem2, 0);
+
+  /* Extract a register number and offset (if used) from the first addr.  */
+  if (GET_CODE (addr1) == PLUS)
+    {
+      if (GET_CODE (XEXP (addr1, 0)) != REG)
+	return false;
+      else
+	{
+	  reg1 = REGNO (XEXP (addr1, 0));
+	  if (GET_CODE (XEXP (addr1, 1)) != CONST_INT)
+	    return false;
+
+	  offset1 = INTVAL (XEXP (addr1, 1));
+	}
+    }
+  else if (GET_CODE (addr1) != REG)
+    return false;
+  else
+    {
+     reg1 = REGNO (addr1);
+      /* This was a simple (mem (reg)) expression.  Offset is 0.  */
+      offset1 = 0;
+    }
+  /* Make sure the second address is a (mem (plus (reg) (const_int).  */
+  if (GET_CODE (addr2) != PLUS)
+    return false;
+
+  if (GET_CODE (XEXP (addr2, 0)) != REG
+      || GET_CODE (XEXP (addr2, 1)) != CONST_INT)
+    return false;
+
+  if (reg1 != REGNO (XEXP (addr2, 0)))
+    return false;
+
+  /* The first offset must be evenly divisible by 8 to ensure the
+     address is 64 bit aligned.  */
+  if (offset1 % 8 != 0)
+    return false;
+
+  /* The offset for the second addr must be 4 more than the first addr.  */
+  if (INTVAL (XEXP (addr2, 1)) != offset1 + 4)
+    return false;
+
+  return true;
+}
+
+bool
+nds32_const_double_range_ok_p (rtx op, enum machine_mode mode,
+			       HOST_WIDE_INT lower, HOST_WIDE_INT upper)
+{
+  if (GET_CODE (op) != CONST_DOUBLE
+      || GET_MODE (op) != mode)
+    return false;
+
+  const REAL_VALUE_TYPE *rv;
+  long val;
+
+  rv = CONST_DOUBLE_REAL_VALUE (op);
+  REAL_VALUE_TO_TARGET_SINGLE (*rv, val);
+
+  return val >= lower && val < upper;
+}
+
+bool
+nds32_const_unspec_p (rtx x)
+{
+  if (GET_CODE (x) == CONST)
+    {
+      x = XEXP (x, 0);
+
+      if (GET_CODE (x) == PLUS)
+	x = XEXP (x, 0);
+
+      if (GET_CODE (x) == UNSPEC)
+	{
+	  switch (XINT (x, 1))
+	    {
+	    case UNSPEC_GOTINIT:
+	    case UNSPEC_GOT:
+	    case UNSPEC_GOTOFF:
+	    case UNSPEC_PLT:
+	    case UNSPEC_TLSGD:
+	    case UNSPEC_TLSLD:
+	    case UNSPEC_TLSIE:
+	    case UNSPEC_TLSLE:
+	      return false;
+	    default:
+	      return true;
+	    }
+	}
+    }
+
+  if (GET_CODE (x) == SYMBOL_REF
+      && SYMBOL_REF_TLS_MODEL (x))
+    return false;
+
+  return true;
+}
+
+HOST_WIDE_INT
+const_vector_to_hwint (rtx op)
+{
+  HOST_WIDE_INT hwint = 0;
+  HOST_WIDE_INT mask;
+  int i;
+  int shift_adv;
+  int shift = 0;
+  int nelem;
+
+  switch (GET_MODE (op))
+    {
+      case V2HImode:
+	mask = 0xffff;
+	shift_adv = 16;
+	nelem = 2;
+	break;
+      case V4QImode:
+	mask = 0xff;
+	shift_adv = 8;
+	nelem = 4;
+	break;
+      default:
+	gcc_unreachable ();
+    }
+
+  if (TARGET_BIG_ENDIAN)
+    {
+      for (i = 0; i < nelem; ++i)
+	{
+	  HOST_WIDE_INT val = XINT (XVECEXP (op, 0, nelem - i - 1), 0);
+	  hwint |= (val & mask) << shift;
+	  shift = shift + shift_adv;
+	}
+    }
+  else
+    {
+      for (i = 0; i < nelem; ++i)
+	{
+	  HOST_WIDE_INT val = XINT (XVECEXP (op, 0, i), 0);
+	  hwint |= (val & mask) << shift;
+	  shift = shift + shift_adv;
+	}
+    }
+
+  return hwint;
+}
+
+bool
+nds32_valid_CVp5_p (rtx op)
+{
+  HOST_WIDE_INT ival = const_vector_to_hwint (op);
+  return (ival < ((1 << 5) + 16)) && (ival >= (0 + 16));
+}
+
+bool
+nds32_valid_CVs5_p (rtx op)
+{
+  HOST_WIDE_INT ival = const_vector_to_hwint (op);
+  return (ival < (1 << 4)) && (ival >= -(1 << 4));
+}
+
+bool
+nds32_valid_CVs2_p (rtx op)
+{
+  HOST_WIDE_INT ival = const_vector_to_hwint (op);
+  return (ival < (1 << 19)) && (ival >= -(1 << 19));
+}
+
+bool
+nds32_valid_CVhi_p (rtx op)
+{
+  HOST_WIDE_INT ival = const_vector_to_hwint (op);
+  return (ival != 0) && ((ival & 0xfff) == 0);
 }
 
 /* ------------------------------------------------------------------------ */

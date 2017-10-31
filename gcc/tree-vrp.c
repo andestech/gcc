@@ -9518,6 +9518,7 @@ simplify_cond_using_ranges (gcond *stmt)
      used for the comparison directly if we just massage the constant in the
      comparison.  */
   if (TREE_CODE (op0) == SSA_NAME
+      && has_single_use (op0)
       && TREE_CODE (op1) == INTEGER_CST)
     {
       gimple *def_stmt = SSA_NAME_DEF_STMT (op0);

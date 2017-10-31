@@ -1,4 +1,5 @@
 /* { dg-require-effective-target int32plus } */
+/* { dg-additional-options "-mcmodel=large" { target nds32*-*-elf* } } */
 struct X {
     char fill0[800000];
     int a;
