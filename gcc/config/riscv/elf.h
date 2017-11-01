@@ -43,9 +43,17 @@ along with GCC; see the file COPYING3.  If not see
 NDS32_EX9_SPEC \
 NDS32_GP_RELAX_SPEC
 
+#define CMODEL_SPEC \
+  " %{mcmodel=small:-mcmodel=medlow}" \
+  " %{mcmodel=medium:%{march=rv32*:-mcmodel=medlow}}" \
+  " %{mcmodel=medium:%{march=rv64*:-mcmodel=medany}}" \
+  " %{mcmodel=large:%{march=rv32*:-mcmodel=medlow}}" \
+  " %{mcmodel=large:%{march=rv64*:-mcmodel=medany}}"
+
 #define DRIVER_SELF_SPECS \
   NDS32_EX9_DRIVER_SPEC \
-  V5M_DRIVER_SPEC
+  V5M_DRIVER_SPEC \
+  CMODEL_SPEC
 
 /* Link against Newlib libraries, because the ELF backend assumes Newlib.
    Handle the circular dependence between libc and libgloss. */
