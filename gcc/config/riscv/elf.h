@@ -35,13 +35,17 @@ along with GCC; see the file COPYING3.  If not see
   " %{mv5m-nds:-mbfo -mbbcs -mbimm -mlea}" \
   " %{mno-v5m-nds:-mno-bfo -mno-bbcs -mno-bimm -mno-lea -mno-ex9 -mno-gp-insn-relax}"
 
+#define BTB_FIXUP_SPEC \
+  " %{Os3|Os:--mno-avoid-btb-miss}"
+
 #define LINK_SPEC "\
 -melf" XLEN_SPEC "lriscv \
 %{mno-relax:--no-relax} \
 %{minnermost-loop:-mexecit-loop-aware} \
 %{shared}" \
 NDS32_EX9_SPEC \
-NDS32_GP_RELAX_SPEC
+NDS32_GP_RELAX_SPEC \
+BTB_FIXUP_SPEC
 
 #define CMODEL_SPEC \
   " %{mcmodel=small:-mcmodel=medlow}" \
