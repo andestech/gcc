@@ -69,7 +69,8 @@ along with GCC; see the file COPYING3.  If not see
 %{matomic} \
 %{mabi=*} \
 %{mno-16-bit} \
-%(subtarget_asm_spec)"
+%(subtarget_asm_spec)" \
+" %{O|O1|O2|O3|Ofast:-O1;:-Os}"
 
 #define TARGET_DEFAULT_CMODEL CM_MEDLOW
 
