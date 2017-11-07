@@ -1876,6 +1876,9 @@ riscv_extend_cost (rtx op, bool unsigned_p)
   if (MEM_P (op))
     return 0;
 
+  if (TARGET_BFO)
+    return COSTS_N_INSNS (1);
+
   if (unsigned_p && GET_MODE (op) == QImode)
     /* We can use ANDI.  */
     return COSTS_N_INSNS (1);
