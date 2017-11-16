@@ -4477,8 +4477,12 @@ nds32_md_asm_adjust (vec<rtx> &outputs ATTRIBUTE_UNUSED,
 		     vec<const char *> &constraints ATTRIBUTE_UNUSED,
 		     vec<rtx> &clobbers, HARD_REG_SET &clobbered_regs)
 {
-  clobbers.safe_push (gen_rtx_REG (SImode, TA_REGNUM));
-  SET_HARD_REG_BIT (clobbered_regs, TA_REGNUM);
+  if (!flag_inline_asm_r15)
+    {
+      clobbers.safe_push (gen_rtx_REG (SImode, TA_REGNUM));
+      SET_HARD_REG_BIT (clobbered_regs, TA_REGNUM);
+    }
+
   return NULL;
 }
 /* Insert end_label and check loop body whether is empty.  */
