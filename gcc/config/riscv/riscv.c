@@ -1959,6 +1959,15 @@ riscv_rtx_costs (rtx x, machine_mode mode, int outer_code, int opno ATTRIBUTE_UN
 	return false;
 
     case AND:
+      if (TARGET_BFO &&  GET_CODE (XEXP (x, 0)) == ASHIFT)
+	{
+	  *total = COSTS_N_INSNS (1);
+	  return true;
+	}
+      /* Double-word operations use two single-word operations.  */
+      *total = riscv_binary_cost (x, 1, 2);
+      return false;
+
     case IOR:
     case XOR:
       /* Double-word operations use two single-word operations.  */
