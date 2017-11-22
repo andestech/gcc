@@ -2068,7 +2068,17 @@ riscv_rtx_costs (rtx x, machine_mode mode, int outer_code, int opno ATTRIBUTE_UN
       if (float_mode_p)
 	*total = tune_info->fp_add[mode == DFmode];
       else
-	*total = riscv_binary_cost (x, 1, 4);
+	{
+	  if (TARGET_LEA &&
+	      ((TARGET_64BIT && GET_CODE (XEXP (x, 0)) == AND)
+	       || GET_CODE (XEXP (x, 0)) == ASHIFT))
+	    {
+	      *total = COSTS_N_INSNS (1);
+	      return true;
+	    }
+	  else
+	    *total = riscv_binary_cost (x, 1, 4);
+	}
       return false;
 
     case NEG:
