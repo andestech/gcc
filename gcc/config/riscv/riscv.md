@@ -2826,7 +2826,7 @@
 	(match_operand:DI 4 "register_operand")))]
   "TARGET_64BIT && TARGET_LEA
    && IN_RANGE (UINTVAL (operands[2]), 0, 3)
-   && exact_log2 ((INTVAL (operands[3]) >> INTVAL (operands[2])) + 1) >= 0
+   && exact_log2 ((INTVAL (operands[3]) >> INTVAL (operands[2])) + 1) == 32
    && (INTVAL (operands[3]) & ((1 << INTVAL (operands[2])) - 1)) == 0"
 {
   switch (UINTVAL (operands[2]))
