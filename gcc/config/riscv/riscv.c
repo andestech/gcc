@@ -4858,6 +4858,11 @@ riscv_hard_regno_mode_ok (unsigned int regno, machine_mode mode)
 {
   unsigned int nregs = riscv_hard_regno_nregs (regno, mode);
 
+  /* Restrict double-word quantities to even register pairs.  */
+  if (TARGET_RESTRICT_EVEN_REG_FOR_REGPAIR
+      && ((riscv_hard_regno_nregs (regno, mode) != 1) && (regno & 0x1)))
+      return false;
+
   if (GP_REG_P (regno))
     {
       if (!GP_REG_P (regno + nregs - 1))

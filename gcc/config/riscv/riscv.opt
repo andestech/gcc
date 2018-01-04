@@ -266,3 +266,7 @@ Insert the innermost loop directive.
 mgp-insn-relax
 Target Report
 Use special directives to guide linker doing gp insn relax optimization.
+
+mrestrict-even-reg-for-regpair
+Target Report Mask(RESTRICT_EVEN_REG_FOR_REGPAIR)
+Restrict register pair must start with even register number.
