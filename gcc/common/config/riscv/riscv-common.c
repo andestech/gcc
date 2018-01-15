@@ -629,11 +629,14 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
     {
       if (strcmp (isa, "v5m") == 0)
 	{
-	  *flags |= MASK_V5M;
-	  *flags |= MASK_BFO;
-	  *flags |= MASK_BBCS;
-	  *flags |= MASK_BIMM;
-	  *flags |= MASK_LEA;
+	  if ((target_flags_explicit & MASK_BFO) == 0)
+	    *flags |= MASK_BFO;
+	  if ((target_flags_explicit & MASK_BBCS) == 0)
+	    *flags |= MASK_BBCS;
+	  if ((target_flags_explicit & MASK_BIMM) == 0)
+	    *flags |= MASK_BIMM;
+	  if ((target_flags_explicit & MASK_LEA) == 0)
+	    *flags |= MASK_LEA;
 	}
       else
 	error_at (loc, "-march=%s: unsupported NSE ISA substring", isa);
