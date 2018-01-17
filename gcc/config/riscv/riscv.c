@@ -4973,7 +4973,7 @@ riscv_file_start (void)
   if (riscv_emit_attribute_p)
     riscv_emit_attribute ();
 
-  if (TARGET_EX9)
+  if (TARGET_EX9 && TARGET_RVC)
     fprintf (asm_out_file, "\t.option ex9\n");
 }
 
