@@ -8767,6 +8767,7 @@ proc check_effective_target_logical_op_short_circuit {} {
 	 || [istarget avr*-*-*]
 	 || [istarget crisv32-*-*] || [istarget cris-*-*]
 	 || [istarget mmix-*-*]
+	 || [istarget nds32*-*-*]
 	 || [istarget s390*-*-*]
 	 || [istarget powerpc*-*-*]
 	 || [istarget nios2*-*-*]
