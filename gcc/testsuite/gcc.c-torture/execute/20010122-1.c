@@ -1,4 +1,5 @@
 /* { dg-skip-if "requires frame pointers" { *-*-* } "-fomit-frame-pointer" "" } */
+/* { dg-additional-options "-malways-save-lp" { target nds32*-*-* } } */
 /* { dg-require-effective-target return_address } */
 
 extern void exit (int);
