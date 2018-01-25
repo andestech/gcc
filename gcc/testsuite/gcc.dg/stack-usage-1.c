@@ -2,6 +2,7 @@
 /* { dg-options "-fstack-usage" } */
 /* nvptx doesn't have a reg allocator, and hence no stack usage data.  */
 /* { dg-skip-if "" { nvptx-*-* } } */
+/* { dg-options "-fstack-usage -fno-omit-frame-pointer" { target { nds32*-*-* } } } */
 
 /* This is aimed at testing basic support for -fstack-usage in the back-ends.
    See the SPARC back-end for example (grep flag_stack_usage_info in sparc.c).
