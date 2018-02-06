@@ -32,8 +32,16 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #define V5M_DRIVER_SPEC \
-  " %{mv5m-nds:-mbfo -mbbcs -mbimm -mlea}" \
-  " %{mno-v5m-nds:-mno-bfo -mno-bbcs -mno-bimm -mno-lea -mno-ex9 -mno-gp-insn-relax}"
+  " %{mv5m-nds:%{!mno-bfo:-mbfo}}" \
+  " %{mv5m-nds:%{!mno-bbcs:-mbbcs}}" \
+  " %{mv5m-nds:%{!mno-bimm:-mbimm}}" \
+  " %{mv5m-nds:%{!mno-lea:-mlea}}" \
+  " %{mno-v5m-nds:%{!mbfo:-mno-bfo}}" \
+  " %{mno-v5m-nds:%{!mbbcs:-mno-bbcs}}" \
+  " %{mno-v5m-nds:%{!mbimm:-mno-bimm}}" \
+  " %{mno-v5m-nds:%{!mlea:-mno-lea}}" \
+  " %{mno-v5m-nds:%{!mex9:-mno-ex9}}" \
+  " %{mno-v5m-nds:%{!mgp-insn-relax:-mno-gp-insn-relax}}"
 
 #define BTB_FIXUP_SPEC \
   " %{Os3|Os:--mno-avoid-btb-miss}"
