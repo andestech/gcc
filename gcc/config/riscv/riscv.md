@@ -2735,7 +2735,7 @@
    && UINTVAL (operands[2]) < GET_MODE_BITSIZE (<ANY32:MODE>mode)
    && ((INTVAL (operands[2]) + <ANY32:sizen>) <= <GPR:sizen>)"
 {
-  operands[3] = GEN_INT (<ANY32:sizen> + INTVAL (operands[2]) - 1);
+  operands[3] = GEN_INT (<ANY32:sizen> - 1);
   return "bfo<sz>\t%0, %1, %2, %3";
 }
   [(set_attr "type" "shift")]
