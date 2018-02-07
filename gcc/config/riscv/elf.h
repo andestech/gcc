@@ -36,6 +36,8 @@ along with GCC; see the file COPYING3.  If not see
   " %{mv5m-nds:%{!mno-bbcs:-mbbcs}}" \
   " %{mv5m-nds:%{!mno-bimm:-mbimm}}" \
   " %{mv5m-nds:%{!mno-lea:-mlea}}" \
+  " %{mv5m-nds:%{!mno-ex9:-mex9}}" \
+  " %{mv5m-nds:%{!mno-gp-insn-relax:-mgp-insn-relax}}" \
   " %{mno-v5m-nds:%{!mbfo:-mno-bfo}}" \
   " %{mno-v5m-nds:%{!mbbcs:-mno-bbcs}}" \
   " %{mno-v5m-nds:%{!mbimm:-mno-bimm}}" \
