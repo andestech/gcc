@@ -100,6 +100,9 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
     case CM_PIC:
       builtin_define ("__riscv_cmodel_pic");
       break;
+
+    default:
+      break;
     }
 
   if (TARGET_V5M)

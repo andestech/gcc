@@ -595,6 +595,9 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
       return target;
     case RISCV_BUILTIN_EBREAK:
       return riscv_expand_builtin_ebreak (icode, exp);
+
+    default:
+      break;
     }
 
   switch (d->builtin_type)
@@ -604,6 +607,9 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
 
     case RISCV_BUILTIN_DIRECT_NO_TARGET:
       return riscv_expand_builtin_direct (icode, target, exp, false);
+
+    default:
+      break;
     }
 
   gcc_unreachable ();
