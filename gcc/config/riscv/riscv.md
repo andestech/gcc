@@ -2818,12 +2818,12 @@
   [(set_attr "type" "arith")
    (set_attr "mode" "DI")])
 
-(define_insn_and_split "lea_andim_ashift"
-  [(set (match_operand:DI 0 "register_operand")
-	(plus:DI (and:DI (ashift:DI (match_operand:DI 1 "register_operand")
-				    (match_operand 2 "const_int_operand"))
-			 (match_operand 3 "const_int_operand"))
-	(match_operand:DI 4 "register_operand")))]
+(define_insn "lea_andim_ashift"
+  [(set (match_operand:DI 0 "register_operand"				   "=r")
+	(plus:DI (and:DI (ashift:DI (match_operand:DI 1 "register_operand" " r")
+				    (match_operand 2 "const_int_operand"   " i"))
+			 (match_operand 3 "const_int_operand"		   " i"))
+	(match_operand:DI 4 "register_operand"				   " r")))]
   "TARGET_64BIT && TARGET_LEA
    && IN_RANGE (UINTVAL (operands[2]), 0, 3)
    && exact_log2 ((INTVAL (operands[3]) >> INTVAL (operands[2])) + 1) == 32
@@ -2843,14 +2843,7 @@
       gcc_unreachable ();
     }
 }
-  ""
-  [(set (match_dup 0)
-	(plus:DI (ashift:DI (zero_extend:DI (match_dup 5))
-			    (match_dup 2))
-		 (match_dup 4)))]
-{
-  operands[5] = gen_lowpart (SImode, operands[1]);
-})
+)
 
 (include "sync.md")
 (include "peephole.md")
