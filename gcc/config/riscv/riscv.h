@@ -972,6 +972,8 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
 
 #define HARD_REGNO_RENAME_OK(FROM, TO) riscv_hard_regno_rename_ok (FROM, TO)
 
+#define ASM_OUTPUT_POOL_EPILOGUE riscv_asm_output_pool_epilogue
+
 #ifdef TARGET_OS_DEFAULT_EX9
 #define NDS32_EX9_DRIVER_SPEC " %{Os3|Os:%{!mno-ex9:-mex9}}"
 #else
@@ -998,8 +1000,7 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   " %{mcmodel=small:-mcmodel=medlow}" \
   " %{mcmodel=medium:%{march=rv32*:-mcmodel=medlow}}" \
   " %{mcmodel=medium:%{march=rv64*:-mcmodel=medany}}" \
-  " %{mcmodel=large:%{march=rv32*:-mcmodel=medlow}}" \
-  " %{mcmodel=large:%{march=rv64*:-mcmodel=medany}}"
+  " %{mcmodel=large:%{march=rv32*:-mcmodel=medlow}}"
 
 #define DRIVER_SELF_SPECS \
   NDS32_EX9_DRIVER_SPEC \

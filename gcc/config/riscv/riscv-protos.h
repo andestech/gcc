@@ -26,6 +26,7 @@ along with GCC; see the file COPYING3.  If not see
    the unspec enum in riscv.md, subsequent to UNSPEC_ADDRESS_FIRST.  */
 enum riscv_symbol_type {
   SYMBOL_ABSOLUTE,
+  SYMBOL_FORCE_TO_MEM,
   SYMBOL_PCREL,
   SYMBOL_GOT_DISP,
   SYMBOL_TLS,
@@ -97,5 +98,8 @@ extern bool riscv_hard_regno_rename_ok (unsigned, unsigned);
 extern bool riscv_need_split_sms_p (rtx, rtx, rtx, rtx);
 extern const char *riscv_output_sms (rtx, rtx, rtx, rtx);
 extern void riscv_split_sms (rtx, rtx, rtx, rtx, rtx, rtx, rtx);
+
+extern void riscv_asm_output_pool_epilogue (FILE *, const char *,
+					    tree, HOST_WIDE_INT);
 
 #endif /* ! GCC_RISCV_PROTOS_H */

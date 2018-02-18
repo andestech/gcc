@@ -885,7 +885,15 @@ riscv_classify_symbol (const_rtx x)
   if (GET_CODE (x) == SYMBOL_REF && flag_pic && !riscv_symbol_binds_local_p (x))
     return SYMBOL_GOT_DISP;
 
-  return riscv_cmodel == CM_MEDLOW ? SYMBOL_ABSOLUTE : SYMBOL_PCREL;
+  switch (riscv_cmodel)
+    {
+    case CM_MEDLOW:
+      return SYMBOL_ABSOLUTE;
+    case CM_LARGE:
+      return CONSTANT_POOL_ADDRESS_P (x) ? SYMBOL_PCREL : SYMBOL_FORCE_TO_MEM;
+    default:
+      return SYMBOL_PCREL;
+    }
 }
 
 /* Classify the base of symbolic expression X.  */
@@ -949,6 +957,7 @@ static int riscv_symbol_insns (enum riscv_symbol_type type)
     case SYMBOL_PCREL: return 2; /* AUIPC + the reference.  */
     case SYMBOL_TLS_LE: return 3; /* LUI + ADD TP + the reference.  */
     case SYMBOL_GOT_DISP: return 3; /* AUIPC + LD GOT + the reference.  */
+    case SYMBOL_FORCE_TO_MEM: return 3; /* AUIPC + LD + the reference.  */
     default: gcc_unreachable ();
     }
 }
@@ -977,6 +986,9 @@ riscv_cannot_force_const_mem (machine_mode mode ATTRIBUTE_UNUSED, rtx x)
   split_const (x, &base, &offset);
   if (riscv_symbolic_constant_p (base, &type))
     {
+      if (type == SYMBOL_FORCE_TO_MEM)
+	return false;
+
       /* As an optimization, don't spill symbolic constants that are as
 	 cheap to rematerialize as to access in the constant pool.  */
       if (SMALL_OPERAND (INTVAL (offset)) && riscv_symbol_insns (type) > 0)
@@ -991,6 +1003,12 @@ riscv_cannot_force_const_mem (machine_mode mode ATTRIBUTE_UNUSED, rtx x)
   if (tls_referenced_p (x))
     return true;
 
+  return false;
+}
+
+static bool
+riscv_use_blocks_for_constant_p (machine_mode, const_rtx)
+{
   return false;
 }
 
@@ -1482,6 +1500,9 @@ riscv_split_symbol (rtx temp, rtx addr, machine_mode mode, rtx *low_out,
   if (low_out)
     switch (symbol_type)
       {
+      case SYMBOL_FORCE_TO_MEM:
+	return false;
+
       case SYMBOL_ABSOLUTE:
 	{
 	  rtx high = gen_rtx_HIGH (Pmode, copy_rtx (addr));
@@ -3880,6 +3901,9 @@ riscv_size_ok_for_small_data_p (int size)
 static bool
 riscv_in_small_data_p (const_tree x)
 {
+  if (riscv_cmodel == CM_LARGE)
+    return false;
+
   if (TREE_CODE (x) == STRING_CST || TREE_CODE (x) == FUNCTION_DECL)
     return false;
 
@@ -3943,6 +3967,23 @@ riscv_unique_section (tree decl, int reloc)
       return;
     }
   default_unique_section (decl, reloc);
+}
+
+static inline bool
+riscv_can_use_per_function_literal_pools_p (void)
+{
+  return riscv_cmodel == CM_LARGE;
+}
+
+void
+riscv_asm_output_pool_epilogue (FILE *f, const char *, tree,
+				HOST_WIDE_INT offset)
+{
+  /* When using per-function literal pools, we must ensure that any code
+     section is aligned to the minimal instruction length, lest we get
+     errors from the assembler re "unaligned instructions".  */
+  if ((offset & 3) && riscv_can_use_per_function_literal_pools_p ())
+    ASM_OUTPUT_ALIGN (f, 2);
 }
 
 /* Return a section for X, handling small data. */
@@ -5174,8 +5215,8 @@ riscv_option_override (void)
 
   /* Always prefer medlow than medany for RV32 since medlow can access
      full address space. */
-  if (riscv_cmodel == CM_LARGE)
-    riscv_cmodel = TARGET_64BIT ? CM_MEDANY : CM_MEDLOW;
+  if (riscv_cmodel == CM_LARGE && !TARGET_64BIT)
+    riscv_cmodel = CM_MEDLOW;
 
   if (flag_pic)
     riscv_cmodel = CM_PIC;
@@ -6023,6 +6064,9 @@ riscv_split_sms (rtx out, rtx in0, rtx in1,
 
 #undef TARGET_VECTORIZE_PREFERRED_SIMD_MODE
 #define TARGET_VECTORIZE_PREFERRED_SIMD_MODE riscv_vectorize_preferred_simd_mode
+
+#undef TARGET_USE_BLOCKS_FOR_CONSTANT_P
+#define TARGET_USE_BLOCKS_FOR_CONSTANT_P riscv_use_blocks_for_constant_p
 
 /* The low bit is ignored by jump instructions so is safe to use.  */
 #undef TARGET_CUSTOM_FUNCTION_DESCRIPTORS

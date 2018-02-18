@@ -163,7 +163,8 @@
     case SYMBOL_REF:
     case LABEL_REF:
       return riscv_symbolic_constant_p (op, &symbol_type)
-	      && !riscv_split_symbol_type (symbol_type);
+	     && !riscv_split_symbol_type (symbol_type)
+	     && symbol_type != SYMBOL_FORCE_TO_MEM;
 
     case HIGH:
       op = XEXP (op, 0);
@@ -200,9 +201,15 @@
 })
 
 (define_predicate "call_insn_operand"
-  (ior (match_operand 0 "absolute_symbolic_operand")
-       (match_operand 0 "plt_symbolic_operand")
-       (match_operand 0 "register_operand")))
+  (match_operand 0 "general_operand")
+{
+  if (riscv_cmodel == CM_LARGE)
+    return register_operand (op, mode);
+  else
+    return (absolute_symbolic_operand (op, mode) ||
+	    plt_symbolic_operand (op, mode) ||
+	    register_operand (op, mode));
+})
 
 (define_predicate "modular_operator"
   (match_code "plus,minus,mult,ashift"))

@@ -1472,7 +1472,10 @@ riscv_prepare_builtin_arg (struct expand_operand *op, tree exp, unsigned argno,
 
   if (!(*insn_data[icode].operand[argno + has_target_p].predicate) (arg, mode))
     {
-      convert_move (tmp_rtx, arg, false);
+      if (GET_MODE_SIZE (mode) < GET_MODE_SIZE (GET_MODE (arg)))
+	tmp_rtx = simplify_gen_subreg (mode, arg, GET_MODE (arg), 0);
+      else
+	convert_move (tmp_rtx, arg, false);
       arg = tmp_rtx;
     }
 

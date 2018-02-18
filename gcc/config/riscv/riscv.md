@@ -1468,11 +1468,11 @@
     DONE;
 })
 
-(define_insn "*movsi_internal"
-  [(set (match_operand:SI 0 "nonimmediate_operand" "=r,r,r, m,  *f,*f,*r,*m")
-	(match_operand:SI 1 "move_operand"         " r,T,m,rJ,*r*J,*m,*f,*f"))]
-  "(register_operand (operands[0], SImode)
-    || reg_or_0_operand (operands[1], SImode))"
+(define_insn "*mov<mode>_internal"
+  [(set (match_operand:MOVE32 0 "nonimmediate_operand" "=r,r,r, m,  *f,*f,*r,*m")
+	(match_operand:MOVE32 1 "move_operand"         " r,T,m,rJ,*r*J,*m,*f,*f"))]
+  "(register_operand (operands[0], <MODE>mode)
+    || reg_or_0_operand (operands[1], <MODE>mode))"
   { return riscv_output_move (operands[0], operands[1]); }
   [(set_attr "move_type" "move,const,load,store,mtc,fpload,mfc,fpstore")
    (set_attr "mode" "SI")])
