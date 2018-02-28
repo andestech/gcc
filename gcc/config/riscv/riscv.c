@@ -148,6 +148,9 @@ struct GTY(())  machine_function {
 
   /* The current frame information, calculated by riscv_compute_frame_info.  */
   struct riscv_frame_info frame;
+
+  /* Indicate this funciton should not apply ex9 optimization.  */
+  bool no_ex9;
 };
 
 /* Information about a single argument.  */
@@ -620,6 +623,9 @@ static const struct attribute_spec riscv_attribute_table[] =
     riscv_handle_type_attribute, NULL },
 
   { "no_prologue",  0,  0, true, false, false, false, NULL, NULL },
+
+  /* The attribute telling no ex9 optimization for this function.  */
+  { "no_ex9",       0,  0, true, false, false, false, NULL, NULL },
 
   /* The last attribute spec is set to be NULL.  */
   { NULL,	0,  0, false, false, false, false, NULL, NULL }
@@ -4081,6 +4087,13 @@ riscv_compute_frame_info (void)
   HOST_WIDE_INT offset;
   bool interrupt_save_prologue_temp = false;
   unsigned int regno, i, num_x_saved = 0, num_f_saved = 0;
+  tree attr;
+
+  gcc_assert (TREE_CODE (current_function_decl) == FUNCTION_DECL);
+
+  attr = DECL_ATTRIBUTES (current_function_decl);
+
+  cfun->machine->no_ex9 = (lookup_attribute ("no_ex9", attr) != NULL);
 
   frame = &cfun->machine->frame;
 
@@ -4718,6 +4731,24 @@ riscv_epilogue_uses (unsigned int regno)
     }
 
   return false;
+}
+
+/* The content produced from this function
+   will be placed before prologue body.  */
+static void
+riscv_asm_function_prologue (FILE *file)
+{
+  if (cfun->machine->no_ex9)
+    fprintf (file, "\t.no_ex9_begin\n");
+}
+
+/* The content produced from this function
+   will be placed after epilogue body.  */
+static void
+riscv_asm_function_epilogue (FILE *file)
+{
+  if (cfun->machine->no_ex9)
+    fprintf (file, "\t.no_ex9_end\n");
 }
 
 /* Return nonzero if this function is known to have a null epilogue.
@@ -5862,6 +5893,12 @@ riscv_gpr_save_operation_p (rtx op)
 
 #undef TARGET_WARN_FUNC_RETURN
 #define TARGET_WARN_FUNC_RETURN riscv_warn_func_return
+
+#undef TARGET_ASM_FUNCTION_PROLOGUE
+#define TARGET_ASM_FUNCTION_PROLOGUE riscv_asm_function_prologue
+
+#undef TARGET_ASM_FUNCTION_EPILOGUE
+#define TARGET_ASM_FUNCTION_EPILOGUE riscv_asm_function_epilogue
 
 /* The low bit is ignored by jump instructions so is safe to use.  */
 #undef TARGET_CUSTOM_FUNCTION_DESCRIPTORS
