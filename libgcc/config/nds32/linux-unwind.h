@@ -37,7 +37,7 @@
 
 /* arch/nds32/kernel/signal.c */
 struct _sigframe {
-    struct ucontext uc;
+    struct ucontext_t uc;
     unsigned long retcode;
 };
 
@@ -46,7 +46,7 @@ struct _rt_sigframe {
   struct _sigframe sig;
 };
 #define SIGRETURN 0xeb0e0a64
-#define RT_SIGRETURN 0x6b110064
+#define RT_SIGRETURN 0x8b00f044
 
 #define MD_FALLBACK_FRAME_STATE_FOR nds32_fallback_frame_state
 
