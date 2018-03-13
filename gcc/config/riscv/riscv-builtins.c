@@ -100,7 +100,10 @@ enum riscv_builtins
   RISCV_BUILTIN_CSRRS,
   RISCV_BUILTIN_CSRRC,
   RISCV_BUILTIN_CSRS,
-  RISCV_BUILTIN_CSRC
+  RISCV_BUILTIN_CSRC,
+  RISCV_BUILTIN_ADD16,
+  RISCV_BUILTIN_V_UADD16,
+  RISCV_BUILTIN_V_SADD16
 };
 
 /* This structure describes a single built-in function.  */
@@ -316,7 +319,13 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_BUILTIN (csrrssi, csrrsdi, csrrs,
 		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRS),
   DIRECT_BUILTIN (csrrcsi, csrrcdi, csrrc,
-		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRC)
+		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRC),
+  DIRECT_DSP_BUILTIN (addv2hi3, addv2hi3, add16,
+		      RISCV_USI_FTYPE_USI_USI, ADD16),
+  DIRECT_DSP_BUILTIN (addv2hi3, addv2hi3, v_uadd16,
+		      RISCV_UV2HI_FTYPE_UV2HI_UV2HI, V_UADD16),
+  DIRECT_DSP_BUILTIN (addv2hi3, addv2hi3, v_sadd16,
+		      RISCV_V2HI_FTYPE_V2HI_V2HI, V_SADD16)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
