@@ -159,7 +159,7 @@
   (const_string "unknown"))
 
 ;; Main data type used by the insn
-(define_attr "mode" "unknown,none,QI,HI,SI,DI,TI,SF,DF,TF"
+(define_attr "mode" "unknown,none,QI,HI,SI,DI,TI,SF,DF,TF,V2HI,V4QI"
   (const_string "unknown"))
 
 ;; True if the main data type is twice the size of a word.
@@ -2852,3 +2852,4 @@
 (include "vicuna.md")
 (include "vicuna2.md")
 (include "builtins.md")
+(include "dsp.md")
