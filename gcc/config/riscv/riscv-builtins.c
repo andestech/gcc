@@ -442,7 +442,7 @@ riscv_expand_builtin_direct (enum insn_code icode, rtx target, tree exp,
 	  || ! (*insn_data[icode].operand[opno].predicate) (target, mode))
 	target = gen_reg_rtx (mode);
 
-      create_output_operand (&ops[opno++], target, TYPE_MODE (TREE_TYPE (exp)));
+      create_output_operand (&ops[opno++], target, mode);
     }
 
   /* Map the arguments to the other operands.  */
