@@ -266,3 +266,45 @@
   else
     return true;
 })
+
+(define_predicate "imm4u_operand"
+  (and (match_operand 0 "const_int_operand")
+       (match_test "satisfies_constraint_u04 (op)")))
+
+(define_predicate "imm5u_operand"
+  (and (match_operand 0 "const_int_operand")
+       (match_test "satisfies_constraint_u05 (op)")))
+
+(define_predicate "rimm4u_operand"
+  (ior (match_operand 0 "register_operand")
+       (match_operand 0 "imm4u_operand")))
+
+(define_predicate "rimm5u_operand"
+  (ior (match_operand 0 "register_operand")
+       (match_operand 0 "imm5u_operand")))
+
+(define_predicate "insv_operand"
+  (match_code "const_int")
+{
+  return INTVAL (op) == 0
+	 || INTVAL (op) == 8
+	 || INTVAL (op) == 16
+	 || INTVAL (op) == 24;
+})
+
+(define_predicate "imm_0_1_operand"
+  (and (match_operand 0 "const_int_operand")
+       (ior (match_test "satisfies_constraint_v00 (op)")
+	    (match_test "satisfies_constraint_v01 (op)"))))
+
+(define_predicate "imm_1_2_operand"
+  (and (match_operand 0 "const_int_operand")
+       (ior (match_test "satisfies_constraint_v01 (op)")
+	    (match_test "satisfies_constraint_v02 (op)"))))
+
+(define_predicate "imm_1_2_4_8_operand"
+  (and (match_operand 0 "const_int_operand")
+       (ior (ior (match_test "satisfies_constraint_v01 (op)")
+		 (match_test "satisfies_constraint_v02 (op)"))
+	    (ior (match_test "satisfies_constraint_v04 (op)")
+		 (match_test "satisfies_constraint_v08 (op)")))))

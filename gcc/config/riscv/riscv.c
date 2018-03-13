@@ -3745,6 +3745,15 @@ riscv_print_operand (FILE *file, rtx op, int letter)
 	fputs ("fence iorw,ow; ", file);
       break;
 
+    case 'v':
+      gcc_assert (CONST_INT_P (op)
+		  && (INTVAL (op) == 0
+		      || INTVAL (op) == 8
+		      || INTVAL (op) == 16
+		      || INTVAL (op) == 24));
+      fprintf (file, HOST_WIDE_INT_PRINT_DEC, INTVAL (op) / 8);
+      break;
+
     case 'V':
       {
 	gcc_assert (CONST_INT_P (op));
@@ -5744,6 +5753,72 @@ riscv_vectorize_preferred_simd_mode (scalar_mode mode)
       return word_mode;
     }
 }
+
+bool
+riscv_need_split_sms_p (rtx in0_idx0, rtx in1_idx0,
+			rtx in0_idx1, rtx in1_idx1)
+{
+  /* smds or smdrs.  */
+  if (INTVAL (in0_idx0) == INTVAL (in1_idx0)
+      && INTVAL (in0_idx1) == INTVAL (in1_idx1)
+      && INTVAL (in0_idx0) != INTVAL (in0_idx1))
+    return false;
+
+  /* smxds.  */
+  if (INTVAL (in0_idx0) != INTVAL (in0_idx1)
+      && INTVAL (in1_idx0) != INTVAL (in1_idx1))
+    return false;
+
+  return true;
+}
+
+const char *
+riscv_output_sms (rtx in0_idx0, rtx in1_idx0,
+		  rtx in0_idx1, rtx in1_idx1)
+{
+  if (riscv_need_split_sms_p (in0_idx0, in1_idx0,
+			      in0_idx1, in1_idx1))
+    return "#";
+  /* out = in0[in0_idx0] * in1[in1_idx0] - in0[in0_idx1] * in1[in1_idx1] */
+
+  /* smds or smdrs.  */
+  if (INTVAL (in0_idx0) == INTVAL (in1_idx0)
+      && INTVAL (in0_idx1) == INTVAL (in1_idx1)
+      && INTVAL (in0_idx0) != INTVAL (in0_idx1))
+    {
+      if (INTVAL (in0_idx0) == 0)
+	return "smdrs\t%0, %1, %2";
+      else
+	return "smds\t%0, %1, %2";
+    }
+
+  if (INTVAL (in0_idx0) != INTVAL (in0_idx1)
+      && INTVAL (in1_idx0) != INTVAL (in1_idx1))
+    {
+      if (INTVAL (in0_idx0) == 1)
+	return "smxds\t%0, %1, %2";
+      else
+	return "smxds\t%0, %2, %1";
+    }
+
+  gcc_unreachable ();
+  return "";
+}
+
+void
+riscv_split_sms (rtx out, rtx in0, rtx in1,
+		 rtx in0_idx0, rtx in1_idx0,
+		 rtx in0_idx1, rtx in1_idx1)
+{
+  rtx result0 = gen_reg_rtx (SImode);
+  rtx result1 = gen_reg_rtx (SImode);
+  emit_insn (gen_mulhisi3v (result0, in0, in1,
+			    in0_idx0, in1_idx0));
+  emit_insn (gen_mulhisi3v (result1, in0, in1,
+			    in0_idx1, in1_idx1));
+  emit_insn (gen_subsi3 (out, result0, result1));
+}
+
 
 /* Initialize the GCC target structure.  */
 #undef TARGET_ASM_ALIGNED_HI_OP

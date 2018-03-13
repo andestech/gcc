@@ -25,11 +25,38 @@
 ;; Give the number of DSP instructions in the mode
 (define_mode_attr bits [(V4QI "8") (QI "8") (V2HI "16") (HI "16") (DI "64")])
 
+(define_mode_attr VELT [(V4QI "QI") (V2HI "HI")])
+
 (define_code_iterator all_plus [plus ss_plus us_plus])
+
+(define_code_iterator all_minus [minus ss_minus us_minus])
+
+(define_code_iterator plus_minus [plus minus])
+
+(define_code_iterator sumax [smax umax])
+
+(define_code_iterator sumin [smin umin])
+
+(define_code_iterator sumin_max [smax umax smin umin])
+
+(define_code_attr shift
+  [(ashift "ashl") (ashiftrt "ashr") (lshiftrt "lshr") (rotatert "rotr")])
+
+(define_code_attr su
+  [(ashiftrt "") (lshiftrt "u") (sign_extend "s") (zero_extend "u")])
 
 (define_code_attr uk
   [(plus "") (ss_plus "k") (us_plus "uk")
    (minus "") (ss_minus "k") (us_minus "uk")])
+
+(define_code_attr zs
+  [(sign_extend "s") (zero_extend "z")])
+
+(define_code_attr add_sub
+  [(plus "a") (minus "s")])
+
+(define_code_attr opcode
+  [(plus "add") (minus "sub") (smax "smax") (umax "umax") (smin "smin") (umin "umin")])
 
 (define_insn "<uk>add<mode>3"
   [(set (match_operand:VQIHI 0 "register_operand"                 "=r")
@@ -39,3 +66,3236 @@
   "<uk>add<bits>\t%0, %1, %2"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")])
+
+(define_insn "dsp_<uk>adddi3"
+  [(set (match_operand:DI 0 "register_operand"              "=r")
+	(all_plus:DI (match_operand:DI 1 "register_operand" " r")
+		     (match_operand:DI 2 "register_operand" " r")))]
+  "TARGET_DSP"
+  "<uk>add64 %0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "raddv4qi3"
+  [(set (match_operand:V4QI 0 "register_operand" "=r")
+	(truncate:V4QI
+	  (ashiftrt:V4HI
+	    (plus:V4HI (sign_extend:V4HI (match_operand:V4QI 1 "register_operand" " r"))
+		       (sign_extend:V4HI (match_operand:V4QI 2 "register_operand" " r")))
+	    (const_int 1))))]
+  "TARGET_DSP"
+  "radd8\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V4QI")])
+
+(define_insn "uraddv4qi3"
+  [(set (match_operand:V4QI 0 "register_operand" "=r")
+	(truncate:V4QI
+	  (lshiftrt:V4HI
+	    (plus:V4HI (zero_extend:V4HI (match_operand:V4QI 1 "register_operand" " r"))
+		       (zero_extend:V4HI (match_operand:V4QI 2 "register_operand" " r")))
+	    (const_int 1))))]
+  "TARGET_DSP"
+  "uradd8\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V4QI")])
+
+(define_insn "raddv2hi3"
+  [(set (match_operand:V2HI 0 "register_operand" "=r")
+	(truncate:V2HI
+	  (ashiftrt:V2SI
+	    (plus:V2SI (sign_extend:V2SI (match_operand:V2HI 1 "register_operand" " r"))
+		       (sign_extend:V2SI (match_operand:V2HI 2 "register_operand" " r")))
+	    (const_int 1))))]
+  "TARGET_DSP"
+  "radd16\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V2HI")])
+
+(define_insn "uraddv2hi3"
+  [(set (match_operand:V2HI 0 "register_operand" "=r")
+	(truncate:V2HI
+	  (lshiftrt:V2SI
+	    (plus:V2SI (zero_extend:V2SI (match_operand:V2HI 1 "register_operand" " r"))
+		       (zero_extend:V2SI (match_operand:V2HI 2 "register_operand" " r")))
+	    (const_int 1))))]
+  "TARGET_DSP"
+  "uradd16\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V2HI")])
+
+(define_insn "radddi3"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(truncate:DI
+	  (ashiftrt:TI
+	    (plus:TI (sign_extend:TI (match_operand:DI 1 "register_operand" " r"))
+		     (sign_extend:TI (match_operand:DI 2 "register_operand" " r")))
+	  (const_int 1))))]
+  "TARGET_DSP"
+  "radd64\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+
+(define_insn "uradddi3"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(truncate:DI
+	  (lshiftrt:TI
+	    (plus:TI (zero_extend:TI (match_operand:DI 1 "register_operand" " r"))
+		     (zero_extend:TI (match_operand:DI 2 "register_operand" " r")))
+	  (const_int 1))))]
+  "TARGET_DSP"
+  "uradd64\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "<uk>sub<mode>3"
+  [(set (match_operand:VQIHI 0 "register_operand"                  "=r")
+	(all_minus:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
+			 (match_operand:VQIHI 2 "register_operand" " r")))]
+  "TARGET_DSP"
+  "<uk>sub<bits> %0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")])
+
+(define_insn "dsp_<uk>subdi3"
+  [(set (match_operand:DI 0 "register_operand"               "=r")
+	(all_minus:DI (match_operand:DI 1 "register_operand" " r")
+		      (match_operand:DI 2 "register_operand" " r")))]
+  "TARGET_DSP"
+  "<uk>sub64 %0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "rsubv4qi3"
+  [(set (match_operand:V4QI 0 "register_operand"                                   "=r")
+	(truncate:V4QI
+	  (ashiftrt:V4HI
+	    (minus:V4HI (sign_extend:V4HI (match_operand:V4QI 1 "register_operand" " r"))
+			(sign_extend:V4HI (match_operand:V4QI 2 "register_operand" " r")))
+	    (const_int 1))))]
+  "TARGET_DSP"
+  "rsub8\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V4QI")])
+
+(define_insn "ursubv4qi3"
+  [(set (match_operand:V4QI 0 "register_operand"                                   "=r")
+	(truncate:V4QI
+	  (lshiftrt:V4HI
+	    (minus:V4HI (zero_extend:V4HI (match_operand:V4QI 1 "register_operand" " r"))
+			(zero_extend:V4HI (match_operand:V4QI 2 "register_operand" " r")))
+	    (const_int 1))))]
+  "TARGET_DSP"
+  "ursub8\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V4QI")])
+
+(define_insn "rsubv2hi3"
+  [(set (match_operand:V2HI 0 "register_operand"                                   "=r")
+	(truncate:V2HI
+	  (ashiftrt:V2SI
+	    (minus:V2SI (sign_extend:V2SI (match_operand:V2HI 1 "register_operand" " r"))
+			(sign_extend:V2SI (match_operand:V2HI 2 "register_operand" " r")))
+	    (const_int 1))))]
+  "TARGET_DSP"
+  "rsub16\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V2HI")])
+
+(define_insn "ursubv2hi3"
+  [(set (match_operand:V2HI 0 "register_operand"                                   "=r")
+	(truncate:V2HI
+	  (lshiftrt:V2SI
+	    (minus:V2SI (zero_extend:V2SI (match_operand:V2HI 1 "register_operand" " r"))
+			(zero_extend:V2SI (match_operand:V2HI 2 "register_operand" " r")))
+	    (const_int 1))))]
+  "TARGET_DSP"
+  "ursub16\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V2HI")])
+
+(define_insn "rsubdi3"
+  [(set (match_operand:DI 0 "register_operand"                   "=r")
+	(truncate:DI
+	  (ashiftrt:TI
+	    (minus:TI (sign_extend:TI (match_operand:DI 1 "register_operand" " r"))
+		      (sign_extend:TI (match_operand:DI 2 "register_operand" " r")))
+	  (const_int 1))))]
+  "TARGET_DSP"
+  "rsub64\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "ursubdi3"
+  [(set (match_operand:DI 0 "register_operand"                   "=r")
+	(truncate:DI
+	  (lshiftrt:TI
+	    (minus:TI (zero_extend:TI (match_operand:DI 1 "register_operand" " r"))
+		      (zero_extend:TI (match_operand:DI 2 "register_operand" " r")))
+	  (const_int 1))))]
+  "TARGET_DSP"
+  "ursub64\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_expand "cras16_1"
+  [(match_operand:V2HI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_cras16_1_le (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_insn "cras16_1_le"
+  [(set (match_operand:V2HI 0 "register_operand"         "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (minus:HI
+	      (vec_select:HI
+		(match_operand:V2HI 1 "register_operand" " r")
+		(parallel [(const_int 0)]))
+	      (vec_select:HI
+		(match_operand:V2HI 2 "register_operand" " r")
+		(parallel [(const_int 1)]))))
+	  (vec_duplicate:V2HI
+	    (plus:HI
+	      (vec_select:HI
+		(match_dup 2)
+		(parallel [(const_int 0)]))
+	      (vec_select:HI
+		(match_dup 1)
+		(parallel [(const_int 1)]))))
+	  (const_int 1)))]
+  "TARGET_DSP"
+  "cras16\t%0, %1, %2"
+  [(set_attr "type" "arith")]
+)
+
+(define_expand "kcras16_1"
+  [(match_operand:V2HI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_kcras16_1_le (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_insn "kcras16_1_le"
+  [(set (match_operand:V2HI 0 "register_operand"         "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (ss_minus:HI
+	      (vec_select:HI
+		(match_operand:V2HI 1 "register_operand" " r")
+		(parallel [(const_int 0)]))
+	      (vec_select:HI
+		(match_operand:V2HI 2 "register_operand" " r")
+		(parallel [(const_int 1)]))))
+	  (vec_duplicate:V2HI
+	    (ss_plus:HI
+	      (vec_select:HI
+		(match_dup 2)
+		(parallel [(const_int 0)]))
+	      (vec_select:HI
+		(match_dup 1)
+		(parallel [(const_int 1)]))))
+	  (const_int 1)))]
+  "TARGET_DSP"
+  "kcras16\t%0, %1, %2"
+  [(set_attr "type" "arith")]
+)
+
+(define_expand "ukcras16_1"
+  [(match_operand:V2HI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_ukcras16_1_le (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_insn "ukcras16_1_le"
+  [(set (match_operand:V2HI 0 "register_operand"         "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (us_minus:HI
+	      (vec_select:HI
+		(match_operand:V2HI 1 "register_operand" " r")
+		(parallel [(const_int 0)]))
+	      (vec_select:HI
+		(match_operand:V2HI 2 "register_operand" " r")
+		(parallel [(const_int 1)]))))
+	  (vec_duplicate:V2HI
+	    (us_plus:HI
+	      (vec_select:HI
+		(match_dup 2)
+		(parallel [(const_int 0)]))
+	      (vec_select:HI
+		(match_dup 1)
+		(parallel [(const_int 1)]))))
+	  (const_int 1)))]
+  "TARGET_DSP"
+  "ukcras16\t%0, %1, %2"
+  [(set_attr "type" "arith")]
+)
+
+(define_expand "crsa16_1"
+  [(match_operand:V2HI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_crsa16_1_le (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_insn "crsa16_1_le"
+  [(set (match_operand:V2HI 0 "register_operand"         "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (minus:HI
+	      (vec_select:HI
+		(match_operand:V2HI 1 "register_operand" " r")
+		(parallel [(const_int 1)]))
+	      (vec_select:HI
+		(match_operand:V2HI 2 "register_operand" " r")
+		(parallel [(const_int 0)]))))
+	  (vec_duplicate:V2HI
+	    (plus:HI
+	      (vec_select:HI
+		(match_dup 1)
+		(parallel [(const_int 0)]))
+	      (vec_select:HI
+		(match_dup 2)
+		(parallel [(const_int 1)]))))
+	  (const_int 2)))]
+  "TARGET_DSP"
+  "crsa16\t%0, %1, %2"
+  [(set_attr "type" "arith")]
+)
+
+(define_expand "kcrsa16_1"
+  [(match_operand:V2HI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_kcrsa16_1_le (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_insn "kcrsa16_1_le"
+  [(set (match_operand:V2HI 0 "register_operand"         "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (ss_minus:HI
+	      (vec_select:HI
+		(match_operand:V2HI 1 "register_operand" " r")
+		(parallel [(const_int 1)]))
+	      (vec_select:HI
+		(match_operand:V2HI 2 "register_operand" " r")
+		(parallel [(const_int 0)]))))
+	  (vec_duplicate:V2HI
+	    (ss_plus:HI
+	      (vec_select:HI
+		(match_dup 1)
+		(parallel [(const_int 0)]))
+	      (vec_select:HI
+		(match_dup 2)
+		(parallel [(const_int 1)]))))
+	  (const_int 2)))]
+  "TARGET_DSP"
+  "kcrsa16\t%0, %1, %2"
+  [(set_attr "type" "arith")]
+)
+
+(define_expand "ukcrsa16_1"
+  [(match_operand:V2HI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_ukcrsa16_1_le (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_insn "ukcrsa16_1_le"
+  [(set (match_operand:V2HI 0 "register_operand"         "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (us_minus:HI
+	      (vec_select:HI
+		(match_operand:V2HI 1 "register_operand" " r")
+		(parallel [(const_int 1)]))
+	      (vec_select:HI
+		(match_operand:V2HI 2 "register_operand" " r")
+		(parallel [(const_int 0)]))))
+	  (vec_duplicate:V2HI
+	    (us_plus:HI
+	      (vec_select:HI
+		(match_dup 1)
+		(parallel [(const_int 0)]))
+	      (vec_select:HI
+		(match_dup 2)
+		(parallel [(const_int 1)]))))
+	  (const_int 2)))]
+  "TARGET_DSP"
+  "ukcrsa16\t%0, %1, %2"
+  [(set_attr "type" "arith")]
+)
+
+(define_expand "rcras16_1"
+  [(match_operand:V2HI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_rcras16_1_le (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_insn "rcras16_1_le"
+  [(set (match_operand:V2HI 0 "register_operand"           "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (truncate:HI
+	      (ashiftrt:SI
+		(minus:SI
+		  (sign_extend:SI
+		    (vec_select:HI
+		      (match_operand:V2HI 1 "register_operand" " r")
+		      (parallel [(const_int 0)])))
+		  (sign_extend:SI
+		    (vec_select:HI
+		      (match_operand:V2HI 2 "register_operand" " r")
+		      (parallel [(const_int 1)]))))
+		(const_int 1))))
+	  (vec_duplicate:V2HI
+	    (truncate:HI
+	      (ashiftrt:SI
+		(plus:SI
+		  (sign_extend:SI
+		    (vec_select:HI
+		      (match_dup 2)
+		      (parallel [(const_int 0)])))
+		  (sign_extend:SI
+		    (vec_select:HI
+		      (match_dup 1)
+		      (parallel [(const_int 1)]))))
+		(const_int 1))))
+	  (const_int 1)))]
+  "TARGET_DSP"
+  "rcras16\t%0, %1, %2"
+  [(set_attr "type" "arith")]
+)
+
+(define_expand "urcras16_1"
+  [(match_operand:V2HI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_urcras16_1_le (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_insn "urcras16_1_le"
+  [(set (match_operand:V2HI 0 "register_operand"           "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (truncate:HI
+	      (lshiftrt:SI
+		(minus:SI
+		  (zero_extend:SI
+		    (vec_select:HI
+		      (match_operand:V2HI 1 "register_operand" " r")
+		      (parallel [(const_int 0)])))
+		  (zero_extend:SI
+		    (vec_select:HI
+		      (match_operand:V2HI 2 "register_operand" " r")
+		      (parallel [(const_int 1)]))))
+		(const_int 1))))
+	  (vec_duplicate:V2HI
+	    (truncate:HI
+	      (lshiftrt:SI
+		(plus:SI
+		  (zero_extend:SI
+		    (vec_select:HI
+		      (match_dup 2)
+		      (parallel [(const_int 0)])))
+		  (zero_extend:SI
+		    (vec_select:HI
+		      (match_dup 1)
+		      (parallel [(const_int 1)]))))
+		(const_int 1))))
+	  (const_int 1)))]
+  "TARGET_DSP"
+  "urcras16\t%0, %1, %2"
+  [(set_attr "type" "arith")]
+)
+
+(define_expand "rcrsa16_1"
+  [(match_operand:V2HI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_rcrsa16_1_le (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_insn "rcrsa16_1_le"
+  [(set (match_operand:V2HI 0 "register_operand"           "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (truncate:HI
+	      (ashiftrt:SI
+	        (minus:SI
+		  (sign_extend:SI
+		    (vec_select:HI
+		      (match_operand:V2HI 1 "register_operand" " r")
+		      (parallel [(const_int 1)])))
+		  (sign_extend:SI
+		    (vec_select:HI
+		      (match_operand:V2HI 2 "register_operand" " r")
+		      (parallel [(const_int 0)]))))
+		(const_int 1))))
+	  (vec_duplicate:V2HI
+	    (truncate:HI
+	      (ashiftrt:SI
+		(plus:SI
+		  (sign_extend:SI
+		    (vec_select:HI
+		      (match_dup 1)
+		      (parallel [(const_int 0)])))
+		  (sign_extend:SI
+		    (vec_select:HI
+		      (match_dup 2)
+		      (parallel [(const_int 1)]))))
+		(const_int 1))))
+	  (const_int 2)))]
+  "TARGET_DSP"
+  "rcrsa16\t%0, %1, %2"
+  [(set_attr "type" "arith")]
+)
+
+(define_expand "urcrsa16_1"
+  [(match_operand:V2HI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_urcrsa16_1_le (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_insn "urcrsa16_1_le"
+  [(set (match_operand:V2HI 0 "register_operand"           "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (truncate:HI
+	      (lshiftrt:SI
+	        (minus:SI
+		  (zero_extend:SI
+		    (vec_select:HI
+		      (match_operand:V2HI 1 "register_operand" " r")
+		      (parallel [(const_int 1)])))
+		  (zero_extend:SI
+		    (vec_select:HI
+		      (match_operand:V2HI 2 "register_operand" " r")
+		      (parallel [(const_int 0)]))))
+		(const_int 1))))
+	  (vec_duplicate:V2HI
+	    (truncate:HI
+	      (lshiftrt:SI
+		(plus:SI
+		  (zero_extend:SI
+		    (vec_select:HI
+		      (match_dup 1)
+		      (parallel [(const_int 0)])))
+		  (zero_extend:SI
+		    (vec_select:HI
+		      (match_dup 2)
+		      (parallel [(const_int 1)]))))
+		(const_int 1))))
+	  (const_int 2)))]
+  "TARGET_DSP"
+  "urcrsa16\t%0, %1, %2"
+  [(set_attr "type" "arith")]
+)
+
+(define_expand "<shift>v2hi3"
+  [(set (match_operand:V2HI 0 "register_operand"                  "")
+	(any_shift:V2HI (match_operand:V2HI 1 "register_operand"  "")
+			(match_operand:SI   2 "rimm4u_operand" "")))]
+  "TARGET_DSP"
+{
+  if (operands[2] == const0_rtx)
+    {
+      emit_move_insn (operands[0], operands[1]);
+      DONE;
+    }
+})
+
+(define_insn "*ashlv2hi3"
+  [(set (match_operand:V2HI 0 "register_operand"              "=   r, r")
+	(ashift:V2HI (match_operand:V2HI 1 "register_operand" "    r, r")
+		     (match_operand:SI 2   "rimm4u_operand"   " u04, r")))]
+  "TARGET_DSP"
+  "@
+   slli16\t%0, %1, %2
+   sll16\t%0, %1, %2"
+  [(set_attr "type"   "arith,arith")
+   (set_attr "mode" "   V2HI, V2HI")])
+
+(define_insn "kslli16"
+  [(set (match_operand:V2HI 0 "register_operand"                 "=   r, r")
+	(ss_ashift:V2HI (match_operand:V2HI 1 "register_operand" "    r, r")
+			(match_operand:SI 2 "rimm4u_operand"     " u04, r")))]
+  "TARGET_DSP"
+  "@
+   kslli16\t%0, %1, %2
+   ksll16\t%0, %1, %2"
+  [(set_attr "type"   "arith,arith")
+   (set_attr "mode" "   V2HI, V2HI")])
+
+(define_insn "*ashrv2hi3"
+  [(set (match_operand:V2HI 0 "register_operand"                "=   r, r")
+	(ashiftrt:V2HI (match_operand:V2HI 1 "register_operand" "    r, r")
+		       (match_operand:SI 2 "rimm4u_operand"     " u04, r")))]
+  "TARGET_DSP"
+  "@
+   srai16\t%0, %1, %2
+   sra16\t%0, %1, %2"
+  [(set_attr "type"   "arith,arith")
+   (set_attr "mode" "   V2HI, V2HI")])
+
+(define_insn "sra16_round"
+  [(set (match_operand:V2HI 0 "register_operand"                              "=   r, r")
+	(unspec:V2HI [(ashiftrt:V2HI (match_operand:V2HI 1 "register_operand" "    r, r")
+				     (match_operand:SI 2 "rimm4u_operand"     " u04, r"))]
+		     UNSPEC_ROUND))]
+  "TARGET_DSP"
+  "@
+   srai16.u\t%0, %1, %2
+   sra16.u\t%0, %1, %2"
+  [(set_attr "type"   "arith,arith")
+   (set_attr "mode" "   V2HI, V2HI")])
+
+(define_insn "*lshrv2hi3"
+  [(set (match_operand:V2HI 0 "register_operand"                "=   r, r")
+	(lshiftrt:V2HI (match_operand:V2HI 1 "register_operand" "    r, r")
+		       (match_operand:SI 2 "rimm4u_operand"     " u04, r")))]
+  "TARGET_DSP"
+  "@
+   srli16\t%0, %1, %2
+   srl16\t%0, %1, %2"
+  [(set_attr "type"   "arith,arith")
+   (set_attr "mode" "   V2HI, V2HI")])
+
+(define_insn "srl16_round"
+  [(set (match_operand:V2HI 0 "register_operand"                              "=   r, r")
+	(unspec:V2HI [(lshiftrt:V2HI (match_operand:V2HI 1 "register_operand" "    r, r")
+				     (match_operand:SI 2 "rimm4u_operand"     " u04, r"))]
+		     UNSPEC_ROUND))]
+  "TARGET_DSP"
+  "@
+   srli16.u\t%0, %1, %2
+   srl16.u\t%0, %1, %2"
+  [(set_attr "type"   "arith,arith")
+   (set_attr "mode" "   V2HI, V2HI")])
+
+(define_insn "kslra16"
+  [(set (match_operand:V2HI 0 "register_operand"                  "=r")
+	(if_then_else:V2HI
+	  (lt:SI (match_operand:SI 2 "register_operand"           " r")
+		 (const_int 0))
+	  (ashiftrt:V2HI (match_operand:V2HI 1 "register_operand" " r")
+			 (neg:SI (match_dup 2)))
+	  (ashift:V2HI (match_dup 1)
+		       (match_dup 2))))]
+  "TARGET_DSP"
+  "kslra16\t%0, %1, %2"
+  [(set_attr "type" "arith")])
+
+(define_insn "kslra16_round"
+  [(set (match_operand:V2HI 0 "register_operand"                  "=r")
+	(if_then_else:V2HI
+	  (lt:SI (match_operand:SI 2 "register_operand"           " r")
+		 (const_int 0))
+	  (unspec:V2HI [(ashiftrt:V2HI (match_operand:V2HI 1 "register_operand" " r")
+				       (neg:SI (match_dup 2)))]
+		       UNSPEC_ROUND)
+	  (ashift:V2HI (match_dup 1)
+		       (match_dup 2))))]
+  "TARGET_DSP"
+  "kslra16.u\t%0, %1, %2"
+  [(set_attr "type" "arith")])
+
+(define_insn "cmpeq<bits>"
+  [(set (match_operand:SI 0 "register_operand"                       "=r")
+	(unspec:SI [(eq:SI (match_operand:VQIHI 1 "register_operand" " r")
+			   (match_operand:VQIHI 2 "register_operand" " r"))]
+		   UNSPEC_VEC_COMPARE))]
+  "TARGET_DSP"
+  "cmpeq<bits>\t%0, %1, %2"
+  [(set_attr "mode" "SI")])
+
+(define_insn "scmplt<bits>"
+  [(set (match_operand:SI 0 "register_operand"                       "=r")
+	(unspec:SI [(lt:SI (match_operand:VQIHI 1 "register_operand" " r")
+			   (match_operand:VQIHI 2 "register_operand" " r"))]
+		   UNSPEC_VEC_COMPARE))]
+  "TARGET_DSP"
+  "scmplt<bits>\t%0, %1, %2"
+  [(set_attr "mode" "SI")])
+
+(define_insn "scmple<bits>"
+  [(set (match_operand:SI 0 "register_operand"                       "=r")
+	(unspec:SI [(le:SI (match_operand:VQIHI 1 "register_operand" " r")
+			   (match_operand:VQIHI 2 "register_operand" " r"))]
+		   UNSPEC_VEC_COMPARE))]
+  "TARGET_DSP"
+  "scmple<bits>\t%0, %1, %2"
+  [(set_attr "mode" "SI")])
+
+(define_insn "ucmplt<bits>"
+  [(set (match_operand:SI 0 "register_operand"                        "=r")
+	(unspec:SI [(ltu:SI (match_operand:VQIHI 1 "register_operand" " r")
+			    (match_operand:VQIHI 2 "register_operand" " r"))]
+		   UNSPEC_VEC_COMPARE))]
+  "TARGET_DSP"
+  "ucmplt<bits>\t%0, %1, %2"
+  [(set_attr "mode" "SI")])
+
+(define_insn "ucmple<bits>"
+  [(set (match_operand:SI 0 "register_operand"                        "=r")
+	(unspec:SI [(leu:SI (match_operand:VQIHI 1 "register_operand" " r")
+			    (match_operand:VQIHI 2 "register_operand" " r"))]
+		   UNSPEC_VEC_COMPARE))]
+  "TARGET_DSP"
+  "ucmple<bits>\t%0, %1, %2"
+  [(set_attr "mode" "SI")])
+
+(define_insn "sclip16"
+  [(set (match_operand:V2HI 0 "register_operand"               "=   r")
+	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "    r")
+		      (match_operand:SI 2 "imm4u_operand"      " u04")]
+		     UNSPEC_CLIPS))]
+  "TARGET_DSP"
+  "sclip16\t%0, %1, %2"
+  [(set_attr "mode" "V2HI")])
+
+(define_insn "uclip16"
+  [(set (match_operand:V2HI 0 "register_operand"                "=   r")
+	(unspec:V2HI [(match_operand:V2HI 1 "register_operand"  "    r")
+		      (match_operand:SI 2 "imm4u_operand"       " u04")]
+		     UNSPEC_CLIP))]
+  "TARGET_DSP"
+  "uclip16\t%0, %1, %2"
+  [(set_attr "mode" "V2HI")])
+
+(define_insn "khm16"
+  [(set (match_operand:V2HI 0 "register_operand"                "=r")
+	(unspec:V2HI [(match_operand:V2HI 1 "register_operand"  " r")
+		      (match_operand:V2HI 2 "register_operand" "  r")]
+		     UNSPEC_KHM))]
+  "TARGET_DSP"
+  "khm16\t%0, %1, %2"
+  [(set_attr "type"   "imul")])
+
+(define_insn "khmx16"
+  [(set (match_operand:V2HI 0 "register_operand"                "=r")
+	(unspec:V2HI [(match_operand:V2HI 1 "register_operand"  " r")
+		      (match_operand:V2HI 2 "register_operand" "  r")]
+		     UNSPEC_KHMX))]
+  "TARGET_DSP"
+  "khmx16\t%0, %1, %2"
+  [(set_attr "type"   "imul")])
+
+(define_expand "vec_setv4qi"
+  [(match_operand:V4QI 0 "register_operand" "")
+   (match_operand:QI 1 "register_operand" "")
+   (match_operand:SI 2 "immediate_operand" "")]
+  "TARGET_DSP"
+{
+  HOST_WIDE_INT pos = INTVAL (operands[2]);
+  if (pos > 4)
+    gcc_unreachable ();
+  HOST_WIDE_INT elem = (HOST_WIDE_INT) 1 << pos;
+  emit_insn (gen_vec_setv4qi_internal (operands[0], operands[1],
+				       operands[0], GEN_INT (elem)));
+  DONE;
+})
+
+(define_expand "insb"
+  [(match_operand:V4QI 0 "register_operand" "")
+   (match_operand:V4QI 1 "register_operand" "")
+   (match_operand:SI 2 "register_operand" "")
+   (match_operand:SI 3 "const_int_operand" "")]
+  "TARGET_DSP"
+{
+  if (INTVAL (operands[3]) > 3 || INTVAL (operands[3]) < 0)
+    gcc_unreachable ();
+
+  rtx src = gen_reg_rtx (QImode);
+
+  convert_move (src, operands[2], false);
+
+  HOST_WIDE_INT selector_index;
+  selector_index = INTVAL (operands[3]);
+  rtx selector = gen_int_mode (1 << selector_index, SImode);
+  emit_insn (gen_vec_setv4qi_internal (operands[0], src,
+				       operands[1], selector));
+  DONE;
+})
+
+(define_expand "insvsi"
+  [(set (zero_extract:SI (match_operand:SI 0 "register_operand" "")
+			 (match_operand:SI 1 "const_int_operand" "")
+			 (match_operand:SI 2 "insv_operand" ""))
+	(match_operand:SI 3 "register_operand" ""))]
+  "TARGET_DSP"
+{
+  if (INTVAL (operands[1]) != 8)
+    FAIL;
+})
+
+
+(define_insn "insvsi_internal"
+  [(set (zero_extract:SI (match_operand:SI 0 "register_operand"   "+r")
+			 (const_int 8)
+			 (match_operand:SI 1 "insv_operand"        "i"))
+	(match_operand:SI 2                  "register_operand"    "r"))]
+  "TARGET_DSP"
+  "insb\t%0, %2, %v1"
+  [(set_attr "mode"  "SI")])
+
+(define_insn "insvsiqi_internal"
+  [(set (zero_extract:SI (match_operand:SI 0 "register_operand"   "+r")
+			 (const_int 8)
+			 (match_operand:SI 1 "insv_operand"       "i"))
+	(zero_extend:SI (match_operand:QI 2 "register_operand"    "r")))]
+  "TARGET_DSP"
+  "insb\t%0, %2, %v1"
+  [(set_attr "mode"  "SI")])
+
+;; v0 = (v1 & 0xff00ffff) | ((v2 << 16) | 0xff0000)
+(define_insn_and_split "insbsi2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(ior:SI (and:SI (match_operand:SI 1 "register_operand" "0")
+			(const_int -16711681))
+		(and:SI (ashift:SI (match_operand:SI 2 "register_operand" "r")
+				   (const_int 16))
+			(const_int 16711680))))]
+  "TARGET_DSP && !reload_completed"
+  "#"
+  "TARGET_DSP && !reload_completed"
+  [(const_int 1)]
+{
+  rtx tmp = gen_reg_rtx (SImode);
+  emit_move_insn (tmp, operands[1]);
+  emit_insn (gen_insvsi_internal (tmp, gen_int_mode(16, SImode), operands[2]));
+  emit_move_insn (operands[0], tmp);
+  DONE;
+})
+
+;; v0 = (v1 & 0xff00ffff) | v2
+(define_insn_and_split "ior_and0xff00ffff_reg"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(ior:SI (and:SI (match_operand:SI 1 "register_operand" "r")
+			(const_int -16711681))
+		(match_operand:SI 2 "register_operand" "r")))]
+  "TARGET_DSP && !reload_completed"
+  "#"
+  "TARGET_DSP && !reload_completed"
+  [(const_int 1)]
+{
+  rtx tmp = gen_reg_rtx (SImode);
+  emit_insn (gen_andsi3 (tmp, operands[1], gen_int_mode (0xff00ffff, SImode)));
+  emit_insn (gen_iorsi3 (operands[0], tmp, operands[2]));
+  DONE;
+})
+
+(define_insn "vec_setv4qi_internal"
+  [(set (match_operand:V4QI 0 "register_operand"    "=   r,    r,    r,    r")
+	(vec_merge:V4QI
+	  (vec_duplicate:V4QI
+	    (match_operand:QI 1 "register_operand"  "    r,    r,    r,    r"))
+	  (match_operand:V4QI 2 "register_operand"  "    0,    0,    0,    0")
+	  (match_operand:SI 3 "imm_1_2_4_8_operand" " Iv01, Iv02, Iv04, Iv08")))]
+  "TARGET_DSP"
+{
+  const char *pats[] = { "insb\t%0, %1, 0",
+			 "insb\t%0, %1, 1",
+			 "insb\t%0, %1, 2",
+			 "insb\t%0, %1, 3" };
+  return pats[which_alternative];
+}
+  [(set_attr "mode"  "V4QI")])
+
+(define_insn "vec_setv4qi_internal_vec"
+  [(set (match_operand:V4QI 0 "register_operand"       "=  r,   r,   r,   r")
+	(vec_merge:V4QI
+	  (vec_duplicate:V4QI
+	    (vec_select:QI
+	      (match_operand:V4QI 1 "register_operand" "   r,   r,   r,   r")
+	      (parallel [(const_int 0)])))
+	  (match_operand:V4QI 2 "register_operand"     "   0,   0,   0,   0")
+	  (match_operand:SI 3 "imm_1_2_4_8_operand"    " v01, v02, v04, v08")))]
+  "TARGET_DSP"
+  "@
+   insb\t%0, %1, 0
+   insb\t%0, %1, 1
+   insb\t%0, %1, 2
+   insb\t%0, %1, 3"
+  [(set_attr "mode"  "V4QI")])
+
+(define_insn "vec_mergev4qi_and_cv0_1"
+  [(set (match_operand:V4QI 0 "register_operand"       "=r")
+	(vec_merge:V4QI
+	  (vec_duplicate:V4QI
+	    (vec_select:QI
+	      (match_operand:V4QI 1 "register_operand" " r")
+	      (parallel [(const_int 0)])))
+	  (const_vector:V4QI [
+	    (const_int 0)
+	    (const_int 0)
+	    (const_int 0)
+	    (const_int 0)])
+	  (const_int 1)))]
+  "TARGET_DSP"
+  "andi\t%0, %1, 0xff"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V4QI")])
+
+(define_insn "vec_mergev4qi_and_cv0_2"
+  [(set (match_operand:V4QI 0 "register_operand"       "=r")
+	(vec_merge:V4QI
+	  (const_vector:V4QI [
+	    (const_int 0)
+	    (const_int 0)
+	    (const_int 0)
+	    (const_int 0)])
+	  (vec_duplicate:V4QI
+	    (vec_select:QI
+	      (match_operand:V4QI 1 "register_operand" " r")
+	      (parallel [(const_int 0)])))
+	  (const_int 2)))]
+  "TARGET_DSP"
+  "andi\t%0, %1, 0xff"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V4QI")])
+
+(define_insn "vec_mergeqi_and_cv0_1"
+  [(set (match_operand:V4QI 0 "register_operand"                     "=r")
+	(vec_merge:V4QI
+	  (vec_duplicate:V4QI (match_operand:QI 1 "register_operand" " r"))
+	  (const_vector:V4QI [
+	    (const_int 0)
+	    (const_int 0)
+	    (const_int 0)
+	    (const_int 0)])
+	  (const_int 1)))]
+  "TARGET_DSP"
+  "andi\t%0, %1, 0xff"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V4QI")])
+
+(define_insn "vec_mergeqi_and_cv0_2"
+  [(set (match_operand:V4QI 0 "register_operand"                     "=r")
+	(vec_merge:V4QI
+	  (const_vector:V4QI [
+	    (const_int 0)
+	    (const_int 0)
+	    (const_int 0)
+	    (const_int 0)])
+	  (vec_duplicate:V4QI (match_operand:QI 1 "register_operand" " r"))
+	  (const_int 2)))]
+  "TARGET_DSP"
+  "andi\t%0, %1, 0xff"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V4QI")])
+
+(define_expand "vec_setv2hi"
+  [(match_operand:V2HI 0 "register_operand" "")
+   (match_operand:HI 1 "register_operand" "")
+   (match_operand:SI 2 "immediate_operand" "")]
+  "TARGET_DSP"
+{
+  HOST_WIDE_INT pos = INTVAL (operands[2]);
+  if (pos > 2)
+    gcc_unreachable ();
+  HOST_WIDE_INT elem = (HOST_WIDE_INT) 1 << pos;
+  emit_insn (gen_vec_setv2hi_internal (operands[0], operands[1],
+				       operands[0], GEN_INT (elem)));
+  DONE;
+})
+
+(define_insn "vec_setv2hi_internal"
+  [(set (match_operand:V2HI 0 "register_operand"   "=  r,   r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (match_operand:HI 1 "register_operand" "   r,   r"))
+	  (match_operand:V2HI 2 "register_operand" "   r,   r")
+	  (match_operand:SI 3 "imm_1_2_operand"    " v01, v02")))]
+  "TARGET_DSP"
+{
+  const char *pats[] = { "pktb16\t%0, %2, %1",
+			 "pkbb16\t%0, %1, %2" };
+  return pats[which_alternative];
+}
+  [(set_attr "mode"  "V2HI")])
+
+(define_expand "pkbb"
+  [(match_operand:V2HI 0 "register_operand")
+   (match_operand:V2HI 1 "register_operand")
+   (match_operand:V2HI 2 "register_operand")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_vec_mergevv (operands[0], operands[1], operands[2],
+			      GEN_INT (2), GEN_INT (0), GEN_INT (0)));
+  DONE;
+})
+
+(define_insn "pkbbsi_1"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(ior:SI (and:SI (match_operand:SI 1 "register_operand" "r")
+			(const_int 65535))
+		(ashift:SI (match_operand:SI 2 "register_operand" "r")
+			   (const_int 16))))]
+  "TARGET_DSP"
+  "pkbb16\t%0, %2, %1"
+  [(set_attr "mode"  "SI")])
+
+(define_insn "pkbbsi_2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(ior:SI	(ashift:SI (match_operand:SI 2 "register_operand" "r")
+			   (const_int 16))
+		(and:SI (match_operand:SI 1 "register_operand" "r")
+			(const_int 65535))))]
+  "TARGET_DSP"
+  "pkbb16\t%0, %2, %1"
+  [(set_attr "mode"  "SI")])
+
+(define_insn "pkbbsi_3"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(ior:SI (zero_extend:SI	(match_operand:HI 1 "register_operand" "r"))
+		(ashift:SI (match_operand:SI 2 "register_operand" "r")
+			   (const_int 16))))]
+  "TARGET_DSP"
+  "pkbb16\t%0, %2, %1"
+  [(set_attr "mode"  "SI")])
+
+(define_insn "pkbbsi_4"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(ior:SI	(ashift:SI (match_operand:SI 2 "register_operand" "r")
+			   (const_int 16))
+		(zero_extend:SI (match_operand:HI 1 "register_operand" "r"))))]
+  "TARGET_DSP"
+  "pkbb16\t%0, %2, %1"
+  [(set_attr "mode"  "SI")])
+
+;; v0 = (v1 & 0xffff0000) | (v2 & 0xffff)
+(define_insn "pktbsi_1"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(ior:SI (and:SI (match_operand:SI 1 "register_operand" "r")
+			(const_int -65536))
+		(zero_extend:SI (match_operand:HI 2 "register_operand" "r"))))]
+  "TARGET_DSP"
+  "pktb16\t%0, %1, %2"
+  [(set_attr "mode"  "SI")])
+
+(define_insn "pktbsi_2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(ior:SI (and:SI (match_operand:SI 1 "register_operand" "r")
+			(const_int -65536))
+		(and:SI (match_operand:SI 2 "register_operand" "r")
+			(const_int 65535))))]
+  "TARGET_DSP"
+  "pktb16\t%0, %1, %2"
+  [(set_attr "mode"  "SI")])
+
+(define_insn "pktbsi_3"
+  [(set (zero_extract:SI (match_operand:SI 0 "register_operand" "+r")
+			 (const_int 16 )
+			 (const_int 0))
+	(match_operand:SI 1 "register_operand"                  " r"))]
+  "TARGET_DSP"
+  "pktb16\t%0, %0, %1"
+  [(set_attr "mode"  "SI")])
+
+(define_insn "pktbsi_4"
+  [(set (zero_extract:SI (match_operand:SI 0 "register_operand" "+r")
+			 (const_int 16 )
+			 (const_int 0))
+	(zero_extend:SI (match_operand:HI 1 "register_operand"  " r")))]
+  "TARGET_DSP"
+  "pktb16\t%0, %0, %1"
+  [(set_attr "mode"  "SI")])
+
+(define_insn "pkttsi"
+  [(set (match_operand:SI 0 "register_operand"                      "=r")
+	(ior:SI (and:SI (match_operand:SI 1 "register_operand"      " r")
+			(const_int -65536))
+		(lshiftrt:SI (match_operand:SI 2 "register_operand" " r")
+			     (const_int 16))))]
+  "TARGET_DSP"
+  "pktt16\t%0, %1, %2"
+  [(set_attr "mode"  "SI")])
+
+(define_expand "pkbt"
+  [(match_operand:V2HI 0 "register_operand")
+   (match_operand:V2HI 1 "register_operand")
+   (match_operand:V2HI 2 "register_operand")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_vec_mergevv (operands[0], operands[1], operands[2],
+			      GEN_INT (2), GEN_INT (0), GEN_INT (1)));
+  DONE;
+})
+
+(define_expand "pktt"
+  [(match_operand:V2HI 0 "register_operand")
+   (match_operand:V2HI 1 "register_operand")
+   (match_operand:V2HI 2 "register_operand")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_vec_mergevv (operands[0], operands[1], operands[2],
+			      GEN_INT (2), GEN_INT (1), GEN_INT (1)));
+  DONE;
+})
+
+(define_expand "pktb"
+  [(match_operand:V2HI 0 "register_operand")
+   (match_operand:V2HI 1 "register_operand")
+   (match_operand:V2HI 2 "register_operand")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_vec_mergevv (operands[0], operands[1], operands[2],
+			      GEN_INT (2), GEN_INT (1), GEN_INT (0)));
+  DONE;
+})
+
+(define_insn "vec_mergerr"
+  [(set (match_operand:V2HI 0 "register_operand"   "=  r,   r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (match_operand:HI 1 "register_operand" "   r,   r"))
+	  (vec_duplicate:V2HI
+	    (match_operand:HI 2 "register_operand" "   r,   r"))
+	  (match_operand:SI 3 "imm_1_2_operand"    " v01, v02")))]
+  "TARGET_DSP"
+  "@
+   pkbb16\t%0, %2, %1
+   pkbb16\t%0, %1, %2"
+  [(set_attr "mode" "V2HI")])
+
+
+(define_insn "vec_merge"
+  [(set (match_operand:V2HI 0 "register_operand"   "=  r,   r")
+	(vec_merge:V2HI
+	  (match_operand:V2HI 1 "register_operand" "   r,   r")
+	  (match_operand:V2HI 2 "register_operand" "   r,   r")
+	  (match_operand:SI 3 "imm_1_2_operand"    " v01, v02")))]
+  "TARGET_DSP"
+{
+  const char *pats[] = { "pktb16\t%0, %2, %1",
+			 "pktb16\t%0, %1, %2" };
+  return pats[which_alternative];
+}
+  [(set_attr "mode" "V2HI")])
+
+(define_insn "vec_mergerv"
+  [(set (match_operand:V2HI 0 "register_operand"               "=   r,    r,    r,    r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (match_operand:HI 1 "register_operand"             "    r,    r,    r,    r"))
+	  (vec_duplicate:V2HI
+	    (vec_select:HI
+	      (match_operand:V2HI 2 "register_operand"         "   r,   r,   r,   r")
+	      (parallel [(match_operand:SI 4 "imm_0_1_operand" " v00, v01, v00, v01")])))
+	  (match_operand:SI 3 "imm_1_2_operand"                " v01, v01, v02, v02")))]
+  "TARGET_DSP"
+  "@
+   pkbb16\t%0, %2, %1
+   pktb16\t%0, %2, %1
+   pkbb16\t%0, %1, %2
+   pkbt16\t%0, %1, %2"
+  [(set_attr "mode" "V2HI")])
+
+(define_insn "vec_mergevr"
+  [(set (match_operand:V2HI 0 "register_operand"                "=  r,   r,   r,   r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (vec_select:HI
+	      (match_operand:V2HI 1 "register_operand"          "   r,   r,   r,   r")
+	       (parallel [(match_operand:SI 4 "imm_0_1_operand" " v00, v01, v00, v01")])))
+	  (vec_duplicate:V2HI
+	    (match_operand:HI 2 "register_operand"              "   r,   r,   r,   r"))
+	  (match_operand:SI 3 "imm_1_2_operand"                 " v01, v01, v02, v02")))]
+  "TARGET_DSP"
+  "@
+   pkbb16\t%0, %2, %1
+   pkbt16\t%0, %2, %1
+   pkbb16\t%0, %1, %2
+   pktb16\t%0, %1, %2"
+  [(set_attr "mode" "V2HI")])
+
+(define_insn "vec_mergevv"
+  [(set (match_operand:V2HI 0 "register_operand"               "= r,   r,   r,   r,   r,   r,   r,   r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (vec_select:HI
+	      (match_operand:V2HI 1 "register_operand"         "  r,   r,   r,   r,   r,   r,   r,   r")
+	      (parallel [(match_operand:SI 4 "imm_0_1_operand" "v00, v00, v01, v01, v00, v00, v01, v01")])))
+	  (vec_duplicate:V2HI
+	    (vec_select:HI
+	      (match_operand:V2HI 2 "register_operand"         "  r,   r,   r,   r,   r,   r,   r,   r")
+	      (parallel [(match_operand:SI 5 "imm_0_1_operand" "v00, v01, v01, v00, v00, v01, v01, v00")])))
+	  (match_operand:SI 3 "imm_1_2_operand"                "v01, v01, v01, v01, v02, v02, v02, v02")))]
+  "TARGET_DSP"
+{
+  const char *pats[] = { "pkbb16\t%0, %2, %1",
+			 "pktb16\t%0, %2, %1",
+			 "pktt16\t%0, %2, %1",
+			 "pkbt16\t%0, %2, %1",
+			 "pkbb16\t%0, %1, %2",
+			 "pkbt16\t%0, %1, %2",
+			 "pktt16\t%0, %1, %2",
+			 "pktb16\t%0, %1, %2" };
+  return pats[which_alternative];
+}
+  [(set_attr "mode" "V2HI")])
+
+(define_insn "vec_extractv4qi3_se"
+  [(set (match_operand:SI 0 "register_operand"       "=r")
+	(sign_extend:SI
+	  (vec_select:QI
+	    (match_operand:V4QI 1 "register_operand" " r")
+	    (parallel [(const_int 3)]))))]
+  "TARGET_DSP"
+  "srai\t%0, %1, 24"
+  [(set_attr "mode" "V4QI")])
+
+(define_insn "vec_extractv4qi3_ze"
+  [(set (match_operand:SI 0 "register_operand"       "=r")
+	(zero_extend:SI
+	  (vec_select:QI
+	    (match_operand:V4QI 1 "register_operand" " r")
+	    (parallel [(const_int 3)]))))]
+  "TARGET_DSP"
+  "srli\t%0, %1, 24"
+  [(set_attr "mode" "V4QI")])
+
+(define_insn "vec_extractv2hi1"
+  [(set (match_operand:HI 0 "register_operand"     "=r")
+	(vec_select:HI
+	  (match_operand:V2HI 1 "register_operand" " r")
+	  (parallel [(const_int 1)])))]
+  "TARGET_DSP"
+  "srai\t%0, %1, 16"
+  [(set_attr "mode"    "V2HI")])
+
+(define_insn "vec_extractv2hi1_se"
+  [(set (match_operand:SI 0 "register_operand"     "=r")
+	(sign_extend:SI
+	  (vec_select:HI
+	    (match_operand:V2HI 1 "register_operand" "r")
+	    (parallel [(const_int 1)]))))]
+  "TARGET_DSP"
+  "srai\t%0, %1, 16"
+)
+
+(define_insn "vec_extractv2hi1_ze"
+  [(set (match_operand:SI 0 "register_operand"     "=r")
+	(zero_extend:SI
+	  (vec_select:HI
+	    (match_operand:V2HI 1 "register_operand" "r")
+	    (parallel [(const_int 1)]))))]
+  ""
+  "srli\t%0, %1, 16"
+)
+
+(define_insn "<su>mul16"
+  [(set (match_operand:V2SI 0 "register_operand"                         "=r")
+	(mult:V2SI (any_extend:V2SI (match_operand:V2HI 1 "register_operand" "%r"))
+		   (any_extend:V2SI (match_operand:V2HI 2 "register_operand" " r"))))]
+  "TARGET_DSP"
+  "<su>mul16\t%0, %1, %2"
+  [(set_attr "type"   "imul")
+   (set_attr "mode"   "V2SI")])
+
+(define_insn "<su>mulx16"
+  [(set (match_operand:V2SI 0 "register_operand"         "=r")
+	(vec_merge:V2SI
+	  (vec_duplicate:V2SI
+	    (mult:SI
+	      (any_extend:SI
+		(vec_select:HI
+		  (match_operand:V2HI 1 "register_operand" " r")
+		  (parallel [(const_int 0)])))
+	      (any_extend:SI
+		(vec_select:HI
+		  (match_operand:V2HI 2 "register_operand" " r")
+		  (parallel [(const_int 1)])))))
+	  (vec_duplicate:V2SI
+	    (mult:SI
+	      (any_extend:SI
+		(vec_select:HI
+		  (match_dup 1)
+		  (parallel [(const_int 1)])))
+	      (any_extend:SI
+		(vec_select:HI
+		  (match_dup 2)
+		  (parallel [(const_int 0)])))))
+	  (const_int 1)))]
+  "TARGET_DSP"
+  "<su>mulx16\t%0, %1, %2"
+  [(set_attr "type" "imul")
+   (set_attr "mode" "V2SI")])
+
+(define_insn "v4qi_dup_10"
+  [(set (match_operand:V4QI 0 "register_operand"    "=r")
+	(vec_select:V4QI
+	   (match_operand:V4QI 1 "register_operand" " r")
+	   (parallel [(const_int 0) (const_int 1) (const_int 0) (const_int 1)])))]
+  "TARGET_DSP"
+  "pkbb\t%0, %1, %1"
+  [(set_attr "mode"  "V4QI")])
+
+(define_insn "v4qi_dup_32"
+  [(set (match_operand:V4QI 0 "register_operand"    "=r")
+	(vec_select:V4QI
+	   (match_operand:V4QI 1 "register_operand" " r")
+	   (parallel [(const_int 2) (const_int 3) (const_int 2) (const_int 3)])))]
+  "TARGET_DSP"
+  "pktt\t%0, %1, %1"
+  [(set_attr "mode"  "V4QI")])
+
+(define_expand "vec_unpacks_lo_v4qi"
+  [(match_operand:V2HI 0 "register_operand" "=r")
+   (match_operand:V4QI 1 "register_operand" " r")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_sunpkd810 (operands[0], operands[1]));
+  DONE;
+})
+
+(define_expand "sunpkd810"
+  [(match_operand:V2HI 0 "register_operand")
+   (match_operand:V4QI 1 "register_operand")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_sunpkd810_imp (operands[0], operands[1]));
+  DONE;
+})
+
+(define_insn "<zs>unpkd810_imp"
+  [(set (match_operand:V2HI 0 "register_operand"                     "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_operand:V4QI 1 "register_operand"             " r")
+		(parallel [(const_int 1)]))))
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_dup 1)
+		(parallel [(const_int 0)]))))
+	  (const_int 2)))]
+  "TARGET_DSP"
+  "<zs>unpkd810\t%0, %1"
+  [(set_attr "mode"  "V2HI")])
+
+(define_insn "<zs>unpkd810_imp_inv"
+  [(set (match_operand:V2HI 0 "register_operand"                     "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_operand:V4QI 1 "register_operand"             " r")
+		(parallel [(const_int 0)]))))
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_dup 1)
+		(parallel [(const_int 1)]))))
+	  (const_int 1)))]
+  "TARGET_DSP"
+  "<zs>unpkd810\t%0, %1"
+  [(set_attr "mode"  "V2HI")])
+
+(define_expand "sunpkd820"
+  [(match_operand:V2HI 0 "register_operand")
+   (match_operand:V4QI 1 "register_operand")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_sunpkd820_imp (operands[0], operands[1]));
+  DONE;
+})
+
+(define_insn "<zs>unpkd820_imp"
+  [(set (match_operand:V2HI 0 "register_operand"                     "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_operand:V4QI 1 "register_operand"             " r")
+		(parallel [(const_int 2)]))))
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_dup 1)
+		(parallel [(const_int 0)]))))
+	  (const_int 2)))]
+  "TARGET_DSP"
+  "<zs>unpkd820\t%0, %1"
+  [(set_attr "mode"  "V2HI")])
+
+(define_insn "<zs>unpkd820_imp_inv"
+  [(set (match_operand:V2HI 0 "register_operand"                     "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_operand:V4QI 1 "register_operand"             " r")
+		(parallel [(const_int 0)]))))
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_dup 1)
+		(parallel [(const_int 2)]))))
+	  (const_int 1)))]
+  "TARGET_DSP"
+  "<zs>unpkd820\t%0, %1"
+  [(set_attr "mode"  "V2HI")])
+
+(define_expand "sunpkd830"
+  [(match_operand:V2HI 0 "register_operand")
+   (match_operand:V4QI 1 "register_operand")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_sunpkd830_imp (operands[0], operands[1]));
+  DONE;
+})
+
+(define_insn "<zs>unpkd830_imp"
+  [(set (match_operand:V2HI 0 "register_operand"                     "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_operand:V4QI 1 "register_operand"             " r")
+		(parallel [(const_int 3)]))))
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_dup 1)
+		(parallel [(const_int 0)]))))
+	  (const_int 2)))]
+  "TARGET_DSP"
+  "<zs>unpkd830\t%0, %1"
+  [(set_attr "mode"  "V2HI")])
+
+(define_insn "<zs>unpkd830_imp_inv"
+  [(set (match_operand:V2HI 0 "register_operand"                     "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_operand:V4QI 1 "register_operand"             " r")
+		(parallel [(const_int 0)]))))
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_dup 1)
+		(parallel [(const_int 3)]))))
+	  (const_int 1)))]
+  "TARGET_DSP"
+  "<zs>unpkd830\t%0, %1"
+  [(set_attr "mode"  "V2HI")])
+
+(define_expand "sunpkd831"
+  [(match_operand:V2HI 0 "register_operand")
+   (match_operand:V4QI 1 "register_operand")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_sunpkd831_imp (operands[0], operands[1]));
+  DONE;
+})
+
+(define_insn "<zs>unpkd831_imp"
+  [(set (match_operand:V2HI 0 "register_operand"                     "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_operand:V4QI 1 "register_operand"             " r")
+		(parallel [(const_int 3)]))))
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_dup 1)
+		(parallel [(const_int 1)]))))
+	  (const_int 2)))]
+  "TARGET_DSP"
+  "<zs>unpkd831\t%0, %1"
+  [(set_attr "mode"  "V2HI")])
+
+(define_insn "<zs>unpkd831_imp_inv"
+  [(set (match_operand:V2HI 0 "register_operand"                     "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_operand:V4QI 1 "register_operand"             " r")
+		(parallel [(const_int 1)]))))
+	  (vec_duplicate:V2HI
+	    (any_extend:HI
+	      (vec_select:QI
+		(match_dup 1)
+		(parallel [(const_int 3)]))))
+	  (const_int 1)))]
+  "TARGET_DSP"
+  "<zs>unpkd831\t%0, %1"
+  [(set_attr "mode"  "V2HI")])
+
+(define_expand "zunpkd810"
+  [(match_operand:V2HI 0 "register_operand")
+   (match_operand:V4QI 1 "register_operand")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_zunpkd810_imp (operands[0], operands[1]));
+  DONE;
+})
+
+(define_expand "zunpkd820"
+  [(match_operand:V2HI 0 "register_operand")
+   (match_operand:V4QI 1 "register_operand")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_zunpkd820_imp (operands[0], operands[1]));
+  DONE;
+})
+
+(define_expand "zunpkd830"
+  [(match_operand:V2HI 0 "register_operand")
+   (match_operand:V4QI 1 "register_operand")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_zunpkd830_imp (operands[0], operands[1]));
+  DONE;
+})
+
+(define_expand "zunpkd831"
+  [(match_operand:V2HI 0 "register_operand")
+   (match_operand:V4QI 1 "register_operand")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_zunpkd831_imp (operands[0], operands[1]));
+  DONE;
+})
+
+(define_expand "smbb"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_mulhisi3v (operands[0], operands[1], operands[2],
+			    GEN_INT (0), GEN_INT (0)));
+  DONE;
+})
+
+(define_expand "smbt"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_mulhisi3v (operands[0], operands[1], operands[2],
+			    GEN_INT (0), GEN_INT (1)));
+  DONE;
+})
+
+(define_expand "smtt"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_mulhisi3v (operands[0], operands[1], operands[2],
+			    GEN_INT (1), GEN_INT (1)));
+  DONE;
+})
+
+(define_insn "mulhisi3v"
+  [(set (match_operand:SI 0 "register_operand"                  "=  r,   r,   r,   r")
+	(mult:SI
+	  (sign_extend:SI
+	     (vec_select:HI
+	       (match_operand:V2HI 1 "register_operand"         "   r,   r,   r,   r")
+	       (parallel [(match_operand:SI 3 "imm_0_1_operand" " v00, v00, v01, v01")])))
+	  (sign_extend:SI (vec_select:HI
+	       (match_operand:V2HI 2 "register_operand"         "   r,   r,   r,   r")
+	       (parallel [(match_operand:SI 4 "imm_0_1_operand" " v00, v01, v01, v00")])))))]
+  "TARGET_DSP"
+{
+  const char *pats[] = { "smbb\t%0, %1, %2",
+			 "smbt\t%0, %1, %2",
+			 "smtt\t%0, %1, %2",
+			 "smbt\t%0, %2, %1" };
+  return pats[which_alternative];
+}
+  [(set_attr "type"   "imul")
+   (set_attr "mode"   "SI")])
+
+(define_expand "kmabb"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_kma_internal (operands[0], operands[2], operands[3],
+			       GEN_INT (0), GEN_INT (0),
+			       operands[1]));
+  DONE;
+})
+
+(define_expand "kmabt"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_kma_internal (operands[0], operands[2], operands[3],
+			       GEN_INT (0), GEN_INT (1),
+			       operands[1]));
+  DONE;
+})
+
+(define_expand "kmatt"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_kma_internal (operands[0], operands[2], operands[3],
+			       GEN_INT (1), GEN_INT (1),
+			       operands[1]));
+  DONE;
+})
+
+(define_insn "kma_internal"
+  [(set (match_operand:SI 0 "register_operand"                   "=   r,   r,   r,   r")
+	(ss_plus:SI
+	  (mult:SI
+	    (sign_extend:SI
+	      (vec_select:HI
+		(match_operand:V2HI 1 "register_operand"         "   r,   r,   r,   r")
+	        (parallel [(match_operand:SI 3 "imm_0_1_operand" " v00, v00, v01, v01")])))
+	    (sign_extend:SI
+	      (vec_select:HI
+	        (match_operand:V2HI 2 "register_operand"         "   r,   r,   r,   r")
+	        (parallel [(match_operand:SI 4 "imm_0_1_operand" " v00, v01, v01, v00")]))))
+	  (match_operand:SI 5 "register_operand"                 "   0,   0,   0,   0")))]
+  "TARGET_DSP"
+{
+  const char *pats[] = { "kmabb\t%0, %1, %2",
+			 "kmabt\t%0, %1, %2",
+			 "kmatt\t%0, %1, %2",
+			 "kmabt\t%0, %2, %1" };
+  return pats[which_alternative];
+}
+  [(set_attr "mode" "SI")])
+
+(define_expand "smds"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smds_le (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_expand "smds_le"
+  [(set (match_operand:SI 0 "register_operand"                         "=r")
+	(minus:SI
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 1 "register_operand" " r")
+			      (parallel [(const_int 1)])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 2 "register_operand" " r")
+			      (parallel [(const_int 1)]))))
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 1)
+			      (parallel [(const_int 0)])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 2)
+			      (parallel [(const_int 0)]))))))]
+  "TARGET_DSP"
+{
+})
+
+(define_expand "smdrs"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smdrs_le (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_expand "smdrs_le"
+  [(set (match_operand:SI 0 "register_operand"                         "=r")
+	(minus:SI
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 1 "register_operand" " r")
+			      (parallel [(const_int 0)])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 2 "register_operand" " r")
+			      (parallel [(const_int 0)]))))
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 1)
+			      (parallel [(const_int 1)])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 2)
+			      (parallel [(const_int 1)]))))))]
+  "TARGET_DSP"
+{
+})
+
+(define_expand "smxdsv"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:V2HI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smxdsv_le (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+
+(define_expand "smxdsv_le"
+  [(set (match_operand:SI 0 "register_operand"                         "=r")
+	(minus:SI
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 1 "register_operand" " r")
+			      (parallel [(const_int 1)])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 2 "register_operand" " r")
+			      (parallel [(const_int 0)]))))
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 1)
+			      (parallel [(const_int 0)])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 2)
+			      (parallel [(const_int 1)]))))))]
+  "TARGET_DSP"
+{
+})
+
+(define_insn "smal1"
+  [(set (match_operand:DI 0 "register_operand"             "=r")
+	(plus:DI (match_operand:DI 1 "register_operand"    " r")
+	  (sign_extend:DI
+	    (mult:SI
+	      (sign_extend:SI
+		(vec_select:HI
+		  (match_operand:V2HI 2 "register_operand" " r")
+		  (parallel [(const_int 0)])))
+	      (sign_extend:SI
+		(vec_select:HI
+		  (match_dup 2)
+		  (parallel [(const_int 1)])))))))]
+  "TARGET_DSP"
+  "smal\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
+
+(define_insn "smal2"
+  [(set (match_operand:DI 0 "register_operand"           "=r")
+	(plus:DI (match_operand:DI 1 "register_operand"  " r")
+	  (mult:DI
+	    (sign_extend:DI
+	      (vec_select:HI
+		(match_operand:V2HI 2 "register_operand" " r")
+		(parallel [(const_int 0)])))
+	    (sign_extend:DI
+	      (vec_select:HI
+		(match_dup 2)
+		(parallel [(const_int 1)]))))))]
+  "TARGET_DSP"
+  "smal\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
+
+(define_insn "smal3"
+  [(set (match_operand:DI 0 "register_operand"             "=r")
+	(plus:DI (match_operand:DI 1 "register_operand"    " r")
+	  (sign_extend:DI
+	    (mult:SI
+	      (sign_extend:SI
+		(vec_select:HI
+		  (match_operand:V2HI 2 "register_operand" " r")
+		  (parallel [(const_int 1)])))
+	      (sign_extend:SI
+		(vec_select:HI
+		  (match_dup 2)
+		  (parallel [(const_int 0)])))))))]
+  "TARGET_DSP"
+  "smal\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
+
+(define_insn "smal4"
+  [(set (match_operand:DI 0 "register_operand"           "=r")
+	(plus:DI (match_operand:DI 1 "register_operand"  " r")
+	  (mult:DI
+	    (sign_extend:DI
+	      (vec_select:HI
+		(match_operand:V2HI 2 "register_operand" " r")
+		(parallel [(const_int 1)])))
+	    (sign_extend:DI
+	      (vec_select:HI
+		(match_dup 2)
+		(parallel [(const_int 0)]))))))]
+  "TARGET_DSP"
+  "smal\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
+
+(define_insn "smal5"
+  [(set (match_operand:DI 0 "register_operand"             "=r")
+	(plus:DI
+	  (sign_extend:DI
+	    (mult:SI
+	      (sign_extend:SI
+		(vec_select:HI
+		  (match_operand:V2HI 2 "register_operand" " r")
+		  (parallel [(const_int 0)])))
+	      (sign_extend:SI
+		(vec_select:HI
+		  (match_dup 2)
+		  (parallel [(const_int 1)])))))
+	  (match_operand:DI 1 "register_operand"           " r")))]
+  "TARGET_DSP"
+  "smal\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
+
+(define_insn "smal6"
+  [(set (match_operand:DI 0 "register_operand"           "=r")
+	(plus:DI
+	  (mult:DI
+	    (sign_extend:DI
+	      (vec_select:HI
+		(match_operand:V2HI 2 "register_operand" " r")
+		(parallel [(const_int 0)])))
+	    (sign_extend:DI
+	      (vec_select:HI
+		(match_dup 2)
+		(parallel [(const_int 1)]))))
+	  (match_operand:DI 1 "register_operand"         " r")))]
+  "TARGET_DSP"
+  "smal\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
+
+(define_insn "smal7"
+  [(set (match_operand:DI 0 "register_operand"             "=r")
+	(plus:DI
+	  (sign_extend:DI
+	    (mult:SI
+	      (sign_extend:SI
+		(vec_select:HI
+		  (match_operand:V2HI 2 "register_operand" " r")
+		  (parallel [(const_int 1)])))
+	      (sign_extend:SI
+		(vec_select:HI
+		  (match_dup 2)
+		  (parallel [(const_int 0)])))))
+	  (match_operand:DI 1 "register_operand"           " r")))]
+  "TARGET_DSP"
+  "smal\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
+
+(define_insn "smal8"
+  [(set (match_operand:DI 0 "register_operand"           "=r")
+	(plus:DI
+	  (mult:DI
+	    (sign_extend:DI
+	      (vec_select:HI
+		(match_operand:V2HI 2 "register_operand" " r")
+		(parallel [(const_int 1)])))
+	    (sign_extend:DI
+	      (vec_select:HI
+		(match_dup 2)
+		(parallel [(const_int 0)]))))
+	  (match_operand:DI 1 "register_operand"         " r")))]
+  "TARGET_DSP"
+  "smal\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
+
+(define_insn "dsp_extendqihi2"
+  [(set (match_operand:HI 0 "register_operand"                 "=r")
+	(sign_extend:HI (match_operand:QI 1 "register_operand" " r")))]
+  "TARGET_DSP"
+  "sunpkd820\t%0, %1"
+  [(set_attr "mode" "HI")])
+
+(define_insn "smulsi3_highpart"
+  [(set (match_operand:SI 0 "register_operand"                       "=r")
+	(truncate:SI
+	  (lshiftrt:DI
+	    (mult:DI
+	      (sign_extend:DI (match_operand:SI 1 "register_operand" " r"))
+	      (sign_extend:DI (match_operand:SI 2 "register_operand" " r")))
+	    (const_int 32))))]
+  "TARGET_DSP"
+  "smmul\t%0, %1, %2"
+  [(set_attr "type" "imul")
+   (set_attr "mode" "HI")])
+
+(define_insn "smmul_round"
+  [(set (match_operand:SI 0 "register_operand"                       "=r")
+	(truncate:SI
+	  (lshiftrt:DI
+	    (unspec:DI [(mult:DI
+		  	  (sign_extend:DI (match_operand:SI 1 "register_operand" " r"))
+			  (sign_extend:DI (match_operand:SI 2 "register_operand" " r")))]
+		       UNSPEC_ROUND)
+	    (const_int 32))))]
+  "TARGET_DSP"
+  "smmul.u\t%0, %1, %2"
+  [(set_attr "type" "imul")
+   (set_attr "mode" "HI")])
+
+(define_insn "kmmac"
+  [(set (match_operand:SI 0 "register_operand"                         "=r")
+	(ss_plus:SI (match_operand:SI 1 "register_operand"             " 0")
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (mult:DI
+		(sign_extend:DI (match_operand:SI 2 "register_operand" " r"))
+		(sign_extend:DI (match_operand:SI 3 "register_operand" " r")))
+	      (const_int 32)))))]
+  "TARGET_DSP"
+  "kmmac\t%0, %2, %3"
+)
+
+(define_insn "kmmac_round"
+  [(set (match_operand:SI 0 "register_operand"                                     "=r")
+	(ss_plus:SI (match_operand:SI 1 "register_operand"                         " 0")
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (unspec:DI [(mult:DI
+			    (sign_extend:DI (match_operand:SI 2 "register_operand" " r"))
+			    (sign_extend:DI (match_operand:SI 3 "register_operand" " r")))]
+			 UNSPEC_ROUND)
+	      (const_int 32)))))]
+  "TARGET_DSP"
+  "kmmac.u\t%0, %2, %3"
+)
+
+(define_insn "kmmsb"
+  [(set (match_operand:SI 0 "register_operand"                         "=r")
+	(ss_minus:SI (match_operand:SI 1 "register_operand"            " 0")
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (mult:DI
+		(sign_extend:DI (match_operand:SI 2 "register_operand" " r"))
+		(sign_extend:DI (match_operand:SI 3 "register_operand" " r")))
+	      (const_int 32)))))]
+  "TARGET_DSP"
+  "kmmsb\t%0, %2, %3"
+)
+
+(define_insn "kmmsb_round"
+  [(set (match_operand:SI 0 "register_operand"                                     "=r")
+	(ss_minus:SI (match_operand:SI 1 "register_operand"                        " 0")
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (unspec:DI [(mult:DI
+			    (sign_extend:DI (match_operand:SI 2 "register_operand" " r"))
+			    (sign_extend:DI (match_operand:SI 3 "register_operand" " r")))]
+			 UNSPEC_ROUND)
+	      (const_int 32)))))]
+  "TARGET_DSP"
+  "kmmsb.u\t%0, %2, %3"
+)
+
+(define_insn "kwmmul"
+  [(set (match_operand:SI 0 "register_operand"                       "=r")
+	(truncate:SI
+	  (lshiftrt:DI
+	    (ss_mult:DI
+	      (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" " r")) (const_int 2))
+	      (mult:DI (sign_extend:DI (match_operand:SI 2 "register_operand" " r")) (const_int 2)))
+	    (const_int 32))))]
+  "TARGET_DSP"
+  "kwmmul\t%0, %1, %2"
+)
+
+(define_insn "kwmmul_round"
+  [(set (match_operand:SI 0 "register_operand"                       "=r")
+	(truncate:SI
+	  (lshiftrt:DI
+	    (unspec:DI [
+	      (ss_mult:DI
+		(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" " r")) (const_int 2))
+		(mult:DI (sign_extend:DI (match_operand:SI 2 "register_operand" " r")) (const_int 2)))]
+	      UNSPEC_ROUND)
+	    (const_int 32))))]
+  "TARGET_DSP"
+  "kwmmul.u\t%0, %1, %2"
+)
+
+(define_expand "smmwb"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smulhisi3_highpart_1 (operands[0], operands[1], operands[2], GEN_INT (0)));
+  DONE;
+})
+
+(define_expand "smmwt"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smulhisi3_highpart_1 (operands[0], operands[1], operands[2], GEN_INT (1)));
+  DONE;
+})
+
+(define_insn "smulhisi3_highpart_1"
+  [(set (match_operand:SI 0 "register_operand"                       "= r,   r")
+	(truncate:SI
+	  (lshiftrt:DI
+	    (mult:DI
+	      (sign_extend:DI (match_operand:SI 1 "register_operand" "  r,   r"))
+	      (sign_extend:DI
+	        (vec_select:HI
+		  (match_operand:V2HI 2 "register_operand"           "  r,   r")
+		  (parallel [(match_operand:SI 3 "imm_0_1_operand"   "v00, v01")]))))
+	    (const_int 16))))]
+  "TARGET_DSP"
+{
+  const char *pats[] = { "smmwb\t%0, %1, %2",
+			 "smmwt\t%0, %1, %2" };
+  return pats[which_alternative];
+})
+
+(define_insn "smulhisi3_highpart_2"
+  [(set (match_operand:SI 0 "register_operand"                       "= r,   r")
+	(truncate:SI
+	  (lshiftrt:DI
+	    (mult:DI
+	      (sign_extend:DI
+	        (vec_select:HI
+		  (match_operand:V2HI 1 "register_operand"           "  r,   r")
+		  (parallel [(match_operand:SI 3 "imm_0_1_operand"   "v00, v01")])))
+	      (sign_extend:DI (match_operand:SI 2 "register_operand" "  r,   r")))
+	    (const_int 16))))]
+  "TARGET_DSP"
+{
+  const char *pats[] = { "smmwb\t%0, %1, %2",
+			     "smmwt\t%0, %1, %2" };
+  return pats[which_alternative];
+})
+
+(define_expand "smmwb_round"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smmw_round_internal (operands[0], operands[1], operands[2], GEN_INT (0)));
+  DONE;
+})
+
+(define_expand "smmwt_round"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smmw_round_internal (operands[0], operands[1], operands[2], GEN_INT (1)));
+  DONE;
+})
+
+(define_insn "smmw_round_internal"
+  [(set (match_operand:SI 0 "register_operand"                          "=  r,   r")
+	(truncate:SI
+	  (lshiftrt:DI
+	    (unspec:DI
+	      [(mult:DI
+		 (sign_extend:DI (match_operand:SI 1 "register_operand" "   r,   r"))
+		 (sign_extend:DI
+		   (vec_select:HI
+		     (match_operand:V2HI 2 "register_operand"           "   r,   r")
+		     (parallel [(match_operand:SI 3 "imm_0_1_operand"   " v00, v01")]))))]
+	      UNSPEC_ROUND)
+	    (const_int 16))))]
+  "TARGET_DSP"
+{
+  const char *pats[] = { "smmwb.u\t%0, %1, %2",
+			 "smmwt.u\t%0, %1, %2" };
+  return pats[which_alternative];
+})
+
+(define_expand "kmmawb"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:SI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3], GEN_INT (0), operands[1]));
+  DONE;
+})
+
+(define_expand "kmmawt"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:SI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3], GEN_INT (1), operands[1]));
+  DONE;
+})
+
+(define_insn "kmmaw_internal"
+  [(set (match_operand:SI 0 "register_operand"                         "=  r,   r")
+	(ss_plus:SI
+	  (match_operand:SI 4 "register_operand"                       "   0,   0")
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (mult:DI
+		(sign_extend:DI (match_operand:SI 1 "register_operand" "   r,   r"))
+		  (sign_extend:DI
+		    (vec_select:HI
+		      (match_operand:V2HI 2 "register_operand"         "   r,   r")
+		      (parallel [(match_operand:SI 3 "imm_0_1_operand" " v00, v01")]))))
+	      (const_int 16)))))]
+  "TARGET_DSP"
+{
+  const char *pats[] = { "kmmawb\t%0, %1, %2",
+			 "kmmawt\t%0, %1, %2" };
+  return pats[which_alternative];
+})
+
+(define_expand "kmmawb_round"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:SI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3], GEN_INT (0), operands[1]));
+  DONE;
+})
+
+(define_expand "kmmawt_round"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:SI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3], GEN_INT (1), operands[1]));
+  DONE;
+})
+
+(define_insn "kmmaw_round_internal"
+  [(set (match_operand:SI 0 "register_operand"                            "=  r,   r")
+	(ss_plus:SI
+	  (match_operand:SI 4 "register_operand"                          "   0,   0")
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (unspec:DI
+		[(mult:DI
+		   (sign_extend:DI (match_operand:SI 1 "register_operand" "   r,   r"))
+		   (sign_extend:DI
+		     (vec_select:HI
+		       (match_operand:V2HI 2 "register_operand"           "   r,   r")
+		       (parallel [(match_operand:SI 3 "imm_0_1_operand"   " v00, v01")]))))]
+		UNSPEC_ROUND)
+	      (const_int 16)))))]
+  "TARGET_DSP"
+{
+  const char *pats[] = { "kmmawb.u\t%0, %1, %2",
+			 "kmmawt.u\t%0, %1, %2" };
+  return pats[which_alternative];
+})
+
+(define_expand "smalbb"
+  [(match_operand:DI 0 "register_operand" "")
+   (match_operand:DI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smaddhidi (operands[0], operands[2],
+			    operands[3], operands[1],
+			    GEN_INT (0), GEN_INT (0)));
+  DONE;
+})
+
+(define_expand "smalbt"
+  [(match_operand:DI 0 "register_operand" "")
+   (match_operand:DI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smaddhidi (operands[0], operands[2],
+			    operands[3], operands[1],
+			    GEN_INT (0), GEN_INT (1)));
+  DONE;
+})
+
+(define_expand "smaltt"
+  [(match_operand:DI 0 "register_operand" "")
+   (match_operand:DI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smaddhidi (operands[0], operands[2],
+			    operands[3], operands[1],
+			    GEN_INT (1), GEN_INT (1)));
+  DONE;
+})
+
+(define_insn "smaddhidi"
+  [(set (match_operand:DI 0 "register_operand"                   "=  r,   r,   r,   r")
+	(plus:DI
+	  (match_operand:DI 3 "register_operand"                 "   0,   0,   0,   0")
+	  (mult:DI
+	    (sign_extend:DI
+	      (vec_select:HI
+		(match_operand:V2HI 1 "register_operand"         "   r,   r,   r,   r")
+		(parallel [(match_operand:SI 4 "imm_0_1_operand" " v00, v00, v01, v01")])))
+	    (sign_extend:DI
+	      (vec_select:HI
+		(match_operand:V2HI 2 "register_operand"         "   r,   r,   r,   r")
+		(parallel [(match_operand:SI 5 "imm_0_1_operand" " v00, v01, v01, v00")]))))))]
+  "TARGET_DSP"
+{
+    const char *pats[] = { "smalbb\t%0, %1, %2",
+			   "smalbt\t%0, %1, %2",
+			   "smaltt\t%0, %1, %2",
+			   "smalbt\t%0, %2, %1" };
+    return pats[which_alternative];
+})
+
+(define_insn "smaddhidi2"
+  [(set (match_operand:DI 0 "register_operand"                   "=  r,   r,   r,   r")
+	(plus:DI
+	  (mult:DI
+	    (sign_extend:DI
+	      (vec_select:HI
+		(match_operand:V2HI 1 "register_operand"         "   r,   r,   r,   r")
+		(parallel [(match_operand:SI 4 "imm_0_1_operand" " v00, v00, v01, v01")])))
+	    (sign_extend:DI
+	      (vec_select:HI
+		(match_operand:V2HI 2 "register_operand"         "   r,   r,   r,   r")
+		(parallel [(match_operand:SI 5 "imm_0_1_operand" " v00, v01, v01, v00")]))))
+	  (match_operand:DI 3 "register_operand"                 "   0,   0,   0,   0")))]
+  "TARGET_DSP"
+{
+    const char *pats[] = { "smalbb\t%0, %1, %2",
+			   "smalbt\t%0, %1, %2",
+			   "smaltt\t%0, %1, %2",
+			   "smalbt\t%0, %2, %1" };
+    return pats[which_alternative];
+})
+
+(define_expand "smalda1"
+  [(match_operand:DI 0 "register_operand" "")
+   (match_operand:DI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" " r")
+   (match_operand:V2HI 3 "register_operand" " r")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smalda1_le (operands[0], operands[1], operands[2], operands[3]));
+  DONE;
+})
+
+(define_expand "smalds1"
+  [(match_operand:DI 0 "register_operand" "")
+   (match_operand:DI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" " r")
+   (match_operand:V2HI 3 "register_operand" " r")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smalds1_le (operands[0], operands[1], operands[2], operands[3]));
+  DONE;
+})
+
+(define_insn "smalda1_le"
+  [(set (match_operand:DI 0 "register_operand"                             "=r")
+	(plus:DI
+	  (match_operand:DI 1 "register_operand"                           " 0")
+	  (sign_extend:DI
+	    (plus:SI
+	      (mult:SI
+		(sign_extend:SI (vec_select:HI
+				  (match_operand:V2HI 2 "register_operand" " r")
+				  (parallel [(const_int 1)])))
+		(sign_extend:SI (vec_select:HI
+				  (match_operand:V2HI 3 "register_operand" " r")
+				  (parallel [(const_int 1)]))))
+	      (mult:SI
+		(sign_extend:SI (vec_select:HI
+				  (match_dup 2)
+				  (parallel [(const_int 0)])))
+		(sign_extend:SI (vec_select:HI
+				  (match_dup 3)
+				  (parallel [(const_int 0)]))))))))]
+  "TARGET_DSP"
+  "smalda\t%0, %2, %3"
+)
+
+(define_insn "smalds1_le"
+  [(set (match_operand:DI 0 "register_operand"                             "=r")
+	(plus:DI
+	  (match_operand:DI 1 "register_operand"                           " 0")
+	  (sign_extend:DI
+	    (minus:SI
+	      (mult:SI
+		(sign_extend:SI (vec_select:HI
+				  (match_operand:V2HI 2 "register_operand" " r")
+				  (parallel [(const_int 1)])))
+		(sign_extend:SI (vec_select:HI
+				  (match_operand:V2HI 3 "register_operand" " r")
+				  (parallel [(const_int 1)]))))
+	      (mult:SI
+		(sign_extend:SI (vec_select:HI
+				  (match_dup 2)
+				  (parallel [(const_int 0)])))
+		(sign_extend:SI (vec_select:HI
+				  (match_dup 3)
+				  (parallel [(const_int 0)]))))))))]
+  "TARGET_DSP"
+  "smalds\t%0, %2, %3"
+)
+
+(define_expand "smaldrs3"
+  [(match_operand:DI 0 "register_operand" "")
+   (match_operand:DI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" " r")
+   (match_operand:V2HI 3 "register_operand" " r")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smaldrs3_le (operands[0], operands[1], operands[2], operands[3]));
+  DONE;
+})
+
+(define_insn "smaldrs3_le"
+  [(set (match_operand:DI 0 "register_operand"                             "=r")
+	(plus:DI
+	  (match_operand:DI 1 "register_operand"                           " 0")
+	  (sign_extend:DI
+	    (minus:SI
+	      (mult:SI
+		(sign_extend:SI (vec_select:HI
+				  (match_operand:V2HI 2 "register_operand" " r")
+				  (parallel [(const_int 0)])))
+		(sign_extend:SI (vec_select:HI
+				  (match_operand:V2HI 3 "register_operand" " r")
+				  (parallel [(const_int 0)]))))
+	      (mult:SI
+		(sign_extend:SI (vec_select:HI
+				  (match_dup 2)
+				  (parallel [(const_int 1)])))
+		(sign_extend:SI (vec_select:HI
+				  (match_dup 3)
+				  (parallel [(const_int 1)]))))))))]
+  "TARGET_DSP"
+  "smaldrs\t%0, %2, %3"
+)
+
+(define_expand "smalxda1"
+  [(match_operand:DI 0 "register_operand" "")
+   (match_operand:DI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" " r")
+   (match_operand:V2HI 3 "register_operand" " r")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smalxda1_le (operands[0], operands[1], operands[2], operands[3]));
+  DONE;
+})
+
+(define_expand "smalxds1"
+  [(match_operand:DI 0 "register_operand" "")
+   (match_operand:DI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" " r")
+   (match_operand:V2HI 3 "register_operand" " r")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_smalxds1_le (operands[0], operands[1], operands[2], operands[3]));
+  DONE;
+})
+
+(define_insn "smalxd<add_sub>1_le"
+  [(set (match_operand:DI 0 "register_operand"                             "=r")
+	(plus:DI
+	  (match_operand:DI 1 "register_operand"                           " 0")
+	  (sign_extend:DI
+	    (plus_minus:SI
+	      (mult:SI
+		(sign_extend:SI (vec_select:HI
+				  (match_operand:V2HI 2 "register_operand" " r")
+				  (parallel [(const_int 1)])))
+		(sign_extend:SI (vec_select:HI
+				  (match_operand:V2HI 3 "register_operand" " r")
+				  (parallel [(const_int 0)]))))
+	      (mult:SI
+		(sign_extend:SI (vec_select:HI
+				  (match_dup 2)
+				  (parallel [(const_int 0)])))
+		(sign_extend:SI (vec_select:HI
+				  (match_dup 3)
+				  (parallel [(const_int 1)]))))))))]
+  "TARGET_DSP"
+  "smalxd<add_sub>\t%0, %2, %3"
+)
+
+(define_insn "smslda1"
+  [(set (match_operand:DI 0 "register_operand"                             "=r")
+	(minus:DI
+	  (minus:DI
+	    (match_operand:DI 1 "register_operand"                         " 0")
+	    (sign_extend:DI
+	      (mult:SI
+		(sign_extend:SI (vec_select:HI
+				  (match_operand:V2HI 2 "register_operand" " r")
+				  (parallel [(const_int 1)])))
+		(sign_extend:SI (vec_select:HI
+				  (match_operand:V2HI 3 "register_operand" " r")
+				  (parallel [(const_int 1)]))))))
+	  (sign_extend:DI
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 2)
+				(parallel [(const_int 0)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 3)
+				(parallel [(const_int 0)])))))))]
+  "TARGET_DSP"
+  "smslda\t%0, %2, %3"
+)
+
+(define_insn "smslxda1"
+  [(set (match_operand:DI 0 "register_operand"                               "=r")
+	(minus:DI
+	  (minus:DI
+	    (match_operand:DI 1 "register_operand"                           " 0")
+	      (sign_extend:DI
+		(mult:SI
+		  (sign_extend:SI (vec_select:HI
+				    (match_operand:V2HI 2 "register_operand" " r")
+				    (parallel [(const_int 1)])))
+		  (sign_extend:SI (vec_select:HI
+				    (match_operand:V2HI 3 "register_operand" " r")
+				    (parallel [(const_int 0)]))))))
+	  (sign_extend:DI
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 2)
+				(parallel [(const_int 0)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 3)
+				(parallel [(const_int 1)])))))))]
+  "TARGET_DSP"
+  "smslxda\t%0, %2, %3"
+)
+
+;; mada for synthetize smalda
+(define_insn_and_split "mada1"
+  [(set (match_operand:SI 0 "register_operand"                          "=r")
+	(plus:SI
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 1 "register_operand" "r")
+			      (parallel [(match_operand:SI 3 "imm_0_1_operand" " u01")])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 2 "register_operand" "r")
+			      (parallel [(match_operand:SI 4 "imm_0_1_operand" " u01")]))))
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 1)
+			      (parallel [(match_operand:SI 5 "imm_0_1_operand" " u01")])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 2)
+			      (parallel [(match_operand:SI 6 "imm_0_1_operand" " u01")]))))))]
+  "TARGET_DSP && !reload_completed"
+  "#"
+  "TARGET_DSP && !reload_completed"
+  [(const_int 1)]
+{
+  rtx result0 = gen_reg_rtx (SImode);
+  rtx result1 = gen_reg_rtx (SImode);
+  emit_insn (gen_mulhisi3v (result0, operands[1], operands[2],
+			    operands[3], operands[4]));
+  emit_insn (gen_mulhisi3v (result1, operands[1], operands[2],
+			    operands[5], operands[6]));
+  emit_insn (gen_addsi3 (operands[0], result0, result1));
+  DONE;
+})
+
+(define_insn_and_split "mada2"
+  [(set (match_operand:SI 0 "register_operand"                                 "=r")
+	(plus:SI
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 1 "register_operand" "r")
+			      (parallel [(match_operand:SI 3 "imm_0_1_operand" " Iu01")])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 2 "register_operand" "r")
+			      (parallel [(match_operand:SI 4 "imm_0_1_operand" " Iu01")]))))
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 2)
+			      (parallel [(match_operand:SI 5 "imm_0_1_operand" " Iu01")])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 1)
+			      (parallel [(match_operand:SI 6 "imm_0_1_operand" " Iu01")]))))))]
+  "TARGET_DSP && !reload_completed"
+  "#"
+  "TARGET_DSP && !reload_completed"
+  [(const_int 1)]
+{
+  rtx result0 = gen_reg_rtx (SImode);
+  rtx result1 = gen_reg_rtx (SImode);
+  emit_insn (gen_mulhisi3v (result0, operands[1], operands[2],
+			    operands[3], operands[4]));
+  emit_insn (gen_mulhisi3v (result1, operands[1], operands[2],
+			    operands[6], operands[5]));
+  emit_insn (gen_addsi3 (operands[0], result0, result1));
+  DONE;
+})
+
+;; sms for synthetize smalds
+(define_insn_and_split "sms1"
+  [(set (match_operand:SI 0 "register_operand"                                 "=  r")
+	(minus:SI
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 1 "register_operand"         "   r")
+			      (parallel [(match_operand:SI 3 "imm_0_1_operand" " u01")])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 2 "register_operand"         "   r")
+			      (parallel [(match_operand:SI 4 "imm_0_1_operand" " u01")]))))
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 1)
+			      (parallel [(match_operand:SI 5 "imm_0_1_operand" " u01")])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 2)
+			      (parallel [(match_operand:SI 6 "imm_0_1_operand" " u01")]))))))]
+  "TARGET_DSP
+   && (!reload_completed
+       || !riscv_need_split_sms_p (operands[3], operands[4],
+				   operands[5], operands[6]))"
+
+{
+  return riscv_output_sms (operands[3], operands[4],
+			   operands[5], operands[6]);
+}
+  "TARGET_DSP
+   && !reload_completed
+   && riscv_need_split_sms_p (operands[3], operands[4],
+			      operands[5], operands[6])"
+  [(const_int 1)]
+{
+  riscv_split_sms (operands[0], operands[1], operands[2],
+		   operands[3], operands[4],
+		   operands[5], operands[6]);
+  DONE;
+})
+
+(define_insn_and_split "sms2"
+  [(set (match_operand:SI 0 "register_operand"                                 "=  r")
+	(minus:SI
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 1 "register_operand"         "   r")
+			      (parallel [(match_operand:SI 3 "imm_0_1_operand" " u01")])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 2 "register_operand"         "   r")
+			      (parallel [(match_operand:SI 4 "imm_0_1_operand" " u01")]))))
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 2)
+			      (parallel [(match_operand:SI 5 "imm_0_1_operand" " u01")])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 1)
+			      (parallel [(match_operand:SI 6 "imm_0_1_operand" " u01")]))))))]
+  "TARGET_DSP
+   && (!reload_completed
+       || !riscv_need_split_sms_p (operands[3], operands[4],
+				   operands[6], operands[5]))"
+{
+  return riscv_output_sms (operands[3], operands[4],
+			   operands[6], operands[5]);
+}
+  "TARGET_DSP
+   && !reload_completed
+   && riscv_need_split_sms_p (operands[3], operands[4],
+			      operands[6], operands[5])"
+  [(const_int 1)]
+{
+  riscv_split_sms (operands[0], operands[1], operands[2],
+		   operands[3], operands[4],
+		   operands[6], operands[5]);
+  DONE;
+})
+
+(define_insn "kmda"
+  [(set (match_operand:SI 0 "register_operand"                         "=r")
+	(ss_plus:SI
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 1 "register_operand" "r")
+			      (parallel [(const_int 1)])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 2 "register_operand" "r")
+			      (parallel [(const_int 1)]))))
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 1)
+			      (parallel [(const_int 0)])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 2)
+			      (parallel [(const_int 0)]))))))]
+  "TARGET_DSP"
+  "kmda\t%0, %1, %2"
+)
+
+(define_insn "kmxda"
+  [(set (match_operand:SI 0 "register_operand"                        "=r")
+	(ss_plus:SI
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 1 "register_operand" "r")
+			      (parallel [(const_int 1)])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_operand:V2HI 2 "register_operand" "r")
+			      (parallel [(const_int 0)]))))
+	  (mult:SI
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 1)
+			      (parallel [(const_int 0)])))
+	    (sign_extend:SI (vec_select:HI
+			      (match_dup 2)
+			      (parallel [(const_int 1)]))))))]
+  "TARGET_DSP"
+  "kmxda\t%0, %1, %2"
+)
+
+(define_insn "kmada"
+  [(set (match_operand:SI 0 "register_operand"                           "=r")
+	(ss_plus:SI
+	  (match_operand:SI 1 "register_operand"                         " 0")
+	  (ss_plus:SI
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 2 "register_operand" " r")
+				(parallel [(const_int 1)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 3 "register_operand" " r")
+				(parallel [(const_int 1)]))))
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 2)
+				(parallel [(const_int 0)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 3)
+				(parallel [(const_int 0)])))))))]
+  "TARGET_DSP"
+  "kmada\t%0, %2, %3"
+)
+
+(define_insn "kmada2"
+  [(set (match_operand:SI 0 "register_operand"                           "=r")
+	(ss_plus:SI
+	  (match_operand:SI 1 "register_operand"                         " 0")
+	  (ss_plus:SI
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 2 "register_operand" " r")
+				(parallel [(const_int 0)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 3 "register_operand" " r")
+				(parallel [(const_int 0)]))))
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 2)
+				(parallel [(const_int 1)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 3)
+				(parallel [(const_int 1)])))))))]
+  "TARGET_DSP"
+  "kmada\t%0, %2, %3"
+)
+
+(define_insn "kmaxda"
+  [(set (match_operand:SI 0 "register_operand"                           "=r")
+	(ss_plus:SI
+	  (match_operand:SI 1 "register_operand"                         " 0")
+	  (ss_plus:SI
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 2 "register_operand" " r")
+				(parallel [(const_int 1)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 3 "register_operand" " r")
+				(parallel [(const_int 0)]))))
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 2)
+				(parallel [(const_int 0)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 3)
+				(parallel [(const_int 1)])))))))]
+  "TARGET_DSP"
+  "kmaxda\t%0, %2, %3"
+)
+
+(define_insn "kmads"
+  [(set (match_operand:SI 0 "register_operand"                           "=r")
+	(ss_plus:SI
+	  (match_operand:SI 1 "register_operand"                         " 0")
+	  (ss_minus:SI
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 2 "register_operand" " r")
+				(parallel [(const_int 1)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 3 "register_operand" " r")
+				(parallel [(const_int 1)]))))
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 2)
+				(parallel [(const_int 0)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 3)
+				(parallel [(const_int 0)])))))))]
+  "TARGET_DSP"
+  "kmads\t%0, %2, %3"
+)
+
+(define_insn "kmadrs"
+  [(set (match_operand:SI 0 "register_operand"                           "=r")
+	(ss_plus:SI
+	  (match_operand:SI 1 "register_operand"                         " 0")
+	  (ss_minus:SI
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 2 "register_operand" " r")
+				(parallel [(const_int 0)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 3 "register_operand" " r")
+				(parallel [(const_int 0)]))))
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 2)
+				(parallel [(const_int 1)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 3)
+				(parallel [(const_int 1)])))))))]
+  "TARGET_DSP"
+  "kmadrs\t%0, %2, %3"
+)
+
+(define_insn "kmaxds"
+  [(set (match_operand:SI 0 "register_operand"                           "=r")
+	(ss_plus:SI
+	  (match_operand:SI 1 "register_operand"                         " 0")
+	  (ss_minus:SI
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 2 "register_operand" " r")
+				(parallel [(const_int 1)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 3 "register_operand" " r")
+				(parallel [(const_int 0)]))))
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 2)
+				(parallel [(const_int 0)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 3)
+				(parallel [(const_int 1)])))))))]
+  "TARGET_DSP"
+  "kmaxds\t%0, %2, %3"
+)
+
+(define_insn "kmsda"
+  [(set (match_operand:SI 0 "register_operand"                           "=r")
+	(ss_minus:SI
+	  (match_operand:SI 1 "register_operand"                         " 0")
+	  (ss_minus:SI
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 2 "register_operand" " r")
+				(parallel [(const_int 1)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 3 "register_operand" " r")
+				(parallel [(const_int 1)]))))
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 2)
+				(parallel [(const_int 0)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 3)
+				(parallel [(const_int 0)])))))))]
+  "TARGET_DSP"
+  "kmsda\t%0, %2, %3"
+)
+
+(define_insn "kmsxda"
+  [(set (match_operand:SI 0 "register_operand"                           "=r")
+	(ss_minus:SI
+	  (match_operand:SI 1 "register_operand"                         " 0")
+	  (ss_minus:SI
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 2 "register_operand" " r")
+				(parallel [(const_int 1)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_operand:V2HI 3 "register_operand" " r")
+				(parallel [(const_int 0)]))))
+	    (mult:SI
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 2)
+				(parallel [(const_int 0)])))
+	      (sign_extend:SI (vec_select:HI
+				(match_dup 3)
+				(parallel [(const_int 1)])))))))]
+  "TARGET_DSP"
+  "kmsxda\t%0, %2, %3"
+)
+
+;; smax[8|16] and umax[8|16]
+(define_insn "<opcode><mode>3"
+  [(set (match_operand:VQIHI 0 "register_operand"              "=r")
+	(sumax:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
+		     (match_operand:VQIHI 2 "register_operand" " r")))]
+  "TARGET_DSP"
+  "<opcode><bits>\t%0, %1, %2"
+)
+
+;; smin[8|16] and umin[8|16]
+(define_insn "<opcode><mode>3"
+  [(set (match_operand:VQIHI 0 "register_operand"              "=r")
+	(sumin:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
+		     (match_operand:VQIHI 2 "register_operand" " r")))]
+  "TARGET_DSP"
+  "<opcode><bits>\t%0, %1, %2"
+)
+
+(define_insn "<opcode><mode>3_bb"
+  [(set (match_operand:<VELT> 0 "register_operand"                    "=r")
+	(sumin_max:<VELT> (vec_select:<VELT>
+			    (match_operand:VQIHI 1 "register_operand" " r")
+			    (parallel [(const_int 0)]))
+			  (vec_select:<VELT>
+			    (match_operand:VQIHI 2 "register_operand" " r")
+			    (parallel [(const_int 0)]))))]
+  "TARGET_DSP"
+  "<opcode><bits>\t%0, %1, %2"
+)
+
+(define_expand "abs<mode>2"
+  [(set (match_operand:VQIHI 0 "register_operand"               "=r")
+	(ss_abs:VQIHI (match_operand:VQIHI 1 "register_operand" " r")))]
+  "TARGET_DSP && !flag_wrapv"
+{
+})
+
+(define_insn "kabs<mode>2"
+  [(set (match_operand:VQIHI 0 "register_operand"               "=r")
+	(ss_abs:VQIHI (match_operand:VQIHI 1 "register_operand" " r")))]
+  "TARGET_DSP"
+  "kabs<bits>\t%0, %1"
+  [(set_attr "type"   "arith")
+   (set_attr "mode" "<MODE>")])
+
+(define_insn "<su>mar64_1"
+  [(set (match_operand:DI 0 "register_operand"       "=r")
+	(plus:DI
+	  (match_operand:DI 1 "register_operand"     " 0")
+	  (mult:DI
+	    (any_extend:DI
+	      (match_operand:SI 2 "register_operand" " r"))
+	    (any_extend:DI
+	      (match_operand:SI 3 "register_operand" " r")))))]
+  "TARGET_DSP"
+  "<su>mar64\t%0, %2, %3"
+  [(set_attr "mode"   "DI")])
+
+(define_insn "<su>mar64_2"
+  [(set (match_operand:DI 0 "register_operand"       "=r")
+	(plus:DI
+	  (mult:DI
+	    (any_extend:DI
+	      (match_operand:SI 2 "register_operand" " r"))
+	    (any_extend:DI
+	      (match_operand:SI 3 "register_operand" " r")))
+	  (match_operand:DI 1 "register_operand"     " 0")))]
+  "TARGET_DSP"
+  "<su>mar64\t%0, %2, %3"
+  [(set_attr "mode"   "DI")])
+
+(define_insn "<su>mar64_3"
+  [(set (match_operand:DI 0 "register_operand"       "=r")
+	(plus:DI
+	  (match_operand:DI 1 "register_operand"     " 0")
+	  (any_extend:DI
+	    (mult:SI
+	      (match_operand:SI 2 "register_operand" " r")
+	      (match_operand:SI 3 "register_operand" " r")))))]
+  "TARGET_DSP"
+  "<su>mar64\t%0, %2, %3"
+  [(set_attr "mode"   "DI")])
+
+(define_insn "<su>mar64_4"
+  [(set (match_operand:DI 0 "register_operand"       "=r")
+	(plus:DI
+	  (any_extend:DI
+	  (mult:SI
+	      (match_operand:SI 2 "register_operand" " r")
+	      (match_operand:SI 3 "register_operand" " r")))
+	  (match_operand:DI 1 "register_operand"     " 0")))]
+  "TARGET_DSP"
+  "<su>mar64\t%0, %2, %3"
+  [(set_attr "mode"   "DI")])
+
+(define_insn "<su>msr64"
+  [(set (match_operand:DI 0 "register_operand"       "=r")
+	(minus:DI
+	  (match_operand:DI 1 "register_operand"     " 0")
+	  (mult:DI
+	    (any_extend:DI
+	      (match_operand:SI 2 "register_operand" " r"))
+	    (any_extend:DI
+	      (match_operand:SI 3 "register_operand" " r")))))]
+  "TARGET_DSP"
+  "<su>msr64\t%0, %2, %3"
+  [(set_attr "mode"   "DI")])
+
+(define_insn "<su>msr64_2"
+  [(set (match_operand:DI 0 "register_operand"       "=r")
+	(minus:DI
+	  (match_operand:DI 1 "register_operand"     " 0")
+	  (any_extend:DI
+	    (mult:SI
+	      (match_operand:SI 2 "register_operand" " r")
+	      (match_operand:SI 3 "register_operand" " r")))))]
+  "TARGET_DSP"
+  "<su>msr64\t%0, %2, %3"
+  [(set_attr "mode"   "DI")])
+
+;; kmar64, kmsr64, ukmar64 and ukmsr64
+(define_insn "kmar64_1"
+  [(set (match_operand:DI 0 "register_operand"       "=r")
+	(ss_plus:DI
+	  (match_operand:DI 1 "register_operand"     " 0")
+	  (mult:DI
+	    (sign_extend:DI
+	      (match_operand:SI 2 "register_operand" " r"))
+	    (sign_extend:DI
+	      (match_operand:SI 3 "register_operand" " r")))))]
+  "TARGET_DSP"
+  "kmar64\t%0, %2, %3"
+  [(set_attr "mode"   "DI")])
+
+(define_insn "kmar64_2"
+  [(set (match_operand:DI 0 "register_operand"       "=r")
+	(ss_plus:DI
+	  (mult:DI
+	    (sign_extend:DI
+	      (match_operand:SI 2 "register_operand" " r"))
+	    (sign_extend:DI
+	      (match_operand:SI 3 "register_operand" " r")))
+	  (match_operand:DI 1 "register_operand"     " 0")))]
+  "TARGET_DSP"
+  "kmar64\t%0, %2, %3"
+  [(set_attr "mode"   "DI")])
+
+(define_insn "kmsr64"
+  [(set (match_operand:DI 0 "register_operand"       "=r")
+	(ss_minus:DI
+	  (match_operand:DI 1 "register_operand"     " 0")
+	  (mult:DI
+	    (sign_extend:DI
+	      (match_operand:SI 2 "register_operand" " r"))
+	    (sign_extend:DI
+	      (match_operand:SI 3 "register_operand" " r")))))]
+  "TARGET_DSP"
+  "kmsr64\t%0, %2, %3"
+  [(set_attr "mode"   "DI")])
+
+(define_insn "ukmar64_1"
+  [(set (match_operand:DI 0 "register_operand"       "=r")
+	(us_plus:DI
+	  (match_operand:DI 1 "register_operand"     " 0")
+	  (mult:DI
+	    (zero_extend:DI
+	      (match_operand:SI 2 "register_operand" " r"))
+	    (zero_extend:DI
+	      (match_operand:SI 3 "register_operand" " r")))))]
+  "TARGET_DSP"
+  "ukmar64\t%0, %2, %3"
+  [(set_attr "mode"   "DI")])
+
+(define_insn "ukmar64_2"
+  [(set (match_operand:DI 0 "register_operand"       "=r")
+	(us_plus:DI
+	  (mult:DI
+	    (zero_extend:DI
+	      (match_operand:SI 2 "register_operand" " r"))
+	    (zero_extend:DI
+	      (match_operand:SI 3 "register_operand" " r")))
+	  (match_operand:DI 1 "register_operand"     " 0")))]
+  "TARGET_DSP"
+  "ukmar64\t%0, %2, %3"
+  [(set_attr "mode"   "DI")])
+
+(define_insn "ukmsr64"
+  [(set (match_operand:DI 0 "register_operand"       "=r")
+	(us_minus:DI
+	  (match_operand:DI 1 "register_operand"     " 0")
+	  (mult:DI
+	    (zero_extend:DI
+	      (match_operand:SI 2 "register_operand" " r"))
+	    (zero_extend:DI
+	      (match_operand:SI 3 "register_operand" " r")))))]
+  "TARGET_DSP"
+  "ukmsr64\t%0, %2, %3"
+  [(set_attr "mode"   "DI")])
+
+(define_insn "bpick1"
+  [(set (match_operand:SI 0 "register_operand"       "=r")
+	  (ior:SI
+	    (and:SI
+	      (match_operand:SI 1 "register_operand" " r")
+	      (match_operand:SI 3 "register_operand" " r"))
+	    (and:SI
+	      (match_operand:SI 2 "register_operand" " r")
+	      (not:SI (match_dup 3)))))]
+  "TARGET_DSP"
+  "bpick\t%0, %1, %2, %3"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "bpick2"
+  [(set (match_operand:SI 0 "register_operand"       "=r")
+	  (ior:SI
+	    (and:SI
+	      (match_operand:SI 1 "register_operand" " r")
+	      (match_operand:SI 2 "register_operand" " r"))
+	    (and:SI
+	      (not:SI (match_dup 2))
+	      (match_operand:SI 3 "register_operand" " r"))))]
+  "TARGET_DSP"
+  "bpick\t%0, %1, %3, %2"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "bpick3"
+  [(set (match_operand:SI 0 "register_operand"       "=r")
+	  (ior:SI
+	    (and:SI
+	      (match_operand:SI 1 "register_operand" " r")
+	      (match_operand:SI 2 "register_operand" " r"))
+	    (and:SI
+	      (match_operand:SI 3 "register_operand" " r")
+	      (not:SI (match_dup 1)))))]
+  "TARGET_DSP"
+  "bpick\t%0, %2, %3, %1"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "bpick4"
+  [(set (match_operand:SI 0 "register_operand"       "=r")
+	  (ior:SI
+	    (and:SI
+	      (match_operand:SI 1 "register_operand" " r")
+	      (match_operand:SI 2 "register_operand" " r"))
+	    (and:SI
+	      (not:SI (match_dup 1))
+	      (match_operand:SI 3 "register_operand" " r"))))]
+  "TARGET_DSP"
+  "bpick\t%0, %2, %3, %1"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "bpick5"
+  [(set (match_operand:SI 0 "register_operand"               "=r")
+	  (ior:SI
+	    (and:SI
+	      (match_operand:SI 1 "register_operand"         " r")
+	      (not:SI (match_operand:SI 2 "register_operand" " r")))
+	    (and:SI
+	      (match_operand:SI 3 "register_operand"         " r")
+	      (match_dup 2))))]
+  "TARGET_DSP"
+  "bpick\t%0, %3, %1, %2"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "bpick6"
+  [(set (match_operand:SI 0 "register_operand"               "=r")
+	  (ior:SI
+	    (and:SI
+	      (not:SI (match_operand:SI 1 "register_operand" " r"))
+	      (match_operand:SI 2 "register_operand"         " r"))
+	    (and:SI
+	      (match_operand:SI 3 "register_operand" " r")
+	      (match_dup 1))))]
+  "TARGET_DSP"
+  "bpick\t%0, %3, %2, %1"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "bpick7"
+  [(set (match_operand:SI 0 "register_operand"               "=r")
+	  (ior:SI
+	    (and:SI
+	      (match_operand:SI 1 "register_operand"         " r")
+	      (not:SI (match_operand:SI 2 "register_operand" " r")))
+	    (and:SI
+	      (match_dup 2)
+	      (match_operand:SI 3 "register_operand"         " r"))))]
+  "TARGET_DSP"
+  "bpick\t%0, %3, %1, %2"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "bpick8"
+  [(set (match_operand:SI 0 "register_operand"               "=r")
+	  (ior:SI
+	    (and:SI
+	      (not:SI (match_operand:SI 1 "register_operand" " r"))
+	      (match_operand:SI 2 "register_operand"         " r"))
+	    (and:SI
+	      (match_dup 1)
+	      (match_operand:SI 3 "register_operand"         " r"))))]
+  "TARGET_DSP"
+  "bpick\t%0, %3, %2, %1"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "sraiu"
+  [(set (match_operand:SI 0 "register_operand"                          "=  r, r")
+	(unspec:SI [(ashiftrt:SI (match_operand:SI 1 "register_operand" "   r, r")
+				 (match_operand:SI 2 "rimm5u_operand"   " u05, r"))]
+		    UNSPEC_ROUND))]
+  "TARGET_DSP"
+  "@
+   srai.u\t%0, %1, %2
+   sra.u\t%0, %1, %2"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "kssl"
+  [(set (match_operand:SI 0 "register_operand"               "=   r, r")
+	(ss_ashift:SI (match_operand:SI 1 "register_operand" "    r, r")
+		      (match_operand:SI 2 "rimm5u_operand"   " Iu05, r")))]
+  "TARGET_DSP"
+  "@
+   kslli\t%0, %1, %2
+   ksll\t%0, %1, %2"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "kslraw_round"
+  [(set (match_operand:SI 0 "register_operand"                  "=r")
+	(if_then_else:SI
+	  (lt:SI (match_operand:SI 2 "register_operand"        " r")
+		 (const_int 0))
+	  (unspec:SI [(ashiftrt:SI (match_operand:SI 1 "register_operand" " r")
+				   (neg:SI (match_dup 2)))]
+		     UNSPEC_ROUND)
+	  (ss_ashift:SI (match_dup 1)
+			(match_dup 2))))]
+  "TARGET_DSP"
+  "kslraw.u\t%0, %1, %2"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "sclip32"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "immediate_operand" "i")] UNSPEC_CLIPS_OV))]
+  "TARGET_DSP"
+  "sclip32\t%0, %1, %2"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "uclip32"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "immediate_operand" "i")] UNSPEC_CLIP_OV))]
+  "TARGET_DSP"
+  "uclip32\t%0, %1, %2"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "bitrev"
+  [(set (match_operand:SI 0 "register_operand"             "=r,   r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" " r,   r")
+		    (match_operand:SI 2 "rimm5u_operand"   " r, u05")]
+		   UNSPEC_BITREV))]
+  ""
+  "@
+   bitrev\t%0, %1, %2
+   bitrevi\t%0, %1, %2"
+  [(set_attr "mode"   "SI")])
+
+;; wext, wexti
+(define_insn "<su>wext"
+  [(set (match_operand:SI 0 "register_operand"     "=r,  r")
+	(truncate:SI
+	  (any_shiftrt:DI
+	    (match_operand:DI 1 "register_operand" " r,  r")
+	    (match_operand:SI 2 "rimm5u_operand"   " r,u05"))))]
+  "TARGET_DSP"
+  "@
+   wext\t%0, %1, %2
+   wexti\t%0, %1, %2"
+  [(set_attr "mode"   "SI")])
+
+;; 32-bit add/sub instruction: raddw and rsubw.
+(define_insn "r<opcode>si3"
+  [(set (match_operand:SI 0 "register_operand"                       "=r")
+	(truncate:SI
+	  (ashiftrt:DI
+	    (plus_minus:DI
+	      (sign_extend:DI (match_operand:SI 1 "register_operand" " r"))
+	      (sign_extend:DI (match_operand:SI 2 "register_operand" " r")))
+	    (const_int 1))))]
+  "TARGET_DSP"
+  "r<opcode>w\t%0, %1, %2"
+)
+
+;; 32-bit add/sub instruction: uraddw and ursubw.
+(define_insn "ur<opcode>si3"
+  [(set (match_operand:SI 0 "register_operand"                       "=r")
+	(truncate:SI
+	  (lshiftrt:DI
+	    (plus_minus:DI
+	      (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+	      (zero_extend:DI (match_operand:SI 2 "register_operand" " r")))
+	    (const_int 1))))]
+  "TARGET_DSP"
+  "ur<opcode>w\t%0, %1, %2"
+)

@@ -75,6 +75,15 @@
   UNSPECV_CSRRC
   UNSPECV_CSRS
   UNSPECV_CSRC
+  UNSPEC_ROUND
+  UNSPEC_VEC_COMPARE
+  UNSPEC_CLIPS
+  UNSPEC_CLIP
+  UNSPEC_KHM
+  UNSPEC_KHMX
+  UNSPEC_CLIP_OV
+  UNSPEC_CLIPS_OV
+  UNSPEC_BITREV
 ])
 
 (define_c_enum "unspecv" [
@@ -159,7 +168,7 @@
   (const_string "unknown"))
 
 ;; Main data type used by the insn
-(define_attr "mode" "unknown,none,QI,HI,SI,DI,TI,SF,DF,TF,V2HI,V4QI"
+(define_attr "mode" "unknown,none,QI,HI,SI,DI,TI,SF,DF,TF,V2HI,V4QI, V2SI"
   (const_string "unknown"))
 
 ;; True if the main data type is twice the size of a word.
