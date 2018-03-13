@@ -5718,6 +5718,33 @@ riscv_gpr_save_operation_p (rtx op)
   return true;
 }
 
+bool
+riscv_vector_mode_supported_p (enum machine_mode mode)
+{
+  if (mode == V4QImode
+      || mode == V2HImode)
+    return TARGET_DSP;
+
+  return false;
+}
+
+static machine_mode
+riscv_vectorize_preferred_simd_mode (scalar_mode mode)
+{
+  if (!TARGET_DSP)
+   return word_mode;
+
+  switch (mode)
+    {
+    case E_QImode:
+      return V4QImode;
+    case E_HImode:
+      return V2HImode;
+    default:
+      return word_mode;
+    }
+}
+
 /* Initialize the GCC target structure.  */
 #undef TARGET_ASM_ALIGNED_HI_OP
 #define TARGET_ASM_ALIGNED_HI_OP "\t.half\t"
@@ -5899,6 +5926,12 @@ riscv_gpr_save_operation_p (rtx op)
 
 #undef TARGET_ASM_FUNCTION_EPILOGUE
 #define TARGET_ASM_FUNCTION_EPILOGUE riscv_asm_function_epilogue
+
+#undef TARGET_VECTOR_MODE_SUPPORTED_P
+#define TARGET_VECTOR_MODE_SUPPORTED_P riscv_vector_mode_supported_p
+
+#undef TARGET_VECTORIZE_PREFERRED_SIMD_MODE
+#define TARGET_VECTORIZE_PREFERRED_SIMD_MODE riscv_vectorize_preferred_simd_mode
 
 /* The low bit is ignored by jump instructions so is safe to use.  */
 #undef TARGET_CUSTOM_FUNCTION_DESCRIPTORS

@@ -20,3 +20,6 @@ along with GCC; see the file COPYING3.  If not see
 <http://www.gnu.org/licenses/>.  */
 
 FLOAT_MODE (TF, 16, ieee_quad_format);
+/* Vector modes.  */
+VECTOR_MODES (INT, 4);        /*            V4QI V2HI */
+VECTOR_MODES (INT, 8);        /*            V8QI V4HI V2SI */
