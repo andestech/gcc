@@ -143,12 +143,22 @@ struct riscv_builtin_description {
     "__builtin_riscv_" NAME, BUILTIN_TYPE, FUNCTION_TYPE,		\
     RISCV_BUILTIN_ ## FCODE}
 
+#define RISCV_DSP_BUILTIN(ICODE, ICODE64, NAME,				\
+			  BUILTIN_TYPE, FUNCTION_TYPE, FCODE)		\
+  { CODE_FOR_ ##ICODE, CODE_FOR_ ##ICODE64,				\
+    "__builtin_riscv_" NAME, BUILTIN_TYPE, FUNCTION_TYPE,		\
+    RISCV_BUILTIN_ ## FCODE}
+
 /* Define __builtin_riscv_<INSN>, which is a RISCV_BUILTIN_DIRECT function
    mapped to instruction CODE_FOR_riscv_<ICODE/ICODE64>, FUNCTION_TYPE
    and AVAIL are as for RISCV_BUILTIN.  */
 #define DIRECT_BUILTIN(ICODE, ICODE64, INSN, FUNCTION_TYPE, FCODE)	\
   RISCV_BUILTIN (ICODE, ICODE64, #INSN, RISCV_BUILTIN_DIRECT,		\
 		 FUNCTION_TYPE, FCODE)
+
+#define DIRECT_DSP_BUILTIN(ICODE, ICODE64, INSN, FUNCTION_TYPE, FCODE)	\
+  RISCV_DSP_BUILTIN (ICODE, ICODE64, #INSN, RISCV_BUILTIN_DIRECT,	\
+		     FUNCTION_TYPE, FCODE)
 
 /* Define __builtin_riscv_<INSN>, which is a RISCV_BUILTIN_DIRECT_NO_TARGET
    function mapped to instruction CODE_FOR_riscv_<ICODE/ICODE64>,
@@ -170,6 +180,12 @@ struct riscv_builtin_description {
 #define RISCV_ATYPE_PUSI build_pointer_type (unsigned_type_node)
 #define RISCV_ATYPE_PLLONG build_pointer_type (long_long_integer_type_node)
 #define RISCV_ATYPE_PULLONG build_pointer_type (long_long_unsigned_type_node)
+#define RISCV_ATYPE_V4QI build_vector_type (intQI_type_node, 4)
+#define RISCV_ATYPE_UV4QI build_vector_type (unsigned_intQI_type_node, 4)
+#define RISCV_ATYPE_V2HI build_vector_type (intHI_type_node, 2)
+#define RISCV_ATYPE_UV2HI build_vector_type (unsigned_intHI_type_node, 2)
+#define RISCV_ATYPE_V2SI build_vector_type (intSI_type_node, 2)
+#define RISCV_ATYPE_UV2SI build_vector_type (unsigned_intSI_type_node, 2)
 
 /* RISCV_FTYPE_ATYPESN takes N RISCV_FTYPES-like type codes and lists
    their associated RISCV_ATYPEs.  */
