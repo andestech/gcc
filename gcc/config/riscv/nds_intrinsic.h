@@ -588,6 +588,52 @@ enum riscv_order
 #define __nds__v_kslra16_u(a, b) \
   (__builtin_riscv_v_kslra16_u ((a), (b)))
 
+#define __nds__cmpeq16(a, b) \
+  (__builtin_riscv_cmpeq16 ((a), (b)))
+#define __nds__v_scmpeq16(a, b) \
+  (__builtin_riscv_v_scmpeq16 ((a), (b)))
+#define __nds__v_ucmpeq16(a, b) \
+  (__builtin_riscv_v_ucmpeq16 ((a), (b)))
+#define __nds__scmplt16(a, b) \
+  (__builtin_riscv_scmplt16 ((a), (b)))
+#define __nds__v_scmplt16(a, b) \
+  (__builtin_riscv_v_scmplt16 ((a), (b)))
+#define __nds__scmple16(a, b) \
+  (__builtin_riscv_scmple16 ((a), (b)))
+#define __nds__v_scmple16(a, b) \
+  (__builtin_riscv_v_scmple16 ((a), (b)))
+#define __nds__ucmplt16(a, b) \
+  (__builtin_riscv_ucmplt16 ((a), (b)))
+#define __nds__v_ucmplt16(a, b) \
+  (__builtin_riscv_v_ucmplt16 ((a), (b)))
+#define __nds__ucmple16(a, b) \
+  (__builtin_riscv_ucmple16 ((a), (b)))
+#define __nds__v_ucmple16(a, b) \
+  (__builtin_riscv_v_ucmple16 ((a), (b)))
+
+#define __nds__cmpeq8(a, b) \
+  (__builtin_riscv_cmpeq8 ((a), (b)))
+#define __nds__v_scmpeq8(a, b) \
+  (__builtin_riscv_v_scmpeq8 ((a), (b)))
+#define __nds__v_ucmpeq8(a, b) \
+  (__builtin_riscv_v_ucmpeq8 ((a), (b)))
+#define __nds__scmplt8(a, b) \
+  (__builtin_riscv_scmplt8 ((a), (b)))
+#define __nds__v_scmplt8(a, b) \
+  (__builtin_riscv_v_scmplt8 ((a), (b)))
+#define __nds__scmple8(a, b) \
+  (__builtin_riscv_scmple8 ((a), (b)))
+#define __nds__v_scmple8(a, b) \
+  (__builtin_riscv_v_scmple8 ((a), (b)))
+#define __nds__ucmplt8(a, b) \
+  (__builtin_riscv_ucmplt8 ((a), (b)))
+#define __nds__v_ucmplt8(a, b) \
+  (__builtin_riscv_v_ucmplt8 ((a), (b)))
+#define __nds__ucmple8(a, b) \
+  (__builtin_riscv_ucmple8 ((a), (b)))
+#define __nds__v_ucmple8(a, b) \
+  (__builtin_riscv_v_ucmple8 ((a), (b)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 
