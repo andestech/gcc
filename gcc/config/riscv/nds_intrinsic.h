@@ -670,6 +670,22 @@ enum riscv_order
   (__builtin_riscv_kabs16 ((a)))
 #define __nds__v_kabs16(a) \
   (__builtin_riscv_v_kabs16 ((a)))
+#define __nds__smul16(a, b) \
+  (__builtin_riscv_smul16 ((a), (b)))
+#define __nds__v_smul16(a, b) \
+  (__builtin_riscv_v_smul16 ((a), (b)))
+#define __nds__smulx16(a, b) \
+  (__builtin_riscv_smulx16 ((a), (b)))
+#define __nds__v_smulx16(a, b) \
+  (__builtin_riscv_v_smulx16 ((a), (b)))
+#define __nds__umul16(a, b) \
+  (__builtin_riscv_umul16 ((a), (b)))
+#define __nds__v_umul16(a, b) \
+  (__builtin_riscv_v_umul16 ((a), (b)))
+#define __nds__umulx16(a, b) \
+  (__builtin_riscv_umulx16 ((a), (b)))
+#define __nds__v_umulx16(a, b) \
+  (__builtin_riscv_v_umulx16 ((a), (b)))
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));

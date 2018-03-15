@@ -222,7 +222,15 @@ enum riscv_builtins
   RISCV_BUILTIN_KHMX16,
   RISCV_BUILTIN_V_KHMX16,
   RISCV_BUILTIN_KABS16,
-  RISCV_BUILTIN_V_KABS16
+  RISCV_BUILTIN_V_KABS16,
+  RISCV_BUILTIN_SMUL16,
+  RISCV_BUILTIN_V_SMUL16,
+  RISCV_BUILTIN_SMULX16,
+  RISCV_BUILTIN_V_SMULX16,
+  RISCV_BUILTIN_UMUL16,
+  RISCV_BUILTIN_V_UMUL16,
+  RISCV_BUILTIN_UMULX16,
+  RISCV_BUILTIN_V_UMULX16,
 };
 
 /* This structure describes a single built-in function.  */
@@ -687,7 +695,23 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (kabsv2hi2, kabsv2hi2, kabs16,
 		      RISCV_ULONG_FTYPE_ULONG, KABS16),
   DIRECT_DSP_BUILTIN (kabsv2hi2, kabsv2hi2, v_kabs16,
-		      RISCV_V2HI_FTYPE_V2HI, V_KABS16)
+		      RISCV_V2HI_FTYPE_V2HI, V_KABS16),
+  DIRECT_DSP_BUILTIN (smul16, smul16, smul16,
+		      RISCV_ULLONG_FTYPE_USI_USI, SMUL16),
+  DIRECT_DSP_BUILTIN (smul16, smul16, v_smul16,
+		      RISCV_V2SI_FTYPE_V2HI_V2HI, V_SMUL16),
+  DIRECT_DSP_BUILTIN (smulx16, smulx16, smulx16,
+		      RISCV_ULLONG_FTYPE_USI_USI, SMULX16),
+  DIRECT_DSP_BUILTIN (smulx16, smulx16, v_smulx16,
+		      RISCV_V2SI_FTYPE_V2HI_V2HI, V_SMULX16),
+  DIRECT_DSP_BUILTIN (umul16, umul16, umul16,
+		      RISCV_ULLONG_FTYPE_USI_USI, UMUL16),
+  DIRECT_DSP_BUILTIN (umul16, umul16, v_umul16,
+		      RISCV_UV2SI_FTYPE_UV2HI_UV2HI, V_UMUL16),
+  DIRECT_DSP_BUILTIN (umulx16, umulx16, umulx16,
+		      RISCV_ULLONG_FTYPE_USI_USI, UMULX16),
+  DIRECT_DSP_BUILTIN (umulx16, umulx16, v_umulx16,
+		      RISCV_UV2SI_FTYPE_UV2HI_UV2HI, V_UMULX16)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
