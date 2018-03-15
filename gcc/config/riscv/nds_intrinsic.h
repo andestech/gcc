@@ -510,6 +510,50 @@ enum riscv_order
   (__builtin_riscv_ukcrsa16 ((a), (b)))
 #define __nds__v_ukcrsa16(a, b) \
   (__builtin_riscv_v_ukcrsa16 ((a), (b)))
+#define __nds__add8(a, b) \
+  (__builtin_riscv_add8 ((a), (b)))
+#define __nds__v_uadd8(a, b) \
+  (__builtin_riscv_v_uadd8 ((a), (b)))
+#define __nds__v_sadd8(a, b) \
+  (__builtin_riscv_v_sadd8 ((a), (b)))
+#define __nds__radd8(a, b) \
+  (__builtin_riscv_radd8 ((a), (b)))
+#define __nds__v_radd8(a, b) \
+  (__builtin_riscv_v_radd8 ((a), (b)))
+#define __nds__uradd8(a, b) \
+  (__builtin_riscv_uradd8 ((a), (b)))
+#define __nds__v_uradd8(a, b) \
+  (__builtin_riscv_v_uradd8 ((a), (b)))
+#define __nds__kadd8(a, b) \
+  (__builtin_riscv_kadd8 ((a), (b)))
+#define __nds__v_kadd8(a, b) \
+  (__builtin_riscv_v_kadd8 ((a), (b)))
+#define __nds__ukadd8(a, b) \
+  (__builtin_riscv_ukadd8 ((a), (b)))
+#define __nds__v_ukadd8(a, b) \
+  (__builtin_riscv_v_ukadd8 ((a), (b)))
+#define __nds__sub8(a, b) \
+  (__builtin_riscv_sub8 ((a), (b)))
+#define __nds__v_usub8(a, b) \
+  (__builtin_riscv_v_usub8 ((a), (b)))
+#define __nds__v_ssub8(a, b) \
+  (__builtin_riscv_v_ssub8 ((a), (b)))
+#define __nds__rsub8(a, b) \
+  (__builtin_riscv_rsub8 ((a), (b)))
+#define __nds__v_rsub8(a, b) \
+  (__builtin_riscv_v_rsub8 ((a), (b)))
+#define __nds__ursub8(a, b) \
+  (__builtin_riscv_ursub8 ((a), (b)))
+#define __nds__v_ursub8(a, b) \
+  (__builtin_riscv_v_ursub8 ((a), (b)))
+#define __nds__ksub8(a, b) \
+  (__builtin_riscv_ksub8 ((a), (b)))
+#define __nds__v_ksub8(a, b) \
+  (__builtin_riscv_v_ksub8 ((a), (b)))
+#define __nds__uksub8(a, b) \
+  (__builtin_riscv_uksub8 ((a), (b)))
+#define __nds__v_uksub8(a, b) \
+  (__builtin_riscv_v_uksub8 ((a), (b)))
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
