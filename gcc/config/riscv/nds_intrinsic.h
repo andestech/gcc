@@ -555,6 +555,39 @@ enum riscv_order
 #define __nds__v_uksub8(a, b) \
   (__builtin_riscv_v_uksub8 ((a), (b)))
 
+#define __nds__sra16(a, b) \
+  (__builtin_riscv_sra16 ((a), (b)))
+#define __nds__v_sra16(a, b) \
+  (__builtin_riscv_v_sra16 ((a), (b)))
+#define __nds__sra16_u(a, b) \
+  (__builtin_riscv_sra16_u ((a), (b)))
+#define __nds__v_sra16_u(a, b) \
+  (__builtin_riscv_v_sra16_u ((a), (b)))
+#define __nds__srl16(a, b) \
+  (__builtin_riscv_srl16 ((a), (b)))
+#define __nds__v_srl16(a, b) \
+  (__builtin_riscv_v_srl16 ((a), (b)))
+#define __nds__srl16_u(a, b) \
+  (__builtin_riscv_srl16_u ((a), (b)))
+#define __nds__v_srl16_u(a, b) \
+  (__builtin_riscv_v_srl16_u ((a), (b)))
+#define __nds__sll16(a, b) \
+  (__builtin_riscv_sll16 ((a), (b)))
+#define __nds__v_sll16(a, b) \
+  (__builtin_riscv_v_sll16 ((a), (b)))
+#define __nds__ksll16(a, b) \
+  (__builtin_riscv_ksll16 ((a), (b)))
+#define __nds__v_ksll16(a, b) \
+  (__builtin_riscv_v_ksll16 ((a), (b)))
+#define __nds__kslra16(a, b) \
+  (__builtin_riscv_kslra16 ((a), (b)))
+#define __nds__v_kslra16(a, b) \
+  (__builtin_riscv_v_kslra16 ((a), (b)))
+#define __nds__kslra16_u(a, b) \
+  (__builtin_riscv_kslra16_u ((a), (b)))
+#define __nds__v_kslra16_u(a, b) \
+  (__builtin_riscv_v_kslra16_u ((a), (b)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 

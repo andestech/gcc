@@ -166,7 +166,23 @@ enum riscv_builtins
   RISCV_BUILTIN_KSUB8,
   RISCV_BUILTIN_V_KSUB8,
   RISCV_BUILTIN_UKSUB8,
-  RISCV_BUILTIN_V_UKSUB8
+  RISCV_BUILTIN_V_UKSUB8,
+  RISCV_BUILTIN_SRA16,
+  RISCV_BUILTIN_V_SRA16,
+  RISCV_BUILTIN_SRA16_U,
+  RISCV_BUILTIN_V_SRA16_U,
+  RISCV_BUILTIN_SRL16,
+  RISCV_BUILTIN_V_SRL16,
+  RISCV_BUILTIN_SRL16_U,
+  RISCV_BUILTIN_V_SRL16_U,
+  RISCV_BUILTIN_SLL16,
+  RISCV_BUILTIN_V_SLL16,
+  RISCV_BUILTIN_KSLL16,
+  RISCV_BUILTIN_V_KSLL16,
+  RISCV_BUILTIN_KSLRA16,
+  RISCV_BUILTIN_V_KSLRA16,
+  RISCV_BUILTIN_KSLRA16_U,
+  RISCV_BUILTIN_V_KSLRA16_U
 };
 
 /* This structure describes a single built-in function.  */
@@ -515,7 +531,40 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (uksubv4qi3, uksubv4qi3, uksub8,
 		      RISCV_ULONG_FTYPE_ULONG_ULONG, UKADD8),
   DIRECT_DSP_BUILTIN (uksubv4qi3, uksubv4qi3, v_uksub8,
-		      RISCV_UV4QI_FTYPE_UV4QI_UV4QI, V_UKADD8)
+		      RISCV_UV4QI_FTYPE_UV4QI_UV4QI, V_UKADD8),
+  /* DSP Extension: SIMD 16bit Shift.  */
+  DIRECT_DSP_BUILTIN (ashrv2hi3, ashrv2hi3, sra16,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, SRA16),
+  DIRECT_DSP_BUILTIN (ashrv2hi3, ashrv2hi3, v_sra16,
+		      RISCV_V2HI_FTYPE_V2HI_ULONG, V_SRA16),
+  DIRECT_DSP_BUILTIN (sra16_round, sra16_round, sra16_u,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, SRA16_U),
+  DIRECT_DSP_BUILTIN (sra16_round, sra16_round, v_sra16_u,
+		      RISCV_V2HI_FTYPE_V2HI_ULONG, V_SRA16_U),
+  DIRECT_DSP_BUILTIN (lshrv2hi3, lshrv2hi3, srl16,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, SRL16),
+  DIRECT_DSP_BUILTIN (lshrv2hi3, lshrv2hi3, v_srl16,
+		      RISCV_UV2HI_FTYPE_UV2HI_ULONG, V_SRL16),
+  DIRECT_DSP_BUILTIN (srl16_round, srl16_round, srl16_u,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, SRL16_U),
+  DIRECT_DSP_BUILTIN (srl16_round, srl16_round, v_srl16_u,
+		      RISCV_UV2HI_FTYPE_UV2HI_ULONG, V_SRL16_U),
+  DIRECT_DSP_BUILTIN (ashlv2hi3, ashlv2hi3, sll16,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, SLL16),
+  DIRECT_DSP_BUILTIN (ashlv2hi3, ashlv2hi3, v_sll16,
+		      RISCV_UV2HI_FTYPE_UV2HI_ULONG, V_SLL16),
+  DIRECT_DSP_BUILTIN (kslli16, kslli16, ksll16,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, KSLL16),
+  DIRECT_DSP_BUILTIN (kslli16, kslli16, v_ksll16,
+		      RISCV_V2HI_FTYPE_V2HI_ULONG, V_KSLL16),
+  DIRECT_DSP_BUILTIN (kslra16, kslra16, kslra16,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, KSLRA16),
+  DIRECT_DSP_BUILTIN (kslra16, kslra16, v_kslra16,
+		      RISCV_V2HI_FTYPE_V2HI_ULONG, V_KSLRA16),
+  DIRECT_DSP_BUILTIN (kslra16_round, kslra16_round, kslra16_u,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, KSLRA16_U),
+  DIRECT_DSP_BUILTIN (kslra16_round, kslra16_round, v_kslra16_u,
+		      RISCV_V2HI_FTYPE_V2HI_ULONG, V_KSLRA16_U)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
