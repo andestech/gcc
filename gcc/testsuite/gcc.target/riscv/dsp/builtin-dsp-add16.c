@@ -7,7 +7,7 @@
 
 #ifdef __riscv_dsp
 static __attribute__ ((noinline))
-unsigned int add16 (unsigned int ra, unsigned int rb)
+unsigned long add16 (unsigned long ra, unsigned long rb)
 {
   return __nds__add16 (ra, rb);
 }
@@ -27,7 +27,7 @@ int16x2_t v_sadd16 (int16x2_t ra, int16x2_t rb)
 int
 main ()
 {
-  unsigned int a = add16 (0x0001f000, 0x00011000);
+  unsigned long a = add16 (0x0001f000, 0x00011000);
   uint16x2_t v_ua = v_uadd16 ((uint16x2_t) {0xf000, 0xf000},
 			      (uint16x2_t) {0x1000, 0x2000});
   int16x2_t v_sa = v_sadd16 ((int16x2_t) {0xf777, 0xf111},
