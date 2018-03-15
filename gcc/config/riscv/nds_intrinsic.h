@@ -686,6 +686,59 @@ enum riscv_order
   (__builtin_riscv_umulx16 ((a), (b)))
 #define __nds__v_umulx16(a, b) \
   (__builtin_riscv_v_umulx16 ((a), (b)))
+#define __nds__smin8(a, b) \
+  (__builtin_riscv_smin8 ((a), (b)))
+#define __nds__v_smin8(a, b) \
+  (__builtin_riscv_v_smin8 ((a), (b)))
+#define __nds__umin8(a, b) \
+  (__builtin_riscv_umin8 ((a), (b)))
+#define __nds__v_umin8(a, b) \
+  (__builtin_riscv_v_umin8 ((a), (b)))
+#define __nds__smax8(a, b) \
+  (__builtin_riscv_smax8 ((a), (b)))
+#define __nds__v_smax8(a, b) \
+  (__builtin_riscv_v_smax8 ((a), (b)))
+#define __nds__umax8(a, b) \
+  (__builtin_riscv_umax8 ((a), (b)))
+#define __nds__v_umax8(a, b) \
+  (__builtin_riscv_v_umax8 ((a), (b)))
+#define __nds__kabs8(a) \
+  (__builtin_riscv_kabs8 ((a)))
+#define __nds__v_kabs8(a) \
+  (__builtin_riscv_v_kabs8 ((a)))
+
+#define __nds__sunpkd810(a) \
+  (__builtin_riscv_sunpkd810 ((a)))
+#define __nds__v_sunpkd810(a) \
+  (__builtin_riscv_v_sunpkd810 ((a)))
+#define __nds__sunpkd820(a) \
+  (__builtin_riscv_sunpkd820 ((a)))
+#define __nds__v_sunpkd820(a) \
+  (__builtin_riscv_v_sunpkd820 ((a)))
+#define __nds__sunpkd830(a) \
+  (__builtin_riscv_sunpkd830 ((a)))
+#define __nds__v_sunpkd830(a) \
+  (__builtin_riscv_v_sunpkd830 ((a)))
+#define __nds__sunpkd831(a) \
+  (__builtin_riscv_sunpkd831 ((a)))
+#define __nds__v_sunpkd831(a) \
+  (__builtin_riscv_v_sunpkd831 ((a)))
+#define __nds__zunpkd810(a) \
+  (__builtin_riscv_zunpkd810 ((a)))
+#define __nds__v_zunpkd810(a) \
+  (__builtin_riscv_v_zunpkd810 ((a)))
+#define __nds__zunpkd820(a) \
+  (__builtin_riscv_zunpkd820 ((a)))
+#define __nds__v_zunpkd820(a) \
+  (__builtin_riscv_v_zunpkd820 ((a)))
+#define __nds__zunpkd830(a) \
+  (__builtin_riscv_zunpkd830 ((a)))
+#define __nds__v_zunpkd830(a) \
+  (__builtin_riscv_v_zunpkd830 ((a)))
+#define __nds__zunpkd831(a) \
+  (__builtin_riscv_zunpkd831 ((a)))
+#define __nds__v_zunpkd831(a) \
+  (__builtin_riscv_v_zunpkd831 ((a)))
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
