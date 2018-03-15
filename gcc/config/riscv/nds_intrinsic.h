@@ -634,6 +634,43 @@ enum riscv_order
 #define __nds__v_ucmple8(a, b) \
   (__builtin_riscv_v_ucmple8 ((a), (b)))
 
+#define __nds__smin16(a, b) \
+  (__builtin_riscv_smin16 ((a), (b)))
+#define __nds__v_smin16(a, b) \
+  (__builtin_riscv_v_smin16 ((a), (b)))
+#define __nds__umin16(a, b) \
+  (__builtin_riscv_umin16 ((a), (b)))
+#define __nds__v_umin16(a, b) \
+  (__builtin_riscv_v_umin16 ((a), (b)))
+#define __nds__smax16(a, b) \
+  (__builtin_riscv_smax16 ((a), (b)))
+#define __nds__v_smax16(a, b) \
+  (__builtin_riscv_v_smax16 ((a), (b)))
+#define __nds__umax16(a, b) \
+  (__builtin_riscv_umax16 ((a), (b)))
+#define __nds__v_umax16(a, b) \
+  (__builtin_riscv_v_umax16 ((a), (b)))
+#define __nds__sclip16(a, b) \
+  (__builtin_riscv_sclip16 ((a), (b)))
+#define __nds__v_sclip16(a, b) \
+  (__builtin_riscv_v_sclip16 ((a), (b)))
+#define __nds__uclip16(a, b) \
+  (__builtin_riscv_uclip16 ((a), (b)))
+#define __nds__v_uclip16(a, b) \
+  (__builtin_riscv_v_uclip16 ((a), (b)))
+#define __nds__khm16(a, b) \
+  (__builtin_riscv_khm16 ((a), (b)))
+#define __nds__v_khm16(a, b) \
+  (__builtin_riscv_v_khm16 ((a), (b)))
+#define __nds__khmx16(a, b) \
+  (__builtin_riscv_khmx16 ((a), (b)))
+#define __nds__v_khmx16(a, b) \
+  (__builtin_riscv_v_khmx16 ((a), (b)))
+#define __nds__kabs16(a) \
+  (__builtin_riscv_kabs16 ((a)))
+#define __nds__v_kabs16(a) \
+  (__builtin_riscv_v_kabs16 ((a)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 
