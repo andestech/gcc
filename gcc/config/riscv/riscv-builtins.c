@@ -336,7 +336,19 @@ enum riscv_builtins
   RISCV_BUILTIN_BITREV,
   RISCV_BUILTIN_WEXT,
   RISCV_BUILTIN_BPICK,
-  RISCV_BUILTIN_INSB
+  RISCV_BUILTIN_INSB,
+  RISCV_BUILTIN_SADD64,
+  RISCV_BUILTIN_UADD64,
+  RISCV_BUILTIN_RADD64,
+  RISCV_BUILTIN_URADD64,
+  RISCV_BUILTIN_KADD64,
+  RISCV_BUILTIN_UKADD64,
+  RISCV_BUILTIN_SSUB64,
+  RISCV_BUILTIN_USUB64,
+  RISCV_BUILTIN_RSUB64,
+  RISCV_BUILTIN_URSUB64,
+  RISCV_BUILTIN_KSUB64,
+  RISCV_BUILTIN_UKSUB64
 };
 
 /* This structure describes a single built-in function.  */
@@ -1039,7 +1051,32 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (bpick1, bpick1, bpick,
 		      RISCV_ULONG_FTYPE_ULONG_ULONG_ULONG, BPICK),
   DIRECT_DSP_BUILTIN (insb, insb, insb,
-		      RISCV_ULONG_FTYPE_ULONG_ULONG_ULONG, INSB)
+		      RISCV_ULONG_FTYPE_ULONG_ULONG_ULONG, INSB),
+  /* DSP Extension: 64bit Add and Subtract.  */
+  DIRECT_DSP_BUILTIN (adddi3, adddi3, sadd64,
+		      RISCV_LLONG_FTYPE_LLONG_LLONG, SADD64),
+  DIRECT_DSP_BUILTIN (adddi3, adddi3, uadd64,
+		      RISCV_LLONG_FTYPE_LLONG_LLONG, UADD64),
+  DIRECT_DSP_BUILTIN (radddi3, radddi3, radd64,
+		      RISCV_LLONG_FTYPE_LLONG_LLONG, RADD64),
+  DIRECT_DSP_BUILTIN (uradddi3, uradddi3, uradd64,
+		      RISCV_LLONG_FTYPE_LLONG_LLONG, URADD64),
+  DIRECT_DSP_BUILTIN (dsp_kadddi3, dsp_kadddi3, kadd64,
+		      RISCV_LLONG_FTYPE_LLONG_LLONG, KADD64),
+  DIRECT_DSP_BUILTIN (dsp_ukadddi3, dsp_ukadddi3, ukadd64,
+		      RISCV_LLONG_FTYPE_LLONG_LLONG, UKADD64),
+  DIRECT_DSP_BUILTIN (subdi3, subdi3, ssub64,
+		      RISCV_LLONG_FTYPE_LLONG_LLONG, SSUB64),
+  DIRECT_DSP_BUILTIN (subdi3, subdi3, usub64,
+		      RISCV_LLONG_FTYPE_LLONG_LLONG, USUB64),
+  DIRECT_DSP_BUILTIN (rsubdi3, rsubdi3, rsub64,
+		      RISCV_LLONG_FTYPE_LLONG_LLONG, RSUB64),
+  DIRECT_DSP_BUILTIN (ursubdi3, ursubdi3, ursub64,
+		      RISCV_LLONG_FTYPE_LLONG_LLONG, URSUB64),
+  DIRECT_DSP_BUILTIN (dsp_ksubdi3, dsp_ksubdi3, ksub64,
+		      RISCV_LLONG_FTYPE_LLONG_LLONG, KSUB64),
+  DIRECT_DSP_BUILTIN (dsp_uksubdi3, dsp_uksubdi3, uksub64,
+		      RISCV_LLONG_FTYPE_LLONG_LLONG, UKSUB64)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the

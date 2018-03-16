@@ -907,6 +907,31 @@ enum riscv_order
 #define __nds__insb(r, a, b) \
   (__builtin_riscv_insb ((r), (a), (b)))
 
+#define __nds__sadd64(a, b) \
+  (__builtin_riscv_sadd64 ((a), (b)))
+#define __nds__uadd64(a, b) \
+  (__builtin_riscv_uadd64 ((a), (b)))
+#define __nds__radd64(a, b) \
+  (__builtin_riscv_radd64 ((a), (b)))
+#define __nds__uradd64(a, b) \
+  (__builtin_riscv_uradd64 ((a), (b)))
+#define __nds__kadd64(a, b) \
+  (__builtin_riscv_kadd64 ((a), (b)))
+#define __nds__ukadd64(a, b) \
+  (__builtin_riscv_ukadd64 ((a), (b)))
+#define __nds__ssub64(a, b) \
+  (__builtin_riscv_ssub64 ((a), (b)))
+#define __nds__usub64(a, b) \
+  (__builtin_riscv_usub64 ((a), (b)))
+#define __nds__rsub64(a, b) \
+  (__builtin_riscv_rsub64 ((a), (b)))
+#define __nds__ursub64(a, b) \
+  (__builtin_riscv_ursub64 ((a), (b)))
+#define __nds__ksub64(a, b) \
+  (__builtin_riscv_ksub64 ((a), (b)))
+#define __nds__uksub64(a, b) \
+  (__builtin_riscv_uksub64 ((a), (b)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 
