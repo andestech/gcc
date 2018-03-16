@@ -820,6 +820,84 @@ enum riscv_order
 #define __nds__v_kmmawt_u(r, a, b) \
   (__builtin_riscv_v_kmmawt_u ((r), (a), (b)))
 
+#define __nds__smbb(a, b) \
+  (__builtin_riscv_smbb ((a), (b)))
+#define __nds__v_smbb(a, b) \
+  (__builtin_riscv_v_smbb ((a), (b)))
+#define __nds__smbt(a, b) \
+  (__builtin_riscv_smbt ((a), (b)))
+#define __nds__v_smbt(a, b) \
+  (__builtin_riscv_v_smbt ((a), (b)))
+#define __nds__smtt(a, b) \
+  (__builtin_riscv_smtt ((a), (b)))
+#define __nds__v_smtt(a, b) \
+  (__builtin_riscv_v_smtt ((a), (b)))
+#define __nds__kmda(a, b) \
+  (__builtin_riscv_kmda ((a), (b)))
+#define __nds__v_kmda(a, b) \
+  (__builtin_riscv_v_kmda ((a), (b)))
+#define __nds__kmxda(a, b) \
+  (__builtin_riscv_kmxda ((a), (b)))
+#define __nds__v_kmxda(a, b) \
+  (__builtin_riscv_v_kmxda ((a), (b)))
+#define __nds__smds(a, b) \
+  (__builtin_riscv_smds ((a), (b)))
+#define __nds__v_smds(a, b) \
+  (__builtin_riscv_v_smds ((a), (b)))
+#define __nds__smdrs(a, b) \
+  (__builtin_riscv_smdrs ((a), (b)))
+#define __nds__v_smdrs(a, b) \
+  (__builtin_riscv_v_smdrs ((a), (b)))
+#define __nds__smxds(a, b) \
+  (__builtin_riscv_smxds ((a), (b)))
+#define __nds__v_smxds(a, b) \
+  (__builtin_riscv_v_smxds ((a), (b)))
+#define __nds__kmabb(r, a, b) \
+  (__builtin_riscv_kmabb ((r), (a), (b)))
+#define __nds__v_kmabb(r, a, b) \
+  (__builtin_riscv_v_kmabb ((r), (a), (b)))
+#define __nds__kmabt(r, a, b) \
+  (__builtin_riscv_kmabt ((r), (a), (b)))
+#define __nds__v_kmabt(r, a, b) \
+  (__builtin_riscv_v_kmabt ((r), (a), (b)))
+#define __nds__kmatt(r, a, b) \
+  (__builtin_riscv_kmatt ((r), (a), (b)))
+#define __nds__v_kmatt(r, a, b) \
+  (__builtin_riscv_v_kmatt ((r), (a), (b)))
+#define __nds__kmada(r, a, b) \
+  (__builtin_riscv_kmada ((r), (a), (b)))
+#define __nds__v_kmada(r, a, b) \
+  (__builtin_riscv_v_kmada ((r), (a), (b)))
+#define __nds__kmaxda(r, a, b) \
+  (__builtin_riscv_kmaxda ((r), (a), (b)))
+#define __nds__v_kmaxda(r, a, b) \
+  (__builtin_riscv_v_kmaxda ((r), (a), (b)))
+#define __nds__kmads(r, a, b) \
+  (__builtin_riscv_kmads ((r), (a), (b)))
+#define __nds__v_kmads(r, a, b) \
+  (__builtin_riscv_v_kmads ((r), (a), (b)))
+#define __nds__kmadrs(r, a, b) \
+  (__builtin_riscv_kmadrs ((r), (a), (b)))
+#define __nds__v_kmadrs(r, a, b) \
+  (__builtin_riscv_v_kmadrs ((r), (a), (b)))
+#define __nds__kmaxds(r, a, b) \
+  (__builtin_riscv_kmaxds ((r), (a), (b)))
+#define __nds__v_kmaxds(r, a, b) \
+  (__builtin_riscv_v_kmaxds ((r), (a), (b)))
+#define __nds__kmsda(r, a, b) \
+  (__builtin_riscv_kmsda ((r), (a), (b)))
+#define __nds__v_kmsda(r, a, b) \
+  (__builtin_riscv_v_kmsda ((r), (a), (b)))
+#define __nds__kmsxda(r, a, b) \
+  (__builtin_riscv_kmsxda ((r), (a), (b)))
+#define __nds__v_kmsxda(r, a, b) \
+  (__builtin_riscv_v_kmsxda ((r), (a), (b)))
+
+#define __nds__smal(a, b) \
+  (__builtin_riscv_smal ((a), (b)))
+#define __nds__v_smal(a, b) \
+  (__builtin_riscv_v_smal ((a), (b)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 
