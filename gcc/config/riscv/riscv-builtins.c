@@ -348,7 +348,15 @@ enum riscv_builtins
   RISCV_BUILTIN_RSUB64,
   RISCV_BUILTIN_URSUB64,
   RISCV_BUILTIN_KSUB64,
-  RISCV_BUILTIN_UKSUB64
+  RISCV_BUILTIN_UKSUB64,
+  RISCV_BUILTIN_SMAR64,
+  RISCV_BUILTIN_SMSR64,
+  RISCV_BUILTIN_UMAR64,
+  RISCV_BUILTIN_UMSR64,
+  RISCV_BUILTIN_KMAR64,
+  RISCV_BUILTIN_KMSR64,
+  RISCV_BUILTIN_UKMAR64,
+  RISCV_BUILTIN_UKMSR64
 };
 
 /* This structure describes a single built-in function.  */
@@ -1076,7 +1084,24 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (dsp_ksubdi3, dsp_ksubdi3, ksub64,
 		      RISCV_LLONG_FTYPE_LLONG_LLONG, KSUB64),
   DIRECT_DSP_BUILTIN (dsp_uksubdi3, dsp_uksubdi3, uksub64,
-		      RISCV_LLONG_FTYPE_LLONG_LLONG, UKSUB64)
+		      RISCV_LLONG_FTYPE_LLONG_LLONG, UKSUB64),
+  /* DSP Extension: 32bit Multiply with 64bit Add/Subtract.  */
+  DIRECT_DSP_BUILTIN (smar64_1, smar64_1, smar64,
+		      RISCV_LLONG_FTYPE_LLONG_LONG_LONG, SMAR64),
+  DIRECT_DSP_BUILTIN (smsr64, smsr64, smsr64,
+		      RISCV_LLONG_FTYPE_LLONG_LONG_LONG, SMSR64),
+  DIRECT_DSP_BUILTIN (umar64_1, umar64_1, umar64,
+		      RISCV_LLONG_FTYPE_LLONG_ULONG_ULONG, UMAR64),
+  DIRECT_DSP_BUILTIN (umsr64, umsr64, umsr64,
+		      RISCV_LLONG_FTYPE_LLONG_ULONG_ULONG, UMSR64),
+  DIRECT_DSP_BUILTIN (kmar64_1, kmar64_1, kmar64,
+		      RISCV_LLONG_FTYPE_LLONG_LONG_LONG, KMAR64),
+  DIRECT_DSP_BUILTIN (kmsr64, kmsr64, kmsr64,
+		      RISCV_LLONG_FTYPE_LLONG_LONG_LONG, KMSR64),
+  DIRECT_DSP_BUILTIN (ukmar64_1, ukmar64_1, ukmar64,
+		      RISCV_LLONG_FTYPE_LLONG_ULONG_ULONG, UKMAR64),
+  DIRECT_DSP_BUILTIN (ukmsr64, ukmsr64, ukmsr64,
+		      RISCV_LLONG_FTYPE_LLONG_ULONG_ULONG, UKMSR64)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
