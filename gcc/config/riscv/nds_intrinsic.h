@@ -898,6 +898,15 @@ enum riscv_order
 #define __nds__v_smal(a, b) \
   (__builtin_riscv_v_smal ((a), (b)))
 
+#define __nds__bitrev(a, b) \
+  (__builtin_riscv_bitrev ((a), (b)))
+#define __nds__wext(a, b) \
+  (__builtin_riscv_wext ((a), (b)))
+#define __nds__bpick(r, a, b) \
+  (__builtin_riscv_bpick ((r), (a), (b)))
+#define __nds__insb(r, a, b) \
+  (__builtin_riscv_insb ((r), (a), (b)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 

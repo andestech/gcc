@@ -332,7 +332,11 @@ enum riscv_builtins
   RISCV_BUILTIN_KMSXDA,
   RISCV_BUILTIN_V_KMSXDA,
   RISCV_BUILTIN_SMAL,
-  RISCV_BUILTIN_V_SMAL
+  RISCV_BUILTIN_V_SMAL,
+  RISCV_BUILTIN_BITREV,
+  RISCV_BUILTIN_WEXT,
+  RISCV_BUILTIN_BPICK,
+  RISCV_BUILTIN_INSB
 };
 
 /* This structure describes a single built-in function.  */
@@ -1026,7 +1030,16 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (smal1, smal1, smal,
 		      RISCV_LLONG_FTYPE_LLONG_LONG, SMAL),
   DIRECT_DSP_BUILTIN (smal1, smal1, v_smal,
-		      RISCV_LLONG_FTYPE_LLONG_V2HI, V_SMAL)
+		      RISCV_LLONG_FTYPE_LLONG_V2HI, V_SMAL),
+  /* DSP Extension: 32bit MISC.  */
+  DIRECT_DSP_BUILTIN (bitrev, bitrev, bitrev,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, BITREV),
+  DIRECT_DSP_BUILTIN (wext, wext, wext,
+		      RISCV_ULONG_FTYPE_LLONG_ULONG, WEXT),
+  DIRECT_DSP_BUILTIN (bpick1, bpick1, bpick,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG_ULONG, BPICK),
+  DIRECT_DSP_BUILTIN (insb, insb, insb,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG_ULONG, INSB)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
