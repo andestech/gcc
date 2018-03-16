@@ -740,6 +740,36 @@ enum riscv_order
 #define __nds__v_zunpkd831(a) \
   (__builtin_riscv_v_zunpkd831 ((a)))
 
+#define __nds__raddw(a, b) \
+  (__builtin_riscv_raddw ((a), (b)))
+#define __nds__uraddw(a, b) \
+  (__builtin_riscv_uraddw ((a), (b)))
+#define __nds__rsubw(a, b) \
+  (__builtin_riscv_rsubw ((a), (b)))
+#define __nds__ursubw(a, b) \
+  (__builtin_riscv_ursubw ((a), (b)))
+
+#define __nds__sra_u(a, b) \
+  (__builtin_riscv_sra_u ((a), (b)))
+#define __nds__ksll(a, b) \
+  (__builtin_riscv_ksll ((a), (b)))
+#define __nds__pkbb16(a, b) \
+  (__builtin_riscv_pkbb16 ((a), (b)))
+#define __nds__v_pkbb16(a, b) \
+  (__builtin_riscv_v_pkbb16 ((a), (b)))
+#define __nds__pkbt16(a, b) \
+  (__builtin_riscv_pkbt16 ((a), (b)))
+#define __nds__v_pkbt16(a, b) \
+  (__builtin_riscv_v_pkbt16 ((a), (b)))
+#define __nds__pktb16(a, b) \
+  (__builtin_riscv_pktb16 ((a), (b)))
+#define __nds__v_pktb16(a, b) \
+  (__builtin_riscv_v_pktb16 ((a), (b)))
+#define __nds__pktt16(a, b) \
+  (__builtin_riscv_pktt16 ((a), (b)))
+#define __nds__v_pktt16(a, b) \
+  (__builtin_riscv_v_pktt16 ((a), (b)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 

@@ -256,7 +256,21 @@ enum riscv_builtins
   RISCV_BUILTIN_ZUNPKD830,
   RISCV_BUILTIN_V_ZUNPKD830,
   RISCV_BUILTIN_ZUNPKD831,
-  RISCV_BUILTIN_V_ZUNPKD831
+  RISCV_BUILTIN_V_ZUNPKD831,
+  RISCV_BUILTIN_RADDW,
+  RISCV_BUILTIN_URADDW,
+  RISCV_BUILTIN_RSUBW,
+  RISCV_BUILTIN_URSUBW,
+  RISCV_BUILTIN_SRA_U,
+  RISCV_BUILTIN_KSLL,
+  RISCV_BUILTIN_PKBB16,
+  RISCV_BUILTIN_V_PKBB16,
+  RISCV_BUILTIN_PKBT16,
+  RISCV_BUILTIN_V_PKBT16,
+  RISCV_BUILTIN_PKTB16,
+  RISCV_BUILTIN_V_PKTB16,
+  RISCV_BUILTIN_PKTT16,
+  RISCV_BUILTIN_V_PKTT16
 };
 
 /* This structure describes a single built-in function.  */
@@ -791,7 +805,38 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (zunpkd831, zunpkd831, zunpkd831,
 		      RISCV_ULONG_FTYPE_ULONG, ZUNPKD831),
   DIRECT_DSP_BUILTIN (zunpkd831, zunpkd831, v_zunpkd831,
-		      RISCV_UV2HI_FTYPE_UV4QI, V_ZUNPKD831)
+		      RISCV_UV2HI_FTYPE_UV4QI, V_ZUNPKD831),
+  /* DSP Extension: 32bit Add and Subtract.  */
+  DIRECT_DSP_BUILTIN (raddsi3, raddsi3, raddw,
+		      RISCV_LONG_FTYPE_LONG_LONG, RADDW),
+  DIRECT_DSP_BUILTIN (uraddsi3, uraddsi3, uraddw,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, URADDW),
+  DIRECT_DSP_BUILTIN (rsubsi3, rsubsi3, rsubw,
+		      RISCV_LONG_FTYPE_LONG_LONG, RSUBW),
+  DIRECT_DSP_BUILTIN (ursubsi3, ursubsi3, ursubw,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, URSUBW),
+  /* DSP Extension: 32bit Shift.  */
+  DIRECT_DSP_BUILTIN (sraiu, sraiu, sra_u,
+		      RISCV_LONG_FTYPE_LONG_ULONG, SRA_U),
+  DIRECT_DSP_BUILTIN (kssl, kssl, ksll,
+		      RISCV_LONG_FTYPE_LONG_ULONG, KSLL),
+  /* DSP Extension: 16bit Packing.  */
+  DIRECT_DSP_BUILTIN (pkbb, pkbb, pkbb16,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, PKBB16),
+  DIRECT_DSP_BUILTIN (pkbb, pkbb, v_pkbb16,
+		      RISCV_UV2HI_FTYPE_UV2HI_UV2HI, V_PKBB16),
+  DIRECT_DSP_BUILTIN (pkbt, pkbt, pkbt16,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, PKBT16),
+  DIRECT_DSP_BUILTIN (pkbt, pkbt, v_pkbt16,
+		      RISCV_UV2HI_FTYPE_UV2HI_UV2HI, V_PKBT16),
+  DIRECT_DSP_BUILTIN (pktb, pktb, pktb16,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, PKTB16),
+  DIRECT_DSP_BUILTIN (pktb, pktb, v_pktb16,
+		      RISCV_UV2HI_FTYPE_UV2HI_UV2HI, V_PKTB16),
+  DIRECT_DSP_BUILTIN (pktt, pktt, pktt16,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, PKTT16),
+  DIRECT_DSP_BUILTIN (pktt, pktt, v_pktt16,
+		      RISCV_UV2HI_FTYPE_UV2HI_UV2HI, V_PKTT16)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
