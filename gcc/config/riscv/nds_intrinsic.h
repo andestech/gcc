@@ -770,6 +770,56 @@ enum riscv_order
 #define __nds__v_pktt16(a, b) \
   (__builtin_riscv_v_pktt16 ((a), (b)))
 
+#define __nds__smmul(a, b) \
+  (__builtin_riscv_smmul ((a), (b)))
+#define __nds__smmul_u(a, b) \
+  (__builtin_riscv_smmul_u ((a), (b)))
+#define __nds__kmmac(r, a, b) \
+  (__builtin_riscv_kmmac ((r), (a), (b)))
+#define __nds__kmmac_u(r, a, b) \
+  (__builtin_riscv_kmmac_u ((r), (a), (b)))
+#define __nds__kmmsb(r, a, b) \
+  (__builtin_riscv_kmmsb ((r), (a), (b)))
+#define __nds__kmmsb_u(r, a, b) \
+  (__builtin_riscv_kmmsb_u ((r), (a), (b)))
+#define __nds__kwmmul(a, b) \
+  (__builtin_riscv_kwmmul ((a), (b)))
+#define __nds__kwmmul_u(a, b) \
+  (__builtin_riscv_kwmmul_u ((a), (b)))
+
+#define __nds__smmwb(a, b) \
+  (__builtin_riscv_smmwb ((a), (b)))
+#define __nds__v_smmwb(a, b) \
+  (__builtin_riscv_v_smmwb ((a), (b)))
+#define __nds__smmwb_u(a, b) \
+  (__builtin_riscv_smmwb_u ((a), (b)))
+#define __nds__v_smmwb_u(a, b) \
+  (__builtin_riscv_v_smmwb_u ((a), (b)))
+#define __nds__smmwt(a, b) \
+  (__builtin_riscv_smmwt ((a), (b)))
+#define __nds__v_smmwt(a, b) \
+  (__builtin_riscv_v_smmwt ((a), (b)))
+#define __nds__smmwt_u(a, b) \
+  (__builtin_riscv_smmwt_u ((a), (b)))
+#define __nds__v_smmwt_u(a, b) \
+  (__builtin_riscv_v_smmwt_u ((a), (b)))
+#define __nds__kmmawb(r, a, b) \
+  (__builtin_riscv_kmmawb ((r), (a), (b)))
+#define __nds__v_kmmawb(r, a, b) \
+  (__builtin_riscv_v_kmmawb ((r), (a), (b)))
+#define __nds__kmmawb_u(r, a, b) \
+  (__builtin_riscv_kmmawb_u ((r), (a), (b)))
+#define __nds__v_kmmawb_u(r, a, b) \
+  (__builtin_riscv_v_kmmawb_u ((r), (a), (b)))
+#define __nds__kmmawt(r, a, b) \
+  (__builtin_riscv_kmmawt ((r), (a), (b)))
+#define __nds__v_kmmawt(r, a, b) \
+  (__builtin_riscv_v_kmmawt ((r), (a), (b)))
+#define __nds__kmmawt_u(r, a, b) \
+  (__builtin_riscv_kmmawt_u ((r), (a), (b)))
+#define __nds__v_kmmawt_u(r, a, b) \
+  (__builtin_riscv_v_kmmawt_u ((r), (a), (b)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 
