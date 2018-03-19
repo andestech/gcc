@@ -985,6 +985,49 @@ enum riscv_order
 #define __nds__kabs(a) \
   (__builtin_riscv_kabs ((a)))
 
+#define __nds__kaddw(a, b) \
+  (__builtin_riscv_kaddw ((a), (b)))
+#define __nds__kaddh(a, b) \
+  (__builtin_riscv_kaddh ((a), (b)))
+#define __nds__ksubw(a, b) \
+  (__builtin_riscv_ksubw ((a), (b)))
+#define __nds__ksubh(a, b) \
+  (__builtin_riscv_ksubh ((a), (b)))
+#define __nds__kdmbb(a, b) \
+  (__builtin_riscv_kdmbb ((a), (b)))
+#define __nds__v_kdmbb(a, b) \
+  (__builtin_riscv_v_kdmbb ((a), (b)))
+#define __nds__kdmbt(a, b) \
+  (__builtin_riscv_kdmbt ((a), (b)))
+#define __nds__v_kdmbt(a, b) \
+  (__builtin_riscv_v_kdmbt ((a), (b)))
+#define __nds__kdmtt(a, b) \
+  (__builtin_riscv_kdmtt ((a), (b)))
+#define __nds__v_kdmtt(a, b) \
+  (__builtin_riscv_v_kdmtt ((a), (b)))
+#define __nds__khmbb(a, b) \
+  (__builtin_riscv_khmbb ((a), (b)))
+#define __nds__v_khmbb(a, b) \
+  (__builtin_riscv_v_khmbb ((a), (b)))
+#define __nds__khmbt(a, b) \
+  (__builtin_riscv_khmbt ((a), (b)))
+#define __nds__v_khmbt(a, b) \
+  (__builtin_riscv_v_khmbt ((a), (b)))
+#define __nds__khmtt(a, b) \
+  (__builtin_riscv_khmtt ((a), (b)))
+#define __nds__v_khmtt(a, b) \
+  (__builtin_riscv_v_khmtt ((a), (b)))
+#define __nds__kslraw(a, b) \
+  (__builtin_riscv_kslraw ((a), (b)))
+#define __nds__kslraw_u(a, b) \
+  (__builtin_riscv_kslraw_u ((a), (b)))
+#define __nds__ave(a, b) \
+  (__builtin_riscv_ave ((a), (b)))
+#define __nds__max(a, b) \
+  (__builtin_riscv_max ((a), (b)))
+#define __nds__min(a, b) \
+  (__builtin_riscv_min ((a), (b)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 
