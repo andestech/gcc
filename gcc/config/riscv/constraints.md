@@ -30,11 +30,6 @@
 (define_register_constraint "e" "TARGET_RVE ? T0_REG : A7_REG"
   "A syscall register.")
 
-(define_constraint "u03"
-  "A 3-bit unsigned immediate."
-  (and (match_code "const_int")
-       (match_test "IN_RANGE (ival, 0, 7)")))
-
 ;; Avoid using register t0 for JALR's argument, because for some
 ;; microarchitectures that is a return-address stack hint.
 (define_register_constraint "l" "JALR_REGS"
@@ -99,6 +94,11 @@
   "Unsigned immediate 1-bit value"
   (and (match_code "const_int")
        (match_test "ival == 1 || ival == 0")))
+
+(define_constraint "u03"
+  "Unsigned immediate 3-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 3) && ival >= 0")))
 
 (define_constraint "u04"
   "Unsigned immediate 4-bit value"

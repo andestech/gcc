@@ -710,31 +710,31 @@
   [(set_attr "type"   "arith,arith")
    (set_attr "mode" "   V2HI, V2HI")])
 
-(define_insn "kslra16"
-  [(set (match_operand:V2HI 0 "register_operand"                  "=r")
-	(if_then_else:V2HI
-	  (lt:SI (match_operand:SI 2 "register_operand"           " r")
+(define_insn "kslra<bits>"
+  [(set (match_operand:VQIHI 0 "register_operand"                   "=r")
+	(if_then_else:VQIHI
+	  (lt:SI (match_operand:SI 2 "register_operand"             " r")
 		 (const_int 0))
-	  (ashiftrt:V2HI (match_operand:V2HI 1 "register_operand" " r")
-			 (neg:SI (match_dup 2)))
-	  (ashift:V2HI (match_dup 1)
-		       (match_dup 2))))]
+	  (ashiftrt:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
+			  (neg:SI (match_dup 2)))
+	  (ashift:VQIHI (match_dup 1)
+			(match_dup 2))))]
   "TARGET_DSP"
-  "kslra16\t%0, %1, %2"
+  "kslra<bits>\t%0, %1, %2"
   [(set_attr "type" "arith")])
 
-(define_insn "kslra16_round"
-  [(set (match_operand:V2HI 0 "register_operand"                  "=r")
-	(if_then_else:V2HI
-	  (lt:SI (match_operand:SI 2 "register_operand"           " r")
+(define_insn "kslra<bits>_round"
+  [(set (match_operand:VQIHI 0 "register_operand"                  "=r")
+	(if_then_else:VQIHI
+	  (lt:SI (match_operand:SI 2 "register_operand"            " r")
 		 (const_int 0))
-	  (unspec:V2HI [(ashiftrt:V2HI (match_operand:V2HI 1 "register_operand" " r")
-				       (neg:SI (match_dup 2)))]
-		       UNSPEC_ROUND)
-	  (ashift:V2HI (match_dup 1)
-		       (match_dup 2))))]
+	  (unspec:VQIHI [(ashiftrt:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
+					 (neg:SI (match_dup 2)))]
+		        UNSPEC_ROUND)
+	  (ashift:VQIHI (match_dup 1)
+			(match_dup 2))))]
   "TARGET_DSP"
-  "kslra16.u\t%0, %1, %2"
+  "kslra<bits>.u\t%0, %1, %2"
   [(set_attr "type" "arith")])
 
 (define_insn "cmpeq<bits>"
@@ -3461,3 +3461,84 @@
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
+
+(define_expand "<shift>v4qi3"
+  [(set (match_operand:V4QI 0 "register_operand"                  "")
+	(any_shift:V4QI (match_operand:V4QI 1 "register_operand"  "")
+			(match_operand:SI   2 "rimm3u_operand" "")))]
+  "TARGET_DSP"
+{
+  if (operands[2] == const0_rtx)
+    {
+      emit_move_insn (operands[0], operands[1]);
+      DONE;
+    }
+})
+
+(define_insn "*ashlv4qi3"
+  [(set (match_operand:V4QI 0 "register_operand"              "=  r, r")
+	(ashift:V4QI (match_operand:V4QI 1 "register_operand" "   r, r")
+		     (match_operand:SI 2   "rimm3u_operand"   " u03, r")))]
+  "TARGET_DSP"
+  "@
+   slli8\t%0, %1, %2
+   sll8\t%0, %1, %2"
+  [(set_attr "type" "arith,arith")
+   (set_attr "mode" " V4QI, V4QI")])
+
+(define_insn "kslli8"
+  [(set (match_operand:V4QI 0 "register_operand"                 "=  r, r")
+	(ss_ashift:V4QI (match_operand:V4QI 1 "register_operand" "   r, r")
+			(match_operand:SI 2 "rimm3u_operand"     " u03, r")))]
+  "TARGET_DSP"
+  "@
+   kslli8\t%0, %1, %2
+   ksll8\t%0, %1, %2"
+  [(set_attr "type" "arith,arith")
+   (set_attr "mode" " V4QI, V4QI")])
+
+(define_insn "*ashrv4qi3"
+  [(set (match_operand:V4QI 0 "register_operand"                "=  r, r")
+	(ashiftrt:V4QI (match_operand:V4QI 1 "register_operand" "   r, r")
+		       (match_operand:SI 2 "rimm3u_operand"     " u03, r")))]
+  "TARGET_DSP"
+  "@
+   srai8\t%0, %1, %2
+   sra8\t%0, %1, %2"
+  [(set_attr "type" "arith,arith")
+   (set_attr "mode" " V4QI, V4QI")])
+
+(define_insn "sra8_round"
+  [(set (match_operand:V4QI 0 "register_operand"                              "=  r, r")
+	(unspec:V4QI [(ashiftrt:V4QI (match_operand:V4QI 1 "register_operand" "   r, r")
+				     (match_operand:SI 2 "rimm3u_operand"     " u03, r"))]
+		     UNSPEC_ROUND))]
+  "TARGET_DSP"
+  "@
+   srai8.u\t%0, %1, %2
+   sra8.u\t%0, %1, %2"
+  [(set_attr "type" "arith,arith")
+   (set_attr "mode" " V4QI, V4QI")])
+
+(define_insn "*lshrv4qi3"
+  [(set (match_operand:V4QI 0 "register_operand"                "=  r, r")
+	(lshiftrt:V4QI (match_operand:V4QI 1 "register_operand" "   r, r")
+		       (match_operand:SI 2 "rimm3u_operand"     " u03, r")))]
+  "TARGET_DSP"
+  "@
+   srli8\t%0, %1, %2
+   srl8\t%0, %1, %2"
+  [(set_attr "type" "arith,arith")
+   (set_attr "mode" " V4QI, V4QI")])
+
+(define_insn "srl8_round"
+  [(set (match_operand:V4QI 0 "register_operand"                              "=  r, r")
+	(unspec:V4QI [(lshiftrt:V4QI (match_operand:V4QI 1 "register_operand" "   r, r")
+				     (match_operand:SI 2 "rimm3u_operand"     " u03, r"))]
+		     UNSPEC_ROUND))]
+  "TARGET_DSP"
+  "@
+   srli8.u\t%0, %1, %2
+   srl8.u\t%0, %1, %2"
+  [(set_attr "type" "arith,arith")
+   (set_attr "mode" " V4QI, V4QI")])
