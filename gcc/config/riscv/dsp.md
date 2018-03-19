@@ -25,6 +25,8 @@
 ;; Give the number of DSP instructions in the mode
 (define_mode_attr bits [(V4QI "8") (QI "8") (V2HI "16") (HI "16") (DI "64")])
 
+(define_mode_attr bsize [(HI "8") (SI "16")])
+
 (define_mode_attr VELT [(V4QI "QI") (V2HI "HI")])
 
 (define_code_iterator all_plus [plus ss_plus us_plus])
@@ -781,6 +783,24 @@
   "TARGET_DSP"
   "ucmple<bits>\t%0, %1, %2"
   [(set_attr "mode" "SI")])
+
+(define_insn "sclip8"
+  [(set (match_operand:V4QI 0 "register_operand"               "=  r")
+	(unspec:V4QI [(match_operand:V4QI 1 "register_operand" "   r")
+		      (match_operand:SI 2 "imm3u_operand"      " u03")]
+		     UNSPEC_CLIPS))]
+  "TARGET_DSP"
+  "sclip8\t%0, %1, %2"
+  [(set_attr "mode" "V4QI")])
+
+(define_insn "uclip8"
+  [(set (match_operand:V4QI 0 "register_operand"                "=  r")
+	(unspec:V4QI [(match_operand:V2HI 1 "register_operand"  "   r")
+		      (match_operand:SI 2 "imm3u_operand"       " u03")]
+		     UNSPEC_CLIP))]
+  "TARGET_DSP"
+  "uclip8\t%0, %1, %2"
+  [(set_attr "mode" "V4QI")])
 
 (define_insn "sclip16"
   [(set (match_operand:V2HI 0 "register_operand"               "=   r")
@@ -3542,3 +3562,110 @@
    srl8.u\t%0, %1, %2"
   [(set_attr "type" "arith,arith")
    (set_attr "mode" " V4QI, V4QI")])
+
+(define_insn "clo"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")] UNSPEC_CLO))]
+  "TARGET_DSP"
+  "clo\t%0, %1"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "clzsi2"
+  [(set (match_operand:SI 0 "register_operand"         "=r")
+	(clz:SI (match_operand:SI 1 "register_operand" " r")))]
+  "TARGET_DSP"
+  "clz\t%0, %1"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "pbsad"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_PBSAD))]
+  "TARGET_DSP"
+  "pbsad\t%0, %1, %2"
+  [(set_attr "mode" "SI")])
+
+(define_insn "pbsada"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "0")
+		    (match_operand:SI 2 "register_operand" "r")
+		    (match_operand:SI 3 "register_operand" "r")] UNSPEC_PBSADA))]
+  ""
+  "pbsada\t%0, %2, %3"
+  [(set_attr "mode" "SI")])
+
+(define_insn "*mulsidi3"
+  [(set (match_operand:DI 0 "register_operand"                          "=r")
+	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" " r"))
+		 (sign_extend:DI (match_operand:SI 2 "register_operand" " r"))))]
+  "TARGET_DSP"
+  "mulsr64\t%0, %1, %2"
+  [(set_attr "type"   "imul")
+   (set_attr "mode"   "DI")])
+
+(define_insn "*umulsidi3"
+  [(set (match_operand:DI 0 "register_operand"                          "=r")
+	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+		 (zero_extend:DI (match_operand:SI 2 "register_operand" " r"))))]
+  "TARGET_DSP"
+  "mulr64\t%0, %1, %2"
+  [(set_attr "type"   "imul")
+   (set_attr "mode"   "DI")])
+
+;; Multiply-accumulate instructions.
+
+(define_insn "*maddr32_0"
+  [(set (match_operand:SI 0 "register_operand"                   "=r")
+	(plus:SI (match_operand:SI 3 "register_operand"          " 0")
+		 (mult:SI (match_operand:SI 1 "register_operand" " r")
+			  (match_operand:SI 2 "register_operand" " r"))))]
+  "TARGET_DSP"
+  "maddr32\t%0, %1, %2"
+  [(set_attr "type"   "imul")
+   (set_attr "mode"   "SI")])
+
+(define_insn "*maddr32_1"
+  [(set (match_operand:SI 0 "register_operand"                   "=r")
+	(plus:SI (mult:SI (match_operand:SI 1 "register_operand" " r")
+			  (match_operand:SI 2 "register_operand" " r"))
+		 (match_operand:SI 3 "register_operand"          " 0")))]
+  "TARGET_DSP"
+  "maddr32\t%0, %1, %2"
+  [(set_attr "type"   "imul")
+   (set_attr "mode"   "SI")])
+
+(define_insn "*msubr32"
+  [(set (match_operand:SI 0 "register_operand"                    "=r")
+	(minus:SI (match_operand:SI 3 "register_operand"          " 0")
+		  (mult:SI (match_operand:SI 1 "register_operand" " r")
+			   (match_operand:SI 2 "register_operand" " r"))))]
+  "TARGET_DSP"
+  "msubr32\t%0, %1, %2"
+  [(set_attr "type"   "imul")
+   (set_attr "mode"   "SI")])
+
+(define_insn "bswap<mode>2"
+  [(set (match_operand:HISI 0 "register_operand" "=r")
+	(bswap:HISI (match_operand:HISI 1 "register_operand" "r")))]
+  "TARGET_DSP"
+  "swap<bsize>\t%0, %1"
+  [(set_attr "type"  "arith")
+   (set_attr "mode"  "<MODE>")])
+
+(define_insn "unspec_bswap8"
+  [(set (match_operand:V4QI 0 "register_operand" "=r")
+	(unspec:V4QI [(match_operand:V4QI 1 "register_operand" "r")] UNSPEC_BSWAP))]
+  "TARGET_DSP"
+  "swap8\t%0, %1"
+  [(set_attr "type"  "arith")
+   (set_attr "mode"  "V4QI")])
+
+(define_insn "unspec_bswap16"
+  [(set (match_operand:V2HI 0 "register_operand" "=r")
+	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")] UNSPEC_BSWAP))]
+  "TARGET_DSP"
+  "swap16\t%0, %1"
+  [(set_attr "type"  "arith")
+   (set_attr "mode"  "V2HI")])
