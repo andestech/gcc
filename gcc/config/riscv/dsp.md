@@ -3300,11 +3300,164 @@
   "ur<opcode>w\t%0, %1, %2"
 )
 
+;; SATURATION
+
 (define_insn "kabs"
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(unspec:SI [(match_operand:SI 1 "register_operand" "r")] UNSPEC_KABS))]
-  ""
+  "TARGET_DSP"
   "kabs\t%0, %1"
   [(set_attr "type" "arith")
-   (set_attr "mode" "SI")]
-)
+   (set_attr "mode" "SI")])
+
+(define_insn "kaddw"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(ss_plus:SI (match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "register_operand" "r")))]
+  "TARGET_DSP"
+  "kaddw\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "ksubw"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(ss_minus:SI (match_operand:SI 1 "register_operand" "r")
+		     (match_operand:SI 2 "register_operand" "r")))]
+  "TARGET_DSP"
+  "ksubw\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "kaddh"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KADDH))]
+  "TARGET_DSP"
+  "kaddh\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "ksubh"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSUBH))]
+  "TARGET_DSP"
+  "ksubh\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "kdmbb"
+  [(set (match_operand:V2HI 0 "register_operand" "=r")
+	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
+		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KDMBB))]
+  "TARGET_DSP"
+  "kdmbb\t%0, %1, %2"
+  [(set_attr "type" "imul")
+   (set_attr "mode" "V2HI")])
+
+(define_insn "kdmbt"
+  [(set (match_operand:V2HI 0 "register_operand" "=r")
+	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
+		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KDMBT))]
+  "TARGET_DSP"
+  "kdmbt\t%0, %1, %2"
+  [(set_attr "type" "imul")
+   (set_attr "mode" "V2HI")])
+
+(define_insn "kdmtt"
+  [(set (match_operand:V2HI 0 "register_operand" "=r")
+	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
+		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KDMTT))]
+  "TARGET_DSP"
+  "kdmtt\t%0, %1, %2"
+  [(set_attr "type" "imul")
+   (set_attr "mode" "V2HI")])
+
+(define_insn "khmbb"
+  [(set (match_operand:V2HI 0 "register_operand" "=r")
+	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
+		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KHMBB))]
+  "TARGET_DSP"
+  "khmbb\t%0, %1, %2"
+  [(set_attr "type" "imul")
+   (set_attr "mode" "V2HI")])
+
+(define_insn "khmbt"
+  [(set (match_operand:V2HI 0 "register_operand" "=r")
+	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
+		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KHMBT))]
+  "TARGET_DSP"
+  "khmbt\t%0, %1, %2"
+  [(set_attr "type" "imul")
+   (set_attr "mode" "V2HI")])
+
+(define_insn "khmtt"
+  [(set (match_operand:V2HI 0 "register_operand" "=r")
+	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
+		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KHMTT))]
+  "TARGET_DSP"
+  "khmtt\t%0, %1, %2"
+  [(set_attr "type" "imul")
+   (set_attr "mode" "V2HI")])
+
+(define_insn "kslraw"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSLRAW))]
+  "TARGET_DSP"
+  "kslraw\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V2HI")])
+
+(define_insn "unspec_kslrawu"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSLRAWU))]
+  "TARGET_DSP"
+  "kslraw.u\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_expand "unspec_ave"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:SI 2 "register_operand" "")]
+ "TARGET_DSP"
+{
+  emit_insn (gen_ave (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_insn "ave"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(truncate:SI
+	  (ashiftrt:DI
+	    (plus:DI
+	      (plus:DI
+		(sign_extend:DI (match_operand:SI 1 "register_operand" "r"))
+		(sign_extend:DI (match_operand:SI 2 "register_operand" "r")))
+	      (const_int 1))
+	  (const_int 1))))]
+  "TARGET_DSP"
+  "ave\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "smaxsi3"
+  [(set (match_operand:SI 0 "register_operand"          "=r")
+	(smax:SI (match_operand:SI 1 "register_operand" " r")
+		 (match_operand:SI 2 "register_operand" " r")))]
+  "TARGET_DSP"
+  "max\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "sminsi3"
+  [(set (match_operand:SI 0 "register_operand"          "=r")
+	(smin:SI (match_operand:SI 1 "register_operand" " r")
+		 (match_operand:SI 2 "register_operand" " r")))]
+  "TARGET_DSP"
+  "min\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
