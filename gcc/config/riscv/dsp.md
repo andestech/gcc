@@ -3299,3 +3299,12 @@
   "TARGET_DSP"
   "ur<opcode>w\t%0, %1, %2"
 )
+
+(define_insn "kabs"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")] UNSPEC_KABS))]
+  ""
+  "kabs\t%0, %1"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")]
+)

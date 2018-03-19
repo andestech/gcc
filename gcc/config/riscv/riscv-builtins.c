@@ -376,7 +376,10 @@ enum riscv_builtins
   RISCV_BUILTIN_SMSLDA,
   RISCV_BUILTIN_V_SMSLDA,
   RISCV_BUILTIN_SMSLXDA,
-  RISCV_BUILTIN_V_SMSLXDA
+  RISCV_BUILTIN_V_SMSLXDA,
+  RISCV_BUILTIN_UCLIP32,
+  RISCV_BUILTIN_SCLIP32,
+  RISCV_BUILTIN_KABS,
 };
 
 /* This structure describes a single built-in function.  */
@@ -1162,7 +1165,14 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (smslxda1, smslxda1, smslxda,
 		      RISCV_LLONG_FTYPE_LLONG_ULONG_ULONG, SMSLXDA),
   DIRECT_DSP_BUILTIN (smslxda1, smslxda1, v_smslxda,
-		      RISCV_LLONG_FTYPE_LLONG_V2HI_V2HI, V_SMSLXDA)
+		      RISCV_LLONG_FTYPE_LLONG_V2HI_V2HI, V_SMSLXDA),
+  /* DSP Extension: augmented baseline.  */
+  DIRECT_DSP_BUILTIN (uclip32, uclip32, uclip32,
+		      RISCV_ULONG_FTYPE_LONG_ULONG, UCLIP32),
+  DIRECT_DSP_BUILTIN (sclip32, sclip32, sclip32,
+		      RISCV_LONG_FTYPE_LONG_ULONG, SCLIP32),
+  DIRECT_DSP_BUILTIN (kabs, kabs, kabs,
+		      RISCV_LONG_FTYPE_LONG, KABS)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the

@@ -84,6 +84,7 @@
   UNSPEC_CLIP_OV
   UNSPEC_CLIPS_OV
   UNSPEC_BITREV
+  UNSPEC_KABS
 ])
 
 (define_c_enum "unspecv" [

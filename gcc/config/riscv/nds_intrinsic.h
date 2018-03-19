@@ -978,6 +978,13 @@ enum riscv_order
 #define __nds__v_smslxda(r, a, b) \
   (__builtin_riscv_v_smslxda ((r), (a), (b)))
 
+#define __nds__uclip32(a, imm) \
+  (__builtin_riscv_uclip32 ((a), (imm)))
+#define __nds__sclip32(a, imm) \
+  (__builtin_riscv_sclip32 ((a), (imm)))
+#define __nds__kabs(a) \
+  (__builtin_riscv_kabs ((a)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 
