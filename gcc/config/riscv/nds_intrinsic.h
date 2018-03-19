@@ -949,6 +949,35 @@ enum riscv_order
 #define __nds__ukmsr64(r, a, b) \
   (__builtin_riscv_ukmsr64 ((r), (a), (b)))
 
+#define __nds__smalda(r, a, b) \
+  (__builtin_riscv_smalda ((r), (a), (b)))
+#define __nds__v_smalda(r, a, b) \
+  (__builtin_riscv_v_smalda ((r), (a), (b)))
+#define __nds__smalxda(r, a, b) \
+  (__builtin_riscv_smalxda ((r), (a), (b)))
+#define __nds__v_smalxda(r, a, b) \
+  (__builtin_riscv_v_smalxda ((r), (a), (b)))
+#define __nds__smalds(r, a, b) \
+  (__builtin_riscv_smalds ((r), (a), (b)))
+#define __nds__v_smalds(r, a, b) \
+  (__builtin_riscv_v_smalds ((r), (a), (b)))
+#define __nds__smaldrs(r, a, b) \
+  (__builtin_riscv_smaldrs ((r), (a), (b)))
+#define __nds__v_smaldrs(r, a, b) \
+  (__builtin_riscv_v_smaldrs ((r), (a), (b)))
+#define __nds__smalxds(r, a, b) \
+  (__builtin_riscv_smalxds ((r), (a), (b)))
+#define __nds__v_smalxds(r, a, b) \
+  (__builtin_riscv_v_smalxds ((r), (a), (b)))
+#define __nds__smslda(r, a, b) \
+  (__builtin_riscv_smslda ((r), (a), (b)))
+#define __nds__v_smslda(r, a, b) \
+  (__builtin_riscv_v_smslda ((r), (a), (b)))
+#define __nds__smslxda(r, a, b) \
+  (__builtin_riscv_smslxda ((r), (a), (b)))
+#define __nds__v_smslxda(r, a, b) \
+  (__builtin_riscv_v_smslxda ((r), (a), (b)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 
