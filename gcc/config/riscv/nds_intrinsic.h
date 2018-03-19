@@ -1028,6 +1028,39 @@ enum riscv_order
 #define __nds__min(a, b) \
   (__builtin_riscv_min ((a), (b)))
 
+#define __nds__sra8(a, b) \
+  (__builtin_riscv_sra8 ((a), (b)))
+#define __nds__v_sra8(a, b) \
+  (__builtin_riscv_v_sra8 ((a), (b)))
+#define __nds__sra8_u(a, b) \
+  (__builtin_riscv_sra8_u ((a), (b)))
+#define __nds__v_sra8_u(a, b) \
+  (__builtin_riscv_v_sra8_u ((a), (b)))
+#define __nds__srl8(a, b) \
+  (__builtin_riscv_srl8 ((a), (b)))
+#define __nds__v_srl8(a, b) \
+  (__builtin_riscv_v_srl8 ((a), (b)))
+#define __nds__srl8_u(a, b) \
+  (__builtin_riscv_srl8_u ((a), (b)))
+#define __nds__v_srl8_u(a, b) \
+  (__builtin_riscv_v_srl8_u ((a), (b)))
+#define __nds__sll8(a, b) \
+  (__builtin_riscv_sll8 ((a), (b)))
+#define __nds__v_sll8(a, b) \
+  (__builtin_riscv_v_sll8 ((a), (b)))
+#define __nds__ksll8(a, b) \
+  (__builtin_riscv_ksll8 ((a), (b)))
+#define __nds__v_ksll8(a, b) \
+  (__builtin_riscv_v_ksll8 ((a), (b)))
+#define __nds__kslra8(a, b) \
+  (__builtin_riscv_kslra8 ((a), (b)))
+#define __nds__v_kslra8(a, b) \
+  (__builtin_riscv_v_kslra8 ((a), (b)))
+#define __nds__kslra8_u(a, b) \
+  (__builtin_riscv_kslra8_u ((a), (b)))
+#define __nds__v_kslra8_u(a, b) \
+  (__builtin_riscv_v_kslra8_u ((a), (b)))
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 

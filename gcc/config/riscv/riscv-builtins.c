@@ -400,7 +400,23 @@ enum riscv_builtins
   RISCV_BUILTIN_V_KHMTT,
   RISCV_BUILTIN_AVE,
   RISCV_BUILTIN_MAX,
-  RISCV_BUILTIN_MIN
+  RISCV_BUILTIN_MIN,
+  RISCV_BUILTIN_SRA8,
+  RISCV_BUILTIN_V_SRA8,
+  RISCV_BUILTIN_SRA8_U,
+  RISCV_BUILTIN_V_SRA8_U,
+  RISCV_BUILTIN_SRL8,
+  RISCV_BUILTIN_V_SRL8,
+  RISCV_BUILTIN_SRL8_U,
+  RISCV_BUILTIN_V_SRL8_U,
+  RISCV_BUILTIN_SLL8,
+  RISCV_BUILTIN_V_SLL8,
+  RISCV_BUILTIN_KSLL8,
+  RISCV_BUILTIN_V_KSLL8,
+  RISCV_BUILTIN_KSLRA8,
+  RISCV_BUILTIN_V_KSLRA8,
+  RISCV_BUILTIN_KSLRA8_U,
+  RISCV_BUILTIN_V_KSLRA8_U
 };
 
 /* This structure describes a single built-in function.  */
@@ -1236,7 +1252,40 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (sminsi3, sminsi3, min,
 		      RISCV_LONG_FTYPE_LONG_LONG, MIN),
   DIRECT_DSP_BUILTIN (unspec_ave, unspec_ave, ave,
-		      RISCV_LONG_FTYPE_LONG_LONG, AVE)
+		      RISCV_LONG_FTYPE_LONG_LONG, AVE),
+  /* DSP Extension: 8bit Shift.  */
+  DIRECT_DSP_BUILTIN (ashrv4qi3, ashrv4qi3, sra8,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, SRA8),
+  DIRECT_DSP_BUILTIN (ashrv4qi3, ashrv4qi3, v_sra8,
+		      RISCV_V4QI_FTYPE_V4QI_ULONG, V_SRA8),
+  DIRECT_DSP_BUILTIN (sra8_round, sra8_round, sra8_u,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, SRA8_U),
+  DIRECT_DSP_BUILTIN (sra8_round, sra8_round, v_sra8_u,
+		      RISCV_V4QI_FTYPE_V4QI_ULONG, V_SRA8_U),
+  DIRECT_DSP_BUILTIN (lshrv4qi3, lshrv4qi3, srl8,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, SRL8),
+  DIRECT_DSP_BUILTIN (lshrv4qi3, lshrv4qi3, v_srl8,
+		      RISCV_UV4QI_FTYPE_UV4QI_ULONG, V_SRL8),
+  DIRECT_DSP_BUILTIN (srl8_round, srl8_round, srl8_u,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, SRL8_U),
+  DIRECT_DSP_BUILTIN (srl8_round, srl8_round, v_srl8_u,
+		      RISCV_UV4QI_FTYPE_UV4QI_ULONG, V_SRL8_U),
+  DIRECT_DSP_BUILTIN (ashlv4qi3, ashlv4qi3, sll8,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, SLL8),
+  DIRECT_DSP_BUILTIN (ashlv4qi3, ashlv4qi3, v_sll8,
+		      RISCV_UV4QI_FTYPE_UV4QI_ULONG, V_SLL8),
+  DIRECT_DSP_BUILTIN (kslli8, kslli8, ksll8,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, KSLL8),
+  DIRECT_DSP_BUILTIN (kslli8, kslli8, v_ksll8,
+		      RISCV_V4QI_FTYPE_V4QI_ULONG, V_KSLL8),
+  DIRECT_DSP_BUILTIN (kslra8, kslra8, kslra8,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, KSLRA8),
+  DIRECT_DSP_BUILTIN (kslra8, kslra8, v_kslra8,
+		      RISCV_V4QI_FTYPE_V4QI_ULONG, V_KSLRA8),
+  DIRECT_DSP_BUILTIN (kslra8_round, kslra8_round, kslra8_u,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, KSLRA8_U),
+  DIRECT_DSP_BUILTIN (kslra8_round, kslra8_round, v_kslra8_u,
+		      RISCV_V4QI_FTYPE_V4QI_ULONG, V_KSLRA8_U)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
