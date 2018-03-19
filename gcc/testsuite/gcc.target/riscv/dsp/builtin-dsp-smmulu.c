@@ -1,0 +1,27 @@
+/* This is a test program for smmul.u instruction.  */
+
+/* { dg-do run } */
+
+#include <nds_intrinsic.h>
+#include <stdlib.h>
+
+#ifdef __riscv_dsp
+static __attribute__ ((noinline))
+long smmul_u (long ra, long rb)
+{
+  return __nds__smmul_u (ra, rb);
+}
+
+int
+main ()
+{
+  long a = smmul_u (0x80000002, 0x80000001);
+
+  if (a != 0x3fffffff)
+    abort ();
+  else
+    exit (0);
+}
+#else
+int main(){return 0;}
+#endif
