@@ -416,7 +416,19 @@ enum riscv_builtins
   RISCV_BUILTIN_KSLRA8,
   RISCV_BUILTIN_V_KSLRA8,
   RISCV_BUILTIN_KSLRA8_U,
-  RISCV_BUILTIN_V_KSLRA8_U
+  RISCV_BUILTIN_V_KSLRA8_U,
+  RISCV_BUILTIN_CLO,
+  RISCV_BUILTIN_CLZ,
+  RISCV_BUILTIN_PBSAD,
+  RISCV_BUILTIN_PBSADA,
+  RISCV_BUILTIN_SWAP16,
+  RISCV_BUILTIN_V_SWAP16,
+  RISCV_BUILTIN_SWAP8,
+  RISCV_BUILTIN_V_SWAP8,
+  RISCV_BUILTIN_SCLIP8,
+  RISCV_BUILTIN_V_SCLIP8,
+  RISCV_BUILTIN_UCLIP8,
+  RISCV_BUILTIN_V_UCLIP8
 };
 
 /* This structure describes a single built-in function.  */
@@ -1285,7 +1297,31 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (kslra8_round, kslra8_round, kslra8_u,
 		      RISCV_ULONG_FTYPE_ULONG_ULONG, KSLRA8_U),
   DIRECT_DSP_BUILTIN (kslra8_round, kslra8_round, v_kslra8_u,
-		      RISCV_V4QI_FTYPE_V4QI_ULONG, V_KSLRA8_U)
+		      RISCV_V4QI_FTYPE_V4QI_ULONG, V_KSLRA8_U),
+  DIRECT_DSP_BUILTIN (clo, clo, clo,
+		      RISCV_ULONG_FTYPE_ULONG, CLO),
+  DIRECT_DSP_BUILTIN (clzsi2, clzsi2, clz,
+		      RISCV_ULONG_FTYPE_ULONG, CLZ),
+  DIRECT_DSP_BUILTIN (pbsad, pbsad, pbsad,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, PBSAD),
+  DIRECT_DSP_BUILTIN (pbsada, pbsada, pbsada,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG_ULONG, PBSADA),
+  DIRECT_DSP_BUILTIN (unspec_bswap16, unspec_bswap16, swap16,
+		      RISCV_ULONG_FTYPE_ULONG, SWAP16),
+  DIRECT_DSP_BUILTIN (unspec_bswap16, unspec_bswap16, v_swap16,
+		      RISCV_V2HI_FTYPE_V2HI, V_SWAP16),
+  DIRECT_DSP_BUILTIN (unspec_bswap8, unspec_bswap8, swap8,
+		      RISCV_ULONG_FTYPE_ULONG, SWAP8),
+  DIRECT_DSP_BUILTIN (unspec_bswap8, unspec_bswap8, v_swap8,
+		      RISCV_V4QI_FTYPE_V4QI, V_SWAP8),
+  DIRECT_DSP_BUILTIN (sclip8, sclip8, sclip8,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, SCLIP8),
+  DIRECT_DSP_BUILTIN (sclip8, sclip8, v_sclip8,
+		      RISCV_V4QI_FTYPE_V4QI_ULONG, V_SCLIP8),
+  DIRECT_DSP_BUILTIN (uclip8, uclip8, uclip8,
+		      RISCV_ULONG_FTYPE_ULONG_ULONG, UCLIP8),
+  DIRECT_DSP_BUILTIN (uclip8, uclip8, v_uclip8,
+		      RISCV_V4QI_FTYPE_V4QI_ULONG, V_UCLIP8)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the

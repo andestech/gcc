@@ -1061,6 +1061,32 @@ enum riscv_order
 #define __nds__v_kslra8_u(a, b) \
   (__builtin_riscv_v_kslra8_u ((a), (b)))
 
+#define __nds__clz(a) \
+  (__builtin_riscv_clz ((a)))
+#define __nds__clo(a) \
+  (__builtin_riscv_clo ((a)))
+#define __nds__pbsad(a, b) \
+  (__builtin_riscv_pbsad ((a), (b)))
+#define __nds__pbsada(acc, a, b) \
+  (__builtin_riscv_pbsada ((acc), (a), (b)))
+#define __nds__swap8(a) \
+  (__builtin_riscv_swap8 ((a)))
+#define __nds__v_swap8(a) \
+  (__builtin_riscv_v_swap8 ((a)))
+#define __nds__swap16(a) \
+  (__builtin_riscv_swap16 ((a)))
+#define __nds__v_swap16(a) \
+  (__builtin_riscv_v_swap16 ((a)))
+#define __nds__sclip8(a, b) \
+  (__builtin_riscv_sclip8 ((a), (b)))
+#define __nds__v_sclip8(a, b) \
+  (__builtin_riscv_v_sclip8 ((a), (b)))
+#define __nds__uclip8(a, b) \
+  (__builtin_riscv_uclip8 ((a), (b)))
+#define __nds__v_uclip8(a, b) \
+  (__builtin_riscv_v_uclip8 ((a), (b)))
+
+
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
 
