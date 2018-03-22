@@ -957,6 +957,19 @@ enum riscv_order
 #define __nds32__ukmsr64(r, a, b) \
   (__builtin_riscv_ukmsr64 ((r), (a), (b)))
 
+#define __nds32__smalbb(r, a, b) \
+  (__builtin_riscv_smalbb ((r), (a), (b)))
+#define __nds32__v_smalbb(r, a, b) \
+  (__builtin_riscv_v_smalbb ((r), (a), (b)))
+#define __nds32__smalbt(r, a, b) \
+  (__builtin_riscv_smalbt ((r), (a), (b)))
+#define __nds32__v_smalbt(r, a, b) \
+  (__builtin_riscv_v_smalbt ((r), (a), (b)))
+#define __nds32__smaltt(r, a, b) \
+  (__builtin_riscv_smaltt ((r), (a), (b)))
+#define __nds32__v_smaltt(r, a, b) \
+  (__builtin_riscv_v_smaltt ((r), (a), (b)))
+
 #define __nds32__smalda(r, a, b) \
   (__builtin_riscv_smalda ((r), (a), (b)))
 #define __nds32__v_smalda(r, a, b) \
