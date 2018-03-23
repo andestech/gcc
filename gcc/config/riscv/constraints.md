@@ -110,6 +110,11 @@
   (and (match_code "const_int")
        (match_test "ival < (1 << 5) && ival >= 0")))
 
+(define_constraint "u08"
+  "Unsigned immediate 8-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 8) && ival >= 0")))
+
 (define_constraint "v00"
   "Constant value 1"
   (and (match_code "const_int")

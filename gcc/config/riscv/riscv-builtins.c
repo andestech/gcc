@@ -432,7 +432,10 @@ enum riscv_builtins
   RISCV_BUILTIN_SCLIP8,
   RISCV_BUILTIN_V_SCLIP8,
   RISCV_BUILTIN_UCLIP8,
-  RISCV_BUILTIN_V_UCLIP8
+  RISCV_BUILTIN_V_UCLIP8,
+  RISCV_BUILTIN_FFB,
+  RISCV_BUILTIN_FFMISM,
+  RISCV_BUILTIN_FLMISM
 };
 
 /* This structure describes a single built-in function.  */
@@ -1333,7 +1336,14 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (uclip8, uclip8, uclip8,
 		      RISCV_ULONG_FTYPE_ULONG_ULONG, UCLIP8),
   DIRECT_DSP_BUILTIN (uclip8, uclip8, v_uclip8,
-		      RISCV_V4QI_FTYPE_V4QI_ULONG, V_UCLIP8)
+		      RISCV_V4QI_FTYPE_V4QI_ULONG, V_UCLIP8),
+  /* String */
+  DIRECT_DSP_BUILTIN (ffb, ffb, ffb,
+		      RISCV_LONG_FTYPE_ULONG_ULONG, FFB),
+  DIRECT_DSP_BUILTIN (ffmism, ffmism, ffmism,
+		      RISCV_LONG_FTYPE_ULONG_ULONG, FFMISM),
+  DIRECT_DSP_BUILTIN (flmism, flmism, flmism,
+		      RISCV_LONG_FTYPE_ULONG_ULONG, FLMISM)
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the

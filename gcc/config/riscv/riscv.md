@@ -99,6 +99,9 @@
   UNSPEC_PBSAD
   UNSPEC_PBSADA
   UNSPEC_BSWAP
+  UNSPEC_FFB
+  UNSPEC_FFMISM
+  UNSPEC_FLMISM
 ])
 
 (define_c_enum "unspecv" [

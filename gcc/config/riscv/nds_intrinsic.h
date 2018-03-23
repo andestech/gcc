@@ -1107,6 +1107,13 @@ enum riscv_order
 #define __nds32__v_uclip8(a, b) \
   (__builtin_riscv_v_uclip8 ((a), (b)))
 
+#define __nds32__ffb(a, b) \
+  (__builtin_riscv_ffb ((a), (b)))
+#define __nds32__ffmism(a, b) \
+  (__builtin_riscv_ffmism ((a), (b)))
+#define __nds32__flmism(a, b) \
+  (__builtin_riscv_flmism ((a), (b)))
+
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
