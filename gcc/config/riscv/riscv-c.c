@@ -116,6 +116,10 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
       /* Also define __nds_ex9 for backward compatibility.  */
       builtin_define ("__nds_ex9");
     }
+
+  if (TARGET_FP16)
+    builtin_define ("__nds_fp16");
+
   if (TARGET_BFO)
     builtin_define ("__nds_bfo");
   if (TARGET_LEA)

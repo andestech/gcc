@@ -117,6 +117,66 @@
   return false;
 })
 
+(define_predicate "movehf_operand"
+  (match_operand 0 "general_operand")
+{
+  enum riscv_symbol_type symbol_type;
+
+  /* The thinking here is as follows:
+
+     (1) The move expanders should split complex load sequences into
+	 individual instructions.  Those individual instructions can
+	 then be optimized by all rtl passes.
+
+     (2) The target of pre-reload load sequences should not be used
+	 to store temporary results.  If the target register is only
+	 assigned one value, reload can rematerialize that value
+	 on demand, rather than spill it to the stack.
+
+     (3) If we allowed pre-reload passes like combine and cse to recreate
+	 complex load sequences, we would want to be able to split the
+	 sequences before reload as well, so that the pre-reload scheduler
+	 can see the individual instructions.  This falls foul of (2);
+	 the splitter would be forced to reuse the target register for
+	 intermediate results.
+
+     (4) We want to define complex load splitters for combine.  These
+	 splitters can request a temporary scratch register, which avoids
+	 the problem in (2).  They allow things like:
+
+	      (set (reg T1) (high SYM))
+	      (set (reg T2) (low (reg T1) SYM))
+	      (set (reg X) (plus (reg T2) (const_int OFFSET)))
+
+	 to be combined into:
+
+	      (set (reg T3) (high SYM+OFFSET))
+	      (set (reg X) (lo_sum (reg T3) SYM+OFFSET))
+
+	 if T2 is only used this once.  */
+  switch (GET_CODE (op))
+    {
+    case CONST_INT:
+    case CONST_DOUBLE:
+      return false;
+
+    case CONST:
+    case SYMBOL_REF:
+    case LABEL_REF:
+      return riscv_symbolic_constant_p (op, &symbol_type)
+	      && !riscv_split_symbol_type (symbol_type);
+
+    case HIGH:
+      op = XEXP (op, 0);
+      return riscv_symbolic_constant_p (op, &symbol_type)
+	      && riscv_split_symbol_type (symbol_type)
+	      && symbol_type != SYMBOL_PCREL;
+
+    default:
+      return true;
+    }
+})
+
 (define_predicate "move_operand"
   (match_operand 0 "general_operand")
 {

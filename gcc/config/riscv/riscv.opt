@@ -286,3 +286,7 @@ Restrict register pair must start with even register number.
 mfma
 Target Report Var(TARGET_FMA) Init(1)
 Generating fma instructions.
+
+mfp16
+Target Report Mask(FP16)
+Supporting __fp16 instructions.

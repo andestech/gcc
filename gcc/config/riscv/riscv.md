@@ -194,7 +194,7 @@
   (const_string "unknown"))
 
 ;; Main data type used by the insn
-(define_attr "mode" "unknown,none,QI,HI,SI,DI,TI,SF,DF,TF,V2HI,V4QI, V2SI"
+(define_attr "mode" "unknown,none,QI,HI,SI,DI,TI,HF,SF,DF,TF,V2HI,V4QI, V2SI"
   (const_string "unknown"))
 
 ;; True if the main data type is twice the size of a word.
@@ -1145,6 +1145,31 @@
   [(set_attr "type" "fcvt")
    (set_attr "mode" "SF")])
 
+(define_insn "truncsfhf2"
+  [(set (match_operand:HF     0 "nonimmediate_operand" "=m")
+	(float_truncate:HF
+	    (match_operand:SF 1     "register_operand" " f")))]
+  "TARGET_HARD_FLOAT && TARGET_FP16"
+  "fshw\t%1,%0"
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "HF")])
+
+(define_expand "truncdfhf2"
+  [(set (match_operand:HF     0 "nonimmediate_operand" "=m")
+	(float_truncate:HF
+	    (match_operand:DF 1     "register_operand" " f")))]
+  "TARGET_DOUBLE_FLOAT && TARGET_FP16"
+{
+   /* We don't have df to hf, so we trunct df to sf and then sf to hf.  */
+   rtx tmp = gen_reg_rtx (SFmode);
+   emit_insn (gen_truncdfsf2 (tmp, operands[1]));
+   emit_insn (gen_truncsfhf2 (operands[0], tmp));
+   DONE;
+}
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "HF")])
+
+
 ;;
 ;;  ....................
 ;;
@@ -1268,6 +1293,31 @@
   "fcvt.d.s\t%0,%1"
   [(set_attr "type" "fcvt")
    (set_attr "mode" "DF")])
+
+(define_insn "extendhfsf2"
+  [(set (match_operand:SF     0 "register_operand" "=f")
+	(float_extend:SF
+	    (match_operand:HF 1 "general_operand"  " m")))]
+  "TARGET_HARD_FLOAT && TARGET_FP16"
+  "flhw\t%0,%1"
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "SF")])
+
+(define_expand "extendhfdf2"
+  [(set (match_operand:DF     0 "register_operand" "=f")
+	(float_extend:DF
+	    (match_operand:HF 1 "general_operand"  " f")))]
+  "TARGET_DOUBLE_FLOAT && TARGET_FP16"
+{
+   /* We don't have hf to df, so we extend that to sf and then extend to df.  */
+   rtx tmp = gen_reg_rtx (SFmode);
+   emit_insn (gen_extendhfsf2 (tmp, operands[1]));
+   emit_insn (gen_extendsfdf2 (operands[0], tmp));
+   DONE;
+}
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "DF")])
+
 
 ;;
 ;;  ....................
@@ -1543,6 +1593,28 @@
   { return riscv_output_move (operands[0], operands[1]); }
   [(set_attr "move_type" "move,const,load,store,mtc,mfc")
    (set_attr "mode" "QI")])
+
+;; 16-bit Integer moves
+
+(define_expand "movhf"
+  [(set (match_operand:HF 0 "")
+	(match_operand:HF 1 ""))]
+  "TARGET_HARD_FLOAT && TARGET_FP16"
+{
+  if (riscv_legitimize_move (HFmode, operands[0], operands[1]))
+    DONE;
+})
+
+(define_insn "*movhf_hardfloat"
+  [(set (match_operand:HF 0 "nonimmediate_operand" "=f,r,f,r,r,m")
+	(match_operand:HF 1 "movehf_operand"       " f,f,r,r,m,r"))]
+  "TARGET_HARD_FLOAT
+   && TARGET_FP16
+   && (register_operand (operands[0], HFmode)
+       || register_operand (operands[1], HFmode))"
+  { return riscv_output_move (operands[0], operands[1]); }
+  [(set_attr "move_type" "move")
+   (set_attr "mode" "HF")])
 
 ;; 32-bit floating point moves
 

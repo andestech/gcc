@@ -1820,7 +1820,9 @@ riscv_legitimize_const_move (machine_mode mode, rtx dest, rtx src)
 bool
 riscv_legitimize_move (machine_mode mode, rtx dest, rtx src)
 {
-  if (!register_operand (dest, mode) && !reg_or_0_operand (src, mode))
+  if (!register_operand (dest, mode)
+      && ((!reg_or_0_operand (src, mode) && mode != HFmode)
+	  || (!register_operand (src, mode) && mode == HFmode)))
     {
       rtx reg;
 
@@ -1852,7 +1854,9 @@ riscv_legitimize_move (machine_mode mode, rtx dest, rtx src)
 
   /* We need to deal with constants that would be legitimate
      immediate_operands but aren't legitimate move_operands.  */
-  if (CONSTANT_P (src) && !move_operand (src, mode))
+  if (CONSTANT_P (src)
+      && ((!move_operand (src, mode) && mode != HFmode)
+	  || (!movehf_operand (src, mode) && mode == HFmode)))
     {
       riscv_legitimize_const_move (mode, dest, src);
       set_unique_reg_note (get_last_insn (), REG_EQUAL, copy_rtx (src));
@@ -3287,6 +3291,9 @@ riscv_pass_by_reference (cumulative_args_t cum_v, const function_arg_info &arg)
   struct riscv_arg_info info;
   CUMULATIVE_ARGS *cum = get_cumulative_args (cum_v);
 
+  if (TARGET_FP16 && arg.mode == HFmode)
+    return true;
+
   /* ??? std_gimplify_va_arg_expr passes NULL for cum.  Fortunately, we
      never pass variadic arguments in floating-point registers, so we can
      avoid the call to riscv_get_arg_info in this case.  */
@@ -3450,6 +3457,49 @@ riscv_va_start (tree valist, rtx nextarg)
 {
   nextarg = plus_constant (Pmode, nextarg, -cfun->machine->varargs_size);
   std_expand_builtin_va_start (valist, nextarg);
+}
+
+/* Implement TARGET_MANGLE_TYPE.  */
+static tree
+riscv_promoted_type (const_tree t)
+{
+  /* Promote __fp16 to float if fp16 extension is avariable. */
+  if (TARGET_FP16 && SCALAR_FLOAT_TYPE_P (t)
+      && (TYPE_MAIN_VARIANT (t) == riscv_fp16_type_node))
+    return float_type_node;
+
+  return NULL_TREE;
+}
+
+/* Implement TARGET_PROMOTED_TYPE.  */
+static const char *
+riscv_mangle_type (const_tree type)
+{
+  /* Half-precision float.  */
+  if (TREE_CODE (type) == REAL_TYPE && TYPE_PRECISION (type) == 16)
+    return "Dh";
+
+  /* Use the default mangling.  */
+  return NULL;
+}
+
+/* Implement TARGET_LIBGCC_FLOATING_MODE_SUPPORTED_P.  */
+static bool
+riscv_libgcc_floating_mode_supported_p (scalar_float_mode mode)
+{
+  return ((TARGET_FP16 && (mode == HFmode))
+	  ? true
+	  : default_libgcc_floating_mode_supported_p (mode));
+}
+
+/* Implement TARGET_SCALAR_MODE_SUPPORTED_P.  */
+static bool
+riscv_scalar_mode_supported_p (scalar_mode mode)
+{
+  if (TARGET_FP16 && (mode == HFmode))
+    return true;
+
+  return default_scalar_mode_supported_p (mode);
 }
 
 /* Make ADDR suitable for use as a call or sibcall target.  */
@@ -5963,6 +6013,12 @@ riscv_split_sms (rtx out, rtx in0, rtx in1,
 #undef TARGET_EXPAND_BUILTIN_VA_START
 #define TARGET_EXPAND_BUILTIN_VA_START riscv_va_start
 
+#undef TARGET_PROMOTED_TYPE
+#define TARGET_PROMOTED_TYPE riscv_promoted_type
+
+#undef TARGET_MANGLE_TYPE
+#define TARGET_MANGLE_TYPE riscv_mangle_type
+
 #undef  TARGET_PROMOTE_FUNCTION_MODE
 #define TARGET_PROMOTE_FUNCTION_MODE riscv_promote_function_mode
 
@@ -6098,6 +6154,13 @@ riscv_split_sms (rtx out, rtx in0, rtx in1,
 
 #undef TARGET_WARN_FUNC_RETURN
 #define TARGET_WARN_FUNC_RETURN riscv_warn_func_return
+
+#undef TARGET_LIBGCC_FLOATING_MODE_SUPPORTED_P
+#define TARGET_LIBGCC_FLOATING_MODE_SUPPORTED_P \
+riscv_libgcc_floating_mode_supported_p
+
+#undef TARGET_SCALAR_MODE_SUPPORTED_P
+#define TARGET_SCALAR_MODE_SUPPORTED_P riscv_scalar_mode_supported_p
 
 #undef TARGET_ASM_FUNCTION_PROLOGUE
 #define TARGET_ASM_FUNCTION_PROLOGUE riscv_asm_function_prologue

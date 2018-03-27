@@ -1436,9 +1436,24 @@ riscv_build_function_type (enum riscv_function_type type)
 
 /* Implement TARGET_INIT_BUILTINS.  */
 
+tree riscv_fp16_type_node = NULL_TREE;
+
+static void
+riscv_init_fp16_types (void)
+{
+  riscv_fp16_type_node = make_node (REAL_TYPE);
+  TYPE_PRECISION (riscv_fp16_type_node) = 16;
+  layout_type (riscv_fp16_type_node);
+
+  (*lang_hooks.types.register_builtin_type) (riscv_fp16_type_node, "__fp16");
+}
+
 void
 riscv_init_builtins (void)
 {
+  if (TARGET_FP16)
+    riscv_init_fp16_types ();
+
   for (size_t i = 0; i < ARRAY_SIZE (riscv_builtins); i++)
     {
       const struct riscv_builtin_description *d = &riscv_builtins[i];
