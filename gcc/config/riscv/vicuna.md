@@ -24,6 +24,7 @@
 (define_cpu_unit "vicuna_alu" "vicuna_pipe")
 (define_cpu_unit "vicuna_mdu" "vicuna_pipe")
 (define_cpu_unit "vicuna_ag" "vicuna_pipe")
+(define_cpu_unit "vicuna_fpu" "vicuna_pipe")
 
 (define_insn_reservation "vicuna_alu_insn" 1
   (and (eq_attr "tune" "vicuna")
@@ -74,3 +75,52 @@
        (eq_attr "type" "mfc,mtc"))
   "vicuna_alu")
 
+(define_insn_reservation "vicuna_fpu_alu" 5
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "fadd"))
+  "vicuna_fpu")
+
+(define_insn_reservation "vicuna_fpu_mul" 5
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "fmul"))
+  "vicuna_fpu")
+
+(define_insn_reservation "vicuna_fpu_mac" 5
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "fmadd"))
+  "vicuna_fpu")
+
+(define_insn_reservation "vicuna_fpu_div" 5
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "fdiv"))
+  "vicuna_fpu")
+
+(define_insn_reservation "vicuna_fpu_sqrt" 5
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "fsqrt"))
+  "vicuna_fpu")
+
+(define_insn_reservation "vicuna_fpu_move" 3
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "fmove,mtc,mfc"))
+  "vicuna_fpu")
+
+(define_insn_reservation "vicuna_fpu_cmp" 3
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "fcmp"))
+  "vicuna_fpu")
+
+(define_insn_reservation "vicuna_fpu_cvt" 3
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "fcvt"))
+  "vicuna_fpu")
+
+(define_insn_reservation "vicuna_fpu_load" 3
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "fpload"))
+  "vicuna_fpu")
+
+(define_insn_reservation "vicuna_fpu_store" 0
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "fpstore"))
+  "vicuna_fpu")
