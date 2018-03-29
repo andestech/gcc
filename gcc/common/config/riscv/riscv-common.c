@@ -625,6 +625,10 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
   if (subset_list->lookup ("c"))
     *flags |= MASK_RVC;
 
+  *flags &= ~MASK_DSP;
+  if (subset_list->lookup ("p"))
+    *flags |= MASK_DSP;
+
   if (subset_list->lookup ("x"))
     {
       if (strcmp (isa, "v5m") == 0)
