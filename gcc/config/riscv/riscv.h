@@ -69,6 +69,7 @@ along with GCC; see the file COPYING3.  If not see
 %{matomic} \
 %{mabi=*} \
 %{mno-16-bit} \
+%{mext-dsp} \
 %(subtarget_asm_spec)" \
 " %{O|O1|O2|O3|Ofast:-O1;:-Os}"
 
