@@ -583,7 +583,23 @@ static const char * const riscv_csr_register_names[] =
   "dscratch1",
   "dcause",
   "mcache_ctl",
-  "mdcause"
+  "mdcause",
+  "mcounterwen",
+  "mcounterinten",
+  "mcountermask_m",
+  "mcountermask_s",
+  "mcountermask_u",
+  "mcounterovf",
+  "sedeleg",
+  "sideleg",
+  "scounteren",
+  "stval",
+  "satp",
+  "sdcause",
+  "scounterinten",
+  "scountermask_s",
+  "scountermask_u",
+  "scounterovf"
 };
 
 static const char * const riscv_fence_operations [] =
