@@ -1,3 +1,6 @@
+ABI_SOFT:=$(findstring __riscv_float_abi_soft,$(shell $(gcc_compile_bare) -dM -E - </dev/null))
+
+ifdef ABI_SOFT
 LIB1ASMSRC   = riscv/lib1asmsrc-mculib.S
 
 LIB1ASMFUNCS =   \
@@ -43,4 +46,4 @@ LIB1ASMFUNCS =   \
 	_compare_df  \
 	_unord_sf    \
 	_unord_df
-
+endif
