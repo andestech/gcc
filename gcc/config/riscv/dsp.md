@@ -838,6 +838,24 @@
   "khmx16\t%0, %1, %2"
   [(set_attr "type"   "imul")])
 
+(define_insn "khm8"
+  [(set (match_operand:V4QI 0 "register_operand"                "=r")
+	(unspec:V4QI [(match_operand:V4QI 1 "register_operand"  " r")
+		      (match_operand:V4QI 2 "register_operand" "  r")]
+		     UNSPEC_KHM))]
+  "TARGET_DSP"
+  "khm8\t%0, %1, %2"
+  [(set_attr "type"   "imul")])
+
+(define_insn "khmx8"
+  [(set (match_operand:V4QI 0 "register_operand"                "=r")
+	(unspec:V4QI [(match_operand:V4QI 1 "register_operand"  " r")
+		      (match_operand:V4QI 2 "register_operand" "  r")]
+		     UNSPEC_KHMX))]
+  "TARGET_DSP"
+  "khmx8\t%0, %1, %2"
+  [(set_attr "type"   "imul")])
+
 (define_expand "vec_setv4qi"
   [(match_operand:V4QI 0 "register_operand" "")
    (match_operand:QI 1 "register_operand" "")
@@ -1351,6 +1369,24 @@
   [(set_attr "type"   "imul")
    (set_attr "mode"   "V2SI")])
 
+(define_insn "smul8"
+  [(set (match_operand:V4HI 0 "register_operand"                "=r")
+	(unspec:V4HI [(match_operand:V4QI 1 "register_operand"  " r")
+		      (match_operand:V4QI 2 "register_operand" "  r")]
+		     UNSPEC_SMUL8))]
+  "TARGET_DSP"
+  "smul8\t%0, %1, %2"
+  [(set_attr "type"   "imul")])
+
+(define_insn "umul8"
+  [(set (match_operand:V4HI 0 "register_operand"                "=r")
+	(unspec:V4HI [(match_operand:V4QI 1 "register_operand"  " r")
+		      (match_operand:V4QI 2 "register_operand" "  r")]
+		     UNSPEC_UMUL8))]
+  "TARGET_DSP"
+  "umul8\t%0, %1, %2"
+  [(set_attr "type"   "imul")])
+
 (define_insn "<su>mulx16"
   [(set (match_operand:V2SI 0 "register_operand"         "=r")
 	(vec_merge:V2SI
@@ -1379,6 +1415,24 @@
   "<su>mulx16\t%0, %1, %2"
   [(set_attr "type" "imul")
    (set_attr "mode" "V2SI")])
+
+(define_insn "smulx8"
+  [(set (match_operand:V4QI 0 "register_operand"                "=r")
+	(unspec:V4QI [(match_operand:V4QI 1 "register_operand"  " r")
+		      (match_operand:V4QI 2 "register_operand" "  r")]
+		     UNSPEC_SMULX8))]
+  "TARGET_DSP"
+  "smulx8\t%0, %1, %2"
+  [(set_attr "type"   "imul")])
+
+(define_insn "umulx8"
+  [(set (match_operand:V4HI 0 "register_operand"                "=r")
+	(unspec:V4HI [(match_operand:V4QI 1 "register_operand"  " r")
+		      (match_operand:V4QI 2 "register_operand" "  r")]
+		     UNSPEC_UMULX8))]
+  "TARGET_DSP"
+  "umulx8\t%0, %1, %2"
+  [(set_attr "type"   "imul")])
 
 (define_insn "v4qi_dup_10"
   [(set (match_operand:V4QI 0 "register_operand"    "=r")
@@ -3417,6 +3471,42 @@
 		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSUBH))]
   "TARGET_DSP"
   "ksubh\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "ukaddw"
+  [(set (match_operand:SI 0 "register_operand"             "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKADDW))]
+  "TARGET_DSP"
+  "ukaddw\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "uksubw"
+  [(set (match_operand:SI 0 "register_operand"             "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKSUBW))]
+  "TARGET_DSP"
+  "uksubw\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "ukaddh"
+  [(set (match_operand:SI 0 "register_operand"             "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKADDH))]
+  "TARGET_DSP"
+  "ukaddh\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "uksubh"
+  [(set (match_operand:SI 0 "register_operand"             "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKSUBH))]
+  "TARGET_DSP"
+  "uksubh\t%0, %1, %2"
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
