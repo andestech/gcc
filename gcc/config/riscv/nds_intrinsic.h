@@ -682,6 +682,14 @@ enum riscv_order
   (__builtin_riscv_khmx16 ((a), (b)))
 #define __nds32__v_khmx16(a, b) \
   (__builtin_riscv_v_khmx16 ((a), (b)))
+#define __nds32__khm8(a, b) \
+  (__builtin_riscv_khm8 ((a), (b)))
+#define __nds32__v_khm8(a, b) \
+  (__builtin_riscv_v_khm8 ((a), (b)))
+#define __nds32__khmx8(a, b) \
+  (__builtin_riscv_khmx8 ((a), (b)))
+#define __nds32__v_khmx8(a, b) \
+  (__builtin_riscv_v_khmx8 ((a), (b)))
 #define __nds32__kabs16(a) \
   (__builtin_riscv_kabs16 ((a)))
 #define __nds32__v_kabs16(a) \
@@ -702,6 +710,22 @@ enum riscv_order
   (__builtin_riscv_umulx16 ((a), (b)))
 #define __nds32__v_umulx16(a, b) \
   (__builtin_riscv_v_umulx16 ((a), (b)))
+#define __nds32__smul8(a, b) \
+  (__builtin_riscv_smul8 ((a), (b)))
+#define __nds32__v_smul8(a, b) \
+  (__builtin_riscv_v_smul8 ((a), (b)))
+#define __nds32__smulx8(a, b) \
+  (__builtin_riscv_smulx8 ((a), (b)))
+#define __nds32__v_smulx8(a, b) \
+  (__builtin_riscv_v_smulx8 ((a), (b)))
+#define __nds32__umul8(a, b) \
+  (__builtin_riscv_umul8 ((a), (b)))
+#define __nds32__v_umul8(a, b) \
+  (__builtin_riscv_v_umul8 ((a), (b)))
+#define __nds32__umulx8(a, b) \
+  (__builtin_riscv_umulx8 ((a), (b)))
+#define __nds32__v_umulx8(a, b) \
+  (__builtin_riscv_v_umulx8 ((a), (b)))
 #define __nds32__smin8(a, b) \
   (__builtin_riscv_smin8 ((a), (b)))
 #define __nds32__v_smin8(a, b) \
@@ -1030,6 +1054,14 @@ enum riscv_order
   (__builtin_riscv_ksubw ((a), (b)))
 #define __nds32__ksubh(a, b) \
   (__builtin_riscv_ksubh ((a), (b)))
+#define __nds32__ukaddw(a, b) \
+  (__builtin_riscv_ukaddw ((a), (b)))
+#define __nds32__ukaddh(a, b) \
+  (__builtin_riscv_ukaddh ((a), (b)))
+#define __nds32__uksubw(a, b) \
+  (__builtin_riscv_uksubw ((a), (b)))
+#define __nds32__uksubh(a, b) \
+  (__builtin_riscv_uksubh ((a), (b)))
 #define __nds32__kdmbb(a, b) \
   (__builtin_riscv_kdmbb ((a), (b)))
 #define __nds32__v_kdmbb(a, b) \
