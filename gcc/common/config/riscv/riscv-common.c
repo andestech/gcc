@@ -627,7 +627,8 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
 
   *flags &= ~MASK_DSP;
   if (subset_list->lookup ("p"))
-    *flags |= MASK_DSP;
+    if ((target_flags_explicit & MASK_DSP) == 0)
+      *flags |= MASK_DSP;
 
   if (subset_list->lookup ("x"))
     {
