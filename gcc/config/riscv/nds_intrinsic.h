@@ -437,731 +437,730 @@ enum riscv_order
   (__builtin_riscv_get_current_sp ())
 #define __nds__set_current_sp(a) \
   (__builtin_riscv_set_current_sp ((a)))
-#define __nds32__add16(a, b) \
+#define __nds__add16(a, b) \
   (__builtin_riscv_add16 ((a), (b)))
-#define __nds32__v_uadd16(a, b) \
+#define __nds__v_uadd16(a, b) \
   (__builtin_riscv_v_uadd16 ((a), (b)))
-#define __nds32__v_sadd16(a, b) \
+#define __nds__v_sadd16(a, b) \
   (__builtin_riscv_v_sadd16 ((a), (b)))
-#define __nds32__radd16(a, b) \
+#define __nds__radd16(a, b) \
   (__builtin_riscv_radd16 ((a), (b)))
-#define __nds32__v_radd16(a, b) \
+#define __nds__v_radd16(a, b) \
   (__builtin_riscv_v_radd16 ((a), (b)))
-#define __nds32__uradd16(a, b) \
+#define __nds__uradd16(a, b) \
   (__builtin_riscv_uradd16 ((a), (b)))
-#define __nds32__v_uradd16(a, b) \
+#define __nds__v_uradd16(a, b) \
   (__builtin_riscv_v_uradd16 ((a), (b)))
-#define __nds32__kadd16(a, b) \
+#define __nds__kadd16(a, b) \
   (__builtin_riscv_kadd16 ((a), (b)))
-#define __nds32__v_kadd16(a, b) \
+#define __nds__v_kadd16(a, b) \
   (__builtin_riscv_v_kadd16 ((a), (b)))
-#define __nds32__ukadd16(a, b) \
+#define __nds__ukadd16(a, b) \
   (__builtin_riscv_ukadd16 ((a), (b)))
-#define __nds32__v_ukadd16(a, b) \
+#define __nds__v_ukadd16(a, b) \
   (__builtin_riscv_v_ukadd16 ((a), (b)))
-#define __nds32__sub16(a, b) \
+#define __nds__sub16(a, b) \
   (__builtin_riscv_sub16 ((a), (b)))
-#define __nds32__v_usub16(a, b) \
+#define __nds__v_usub16(a, b) \
   (__builtin_riscv_v_usub16 ((a), (b)))
-#define __nds32__v_ssub16(a, b) \
+#define __nds__v_ssub16(a, b) \
   (__builtin_riscv_v_ssub16 ((a), (b)))
-#define __nds32__rsub16(a, b) \
+#define __nds__rsub16(a, b) \
   (__builtin_riscv_rsub16 ((a), (b)))
-#define __nds32__v_rsub16(a, b) \
+#define __nds__v_rsub16(a, b) \
   (__builtin_riscv_v_rsub16 ((a), (b)))
-#define __nds32__ursub16(a, b) \
+#define __nds__ursub16(a, b) \
   (__builtin_riscv_ursub16 ((a), (b)))
-#define __nds32__v_ursub16(a, b) \
+#define __nds__v_ursub16(a, b) \
   (__builtin_riscv_v_ursub16 ((a), (b)))
-#define __nds32__ksub16(a, b) \
+#define __nds__ksub16(a, b) \
   (__builtin_riscv_ksub16 ((a), (b)))
-#define __nds32__v_ksub16(a, b) \
+#define __nds__v_ksub16(a, b) \
   (__builtin_riscv_v_ksub16 ((a), (b)))
-#define __nds32__uksub16(a, b) \
+#define __nds__uksub16(a, b) \
   (__builtin_riscv_uksub16 ((a), (b)))
-#define __nds32__v_uksub16(a, b) \
+#define __nds__v_uksub16(a, b) \
   (__builtin_riscv_v_uksub16 ((a), (b)))
 
-#define __nds32__cras16(a, b) \
+#define __nds__cras16(a, b) \
   (__builtin_riscv_cras16 ((a), (b)))
-#define __nds32__v_ucras16(a, b) \
+#define __nds__v_ucras16(a, b) \
   (__builtin_riscv_v_ucras16 ((a), (b)))
-#define __nds32__v_scras16(a, b) \
+#define __nds__v_scras16(a, b) \
   (__builtin_riscv_v_scras16 ((a), (b)))
-#define __nds32__rcras16(a, b) \
+#define __nds__rcras16(a, b) \
   (__builtin_riscv_rcras16 ((a), (b)))
-#define __nds32__v_rcras16(a, b) \
+#define __nds__v_rcras16(a, b) \
   (__builtin_riscv_v_rcras16 ((a), (b)))
-#define __nds32__urcras16(a, b) \
+#define __nds__urcras16(a, b) \
   (__builtin_riscv_urcras16 ((a), (b)))
-#define __nds32__v_urcras16(a, b) \
+#define __nds__v_urcras16(a, b) \
   (__builtin_riscv_v_urcras16 ((a), (b)))
-#define __nds32__kcras16(a, b) \
+#define __nds__kcras16(a, b) \
   (__builtin_riscv_kcras16 ((a), (b)))
-#define __nds32__v_kcras16(a, b) \
+#define __nds__v_kcras16(a, b) \
   (__builtin_riscv_v_kcras16 ((a), (b)))
-#define __nds32__ukcras16(a, b) \
+#define __nds__ukcras16(a, b) \
   (__builtin_riscv_ukcras16 ((a), (b)))
-#define __nds32__v_ukcras16(a, b) \
+#define __nds__v_ukcras16(a, b) \
   (__builtin_riscv_v_ukcras16 ((a), (b)))
-#define __nds32__crsa16(a, b) \
+#define __nds__crsa16(a, b) \
   (__builtin_riscv_crsa16 ((a), (b)))
-#define __nds32__v_ucrsa16(a, b) \
+#define __nds__v_ucrsa16(a, b) \
   (__builtin_riscv_v_ucrsa16 ((a), (b)))
-#define __nds32__v_scrsa16(a, b) \
+#define __nds__v_scrsa16(a, b) \
   (__builtin_riscv_v_scrsa16 ((a), (b)))
-#define __nds32__rcrsa16(a, b) \
+#define __nds__rcrsa16(a, b) \
   (__builtin_riscv_rcrsa16 ((a), (b)))
-#define __nds32__v_rcrsa16(a, b) \
+#define __nds__v_rcrsa16(a, b) \
   (__builtin_riscv_v_rcrsa16 ((a), (b)))
-#define __nds32__urcrsa16(a, b) \
+#define __nds__urcrsa16(a, b) \
   (__builtin_riscv_urcrsa16 ((a), (b)))
-#define __nds32__v_urcrsa16(a, b) \
+#define __nds__v_urcrsa16(a, b) \
   (__builtin_riscv_v_urcrsa16 ((a), (b)))
-#define __nds32__kcrsa16(a, b) \
+#define __nds__kcrsa16(a, b) \
   (__builtin_riscv_kcrsa16 ((a), (b)))
-#define __nds32__v_kcrsa16(a, b) \
+#define __nds__v_kcrsa16(a, b) \
   (__builtin_riscv_v_kcrsa16 ((a), (b)))
-#define __nds32__ukcrsa16(a, b) \
+#define __nds__ukcrsa16(a, b) \
   (__builtin_riscv_ukcrsa16 ((a), (b)))
-#define __nds32__v_ukcrsa16(a, b) \
+#define __nds__v_ukcrsa16(a, b) \
   (__builtin_riscv_v_ukcrsa16 ((a), (b)))
-#define __nds32__add8(a, b) \
+#define __nds__add8(a, b) \
   (__builtin_riscv_add8 ((a), (b)))
-#define __nds32__v_uadd8(a, b) \
+#define __nds__v_uadd8(a, b) \
   (__builtin_riscv_v_uadd8 ((a), (b)))
-#define __nds32__v_sadd8(a, b) \
+#define __nds__v_sadd8(a, b) \
   (__builtin_riscv_v_sadd8 ((a), (b)))
-#define __nds32__radd8(a, b) \
+#define __nds__radd8(a, b) \
   (__builtin_riscv_radd8 ((a), (b)))
-#define __nds32__v_radd8(a, b) \
+#define __nds__v_radd8(a, b) \
   (__builtin_riscv_v_radd8 ((a), (b)))
-#define __nds32__uradd8(a, b) \
+#define __nds__uradd8(a, b) \
   (__builtin_riscv_uradd8 ((a), (b)))
-#define __nds32__v_uradd8(a, b) \
+#define __nds__v_uradd8(a, b) \
   (__builtin_riscv_v_uradd8 ((a), (b)))
-#define __nds32__kadd8(a, b) \
+#define __nds__kadd8(a, b) \
   (__builtin_riscv_kadd8 ((a), (b)))
-#define __nds32__v_kadd8(a, b) \
+#define __nds__v_kadd8(a, b) \
   (__builtin_riscv_v_kadd8 ((a), (b)))
-#define __nds32__ukadd8(a, b) \
+#define __nds__ukadd8(a, b) \
   (__builtin_riscv_ukadd8 ((a), (b)))
-#define __nds32__v_ukadd8(a, b) \
+#define __nds__v_ukadd8(a, b) \
   (__builtin_riscv_v_ukadd8 ((a), (b)))
-#define __nds32__sub8(a, b) \
+#define __nds__sub8(a, b) \
   (__builtin_riscv_sub8 ((a), (b)))
-#define __nds32__v_usub8(a, b) \
+#define __nds__v_usub8(a, b) \
   (__builtin_riscv_v_usub8 ((a), (b)))
-#define __nds32__v_ssub8(a, b) \
+#define __nds__v_ssub8(a, b) \
   (__builtin_riscv_v_ssub8 ((a), (b)))
-#define __nds32__rsub8(a, b) \
+#define __nds__rsub8(a, b) \
   (__builtin_riscv_rsub8 ((a), (b)))
-#define __nds32__v_rsub8(a, b) \
+#define __nds__v_rsub8(a, b) \
   (__builtin_riscv_v_rsub8 ((a), (b)))
-#define __nds32__ursub8(a, b) \
+#define __nds__ursub8(a, b) \
   (__builtin_riscv_ursub8 ((a), (b)))
-#define __nds32__v_ursub8(a, b) \
+#define __nds__v_ursub8(a, b) \
   (__builtin_riscv_v_ursub8 ((a), (b)))
-#define __nds32__ksub8(a, b) \
+#define __nds__ksub8(a, b) \
   (__builtin_riscv_ksub8 ((a), (b)))
-#define __nds32__v_ksub8(a, b) \
+#define __nds__v_ksub8(a, b) \
   (__builtin_riscv_v_ksub8 ((a), (b)))
-#define __nds32__uksub8(a, b) \
+#define __nds__uksub8(a, b) \
   (__builtin_riscv_uksub8 ((a), (b)))
-#define __nds32__v_uksub8(a, b) \
+#define __nds__v_uksub8(a, b) \
   (__builtin_riscv_v_uksub8 ((a), (b)))
 
-#define __nds32__sra16(a, b) \
+#define __nds__sra16(a, b) \
   (__builtin_riscv_sra16 ((a), (b)))
-#define __nds32__v_sra16(a, b) \
+#define __nds__v_sra16(a, b) \
   (__builtin_riscv_v_sra16 ((a), (b)))
-#define __nds32__sra16_u(a, b) \
+#define __nds__sra16_u(a, b) \
   (__builtin_riscv_sra16_u ((a), (b)))
-#define __nds32__v_sra16_u(a, b) \
+#define __nds__v_sra16_u(a, b) \
   (__builtin_riscv_v_sra16_u ((a), (b)))
-#define __nds32__srl16(a, b) \
+#define __nds__srl16(a, b) \
   (__builtin_riscv_srl16 ((a), (b)))
-#define __nds32__v_srl16(a, b) \
+#define __nds__v_srl16(a, b) \
   (__builtin_riscv_v_srl16 ((a), (b)))
-#define __nds32__srl16_u(a, b) \
+#define __nds__srl16_u(a, b) \
   (__builtin_riscv_srl16_u ((a), (b)))
-#define __nds32__v_srl16_u(a, b) \
+#define __nds__v_srl16_u(a, b) \
   (__builtin_riscv_v_srl16_u ((a), (b)))
-#define __nds32__sll16(a, b) \
+#define __nds__sll16(a, b) \
   (__builtin_riscv_sll16 ((a), (b)))
-#define __nds32__v_sll16(a, b) \
+#define __nds__v_sll16(a, b) \
   (__builtin_riscv_v_sll16 ((a), (b)))
-#define __nds32__ksll16(a, b) \
+#define __nds__ksll16(a, b) \
   (__builtin_riscv_ksll16 ((a), (b)))
-#define __nds32__v_ksll16(a, b) \
+#define __nds__v_ksll16(a, b) \
   (__builtin_riscv_v_ksll16 ((a), (b)))
-#define __nds32__kslra16(a, b) \
+#define __nds__kslra16(a, b) \
   (__builtin_riscv_kslra16 ((a), (b)))
-#define __nds32__v_kslra16(a, b) \
+#define __nds__v_kslra16(a, b) \
   (__builtin_riscv_v_kslra16 ((a), (b)))
-#define __nds32__kslra16_u(a, b) \
+#define __nds__kslra16_u(a, b) \
   (__builtin_riscv_kslra16_u ((a), (b)))
-#define __nds32__v_kslra16_u(a, b) \
+#define __nds__v_kslra16_u(a, b) \
   (__builtin_riscv_v_kslra16_u ((a), (b)))
 
-#define __nds32__cmpeq16(a, b) \
+#define __nds__cmpeq16(a, b) \
   (__builtin_riscv_cmpeq16 ((a), (b)))
-#define __nds32__v_scmpeq16(a, b) \
+#define __nds__v_scmpeq16(a, b) \
   (__builtin_riscv_v_scmpeq16 ((a), (b)))
-#define __nds32__v_ucmpeq16(a, b) \
+#define __nds__v_ucmpeq16(a, b) \
   (__builtin_riscv_v_ucmpeq16 ((a), (b)))
-#define __nds32__scmplt16(a, b) \
+#define __nds__scmplt16(a, b) \
   (__builtin_riscv_scmplt16 ((a), (b)))
-#define __nds32__v_scmplt16(a, b) \
+#define __nds__v_scmplt16(a, b) \
   (__builtin_riscv_v_scmplt16 ((a), (b)))
-#define __nds32__scmple16(a, b) \
+#define __nds__scmple16(a, b) \
   (__builtin_riscv_scmple16 ((a), (b)))
-#define __nds32__v_scmple16(a, b) \
+#define __nds__v_scmple16(a, b) \
   (__builtin_riscv_v_scmple16 ((a), (b)))
-#define __nds32__ucmplt16(a, b) \
+#define __nds__ucmplt16(a, b) \
   (__builtin_riscv_ucmplt16 ((a), (b)))
-#define __nds32__v_ucmplt16(a, b) \
+#define __nds__v_ucmplt16(a, b) \
   (__builtin_riscv_v_ucmplt16 ((a), (b)))
-#define __nds32__ucmple16(a, b) \
+#define __nds__ucmple16(a, b) \
   (__builtin_riscv_ucmple16 ((a), (b)))
-#define __nds32__v_ucmple16(a, b) \
+#define __nds__v_ucmple16(a, b) \
   (__builtin_riscv_v_ucmple16 ((a), (b)))
 
-#define __nds32__cmpeq8(a, b) \
+#define __nds__cmpeq8(a, b) \
   (__builtin_riscv_cmpeq8 ((a), (b)))
-#define __nds32__v_scmpeq8(a, b) \
+#define __nds__v_scmpeq8(a, b) \
   (__builtin_riscv_v_scmpeq8 ((a), (b)))
-#define __nds32__v_ucmpeq8(a, b) \
+#define __nds__v_ucmpeq8(a, b) \
   (__builtin_riscv_v_ucmpeq8 ((a), (b)))
-#define __nds32__scmplt8(a, b) \
+#define __nds__scmplt8(a, b) \
   (__builtin_riscv_scmplt8 ((a), (b)))
-#define __nds32__v_scmplt8(a, b) \
+#define __nds__v_scmplt8(a, b) \
   (__builtin_riscv_v_scmplt8 ((a), (b)))
-#define __nds32__scmple8(a, b) \
+#define __nds__scmple8(a, b) \
   (__builtin_riscv_scmple8 ((a), (b)))
-#define __nds32__v_scmple8(a, b) \
+#define __nds__v_scmple8(a, b) \
   (__builtin_riscv_v_scmple8 ((a), (b)))
-#define __nds32__ucmplt8(a, b) \
+#define __nds__ucmplt8(a, b) \
   (__builtin_riscv_ucmplt8 ((a), (b)))
-#define __nds32__v_ucmplt8(a, b) \
+#define __nds__v_ucmplt8(a, b) \
   (__builtin_riscv_v_ucmplt8 ((a), (b)))
-#define __nds32__ucmple8(a, b) \
+#define __nds__ucmple8(a, b) \
   (__builtin_riscv_ucmple8 ((a), (b)))
-#define __nds32__v_ucmple8(a, b) \
+#define __nds__v_ucmple8(a, b) \
   (__builtin_riscv_v_ucmple8 ((a), (b)))
 
-#define __nds32__smin16(a, b) \
+#define __nds__smin16(a, b) \
   (__builtin_riscv_smin16 ((a), (b)))
-#define __nds32__v_smin16(a, b) \
+#define __nds__v_smin16(a, b) \
   (__builtin_riscv_v_smin16 ((a), (b)))
-#define __nds32__umin16(a, b) \
+#define __nds__umin16(a, b) \
   (__builtin_riscv_umin16 ((a), (b)))
-#define __nds32__v_umin16(a, b) \
+#define __nds__v_umin16(a, b) \
   (__builtin_riscv_v_umin16 ((a), (b)))
-#define __nds32__smax16(a, b) \
+#define __nds__smax16(a, b) \
   (__builtin_riscv_smax16 ((a), (b)))
-#define __nds32__v_smax16(a, b) \
+#define __nds__v_smax16(a, b) \
   (__builtin_riscv_v_smax16 ((a), (b)))
-#define __nds32__umax16(a, b) \
+#define __nds__umax16(a, b) \
   (__builtin_riscv_umax16 ((a), (b)))
-#define __nds32__v_umax16(a, b) \
+#define __nds__v_umax16(a, b) \
   (__builtin_riscv_v_umax16 ((a), (b)))
-#define __nds32__sclip16(a, b) \
+#define __nds__sclip16(a, b) \
   (__builtin_riscv_sclip16 ((a), (b)))
-#define __nds32__v_sclip16(a, b) \
+#define __nds__v_sclip16(a, b) \
   (__builtin_riscv_v_sclip16 ((a), (b)))
-#define __nds32__uclip16(a, b) \
+#define __nds__uclip16(a, b) \
   (__builtin_riscv_uclip16 ((a), (b)))
-#define __nds32__v_uclip16(a, b) \
+#define __nds__v_uclip16(a, b) \
   (__builtin_riscv_v_uclip16 ((a), (b)))
-#define __nds32__khm16(a, b) \
+#define __nds__khm16(a, b) \
   (__builtin_riscv_khm16 ((a), (b)))
-#define __nds32__v_khm16(a, b) \
+#define __nds__v_khm16(a, b) \
   (__builtin_riscv_v_khm16 ((a), (b)))
-#define __nds32__khmx16(a, b) \
+#define __nds__khmx16(a, b) \
   (__builtin_riscv_khmx16 ((a), (b)))
-#define __nds32__v_khmx16(a, b) \
+#define __nds__v_khmx16(a, b) \
   (__builtin_riscv_v_khmx16 ((a), (b)))
-#define __nds32__khm8(a, b) \
+#define __nds__khm8(a, b) \
   (__builtin_riscv_khm8 ((a), (b)))
-#define __nds32__v_khm8(a, b) \
+#define __nds__v_khm8(a, b) \
   (__builtin_riscv_v_khm8 ((a), (b)))
-#define __nds32__khmx8(a, b) \
+#define __nds__khmx8(a, b) \
   (__builtin_riscv_khmx8 ((a), (b)))
-#define __nds32__v_khmx8(a, b) \
+#define __nds__v_khmx8(a, b) \
   (__builtin_riscv_v_khmx8 ((a), (b)))
-#define __nds32__kabs16(a) \
+#define __nds__kabs16(a) \
   (__builtin_riscv_kabs16 ((a)))
-#define __nds32__v_kabs16(a) \
+#define __nds__v_kabs16(a) \
   (__builtin_riscv_v_kabs16 ((a)))
-#define __nds32__smul16(a, b) \
+#define __nds__smul16(a, b) \
   (__builtin_riscv_smul16 ((a), (b)))
-#define __nds32__v_smul16(a, b) \
+#define __nds__v_smul16(a, b) \
   (__builtin_riscv_v_smul16 ((a), (b)))
-#define __nds32__smulx16(a, b) \
+#define __nds__smulx16(a, b) \
   (__builtin_riscv_smulx16 ((a), (b)))
-#define __nds32__v_smulx16(a, b) \
+#define __nds__v_smulx16(a, b) \
   (__builtin_riscv_v_smulx16 ((a), (b)))
-#define __nds32__umul16(a, b) \
+#define __nds__umul16(a, b) \
   (__builtin_riscv_umul16 ((a), (b)))
-#define __nds32__v_umul16(a, b) \
+#define __nds__v_umul16(a, b) \
   (__builtin_riscv_v_umul16 ((a), (b)))
-#define __nds32__umulx16(a, b) \
+#define __nds__umulx16(a, b) \
   (__builtin_riscv_umulx16 ((a), (b)))
-#define __nds32__v_umulx16(a, b) \
+#define __nds__v_umulx16(a, b) \
   (__builtin_riscv_v_umulx16 ((a), (b)))
-#define __nds32__smul8(a, b) \
+#define __nds__smul8(a, b) \
   (__builtin_riscv_smul8 ((a), (b)))
-#define __nds32__v_smul8(a, b) \
+#define __nds__v_smul8(a, b) \
   (__builtin_riscv_v_smul8 ((a), (b)))
-#define __nds32__smulx8(a, b) \
+#define __nds__smulx8(a, b) \
   (__builtin_riscv_smulx8 ((a), (b)))
-#define __nds32__v_smulx8(a, b) \
+#define __nds__v_smulx8(a, b) \
   (__builtin_riscv_v_smulx8 ((a), (b)))
-#define __nds32__umul8(a, b) \
+#define __nds__umul8(a, b) \
   (__builtin_riscv_umul8 ((a), (b)))
-#define __nds32__v_umul8(a, b) \
+#define __nds__v_umul8(a, b) \
   (__builtin_riscv_v_umul8 ((a), (b)))
-#define __nds32__umulx8(a, b) \
+#define __nds__umulx8(a, b) \
   (__builtin_riscv_umulx8 ((a), (b)))
-#define __nds32__v_umulx8(a, b) \
+#define __nds__v_umulx8(a, b) \
   (__builtin_riscv_v_umulx8 ((a), (b)))
-#define __nds32__smin8(a, b) \
+#define __nds__smin8(a, b) \
   (__builtin_riscv_smin8 ((a), (b)))
-#define __nds32__v_smin8(a, b) \
+#define __nds__v_smin8(a, b) \
   (__builtin_riscv_v_smin8 ((a), (b)))
-#define __nds32__umin8(a, b) \
+#define __nds__umin8(a, b) \
   (__builtin_riscv_umin8 ((a), (b)))
-#define __nds32__v_umin8(a, b) \
+#define __nds__v_umin8(a, b) \
   (__builtin_riscv_v_umin8 ((a), (b)))
-#define __nds32__smax8(a, b) \
+#define __nds__smax8(a, b) \
   (__builtin_riscv_smax8 ((a), (b)))
-#define __nds32__v_smax8(a, b) \
+#define __nds__v_smax8(a, b) \
   (__builtin_riscv_v_smax8 ((a), (b)))
-#define __nds32__umax8(a, b) \
+#define __nds__umax8(a, b) \
   (__builtin_riscv_umax8 ((a), (b)))
-#define __nds32__v_umax8(a, b) \
+#define __nds__v_umax8(a, b) \
   (__builtin_riscv_v_umax8 ((a), (b)))
-#define __nds32__kabs8(a) \
+#define __nds__kabs8(a) \
   (__builtin_riscv_kabs8 ((a)))
-#define __nds32__v_kabs8(a) \
+#define __nds__v_kabs8(a) \
   (__builtin_riscv_v_kabs8 ((a)))
 
-#define __nds32__sunpkd810(a) \
+#define __nds__sunpkd810(a) \
   (__builtin_riscv_sunpkd810 ((a)))
-#define __nds32__v_sunpkd810(a) \
+#define __nds__v_sunpkd810(a) \
   (__builtin_riscv_v_sunpkd810 ((a)))
-#define __nds32__sunpkd820(a) \
+#define __nds__sunpkd820(a) \
   (__builtin_riscv_sunpkd820 ((a)))
-#define __nds32__v_sunpkd820(a) \
+#define __nds__v_sunpkd820(a) \
   (__builtin_riscv_v_sunpkd820 ((a)))
-#define __nds32__sunpkd830(a) \
+#define __nds__sunpkd830(a) \
   (__builtin_riscv_sunpkd830 ((a)))
-#define __nds32__v_sunpkd830(a) \
+#define __nds__v_sunpkd830(a) \
   (__builtin_riscv_v_sunpkd830 ((a)))
-#define __nds32__sunpkd831(a) \
+#define __nds__sunpkd831(a) \
   (__builtin_riscv_sunpkd831 ((a)))
-#define __nds32__v_sunpkd831(a) \
+#define __nds__v_sunpkd831(a) \
   (__builtin_riscv_v_sunpkd831 ((a)))
-#define __nds32__sunpkd832(a) \
+#define __nds__sunpkd832(a) \
   (__builtin_riscv_sunpkd832 ((a)))
-#define __nds32__v_sunpkd832(a) \
+#define __nds__v_sunpkd832(a) \
   (__builtin_riscv_v_sunpkd832 ((a)))
-#define __nds32__zunpkd810(a) \
+#define __nds__zunpkd810(a) \
   (__builtin_riscv_zunpkd810 ((a)))
-#define __nds32__v_zunpkd810(a) \
+#define __nds__v_zunpkd810(a) \
   (__builtin_riscv_v_zunpkd810 ((a)))
-#define __nds32__zunpkd820(a) \
+#define __nds__zunpkd820(a) \
   (__builtin_riscv_zunpkd820 ((a)))
-#define __nds32__v_zunpkd820(a) \
+#define __nds__v_zunpkd820(a) \
   (__builtin_riscv_v_zunpkd820 ((a)))
-#define __nds32__zunpkd830(a) \
+#define __nds__zunpkd830(a) \
   (__builtin_riscv_zunpkd830 ((a)))
-#define __nds32__v_zunpkd830(a) \
+#define __nds__v_zunpkd830(a) \
   (__builtin_riscv_v_zunpkd830 ((a)))
-#define __nds32__zunpkd831(a) \
+#define __nds__zunpkd831(a) \
   (__builtin_riscv_zunpkd831 ((a)))
-#define __nds32__v_zunpkd831(a) \
+#define __nds__v_zunpkd831(a) \
   (__builtin_riscv_v_zunpkd831 ((a)))
-#define __nds32__zunpkd832(a) \
+#define __nds__zunpkd832(a) \
   (__builtin_riscv_zunpkd832 ((a)))
-#define __nds32__v_zunpkd832(a) \
+#define __nds__v_zunpkd832(a) \
   (__builtin_riscv_v_zunpkd832 ((a)))
 
-#define __nds32__raddw(a, b) \
+#define __nds__raddw(a, b) \
   (__builtin_riscv_raddw ((a), (b)))
-#define __nds32__uraddw(a, b) \
+#define __nds__uraddw(a, b) \
   (__builtin_riscv_uraddw ((a), (b)))
-#define __nds32__rsubw(a, b) \
+#define __nds__rsubw(a, b) \
   (__builtin_riscv_rsubw ((a), (b)))
-#define __nds32__ursubw(a, b) \
+#define __nds__ursubw(a, b) \
   (__builtin_riscv_ursubw ((a), (b)))
 
-#define __nds32__sra_u(a, b) \
+#define __nds__sra_u(a, b) \
   (__builtin_riscv_sra_u ((a), (b)))
-#define __nds32__ksll(a, b) \
+#define __nds__ksll(a, b) \
   (__builtin_riscv_ksll ((a), (b)))
-#define __nds32__pkbb16(a, b) \
+#define __nds__pkbb16(a, b) \
   (__builtin_riscv_pkbb16 ((a), (b)))
-#define __nds32__v_pkbb16(a, b) \
+#define __nds__v_pkbb16(a, b) \
   (__builtin_riscv_v_pkbb16 ((a), (b)))
-#define __nds32__pkbt16(a, b) \
+#define __nds__pkbt16(a, b) \
   (__builtin_riscv_pkbt16 ((a), (b)))
-#define __nds32__v_pkbt16(a, b) \
+#define __nds__v_pkbt16(a, b) \
   (__builtin_riscv_v_pkbt16 ((a), (b)))
-#define __nds32__pktb16(a, b) \
+#define __nds__pktb16(a, b) \
   (__builtin_riscv_pktb16 ((a), (b)))
-#define __nds32__v_pktb16(a, b) \
+#define __nds__v_pktb16(a, b) \
   (__builtin_riscv_v_pktb16 ((a), (b)))
-#define __nds32__pktt16(a, b) \
+#define __nds__pktt16(a, b) \
   (__builtin_riscv_pktt16 ((a), (b)))
-#define __nds32__v_pktt16(a, b) \
+#define __nds__v_pktt16(a, b) \
   (__builtin_riscv_v_pktt16 ((a), (b)))
 
-#define __nds32__smmul(a, b) \
+#define __nds__smmul(a, b) \
   (__builtin_riscv_smmul ((a), (b)))
-#define __nds32__smmul_u(a, b) \
+#define __nds__smmul_u(a, b) \
   (__builtin_riscv_smmul_u ((a), (b)))
-#define __nds32__kmmac(r, a, b) \
+#define __nds__kmmac(r, a, b) \
   (__builtin_riscv_kmmac ((r), (a), (b)))
-#define __nds32__kmmac_u(r, a, b) \
+#define __nds__kmmac_u(r, a, b) \
   (__builtin_riscv_kmmac_u ((r), (a), (b)))
-#define __nds32__kmmsb(r, a, b) \
+#define __nds__kmmsb(r, a, b) \
   (__builtin_riscv_kmmsb ((r), (a), (b)))
-#define __nds32__kmmsb_u(r, a, b) \
+#define __nds__kmmsb_u(r, a, b) \
   (__builtin_riscv_kmmsb_u ((r), (a), (b)))
-#define __nds32__kwmmul(a, b) \
+#define __nds__kwmmul(a, b) \
   (__builtin_riscv_kwmmul ((a), (b)))
-#define __nds32__kwmmul_u(a, b) \
+#define __nds__kwmmul_u(a, b) \
   (__builtin_riscv_kwmmul_u ((a), (b)))
 
-#define __nds32__smmwb(a, b) \
+#define __nds__smmwb(a, b) \
   (__builtin_riscv_smmwb ((a), (b)))
-#define __nds32__v_smmwb(a, b) \
+#define __nds__v_smmwb(a, b) \
   (__builtin_riscv_v_smmwb ((a), (b)))
-#define __nds32__smmwb_u(a, b) \
+#define __nds__smmwb_u(a, b) \
   (__builtin_riscv_smmwb_u ((a), (b)))
-#define __nds32__v_smmwb_u(a, b) \
+#define __nds__v_smmwb_u(a, b) \
   (__builtin_riscv_v_smmwb_u ((a), (b)))
-#define __nds32__smmwt(a, b) \
+#define __nds__smmwt(a, b) \
   (__builtin_riscv_smmwt ((a), (b)))
-#define __nds32__v_smmwt(a, b) \
+#define __nds__v_smmwt(a, b) \
   (__builtin_riscv_v_smmwt ((a), (b)))
-#define __nds32__smmwt_u(a, b) \
+#define __nds__smmwt_u(a, b) \
   (__builtin_riscv_smmwt_u ((a), (b)))
-#define __nds32__v_smmwt_u(a, b) \
+#define __nds__v_smmwt_u(a, b) \
   (__builtin_riscv_v_smmwt_u ((a), (b)))
-#define __nds32__kmmawb(r, a, b) \
+#define __nds__kmmawb(r, a, b) \
   (__builtin_riscv_kmmawb ((r), (a), (b)))
-#define __nds32__v_kmmawb(r, a, b) \
+#define __nds__v_kmmawb(r, a, b) \
   (__builtin_riscv_v_kmmawb ((r), (a), (b)))
-#define __nds32__kmmawb_u(r, a, b) \
+#define __nds__kmmawb_u(r, a, b) \
   (__builtin_riscv_kmmawb_u ((r), (a), (b)))
-#define __nds32__v_kmmawb_u(r, a, b) \
+#define __nds__v_kmmawb_u(r, a, b) \
   (__builtin_riscv_v_kmmawb_u ((r), (a), (b)))
-#define __nds32__kmmawt(r, a, b) \
+#define __nds__kmmawt(r, a, b) \
   (__builtin_riscv_kmmawt ((r), (a), (b)))
-#define __nds32__v_kmmawt(r, a, b) \
+#define __nds__v_kmmawt(r, a, b) \
   (__builtin_riscv_v_kmmawt ((r), (a), (b)))
-#define __nds32__kmmawt_u(r, a, b) \
+#define __nds__kmmawt_u(r, a, b) \
   (__builtin_riscv_kmmawt_u ((r), (a), (b)))
-#define __nds32__v_kmmawt_u(r, a, b) \
+#define __nds__v_kmmawt_u(r, a, b) \
   (__builtin_riscv_v_kmmawt_u ((r), (a), (b)))
 
-#define __nds32__smbb(a, b) \
+#define __nds__smbb(a, b) \
   (__builtin_riscv_smbb ((a), (b)))
-#define __nds32__v_smbb(a, b) \
+#define __nds__v_smbb(a, b) \
   (__builtin_riscv_v_smbb ((a), (b)))
-#define __nds32__smbt(a, b) \
+#define __nds__smbt(a, b) \
   (__builtin_riscv_smbt ((a), (b)))
-#define __nds32__v_smbt(a, b) \
+#define __nds__v_smbt(a, b) \
   (__builtin_riscv_v_smbt ((a), (b)))
-#define __nds32__smtt(a, b) \
+#define __nds__smtt(a, b) \
   (__builtin_riscv_smtt ((a), (b)))
-#define __nds32__v_smtt(a, b) \
+#define __nds__v_smtt(a, b) \
   (__builtin_riscv_v_smtt ((a), (b)))
-#define __nds32__kmda(a, b) \
+#define __nds__kmda(a, b) \
   (__builtin_riscv_kmda ((a), (b)))
-#define __nds32__v_kmda(a, b) \
+#define __nds__v_kmda(a, b) \
   (__builtin_riscv_v_kmda ((a), (b)))
-#define __nds32__kmxda(a, b) \
+#define __nds__kmxda(a, b) \
   (__builtin_riscv_kmxda ((a), (b)))
-#define __nds32__v_kmxda(a, b) \
+#define __nds__v_kmxda(a, b) \
   (__builtin_riscv_v_kmxda ((a), (b)))
-#define __nds32__smds(a, b) \
+#define __nds__smds(a, b) \
   (__builtin_riscv_smds ((a), (b)))
-#define __nds32__v_smds(a, b) \
+#define __nds__v_smds(a, b) \
   (__builtin_riscv_v_smds ((a), (b)))
-#define __nds32__smdrs(a, b) \
+#define __nds__smdrs(a, b) \
   (__builtin_riscv_smdrs ((a), (b)))
-#define __nds32__v_smdrs(a, b) \
+#define __nds__v_smdrs(a, b) \
   (__builtin_riscv_v_smdrs ((a), (b)))
-#define __nds32__smxds(a, b) \
+#define __nds__smxds(a, b) \
   (__builtin_riscv_smxds ((a), (b)))
-#define __nds32__v_smxds(a, b) \
+#define __nds__v_smxds(a, b) \
   (__builtin_riscv_v_smxds ((a), (b)))
-#define __nds32__kmabb(r, a, b) \
+#define __nds__kmabb(r, a, b) \
   (__builtin_riscv_kmabb ((r), (a), (b)))
-#define __nds32__v_kmabb(r, a, b) \
+#define __nds__v_kmabb(r, a, b) \
   (__builtin_riscv_v_kmabb ((r), (a), (b)))
-#define __nds32__kmabt(r, a, b) \
+#define __nds__kmabt(r, a, b) \
   (__builtin_riscv_kmabt ((r), (a), (b)))
-#define __nds32__v_kmabt(r, a, b) \
+#define __nds__v_kmabt(r, a, b) \
   (__builtin_riscv_v_kmabt ((r), (a), (b)))
-#define __nds32__kmatt(r, a, b) \
+#define __nds__kmatt(r, a, b) \
   (__builtin_riscv_kmatt ((r), (a), (b)))
-#define __nds32__v_kmatt(r, a, b) \
+#define __nds__v_kmatt(r, a, b) \
   (__builtin_riscv_v_kmatt ((r), (a), (b)))
-#define __nds32__kmada(r, a, b) \
+#define __nds__kmada(r, a, b) \
   (__builtin_riscv_kmada ((r), (a), (b)))
-#define __nds32__v_kmada(r, a, b) \
+#define __nds__v_kmada(r, a, b) \
   (__builtin_riscv_v_kmada ((r), (a), (b)))
-#define __nds32__kmaxda(r, a, b) \
+#define __nds__kmaxda(r, a, b) \
   (__builtin_riscv_kmaxda ((r), (a), (b)))
-#define __nds32__v_kmaxda(r, a, b) \
+#define __nds__v_kmaxda(r, a, b) \
   (__builtin_riscv_v_kmaxda ((r), (a), (b)))
-#define __nds32__kmads(r, a, b) \
+#define __nds__kmads(r, a, b) \
   (__builtin_riscv_kmads ((r), (a), (b)))
-#define __nds32__v_kmads(r, a, b) \
+#define __nds__v_kmads(r, a, b) \
   (__builtin_riscv_v_kmads ((r), (a), (b)))
-#define __nds32__kmadrs(r, a, b) \
+#define __nds__kmadrs(r, a, b) \
   (__builtin_riscv_kmadrs ((r), (a), (b)))
-#define __nds32__v_kmadrs(r, a, b) \
+#define __nds__v_kmadrs(r, a, b) \
   (__builtin_riscv_v_kmadrs ((r), (a), (b)))
-#define __nds32__kmaxds(r, a, b) \
+#define __nds__kmaxds(r, a, b) \
   (__builtin_riscv_kmaxds ((r), (a), (b)))
-#define __nds32__v_kmaxds(r, a, b) \
+#define __nds__v_kmaxds(r, a, b) \
   (__builtin_riscv_v_kmaxds ((r), (a), (b)))
-#define __nds32__kmsda(r, a, b) \
+#define __nds__kmsda(r, a, b) \
   (__builtin_riscv_kmsda ((r), (a), (b)))
-#define __nds32__v_kmsda(r, a, b) \
+#define __nds__v_kmsda(r, a, b) \
   (__builtin_riscv_v_kmsda ((r), (a), (b)))
-#define __nds32__kmsxda(r, a, b) \
+#define __nds__kmsxda(r, a, b) \
   (__builtin_riscv_kmsxda ((r), (a), (b)))
-#define __nds32__v_kmsxda(r, a, b) \
+#define __nds__v_kmsxda(r, a, b) \
   (__builtin_riscv_v_kmsxda ((r), (a), (b)))
 
-#define __nds32__smal(a, b) \
+#define __nds__smal(a, b) \
   (__builtin_riscv_smal ((a), (b)))
-#define __nds32__v_smal(a, b) \
+#define __nds__v_smal(a, b) \
   (__builtin_riscv_v_smal ((a), (b)))
 
-#define __nds32__bitrev(a, b) \
+#define __nds__bitrev(a, b) \
   (__builtin_riscv_bitrev ((a), (b)))
-#define __nds32__wext(a, b) \
+#define __nds__wext(a, b) \
   (__builtin_riscv_wext ((a), (b)))
-#define __nds32__bpick(r, a, b) \
+#define __nds__bpick(r, a, b) \
   (__builtin_riscv_bpick ((r), (a), (b)))
-#define __nds32__insb(r, a, b) \
+#define __nds__insb(r, a, b) \
   (__builtin_riscv_insb ((r), (a), (b)))
 
-#define __nds32__sadd64(a, b) \
+#define __nds__sadd64(a, b) \
   (__builtin_riscv_sadd64 ((a), (b)))
-#define __nds32__uadd64(a, b) \
+#define __nds__uadd64(a, b) \
   (__builtin_riscv_uadd64 ((a), (b)))
-#define __nds32__radd64(a, b) \
+#define __nds__radd64(a, b) \
   (__builtin_riscv_radd64 ((a), (b)))
-#define __nds32__uradd64(a, b) \
+#define __nds__uradd64(a, b) \
   (__builtin_riscv_uradd64 ((a), (b)))
-#define __nds32__kadd64(a, b) \
+#define __nds__kadd64(a, b) \
   (__builtin_riscv_kadd64 ((a), (b)))
-#define __nds32__ukadd64(a, b) \
+#define __nds__ukadd64(a, b) \
   (__builtin_riscv_ukadd64 ((a), (b)))
-#define __nds32__ssub64(a, b) \
+#define __nds__ssub64(a, b) \
   (__builtin_riscv_ssub64 ((a), (b)))
-#define __nds32__usub64(a, b) \
+#define __nds__usub64(a, b) \
   (__builtin_riscv_usub64 ((a), (b)))
-#define __nds32__rsub64(a, b) \
+#define __nds__rsub64(a, b) \
   (__builtin_riscv_rsub64 ((a), (b)))
-#define __nds32__ursub64(a, b) \
+#define __nds__ursub64(a, b) \
   (__builtin_riscv_ursub64 ((a), (b)))
-#define __nds32__ksub64(a, b) \
+#define __nds__ksub64(a, b) \
   (__builtin_riscv_ksub64 ((a), (b)))
-#define __nds32__uksub64(a, b) \
+#define __nds__uksub64(a, b) \
   (__builtin_riscv_uksub64 ((a), (b)))
 
-#define __nds32__smar64(r, a, b) \
+#define __nds__smar64(r, a, b) \
   (__builtin_riscv_smar64 ((r), (a), (b)))
-#define __nds32__smsr64(r, a, b) \
+#define __nds__smsr64(r, a, b) \
   (__builtin_riscv_smsr64 ((r), (a), (b)))
-#define __nds32__umar64(r, a, b) \
+#define __nds__umar64(r, a, b) \
   (__builtin_riscv_umar64 ((r), (a), (b)))
-#define __nds32__umsr64(r, a, b) \
+#define __nds__umsr64(r, a, b) \
   (__builtin_riscv_umsr64 ((r), (a), (b)))
-#define __nds32__kmar64(r, a, b) \
+#define __nds__kmar64(r, a, b) \
   (__builtin_riscv_kmar64 ((r), (a), (b)))
-#define __nds32__kmsr64(r, a, b) \
+#define __nds__kmsr64(r, a, b) \
   (__builtin_riscv_kmsr64 ((r), (a), (b)))
-#define __nds32__ukmar64(r, a, b) \
+#define __nds__ukmar64(r, a, b) \
   (__builtin_riscv_ukmar64 ((r), (a), (b)))
-#define __nds32__ukmsr64(r, a, b) \
+#define __nds__ukmsr64(r, a, b) \
   (__builtin_riscv_ukmsr64 ((r), (a), (b)))
 
-#define __nds32__smalbb(r, a, b) \
+#define __nds__smalbb(r, a, b) \
   (__builtin_riscv_smalbb ((r), (a), (b)))
-#define __nds32__v_smalbb(r, a, b) \
+#define __nds__v_smalbb(r, a, b) \
   (__builtin_riscv_v_smalbb ((r), (a), (b)))
-#define __nds32__smalbt(r, a, b) \
+#define __nds__smalbt(r, a, b) \
   (__builtin_riscv_smalbt ((r), (a), (b)))
-#define __nds32__v_smalbt(r, a, b) \
+#define __nds__v_smalbt(r, a, b) \
   (__builtin_riscv_v_smalbt ((r), (a), (b)))
-#define __nds32__smaltt(r, a, b) \
+#define __nds__smaltt(r, a, b) \
   (__builtin_riscv_smaltt ((r), (a), (b)))
-#define __nds32__v_smaltt(r, a, b) \
+#define __nds__v_smaltt(r, a, b) \
   (__builtin_riscv_v_smaltt ((r), (a), (b)))
 
-#define __nds32__smalda(r, a, b) \
+#define __nds__smalda(r, a, b) \
   (__builtin_riscv_smalda ((r), (a), (b)))
-#define __nds32__v_smalda(r, a, b) \
+#define __nds__v_smalda(r, a, b) \
   (__builtin_riscv_v_smalda ((r), (a), (b)))
-#define __nds32__smalxda(r, a, b) \
+#define __nds__smalxda(r, a, b) \
   (__builtin_riscv_smalxda ((r), (a), (b)))
-#define __nds32__v_smalxda(r, a, b) \
+#define __nds__v_smalxda(r, a, b) \
   (__builtin_riscv_v_smalxda ((r), (a), (b)))
-#define __nds32__smalds(r, a, b) \
+#define __nds__smalds(r, a, b) \
   (__builtin_riscv_smalds ((r), (a), (b)))
-#define __nds32__v_smalds(r, a, b) \
+#define __nds__v_smalds(r, a, b) \
   (__builtin_riscv_v_smalds ((r), (a), (b)))
-#define __nds32__smaldrs(r, a, b) \
+#define __nds__smaldrs(r, a, b) \
   (__builtin_riscv_smaldrs ((r), (a), (b)))
-#define __nds32__v_smaldrs(r, a, b) \
+#define __nds__v_smaldrs(r, a, b) \
   (__builtin_riscv_v_smaldrs ((r), (a), (b)))
-#define __nds32__smalxds(r, a, b) \
+#define __nds__smalxds(r, a, b) \
   (__builtin_riscv_smalxds ((r), (a), (b)))
-#define __nds32__v_smalxds(r, a, b) \
+#define __nds__v_smalxds(r, a, b) \
   (__builtin_riscv_v_smalxds ((r), (a), (b)))
-#define __nds32__smslda(r, a, b) \
+#define __nds__smslda(r, a, b) \
   (__builtin_riscv_smslda ((r), (a), (b)))
-#define __nds32__v_smslda(r, a, b) \
+#define __nds__v_smslda(r, a, b) \
   (__builtin_riscv_v_smslda ((r), (a), (b)))
-#define __nds32__smslxda(r, a, b) \
+#define __nds__smslxda(r, a, b) \
   (__builtin_riscv_smslxda ((r), (a), (b)))
-#define __nds32__v_smslxda(r, a, b) \
+#define __nds__v_smslxda(r, a, b) \
   (__builtin_riscv_v_smslxda ((r), (a), (b)))
 
-#define __nds32__uclip32(a, imm) \
+#define __nds__uclip32(a, imm) \
   (__builtin_riscv_uclip32 ((a), (imm)))
-#define __nds32__sclip32(a, imm) \
+#define __nds__sclip32(a, imm) \
   (__builtin_riscv_sclip32 ((a), (imm)))
-#define __nds32__kabs(a) \
+#define __nds__kabs(a) \
   (__builtin_riscv_kabs ((a)))
 
-#define __nds32__kaddw(a, b) \
+#define __nds__kaddw(a, b) \
   (__builtin_riscv_kaddw ((a), (b)))
-#define __nds32__kaddh(a, b) \
+#define __nds__kaddh(a, b) \
   (__builtin_riscv_kaddh ((a), (b)))
-#define __nds32__ksubw(a, b) \
+#define __nds__ksubw(a, b) \
   (__builtin_riscv_ksubw ((a), (b)))
-#define __nds32__ksubh(a, b) \
+#define __nds__ksubh(a, b) \
   (__builtin_riscv_ksubh ((a), (b)))
-#define __nds32__ukaddw(a, b) \
+#define __nds__ukaddw(a, b) \
   (__builtin_riscv_ukaddw ((a), (b)))
-#define __nds32__ukaddh(a, b) \
+#define __nds__ukaddh(a, b) \
   (__builtin_riscv_ukaddh ((a), (b)))
-#define __nds32__uksubw(a, b) \
+#define __nds__uksubw(a, b) \
   (__builtin_riscv_uksubw ((a), (b)))
-#define __nds32__uksubh(a, b) \
+#define __nds__uksubh(a, b) \
   (__builtin_riscv_uksubh ((a), (b)))
-#define __nds32__kdmbb(a, b) \
+#define __nds__kdmbb(a, b) \
   (__builtin_riscv_kdmbb ((a), (b)))
-#define __nds32__v_kdmbb(a, b) \
+#define __nds__v_kdmbb(a, b) \
   (__builtin_riscv_v_kdmbb ((a), (b)))
-#define __nds32__kdmbt(a, b) \
+#define __nds__kdmbt(a, b) \
   (__builtin_riscv_kdmbt ((a), (b)))
-#define __nds32__v_kdmbt(a, b) \
+#define __nds__v_kdmbt(a, b) \
   (__builtin_riscv_v_kdmbt ((a), (b)))
-#define __nds32__kdmtt(a, b) \
+#define __nds__kdmtt(a, b) \
   (__builtin_riscv_kdmtt ((a), (b)))
-#define __nds32__v_kdmtt(a, b) \
+#define __nds__v_kdmtt(a, b) \
   (__builtin_riscv_v_kdmtt ((a), (b)))
-#define __nds32__khmbb(a, b) \
+#define __nds__khmbb(a, b) \
   (__builtin_riscv_khmbb ((a), (b)))
-#define __nds32__v_khmbb(a, b) \
+#define __nds__v_khmbb(a, b) \
   (__builtin_riscv_v_khmbb ((a), (b)))
-#define __nds32__khmbt(a, b) \
+#define __nds__khmbt(a, b) \
   (__builtin_riscv_khmbt ((a), (b)))
-#define __nds32__v_khmbt(a, b) \
+#define __nds__v_khmbt(a, b) \
   (__builtin_riscv_v_khmbt ((a), (b)))
-#define __nds32__khmtt(a, b) \
+#define __nds__khmtt(a, b) \
   (__builtin_riscv_khmtt ((a), (b)))
-#define __nds32__v_khmtt(a, b) \
+#define __nds__v_khmtt(a, b) \
   (__builtin_riscv_v_khmtt ((a), (b)))
-#define __nds32__kslraw(a, b) \
+#define __nds__kslraw(a, b) \
   (__builtin_riscv_kslraw ((a), (b)))
-#define __nds32__kslraw_u(a, b) \
+#define __nds__kslraw_u(a, b) \
   (__builtin_riscv_kslraw_u ((a), (b)))
-#define __nds32__ave(a, b) \
+#define __nds__ave(a, b) \
   (__builtin_riscv_ave ((a), (b)))
-#define __nds32__max(a, b) \
+#define __nds__max(a, b) \
   (__builtin_riscv_max ((a), (b)))
-#define __nds32__min(a, b) \
+#define __nds__min(a, b) \
   (__builtin_riscv_min ((a), (b)))
 
-#define __nds32__sra8(a, b) \
+#define __nds__sra8(a, b) \
   (__builtin_riscv_sra8 ((a), (b)))
-#define __nds32__v_sra8(a, b) \
+#define __nds__v_sra8(a, b) \
   (__builtin_riscv_v_sra8 ((a), (b)))
-#define __nds32__sra8_u(a, b) \
+#define __nds__sra8_u(a, b) \
   (__builtin_riscv_sra8_u ((a), (b)))
-#define __nds32__v_sra8_u(a, b) \
+#define __nds__v_sra8_u(a, b) \
   (__builtin_riscv_v_sra8_u ((a), (b)))
-#define __nds32__srl8(a, b) \
+#define __nds__srl8(a, b) \
   (__builtin_riscv_srl8 ((a), (b)))
-#define __nds32__v_srl8(a, b) \
+#define __nds__v_srl8(a, b) \
   (__builtin_riscv_v_srl8 ((a), (b)))
-#define __nds32__srl8_u(a, b) \
+#define __nds__srl8_u(a, b) \
   (__builtin_riscv_srl8_u ((a), (b)))
-#define __nds32__v_srl8_u(a, b) \
+#define __nds__v_srl8_u(a, b) \
   (__builtin_riscv_v_srl8_u ((a), (b)))
-#define __nds32__sll8(a, b) \
+#define __nds__sll8(a, b) \
   (__builtin_riscv_sll8 ((a), (b)))
-#define __nds32__v_sll8(a, b) \
+#define __nds__v_sll8(a, b) \
   (__builtin_riscv_v_sll8 ((a), (b)))
-#define __nds32__ksll8(a, b) \
+#define __nds__ksll8(a, b) \
   (__builtin_riscv_ksll8 ((a), (b)))
-#define __nds32__v_ksll8(a, b) \
+#define __nds__v_ksll8(a, b) \
   (__builtin_riscv_v_ksll8 ((a), (b)))
-#define __nds32__kslra8(a, b) \
+#define __nds__kslra8(a, b) \
   (__builtin_riscv_kslra8 ((a), (b)))
-#define __nds32__v_kslra8(a, b) \
+#define __nds__v_kslra8(a, b) \
   (__builtin_riscv_v_kslra8 ((a), (b)))
-#define __nds32__kslra8_u(a, b) \
+#define __nds__kslra8_u(a, b) \
   (__builtin_riscv_kslra8_u ((a), (b)))
-#define __nds32__v_kslra8_u(a, b) \
+#define __nds__v_kslra8_u(a, b) \
   (__builtin_riscv_v_kslra8_u ((a), (b)))
 
-#define __nds32__clz(a) \
+#define __nds__clz(a) \
   (__builtin_riscv_clz ((a)))
-#define __nds32__clo(a) \
+#define __nds__clo(a) \
   (__builtin_riscv_clo ((a)))
-#define __nds32__pbsad(a, b) \
+#define __nds__pbsad(a, b) \
   (__builtin_riscv_pbsad ((a), (b)))
-#define __nds32__pbsada(acc, a, b) \
+#define __nds__pbsada(acc, a, b) \
   (__builtin_riscv_pbsada ((acc), (a), (b)))
-#define __nds32__swap8(a) \
+#define __nds__swap8(a) \
   (__builtin_riscv_swap8 ((a)))
-#define __nds32__v_swap8(a) \
+#define __nds__v_swap8(a) \
   (__builtin_riscv_v_swap8 ((a)))
-#define __nds32__swap16(a) \
+#define __nds__swap16(a) \
   (__builtin_riscv_swap16 ((a)))
-#define __nds32__v_swap16(a) \
+#define __nds__v_swap16(a) \
   (__builtin_riscv_v_swap16 ((a)))
-#define __nds32__sclip8(a, b) \
+#define __nds__sclip8(a, b) \
   (__builtin_riscv_sclip8 ((a), (b)))
-#define __nds32__v_sclip8(a, b) \
+#define __nds__v_sclip8(a, b) \
   (__builtin_riscv_v_sclip8 ((a), (b)))
-#define __nds32__uclip8(a, b) \
+#define __nds__uclip8(a, b) \
   (__builtin_riscv_uclip8 ((a), (b)))
-#define __nds32__v_uclip8(a, b) \
+#define __nds__v_uclip8(a, b) \
   (__builtin_riscv_v_uclip8 ((a), (b)))
 
-#define __nds32__ffb(a, b) \
+#define __nds__ffb(a, b) \
   (__builtin_riscv_ffb ((a), (b)))
-#define __nds32__ffmism(a, b) \
+#define __nds__ffmism(a, b) \
   (__builtin_riscv_ffmism ((a), (b)))
-#define __nds32__flmism(a, b) \
+#define __nds__flmism(a, b) \
   (__builtin_riscv_flmism ((a), (b)))
-
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
