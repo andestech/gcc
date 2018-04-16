@@ -30,6 +30,11 @@ if ![info exists DEFAULT_CFLAGS] then {
     set DEFAULT_CFLAGS " -ansi -pedantic-errors"
 }
 
+global DSP_CFLAGS
+if ![info exists DSP_CFLAGS] then {
+    set DSP_CFLAGS ""
+}
+
 # Initialize `dg'.
 dg-init
 
@@ -40,5 +45,7 @@ dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/*.\[cS\]]] \
 dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/compile/*.\[cS\]]] \
 	"" $DEFAULT_CFLAGS
 
+dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/dsp/*.\[cS\]]] \
+       "" $DSP_CFLAGS
 # All done.
 dg-finish
