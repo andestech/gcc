@@ -966,15 +966,13 @@
 	  (vec_duplicate:V4QI
 	    (match_operand:QI 1 "register_operand"  "    r,    r,    r,    r"))
 	  (match_operand:V4QI 2 "register_operand"  "    0,    0,    0,    0")
-	  (match_operand:SI 3 "imm_1_2_4_8_operand" " Iv01, Iv02, Iv04, Iv08")))]
+	  (match_operand:SI 3 "imm_1_2_4_8_operand" " v01, v02, v04, v08")))]
   "TARGET_DSP"
-{
-  const char *pats[] = { "insb\t%0, %1, 0",
-			 "insb\t%0, %1, 1",
-			 "insb\t%0, %1, 2",
-			 "insb\t%0, %1, 3" };
-  return pats[which_alternative];
-}
+  "@
+   insb\t%0, %1, 0
+   insb\t%0, %1, 1
+   insb\t%0, %1, 2
+   insb\t%0, %1, 3"
   [(set_attr "mode"  "V4QI")])
 
 (define_insn "vec_setv4qi_internal_vec"
