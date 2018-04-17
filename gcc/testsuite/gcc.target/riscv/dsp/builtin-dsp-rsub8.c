@@ -28,8 +28,8 @@ main ()
   if (a != 0x222222a2)
     abort ();
   else if (va[0] != 0x7f
-	   || va[1] != (char) 0x80
-	   || va[2] != (char) 0xa0
+	   || va[1] != (signed char) 0x80
+	   || va[2] != (signed char) 0xa0
 	   || va[3] != 0)
     abort ();
   else

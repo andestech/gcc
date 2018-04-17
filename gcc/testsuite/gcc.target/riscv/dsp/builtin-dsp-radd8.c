@@ -28,9 +28,9 @@ main ()
   if (a != 0x334455e6)
     abort ();
   else if (va[0] != 0x7f
-	   || va[1] != (char) 0x80
-	   || va[2] != (char) 0xe0
-	   || va[3] != (char) 0xaa)
+	   || va[1] != (signed char) 0x80
+	   || va[2] != (signed char) 0xe0
+	   || va[3] != (signed char) 0xaa)
     abort ();
   else
     exit (0);

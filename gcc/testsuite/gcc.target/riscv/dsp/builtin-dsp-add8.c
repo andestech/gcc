@@ -41,7 +41,7 @@ main ()
 	   || v_ua[3] != 0x98)
     abort ();
   else if (v_sa[0] != 0
-	   || v_sa[1] != (char) 0xfe
+	   || v_sa[1] != (signed char) 0xfe
 	   || v_sa[2] != 0x76
 	   || v_sa[3] != 0x54)
     abort ();

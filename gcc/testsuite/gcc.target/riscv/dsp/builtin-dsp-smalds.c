@@ -22,14 +22,8 @@ long long v_smalds (long long t, int16x2_t a, int16x2_t b)
 int
 main ()
 {
-#ifdef __NDS32_EL__
   long long a_p = 0x12345678ffffaaaall;
   long long va_p = 0x12345678ffffaaaall;
-#else
-  long long a_p = 0x12345678ffffaaaall;
-  long long va_p = 0x1234567900005554ll;
-#endif
-
   long long a = smalds (0x12345678ffffffffll, 0x12340001, 0x00016789);
   long long va = v_smalds (0x12345678ffffffffll, (int16x2_t) {0x0001, 0x1234},
 						 (int16x2_t) {0x6789, 0x0001});

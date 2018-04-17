@@ -21,12 +21,7 @@ uint16x2_t v_pktb16 (uint16x2_t ra, uint16x2_t rb)
 int
 main ()
 {
-#ifdef __NDS32_EL__
   uint16x2_t va_p = {0xcccc, 0xbbbb};
-#else
-  uint16x2_t va_p = {0xaaaa, 0xdddd};
-#endif
-
   unsigned long a = pktb16 (0x11223344, 0x55667788);
   uint16x2_t va = v_pktb16 ((uint16x2_t) {0xaaaa, 0xbbbb},
 			    (uint16x2_t) {0xcccc, 0xdddd});
