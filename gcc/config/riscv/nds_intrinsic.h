@@ -1043,7 +1043,7 @@ enum riscv_order
   (__builtin_riscv_uclip32 ((a), (imm)))
 #define __nds__sclip32(a, imm) \
   (__builtin_riscv_sclip32 ((a), (imm)))
-#define __nds__kabs(a) \
+#define __nds__kabsw(a) \
   (__builtin_riscv_kabs ((a)))
 
 #define __nds__kaddw(a, b) \
@@ -1092,9 +1092,9 @@ enum riscv_order
   (__builtin_riscv_kslraw_u ((a), (b)))
 #define __nds__ave(a, b) \
   (__builtin_riscv_ave ((a), (b)))
-#define __nds__max(a, b) \
+#define __nds__maxw(a, b) \
   (__builtin_riscv_max ((a), (b)))
-#define __nds__min(a, b) \
+#define __nds__minw(a, b) \
   (__builtin_riscv_min ((a), (b)))
 
 #define __nds__sra8(a, b) \

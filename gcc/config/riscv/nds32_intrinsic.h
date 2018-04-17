@@ -310,7 +310,7 @@
 #define __nds32__v_smslxda __nds__v_smslxda
 #define __nds32__uclip32 __nds__uclip32
 #define __nds32__sclip32 __nds__sclip32
-#define __nds32__kabs __nds__kabs
+#define __nds32__kabs __nds__kabsw
 #define __nds32__kaddw __nds__kaddw
 #define __nds32__kaddh __nds__kaddh
 #define __nds32__ksubw __nds__ksubw
@@ -334,8 +334,8 @@
 #define __nds32__kslraw __nds__kslraw
 #define __nds32__kslraw_u __nds__kslraw_u
 #define __nds32__ave __nds__ave
-#define __nds32__max __nds__max
-#define __nds32__min __nds__min
+#define __nds32__max __nds__maxw
+#define __nds32__min __nds__minw
 #define __nds32__sra8 __nds__sra8
 #define __nds32__v_sra8 __nds__v_sra8
 #define __nds32__sra8_u __nds__sra8_u

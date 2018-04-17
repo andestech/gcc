@@ -3432,7 +3432,7 @@
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(unspec:SI [(match_operand:SI 1 "register_operand" "r")] UNSPEC_KABS))]
   "TARGET_DSP"
-  "kabs\t%0, %1"
+  "kabsw\t%0, %1"
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
@@ -3610,7 +3610,7 @@
 	(smax:SI (match_operand:SI 1 "register_operand" " r")
 		 (match_operand:SI 2 "register_operand" " r")))]
   "TARGET_DSP"
-  "max\t%0, %1, %2"
+  "maxw\t%0, %1, %2"
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
@@ -3619,7 +3619,7 @@
 	(smin:SI (match_operand:SI 1 "register_operand" " r")
 		 (match_operand:SI 2 "register_operand" " r")))]
   "TARGET_DSP"
-  "min\t%0, %1, %2"
+  "minw\t%0, %1, %2"
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
