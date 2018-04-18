@@ -14,5 +14,5 @@ test (void)
 
   r = __nds__sclip32 (a, 4);
   ur = __nds__uclip32 (a, 0);
-  r = __nds__kabs (a);
+  r = __nds__kabsw (a);
 }
