@@ -1415,8 +1415,8 @@
    (set_attr "mode" "V2SI")])
 
 (define_insn "smulx8"
-  [(set (match_operand:V4QI 0 "register_operand"                "=r")
-	(unspec:V4QI [(match_operand:V4QI 1 "register_operand"  " r")
+  [(set (match_operand:V4HI 0 "register_operand"                "=r")
+	(unspec:V4HI [(match_operand:V4QI 1 "register_operand"  " r")
 		      (match_operand:V4QI 2 "register_operand" "  r")]
 		     UNSPEC_SMULX8))]
   "TARGET_DSP"
