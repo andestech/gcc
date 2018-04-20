@@ -1,7 +1,7 @@
 /* This is a test program for pbsad instruction.  */
-
 /* { dg-do run } */
 /* { dg-options "-O1" } */
+/* { dg-require-effective-target riscv32 } */
 
 #include <nds_intrinsic.h>
 #include <stdlib.h>

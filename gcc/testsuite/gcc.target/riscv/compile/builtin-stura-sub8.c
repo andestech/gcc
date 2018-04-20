@@ -1,5 +1,7 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv32 } */
 /* { dg-options "-mext-dsp" } */
+/* { dg-require-effective-target riscv32 } */
 /* { dg-final { scan-assembler "ksub8" } } */
 /* { dg-final { scan-assembler "ksub8" } } */
 /* { dg-final { scan-assembler "uksub8" } } */

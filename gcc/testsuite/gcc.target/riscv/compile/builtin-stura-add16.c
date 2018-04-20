@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-mext-dsp" } */
+/* { dg-require-effective-target riscv32 } */
 /* { dg-final { scan-assembler "kadd16" } } */
 /* { dg-final { scan-assembler "kadd16" } } */
 /* { dg-final { scan-assembler "ukadd16" } } */

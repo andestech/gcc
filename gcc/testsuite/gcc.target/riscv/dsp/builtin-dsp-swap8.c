@@ -1,7 +1,7 @@
 /* This is a test program for wsbh instruction.  */
-
 /* { dg-do run } */
 /* { dg-options "-O0" } */
+/* { dg-require-effective-target riscv32 } */
 
 #include <nds_intrinsic.h>
 #include <stdlib.h>

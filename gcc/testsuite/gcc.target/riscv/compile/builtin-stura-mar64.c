@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv32 } */
 /* { dg-options "-mext-dsp" } */
 /* { dg-final { scan-assembler "kmar64" } } */
 /* { dg-final { scan-assembler "ukmar64" } } */

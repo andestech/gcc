@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv32 } */
 /* { dg-options "-mext-dsp" } */
 /* { dg-final { scan-assembler "kadd64" } } */
 /* { dg-final { scan-assembler "ukadd64" } } */

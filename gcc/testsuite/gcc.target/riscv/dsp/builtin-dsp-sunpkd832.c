@@ -1,6 +1,6 @@
 /* This is a test program for sunpkd832 instruction.  */
-
 /* { dg-do run } */
+/* { dg-require-effective-target riscv32 } */
 
 #include <nds_intrinsic.h>
 #include <stdlib.h>
