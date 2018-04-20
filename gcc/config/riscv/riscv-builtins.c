@@ -101,6 +101,7 @@ enum riscv_builtins
   RISCV_BUILTIN_CSRRC,
   RISCV_BUILTIN_CSRS,
   RISCV_BUILTIN_CSRC,
+  RISCV_BUILTIN_DSP_BEGIN,
   RISCV_BUILTIN_ADD16,
   RISCV_BUILTIN_V_UADD16,
   RISCV_BUILTIN_V_SADD16,
@@ -451,7 +452,8 @@ enum riscv_builtins
   RISCV_BUILTIN_V_UCLIP8,
   RISCV_BUILTIN_FFB,
   RISCV_BUILTIN_FFMISM,
-  RISCV_BUILTIN_FLMISM
+  RISCV_BUILTIN_FLMISM,
+  RISCV_BUILTIN_DSP_END
 };
 
 /* This structure describes a single built-in function.  */
@@ -1605,6 +1607,11 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
   unsigned int fcode = DECL_MD_FUNCTION_CODE (fndecl);
   const struct riscv_builtin_description *d = &riscv_builtins[fcode];
   enum insn_code icode = TARGET_64BIT ? d->icode64 : d->icode;
+
+  if (!TARGET_DSP
+      && d->fcode > RISCV_BUILTIN_DSP_BEGIN
+      && d->fcode < RISCV_BUILTIN_DSP_END)
+    error ("don't support DSP extension instructions");
 
   switch (d->fcode)
     {
