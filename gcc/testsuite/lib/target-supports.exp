@@ -6200,6 +6200,20 @@ proc check_effective_target_powerpc_elfv2 { } {
     }
 }
 
+# Return true if the target is a 32-bit RISC-V target.
+
+proc check_effective_target_riscv32 { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages riscv32 object {
+	#if __riscv_xlen == 32
+	int dummy;
+	#else
+	#error not 32-bit RISC-V target
+	#endif
+	}]
+    }
+}
+
 # Return true if the riscv target supports hard floating-point unit.
 
 proc check_effective_target_riscv_hard_fp { } {
