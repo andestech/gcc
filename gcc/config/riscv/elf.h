@@ -72,7 +72,7 @@ BTB_FIXUP_SPEC
 /* Link against Newlib libraries, because the ELF backend assumes Newlib.
    Handle the circular dependence between libc and libgloss. */
 #undef  LIB_SPEC
-#define LIB_SPEC "--start-group -lc %{!specs=nosys.specs:-lgloss} --end-group"
+#define LIB_SPEC "--start-group -lc %{!specs=nosys.specs:%{mvh:-lgloss_vh;:-lgloss}} --end-group"
 
 #ifdef TARGET_MCULIB
 
