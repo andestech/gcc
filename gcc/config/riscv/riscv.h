@@ -972,4 +972,38 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
 
 #define HARD_REGNO_RENAME_OK(FROM, TO) riscv_hard_regno_rename_ok (FROM, TO)
 
+#ifdef TARGET_OS_DEFAULT_EX9
+#define NDS32_EX9_DRIVER_SPEC " %{Os3|Os:%{!mno-ex9:-mex9}}"
+#else
+#define NDS32_EX9_DRIVER_SPEC ""
+#endif
+
+#define NDS_DRIVER_SPEC \
+  " %{mnds:-mv5m-nds}" \
+  " %{mno-nds:-mno-v5m-nds -mno-ext-dsp}" \
+  " %{mv5m-nds:%{!mno-bfo:-mbfo}}" \
+  " %{mv5m-nds:%{!mno-bbcs:-mbbcs}}" \
+  " %{mv5m-nds:%{!mno-bimm:-mbimm}}" \
+  " %{mv5m-nds:%{!mno-lea:-mlea}}" \
+  " %{mv5m-nds:%{!mno-ex9:-mex9}}" \
+  " %{mv5m-nds:%{!mno-gp-insn-relax:-mgp-insn-relax}}" \
+  " %{mno-v5m-nds:%{!mbfo:-mno-bfo}}" \
+  " %{mno-v5m-nds:%{!mbbcs:-mno-bbcs}}" \
+  " %{mno-v5m-nds:%{!mbimm:-mno-bimm}}" \
+  " %{mno-v5m-nds:%{!mlea:-mno-lea}}" \
+  " %{mno-v5m-nds:%{!mex9:-mno-ex9}}" \
+  " %{mno-v5m-nds:%{!mgp-insn-relax:-mno-gp-insn-relax}}"
+
+#define CMODEL_SPEC \
+  " %{mcmodel=small:-mcmodel=medlow}" \
+  " %{mcmodel=medium:%{march=rv32*:-mcmodel=medlow}}" \
+  " %{mcmodel=medium:%{march=rv64*:-mcmodel=medany}}" \
+  " %{mcmodel=large:%{march=rv32*:-mcmodel=medlow}}" \
+  " %{mcmodel=large:%{march=rv64*:-mcmodel=medany}}"
+
+#define DRIVER_SELF_SPECS \
+  NDS32_EX9_DRIVER_SPEC \
+  NDS_DRIVER_SPEC \
+  CMODEL_SPEC
+
 #endif /* ! GCC_RISCV_H */

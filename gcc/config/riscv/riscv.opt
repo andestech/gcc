@@ -160,6 +160,10 @@ mv5m-nds
 Target Report Mask(V5M)
 Enable all v5m instructions.
 
+mnds
+Target Report
+Enable Andes extension instructions.
+
 mext-dsp
 Target Report Mask(DSP)
 Use hardware DSP instructions.

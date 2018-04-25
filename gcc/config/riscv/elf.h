@@ -19,10 +19,8 @@ along with GCC; see the file COPYING3.  If not see
 
 #ifdef TARGET_OS_DEFAULT_EX9
 #define NDS32_EX9_SPEC " %{Os3|Os|mex9:%{!mno-ex9:--mex9}}"
-#define NDS32_EX9_DRIVER_SPEC " %{Os3|Os:%{!mno-ex9:-mex9}}"
 #else
 #define NDS32_EX9_SPEC " %{mex9:--mex9}"
-#define NDS32_EX9_DRIVER_SPEC ""
 #endif
 
 #ifdef TARGET_DEFAULT_GP_RELAX
@@ -30,20 +28,6 @@ along with GCC; see the file COPYING3.  If not see
 #else
 #define NDS32_GP_RELAX_SPEC " %{mgp-insn-relax:--mgp-insn}"
 #endif
-
-#define V5M_DRIVER_SPEC \
-  " %{mv5m-nds:%{!mno-bfo:-mbfo}}" \
-  " %{mv5m-nds:%{!mno-bbcs:-mbbcs}}" \
-  " %{mv5m-nds:%{!mno-bimm:-mbimm}}" \
-  " %{mv5m-nds:%{!mno-lea:-mlea}}" \
-  " %{mv5m-nds:%{!mno-ex9:-mex9}}" \
-  " %{mv5m-nds:%{!mno-gp-insn-relax:-mgp-insn-relax}}" \
-  " %{mno-v5m-nds:%{!mbfo:-mno-bfo}}" \
-  " %{mno-v5m-nds:%{!mbbcs:-mno-bbcs}}" \
-  " %{mno-v5m-nds:%{!mbimm:-mno-bimm}}" \
-  " %{mno-v5m-nds:%{!mlea:-mno-lea}}" \
-  " %{mno-v5m-nds:%{!mex9:-mno-ex9}}" \
-  " %{mno-v5m-nds:%{!mgp-insn-relax:-mno-gp-insn-relax}}"
 
 #define BTB_FIXUP_SPEC \
   " %{Os3|Os:--mno-avoid-btb-miss}"
@@ -56,18 +40,6 @@ along with GCC; see the file COPYING3.  If not see
 NDS32_EX9_SPEC \
 NDS32_GP_RELAX_SPEC \
 BTB_FIXUP_SPEC
-
-#define CMODEL_SPEC \
-  " %{mcmodel=small:-mcmodel=medlow}" \
-  " %{mcmodel=medium:%{march=rv32*:-mcmodel=medlow}}" \
-  " %{mcmodel=medium:%{march=rv64*:-mcmodel=medany}}" \
-  " %{mcmodel=large:%{march=rv32*:-mcmodel=medlow}}" \
-  " %{mcmodel=large:%{march=rv64*:-mcmodel=medany}}"
-
-#define DRIVER_SELF_SPECS \
-  NDS32_EX9_DRIVER_SPEC \
-  V5M_DRIVER_SPEC \
-  CMODEL_SPEC
 
 /* Link against Newlib libraries, because the ELF backend assumes Newlib.
    Handle the circular dependence between libc and libgloss. */
