@@ -2530,6 +2530,11 @@ riscv*-*-elf* | riscv*-*-rtems*)
 		  tm_defines="${tm_defines} TARGET_DEFAULT_GP_RELAX=1"
 	  fi
 
+	  # Handle --enable-error-on-no-atomic setting.
+	  if test x${enable_error_on_no_atomic=} = xyes; then
+		  tm_defines="${tm_defines} TARGET_DEFAULT_ERROR_ON_NO_ATOMIC=1"
+	  fi
+
 	esac
 	tmake_file="${tmake_file} riscv/t-riscv"
 	gnu_ld=yes

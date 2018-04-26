@@ -678,6 +678,9 @@ static const struct default_options riscv_option_optimization_table[] =
     { OPT_LEVELS_1_PLUS, OPT_fsection_anchors, NULL, 1 },
     { OPT_LEVELS_2_PLUS, OPT_free, NULL, 1 },
     { OPT_LEVELS_SIZE, OPT_msave_restore, NULL, 1 },
+#ifdef TARGET_DEFAULT_ERROR_ON_NO_ATOMIC
+    { OPT_LEVELS_ALL, OPT_merror_on_no_atomic, NULL, 1 },
+#endif
     { OPT_LEVELS_NONE, 0, NULL, 0 }
   };
 
