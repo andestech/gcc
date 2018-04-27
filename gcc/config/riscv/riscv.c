@@ -5061,6 +5061,8 @@ riscv_emit_attribute ()
 static void
 riscv_file_start (void)
 {
+  std::string arch = riscv_arch_str ();
+
   default_file_start ();
 
   /* Instruct GAS to generate position-[in]dependent code.  */
@@ -5077,6 +5079,14 @@ riscv_file_start (void)
 
   if (TARGET_EX9 && TARGET_RVC)
     fprintf (asm_out_file, "\t.option ex9\n");
+
+  fprintf (asm_out_file, "\t.attribute arch, \"%s\"\n", arch.c_str());
+
+  fprintf (asm_out_file, "\t.attribute strict_align, %d\n",
+	   TARGET_STRICT_ALIGN ? 1 : 0);
+
+  fprintf (asm_out_file, "\t.attribute stack_align, %d\n",
+	   riscv_stack_boundary / 8);
 }
 
 /* Implement TARGET_ASM_OUTPUT_MI_THUNK.  Generate rtl rather than asm text
