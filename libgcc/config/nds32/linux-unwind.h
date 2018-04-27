@@ -32,12 +32,13 @@
 
 #include <signal.h>
 #include <asm/unistd.h>
+#include <sys/ucontext.h>
 
 /* Exactly the same layout as the kernel structures, unique names.  */
 
 /* arch/nds32/kernel/signal.c */
 struct _sigframe {
-    struct ucontext uc;
+    ucontext_t uc;
     unsigned long retcode;
 };
 
