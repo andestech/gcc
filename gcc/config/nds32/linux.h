@@ -29,7 +29,7 @@
 #undef  PTRDIFF_TYPE
 #define PTRDIFF_TYPE "int"
 
-#ifdef TARGET_DEFAULT_TLSDESC_TRAMPOLINE
+#if TARGET_DEFAULT_TLSDESC_TRAMPOLINE == 0
   #define NDS32_TLSDESC_TRAMPOLINE_SPEC \
     " %{!mno-tlsdesc-trampoline:--mtlsdesc-trampoline}"
 #else
