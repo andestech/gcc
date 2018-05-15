@@ -5486,6 +5486,12 @@ riscv_function_ok_for_sibcall (tree decl ATTRIBUTE_UNUSED,
   if (cfun->machine->interrupt_handler_p)
     return false;
 
+  /* Don't use sibcalls in the large model, because a sibcall instruction
+     expanding and a epilogue expanding both use RISCV_PROLOGUE_TEMP
+     register.  */
+  if (riscv_cmodel == CM_LARGE)
+    return false;
+
   return true;
 }
 
