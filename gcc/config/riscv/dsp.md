@@ -20,14 +20,15 @@
 ;; <http://www.gnu.org/licenses/>.
 
 ;; A list of the modes that are up to one word long vector.
-(define_mode_iterator VQIHI [V4QI V2HI])
+(define_mode_iterator VQIHI [(V4QI "") (V2HI "")
+                             (V8QI "TARGET_64BIT") (V4HI "TARGET_64BIT")])
 
 ;; Give the number of DSP instructions in the mode
-(define_mode_attr bits [(V4QI "8") (QI "8") (V2HI "16") (HI "16") (DI "64")])
+(define_mode_attr bits [(V8QI "8") (V4QI "8") (QI "8") (V4HI "16") (V2HI "16") (HI "16") (DI "64")])
 
 (define_mode_attr bsize [(HI "8") (SI "16")])
 
-(define_mode_attr VELT [(V4QI "QI") (V2HI "HI")])
+(define_mode_attr VELT [(V4QI "QI") (V2HI "HI") (V8QI "QI") (V4HI "HI")])
 
 (define_code_iterator all_plus [plus ss_plus us_plus])
 
@@ -731,7 +732,7 @@
   [(set_attr "type"   "arith,arith")
    (set_attr "mode" "   V2HI, V2HI")])
 
-(define_insn "kslra<bits>"
+(define_insn "kslra<mode>"
   [(set (match_operand:VQIHI 0 "register_operand"                   "=r")
 	(if_then_else:VQIHI
 	  (lt:SI (match_operand:SI 2 "register_operand"             " r")
@@ -744,7 +745,7 @@
   "kslra<bits>\t%0, %1, %2"
   [(set_attr "type" "arith")])
 
-(define_insn "kslra<bits>_round"
+(define_insn "kslra<mode>_round"
   [(set (match_operand:VQIHI 0 "register_operand"                  "=r")
 	(if_then_else:VQIHI
 	  (lt:SI (match_operand:SI 2 "register_operand"            " r")
@@ -758,7 +759,7 @@
   "kslra<bits>.u\t%0, %1, %2"
   [(set_attr "type" "arith")])
 
-(define_insn "cmpeq<bits>"
+(define_insn "cmpeq<mode>"
   [(set (match_operand:SI 0 "register_operand"                       "=r")
 	(unspec:SI [(eq:SI (match_operand:VQIHI 1 "register_operand" " r")
 			   (match_operand:VQIHI 2 "register_operand" " r"))]
@@ -767,7 +768,7 @@
   "cmpeq<bits>\t%0, %1, %2"
   [(set_attr "mode" "SI")])
 
-(define_insn "scmplt<bits>"
+(define_insn "scmplt<mode>"
   [(set (match_operand:SI 0 "register_operand"                       "=r")
 	(unspec:SI [(lt:SI (match_operand:VQIHI 1 "register_operand" " r")
 			   (match_operand:VQIHI 2 "register_operand" " r"))]
@@ -776,7 +777,7 @@
   "scmplt<bits>\t%0, %1, %2"
   [(set_attr "mode" "SI")])
 
-(define_insn "scmple<bits>"
+(define_insn "scmple<mode>"
   [(set (match_operand:SI 0 "register_operand"                       "=r")
 	(unspec:SI [(le:SI (match_operand:VQIHI 1 "register_operand" " r")
 			   (match_operand:VQIHI 2 "register_operand" " r"))]
@@ -785,7 +786,7 @@
   "scmple<bits>\t%0, %1, %2"
   [(set_attr "mode" "SI")])
 
-(define_insn "ucmplt<bits>"
+(define_insn "ucmplt<mode>"
   [(set (match_operand:SI 0 "register_operand"                        "=r")
 	(unspec:SI [(ltu:SI (match_operand:VQIHI 1 "register_operand" " r")
 			    (match_operand:VQIHI 2 "register_operand" " r"))]
@@ -794,7 +795,7 @@
   "ucmplt<bits>\t%0, %1, %2"
   [(set_attr "mode" "SI")])
 
-(define_insn "ucmple<bits>"
+(define_insn "ucmple<mode>"
   [(set (match_operand:SI 0 "register_operand"                        "=r")
 	(unspec:SI [(leu:SI (match_operand:VQIHI 1 "register_operand" " r")
 			    (match_operand:VQIHI 2 "register_operand" " r"))]
