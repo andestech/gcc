@@ -934,7 +934,7 @@
 	(fma:ANYF (match_operand:ANYF 1 "register_operand" " f")
 		  (match_operand:ANYF 2 "register_operand" " f")
 		  (match_operand:ANYF 3 "register_operand" " f")))]
-  "TARGET_HARD_FLOAT"
+  "TARGET_HARD_FLOAT && TARGET_FMA"
   "fmadd.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
@@ -945,7 +945,7 @@
 	(fma:ANYF (match_operand:ANYF           1 "register_operand" " f")
 		  (match_operand:ANYF           2 "register_operand" " f")
 		  (neg:ANYF (match_operand:ANYF 3 "register_operand" " f"))))]
-  "TARGET_HARD_FLOAT"
+  "TARGET_HARD_FLOAT && TARGET_FMA"
   "fmsub.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
@@ -957,7 +957,7 @@
 	    (neg:ANYF (match_operand:ANYF 1 "register_operand" " f"))
 	    (match_operand:ANYF           2 "register_operand" " f")
 	    (neg:ANYF (match_operand:ANYF 3 "register_operand" " f"))))]
-  "TARGET_HARD_FLOAT"
+  "TARGET_HARD_FLOAT && TARGET_FMA"
   "fnmadd.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
@@ -969,7 +969,7 @@
 	    (neg:ANYF (match_operand:ANYF 1 "register_operand" " f"))
 	    (match_operand:ANYF           2 "register_operand" " f")
 	    (match_operand:ANYF           3 "register_operand" " f")))]
-  "TARGET_HARD_FLOAT"
+  "TARGET_HARD_FLOAT && TARGET_FMA"
   "fnmsub.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
@@ -982,7 +982,7 @@
 		(neg:ANYF (match_operand:ANYF 1 "register_operand" " f"))
 		(match_operand:ANYF           2 "register_operand" " f")
 		(neg:ANYF (match_operand:ANYF 3 "register_operand" " f")))))]
-  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode)"
+  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode) && TARGET_FMA"
   "fmadd.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
@@ -995,7 +995,7 @@
 		(neg:ANYF (match_operand:ANYF 1 "register_operand" " f"))
 		(match_operand:ANYF           2 "register_operand" " f")
 		(match_operand:ANYF           3 "register_operand" " f"))))]
-  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode)"
+  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode) && TARGET_FMA"
   "fmsub.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
@@ -1008,7 +1008,7 @@
 		(match_operand:ANYF 1 "register_operand" " f")
 		(match_operand:ANYF 2 "register_operand" " f")
 		(match_operand:ANYF 3 "register_operand" " f"))))]
-  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode)"
+  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode) && TARGET_FMA"
   "fnmadd.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
@@ -1021,7 +1021,7 @@
 		(match_operand:ANYF           1 "register_operand" " f")
 		(match_operand:ANYF           2 "register_operand" " f")
 		(neg:ANYF (match_operand:ANYF 3 "register_operand" " f")))))]
-  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode)"
+  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode) && TARGET_FMA"
   "fnmsub.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
