@@ -4337,76 +4337,11 @@ nds32_cpu_cpp_builtins(struct cpp_reader *pfile)
   builtin_assert ("cpu=nds32");
   builtin_assert ("machine=nds32");
 
-  /* FOR BACKWARD COMPATIBILITY.  */
-  if (TARGET_ISA_V2)
-    builtin_define ("__NDS32_BASELINE_V2__");
-  if (TARGET_ISA_V3)
-    builtin_define ("__NDS32_BASELINE_V3__");
-  if (TARGET_ISA_V3M)
-    builtin_define ("__NDS32_BASELINE_V3M__");
-  if (TARGET_REDUCED_REGS)
-    builtin_define ("__NDS32_REDUCE_REGS__");
-
-  if (TARGET_ISA_V2)
-    builtin_define ("NDS32_BASELINE_V2");
-  if (TARGET_ISA_V3)
-    builtin_define ("NDS32_BASELINE_V3");
-  if (TARGET_ISA_V3M)
-    builtin_define ("NDS32_BASELINE_V3M");
-  if (TARGET_REDUCED_REGS)
-    builtin_define ("NDS32_REDUCE_REGS");
-  if (TARGET_FPU_SINGLE)
-    builtin_define ("NDS32_EXT_FPU_SP");
-  if (TARGET_FPU_DOUBLE)
-    builtin_define ("NDS32_EXT_FPU_DP");
-  if (TARGET_EXT_PERF)
-    builtin_define ("NDS32_EXT_PERF");
-  if (TARGET_EXT_PERF2)
-    builtin_define ("NDS32_EXT_PERF2");
-  if (TARGET_EXT_STRING)
-    builtin_define ("NDS32_EXT_STRING");
-  if (TARGET_ISA_V3)
-    builtin_define ("NDS32_EXT_IFC");
-  if (TARGET_ISA_V3)
-    builtin_define ("NDS32_EXT_EX9");
-
-  if (TARGET_HARD_FLOAT)
-    builtin_define ("NDS32_ABI_2FP_PLUS");
-  else
-    builtin_define ("NDS32_ABI_2");
-
-  if (TARGET_BIG_ENDIAN)
-    builtin_define ("NDS32_EB");
-  else
-    builtin_define ("NDS32_EL");
-
-  if (TARGET_ISA_V2)
-    builtin_define ("__NDS32_BASELINE_V2");
-  if (TARGET_ISA_V3)
-    builtin_define ("__NDS32_BASELINE_V3");
-  if (TARGET_ISA_V3M)
-    builtin_define ("__NDS32_BASELINE_V3M");
-  if (TARGET_REDUCED_REGS)
-    builtin_define ("__NDS32_REDUCE_REGS");
-  if (TARGET_FPU_SINGLE)
-    builtin_define ("__NDS32_EXT_FPU_SP");
-  if (TARGET_FPU_DOUBLE)
-    builtin_define ("__NDS32_EXT_FPU_DP");
-  if (TARGET_EXT_PERF)
-    builtin_define ("__NDS32_EXT_PERF");
-  if (TARGET_EXT_PERF2)
-    builtin_define ("__NDS32_EXT_PERF2");
-  if (TARGET_EXT_STRING)
-    builtin_define ("__NDS32_EXT_STRING");
   if (TARGET_HARD_FLOAT)
     builtin_define ("__NDS32_ABI_2FP_PLUS");
   else
     builtin_define ("__NDS32_ABI_2");
 
-  if (TARGET_BIG_ENDIAN)
-    builtin_define ("__NDS32_EB");
-  else
-    builtin_define ("__NDS32_EL");
 #undef builtin_define
 #undef builtin_assert
 }
