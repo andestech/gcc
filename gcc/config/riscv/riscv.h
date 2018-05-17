@@ -981,6 +981,7 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
 #endif
 
 #define NDS_DRIVER_SPEC \
+  " %{frepo:-fuse-ld=bfd}" \
   " %{mnds:-mv5m-nds}" \
   " %{mno-nds:-mno-v5m-nds -mno-ext-dsp}" \
   " %{mv5m-nds:%{!mno-bfo:-mbfo}}" \
