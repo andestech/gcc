@@ -2,10 +2,12 @@
 #define _NDS_INTRINSIC_H
 
 typedef signed char int8x4_t __attribute ((vector_size(4)));
+typedef signed char int8x8_t __attribute ((vector_size(8)));
 typedef short int16x2_t __attribute ((vector_size(4)));
 typedef short int16x4_t __attribute__((vector_size (8)));
 typedef int int32x2_t __attribute__((vector_size(8)));
 typedef unsigned char uint8x4_t __attribute__ ((vector_size (4)));
+typedef unsigned char uint8x8_t __attribute__ ((vector_size (8)));
 typedef unsigned short uint16x2_t __attribute__ ((vector_size (4)));
 typedef unsigned short uint16x4_t __attribute__((vector_size (8)));
 typedef unsigned int uint32x2_t __attribute__((vector_size(8)));
@@ -455,44 +457,68 @@ enum riscv_order
   (__builtin_riscv_v_uadd16 ((a), (b)))
 #define __nds__v_sadd16(a, b) \
   (__builtin_riscv_v_sadd16 ((a), (b)))
+#define __nds64__v_uadd16(a, b) \
+  (__builtin_riscv_v64_uadd16 ((a), (b)))
+#define __nds64__v_sadd16(a, b) \
+  (__builtin_riscv_v64_sadd16 ((a), (b)))
 #define __nds__radd16(a, b) \
   (__builtin_riscv_radd16 ((a), (b)))
 #define __nds__v_radd16(a, b) \
   (__builtin_riscv_v_radd16 ((a), (b)))
+#define __nds64__v_radd16(a, b) \
+  (__builtin_riscv_v64_radd16 ((a), (b)))
 #define __nds__uradd16(a, b) \
   (__builtin_riscv_uradd16 ((a), (b)))
 #define __nds__v_uradd16(a, b) \
   (__builtin_riscv_v_uradd16 ((a), (b)))
+#define __nds64__v_uradd16(a, b) \
+  (__builtin_riscv_v64_uradd16 ((a), (b)))
 #define __nds__kadd16(a, b) \
   (__builtin_riscv_kadd16 ((a), (b)))
 #define __nds__v_kadd16(a, b) \
   (__builtin_riscv_v_kadd16 ((a), (b)))
+#define __nds64__v_kadd16(a, b) \
+  (__builtin_riscv_v64_kadd16 ((a), (b)))
 #define __nds__ukadd16(a, b) \
   (__builtin_riscv_ukadd16 ((a), (b)))
 #define __nds__v_ukadd16(a, b) \
   (__builtin_riscv_v_ukadd16 ((a), (b)))
+#define __nds__v64_ukadd16(a, b) \
+  (__builtin_riscv_v64_ukadd16 ((a), (b)))
 #define __nds__sub16(a, b) \
   (__builtin_riscv_sub16 ((a), (b)))
 #define __nds__v_usub16(a, b) \
   (__builtin_riscv_v_usub16 ((a), (b)))
 #define __nds__v_ssub16(a, b) \
   (__builtin_riscv_v_ssub16 ((a), (b)))
+#define __nds64__v_usub16(a, b) \
+  (__builtin_riscv_v64_usub16 ((a), (b)))
+#define __nds64__v_ssub16(a, b) \
+  (__builtin_riscv_v64_ssub16 ((a), (b)))
 #define __nds__rsub16(a, b) \
   (__builtin_riscv_rsub16 ((a), (b)))
 #define __nds__v_rsub16(a, b) \
   (__builtin_riscv_v_rsub16 ((a), (b)))
+#define __nds64__v_rsub16(a, b) \
+  (__builtin_riscv_v64_rsub16 ((a), (b)))
 #define __nds__ursub16(a, b) \
   (__builtin_riscv_ursub16 ((a), (b)))
 #define __nds__v_ursub16(a, b) \
   (__builtin_riscv_v_ursub16 ((a), (b)))
+#define __nds64__v_ursub16(a, b) \
+  (__builtin_riscv_v64_ursub16 ((a), (b)))
 #define __nds__ksub16(a, b) \
   (__builtin_riscv_ksub16 ((a), (b)))
 #define __nds__v_ksub16(a, b) \
   (__builtin_riscv_v_ksub16 ((a), (b)))
+#define __nds64__v_ksub16(a, b) \
+  (__builtin_riscv_v64_ksub16 ((a), (b)))
 #define __nds__uksub16(a, b) \
   (__builtin_riscv_uksub16 ((a), (b)))
 #define __nds__v_uksub16(a, b) \
   (__builtin_riscv_v_uksub16 ((a), (b)))
+#define __nds64__v_uksub16(a, b) \
+  (__builtin_riscv_v64_uksub16 ((a), (b)))
 
 #define __nds__cras16(a, b) \
   (__builtin_riscv_cras16 ((a), (b)))
@@ -544,44 +570,68 @@ enum riscv_order
   (__builtin_riscv_v_uadd8 ((a), (b)))
 #define __nds__v_sadd8(a, b) \
   (__builtin_riscv_v_sadd8 ((a), (b)))
+#define __nds64__v_uadd8(a, b) \
+  (__builtin_riscv_v64_uadd8 ((a), (b)))
+#define __nds64__v_sadd8(a, b) \
+  (__builtin_riscv_v64_sadd8 ((a), (b)))
 #define __nds__radd8(a, b) \
   (__builtin_riscv_radd8 ((a), (b)))
 #define __nds__v_radd8(a, b) \
   (__builtin_riscv_v_radd8 ((a), (b)))
+#define __nds64__v_radd8(a, b) \
+  (__builtin_riscv_v64_radd8 ((a), (b)))
 #define __nds__uradd8(a, b) \
   (__builtin_riscv_uradd8 ((a), (b)))
 #define __nds__v_uradd8(a, b) \
   (__builtin_riscv_v_uradd8 ((a), (b)))
+#define __nds64__v_uradd8(a, b) \
+  (__builtin_riscv_v64_uradd8 ((a), (b)))
 #define __nds__kadd8(a, b) \
   (__builtin_riscv_kadd8 ((a), (b)))
 #define __nds__v_kadd8(a, b) \
   (__builtin_riscv_v_kadd8 ((a), (b)))
+#define __nds64__v_kadd8(a, b) \
+  (__builtin_riscv_v64_kadd8 ((a), (b)))
 #define __nds__ukadd8(a, b) \
   (__builtin_riscv_ukadd8 ((a), (b)))
 #define __nds__v_ukadd8(a, b) \
   (__builtin_riscv_v_ukadd8 ((a), (b)))
+#define __nds64__v_ukadd8(a, b) \
+  (__builtin_riscv_v64_ukadd8 ((a), (b)))
 #define __nds__sub8(a, b) \
   (__builtin_riscv_sub8 ((a), (b)))
 #define __nds__v_usub8(a, b) \
   (__builtin_riscv_v_usub8 ((a), (b)))
 #define __nds__v_ssub8(a, b) \
   (__builtin_riscv_v_ssub8 ((a), (b)))
+#define __nds64__v_usub8(a, b) \
+  (__builtin_riscv_v64_usub8 ((a), (b)))
+#define __nds64__v_ssub8(a, b) \
+  (__builtin_riscv_v64_ssub8 ((a), (b)))
 #define __nds__rsub8(a, b) \
   (__builtin_riscv_rsub8 ((a), (b)))
 #define __nds__v_rsub8(a, b) \
   (__builtin_riscv_v_rsub8 ((a), (b)))
+#define __nds64__v_rsub8(a, b) \
+  (__builtin_riscv_v64_rsub8 ((a), (b)))
 #define __nds__ursub8(a, b) \
   (__builtin_riscv_ursub8 ((a), (b)))
 #define __nds__v_ursub8(a, b) \
   (__builtin_riscv_v_ursub8 ((a), (b)))
+#define __nds64__v_ursub8(a, b) \
+  (__builtin_riscv_v64_ursub8 ((a), (b)))
 #define __nds__ksub8(a, b) \
   (__builtin_riscv_ksub8 ((a), (b)))
 #define __nds__v_ksub8(a, b) \
   (__builtin_riscv_v_ksub8 ((a), (b)))
+#define __nds64__v_ksub8(a, b) \
+  (__builtin_riscv_v64_ksub8 ((a), (b)))
 #define __nds__uksub8(a, b) \
   (__builtin_riscv_uksub8 ((a), (b)))
 #define __nds__v_uksub8(a, b) \
   (__builtin_riscv_v_uksub8 ((a), (b)))
+#define __nds64__v_uksub8(a, b) \
+  (__builtin_riscv_v64_uksub8 ((a), (b)))
 
 #define __nds__sra16(a, b) \
   (__builtin_riscv_sra16 ((a), (b)))
