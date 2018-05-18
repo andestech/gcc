@@ -728,6 +728,18 @@ enum riscv_order
   (__builtin_riscv_ucmple16 ((a), (b)))
 #define __nds__v_ucmple16(a, b) \
   (__builtin_riscv_v_ucmple16 ((a), (b)))
+#define __nds64__v_scmpeq16(a, b) \
+  (__builtin_riscv_v64_scmpeq16 ((a), (b)))
+#define __nds64__v_ucmpeq16(a, b) \
+  (__builtin_riscv_v64_ucmpeq16 ((a), (b)))
+#define __nds64__v_scmplt16(a, b) \
+  (__builtin_riscv_v64_scmplt16 ((a), (b)))
+#define __nds64__v_scmple16(a, b) \
+  (__builtin_riscv_v64_scmple16 ((a), (b)))
+#define __nds64__v_ucmplt16(a, b) \
+  (__builtin_riscv_v64_ucmplt16 ((a), (b)))
+#define __nds64__v_ucmple16(a, b) \
+  (__builtin_riscv_v64_ucmple16 ((a), (b)))
 
 #define __nds__cmpeq8(a, b) \
   (__builtin_riscv_cmpeq8 ((a), (b)))
@@ -751,6 +763,18 @@ enum riscv_order
   (__builtin_riscv_ucmple8 ((a), (b)))
 #define __nds__v_ucmple8(a, b) \
   (__builtin_riscv_v_ucmple8 ((a), (b)))
+#define __nds64__v_scmpeq8(a, b) \
+  (__builtin_riscv_v64_scmpeq8 ((a), (b)))
+#define __nds64__v_ucmpeq8(a, b) \
+  (__builtin_riscv_v64_ucmpeq8 ((a), (b)))
+#define __nds64__v_scmplt8(a, b) \
+  (__builtin_riscv_v64_scmplt8 ((a), (b)))
+#define __nds64__v_scmple8(a, b) \
+  (__builtin_riscv_v64_scmple8 ((a), (b)))
+#define __nds64__v_ucmplt8(a, b) \
+  (__builtin_riscv_v64_ucmplt8 ((a), (b)))
+#define __nds64__v_ucmple8(a, b) \
+  (__builtin_riscv_v64_ucmple8 ((a), (b)))
 
 #define __nds__smin16(a, b) \
   (__builtin_riscv_smin16 ((a), (b)))
