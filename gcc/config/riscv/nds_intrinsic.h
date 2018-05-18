@@ -542,6 +542,18 @@ enum riscv_order
   (__builtin_riscv_ukcras16 ((a), (b)))
 #define __nds__v_ukcras16(a, b) \
   (__builtin_riscv_v_ukcras16 ((a), (b)))
+#define __nds64__v_ucras16(a, b) \
+  (__builtin_riscv_v64_ucras16 ((a), (b)))
+#define __nds64__v_scras16(a, b) \
+  (__builtin_riscv_v64_scras16 ((a), (b)))
+#define __nds64__v_rcras16(a, b) \
+  (__builtin_riscv_v64_rcras16 ((a), (b)))
+#define __nds64__v_urcras16(a, b) \
+  (__builtin_riscv_v64_urcras16 ((a), (b)))
+#define __nds64__v_kcras16(a, b) \
+  (__builtin_riscv_v64_kcras16 ((a), (b)))
+#define __nds64__v_ukcras16(a, b) \
+  (__builtin_riscv_v64_ukcras16 ((a), (b)))
 #define __nds__crsa16(a, b) \
   (__builtin_riscv_crsa16 ((a), (b)))
 #define __nds__v_ucrsa16(a, b) \
@@ -564,6 +576,18 @@ enum riscv_order
   (__builtin_riscv_ukcrsa16 ((a), (b)))
 #define __nds__v_ukcrsa16(a, b) \
   (__builtin_riscv_v_ukcrsa16 ((a), (b)))
+#define __nds64__v_ucrsa16(a, b) \
+  (__builtin_riscv_v64_ucrsa16 ((a), (b)))
+#define __nds64__v_scrsa16(a, b) \
+  (__builtin_riscv_v64_scrsa16 ((a), (b)))
+#define __nds64__v_rcrsa16(a, b) \
+  (__builtin_riscv_v64_rcrsa16 ((a), (b)))
+#define __nds64__v_urcrsa16(a, b) \
+  (__builtin_riscv_v64_urcrsa16 ((a), (b)))
+#define __nds64__v_kcrsa16(a, b) \
+  (__builtin_riscv_v64_kcrsa16 ((a), (b)))
+#define __nds64__v_ukcrsa16(a, b) \
+  (__builtin_riscv_v64_ukcrsa16 ((a), (b)))
 #define __nds__add8(a, b) \
   (__builtin_riscv_add8 ((a), (b)))
 #define __nds__v_uadd8(a, b) \
