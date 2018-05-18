@@ -689,6 +689,22 @@ enum riscv_order
   (__builtin_riscv_kslra16_u ((a), (b)))
 #define __nds__v_kslra16_u(a, b) \
   (__builtin_riscv_v_kslra16_u ((a), (b)))
+#define __nds64__v_sra16(a, b) \
+  (__builtin_riscv_v64_sra16 ((a), (b)))
+#define __nds64__v_sra16_u(a, b) \
+  (__builtin_riscv_v64_sra16_u ((a), (b)))
+#define __nds64__v_srl16(a, b) \
+  (__builtin_riscv_v64_srl16 ((a), (b)))
+#define __nds64__v_srl16_u(a, b) \
+  (__builtin_riscv_v64_srl16_u ((a), (b)))
+#define __nds64__v_sll16(a, b) \
+  (__builtin_riscv_v64_sll16 ((a), (b)))
+#define __nds64__v_ksll16(a, b) \
+  (__builtin_riscv_v64_ksll16 ((a), (b)))
+#define __nds64__v_kslra16(a, b) \
+  (__builtin_riscv_v64_kslra16 ((a), (b)))
+#define __nds64__v_kslra16_u(a, b) \
+  (__builtin_riscv_v64_kslra16_u ((a), (b)))
 
 #define __nds__cmpeq16(a, b) \
   (__builtin_riscv_cmpeq16 ((a), (b)))
