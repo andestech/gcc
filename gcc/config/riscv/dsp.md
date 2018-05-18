@@ -23,6 +23,8 @@
 (define_mode_iterator VQIHI [(V4QI "") (V2HI "")
                              (V8QI "TARGET_64BIT") (V4HI "TARGET_64BIT")])
 
+(define_mode_iterator VHI [(V2HI "") (V4HI "TARGET_64BIT")])
+
 ;; Give the number of DSP instructions in the mode
 (define_mode_attr bits [(V8QI "8") (V4QI "8") (QI "8") (V4HI "16") (V2HI "16") (HI "16") (DI "64")])
 
@@ -1225,10 +1227,10 @@
   [(set_attr "type" "arith")
    (set_attr "mode" "V4HI")])
 
-(define_expand "<shift>v2hi3"
-  [(set (match_operand:V2HI 0 "register_operand"                  "")
-	(any_shift:V2HI (match_operand:V2HI 1 "register_operand"  "")
-			(match_operand:SI   2 "rimm4u_operand" "")))]
+(define_expand "<shift><mode>3"
+  [(set (match_operand:VHI 0 "register_operand"                "")
+	(any_shift:VHI (match_operand:VHI 1 "register_operand" "")
+		       (match_operand:SI   2 "rimm4u_operand"  "")))]
   "TARGET_DSP"
 {
   if (operands[2] == const0_rtx)
@@ -1238,73 +1240,73 @@
     }
 })
 
-(define_insn "*ashlv2hi3"
-  [(set (match_operand:V2HI 0 "register_operand"              "=   r, r")
-	(ashift:V2HI (match_operand:V2HI 1 "register_operand" "    r, r")
-		     (match_operand:SI 2   "rimm4u_operand"   " u04, r")))]
+(define_insn "*ashl<mode>3"
+  [(set (match_operand:VHI 0 "register_operand"             "=  r, r")
+	(ashift:VHI (match_operand:VHI 1 "register_operand" "   r, r")
+		    (match_operand:SI 2  "rimm4u_operand"   " u04, r")))]
   "TARGET_DSP"
   "@
    slli16\t%0, %1, %2
    sll16\t%0, %1, %2"
-  [(set_attr "type"   "arith,arith")
-   (set_attr "mode" "   V2HI, V2HI")])
+  [(set_attr "type" "arith,  arith")
+   (set_attr "mode" "<MODE>, <MODE>")])
 
-(define_insn "kslli16"
-  [(set (match_operand:V2HI 0 "register_operand"                 "=   r, r")
-	(ss_ashift:V2HI (match_operand:V2HI 1 "register_operand" "    r, r")
-			(match_operand:SI 2 "rimm4u_operand"     " u04, r")))]
+(define_insn "kslli16<mode>"
+  [(set (match_operand:VHI 0 "register_operand"                "=  r, r")
+	(ss_ashift:VHI (match_operand:VHI 1 "register_operand" "   r, r")
+		       (match_operand:SI 2  "rimm4u_operand"   " u04, r")))]
   "TARGET_DSP"
   "@
    kslli16\t%0, %1, %2
    ksll16\t%0, %1, %2"
-  [(set_attr "type"   "arith,arith")
-   (set_attr "mode" "   V2HI, V2HI")])
+  [(set_attr "type" "arith,  arith")
+   (set_attr "mode" "<MODE>, <MODE>")])
 
-(define_insn "*ashrv2hi3"
-  [(set (match_operand:V2HI 0 "register_operand"                "=   r, r")
-	(ashiftrt:V2HI (match_operand:V2HI 1 "register_operand" "    r, r")
-		       (match_operand:SI 2 "rimm4u_operand"     " u04, r")))]
+(define_insn "*ashr<mode>3"
+  [(set (match_operand:VHI 0 "register_operand"               "=   r, r")
+	(ashiftrt:VHI (match_operand:VHI 1 "register_operand" "    r, r")
+		      (match_operand:SI 2  "rimm4u_operand"   " u04, r")))]
   "TARGET_DSP"
   "@
    srai16\t%0, %1, %2
    sra16\t%0, %1, %2"
-  [(set_attr "type"   "arith,arith")
-   (set_attr "mode" "   V2HI, V2HI")])
+  [(set_attr "type" "arith,  arith")
+   (set_attr "mode" "<MODE>, <MODE>")])
 
-(define_insn "sra16_round"
-  [(set (match_operand:V2HI 0 "register_operand"                              "=   r, r")
-	(unspec:V2HI [(ashiftrt:V2HI (match_operand:V2HI 1 "register_operand" "    r, r")
-				     (match_operand:SI 2 "rimm4u_operand"     " u04, r"))]
+(define_insn "sra16_round<mode>"
+  [(set (match_operand:VHI 0 "register_operand"                            "=  r, r")
+	(unspec:VHI [(ashiftrt:VHI (match_operand:VHI 1 "register_operand" "   r, r")
+				   (match_operand:SI 2  "rimm4u_operand"   " u04, r"))]
 		     UNSPEC_ROUND))]
   "TARGET_DSP"
   "@
    srai16.u\t%0, %1, %2
    sra16.u\t%0, %1, %2"
-  [(set_attr "type"   "arith,arith")
-   (set_attr "mode" "   V2HI, V2HI")])
+  [(set_attr "type" "arith,  arith")
+   (set_attr "mode" "<MODE>, <MODE>")])
 
-(define_insn "*lshrv2hi3"
-  [(set (match_operand:V2HI 0 "register_operand"                "=   r, r")
-	(lshiftrt:V2HI (match_operand:V2HI 1 "register_operand" "    r, r")
-		       (match_operand:SI 2 "rimm4u_operand"     " u04, r")))]
+(define_insn "*lshr<mode>3"
+  [(set (match_operand:VHI 0 "register_operand"               "=  r, r")
+	(lshiftrt:VHI (match_operand:VHI 1 "register_operand" "   r, r")
+		      (match_operand:SI 2  "rimm4u_operand"   " u04, r")))]
   "TARGET_DSP"
   "@
    srli16\t%0, %1, %2
    srl16\t%0, %1, %2"
-  [(set_attr "type"   "arith,arith")
-   (set_attr "mode" "   V2HI, V2HI")])
+  [(set_attr "type" "arith,  arith")
+   (set_attr "mode" "<MODE>, <MODE>")])
 
-(define_insn "srl16_round"
-  [(set (match_operand:V2HI 0 "register_operand"                              "=   r, r")
-	(unspec:V2HI [(lshiftrt:V2HI (match_operand:V2HI 1 "register_operand" "    r, r")
-				     (match_operand:SI 2 "rimm4u_operand"     " u04, r"))]
+(define_insn "srl16_round<mode>"
+  [(set (match_operand:VHI 0 "register_operand"                            "=  r, r")
+	(unspec:VHI [(lshiftrt:VHI (match_operand:VHI 1 "register_operand" "   r, r")
+				   (match_operand:SI 2  "rimm4u_operand"   " u04, r"))]
 		     UNSPEC_ROUND))]
   "TARGET_DSP"
   "@
    srli16.u\t%0, %1, %2
    srl16.u\t%0, %1, %2"
-  [(set_attr "type"   "arith,arith")
-   (set_attr "mode" "   V2HI, V2HI")])
+  [(set_attr "type" "arith,  arith")
+   (set_attr "mode" "<MODE>, <MODE>")])
 
 (define_insn "kslra<mode>"
   [(set (match_operand:VQIHI 0 "register_operand"                   "=r")
@@ -1317,7 +1319,8 @@
 			   (match_dup 2))))]
   "TARGET_DSP"
   "kslra<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")])
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "kslra<mode>_round"
   [(set (match_operand:VQIHI 0 "register_operand"                  "=r")
@@ -1331,7 +1334,8 @@
 			   (match_dup 2))))]
   "TARGET_DSP"
   "kslra<bits>.u\t%0, %1, %2"
-  [(set_attr "type" "arith")])
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "cmpeq<mode>"
   [(set (match_operand:SI 0 "register_operand"                       "=r")
