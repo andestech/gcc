@@ -1231,6 +1231,22 @@ enum riscv_order
   (__builtin_riscv_kslra8_u ((a), (b)))
 #define __nds__v_kslra8_u(a, b) \
   (__builtin_riscv_v_kslra8_u ((a), (b)))
+#define __nds64__v_sra8(a, b) \
+  (__builtin_riscv_v64_sra8 ((a), (b)))
+#define __nds64__v_sra8_u(a, b) \
+  (__builtin_riscv_v64_sra8_u ((a), (b)))
+#define __nds64__v_srl8(a, b) \
+  (__builtin_riscv_v64_srl8 ((a), (b)))
+#define __nds64__v_srl8_u(a, b) \
+  (__builtin_riscv_v64_srl8_u ((a), (b)))
+#define __nds64__v_sll8(a, b) \
+  (__builtin_riscv_v64_sll8 ((a), (b)))
+#define __nds64__v_ksll8(a, b) \
+  (__builtin_riscv_v64_ksll8 ((a), (b)))
+#define __nds64__v_kslra8(a, b) \
+  (__builtin_riscv_v64_kslra8 ((a), (b)))
+#define __nds64__v_kslra8_u(a, b) \
+  (__builtin_riscv_v64_kslra8_u ((a), (b)))
 
 #define __nds__clz(a) \
   (__builtin_riscv_clz ((a)))
