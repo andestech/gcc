@@ -1340,49 +1340,49 @@
    (set_attr "mode" "<MODE>")])
 
 (define_insn "cmpeq<mode>"
-  [(set (match_operand:SI 0 "register_operand"                       "=r")
-	(unspec:SI [(eq:SI (match_operand:VQIHI 1 "register_operand" " r")
-			   (match_operand:VQIHI 2 "register_operand" " r"))]
-		   UNSPEC_VEC_COMPARE))]
+  [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
+	(unspec:VQIHI [(eq:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
+				 (match_operand:VQIHI 2 "register_operand" " r"))]
+		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
   "cmpeq<bits>\t%0, %1, %2"
-  [(set_attr "mode" "SI")])
+  [(set_attr "mode" "<MODE>")])
 
 (define_insn "scmplt<mode>"
-  [(set (match_operand:SI 0 "register_operand"                       "=r")
-	(unspec:SI [(lt:SI (match_operand:VQIHI 1 "register_operand" " r")
-			   (match_operand:VQIHI 2 "register_operand" " r"))]
-		   UNSPEC_VEC_COMPARE))]
+  [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
+	(unspec:VQIHI [(lt:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
+				 (match_operand:VQIHI 2 "register_operand" " r"))]
+		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
   "scmplt<bits>\t%0, %1, %2"
-  [(set_attr "mode" "SI")])
+  [(set_attr "mode" "<MODE>")])
 
 (define_insn "scmple<mode>"
-  [(set (match_operand:SI 0 "register_operand"                       "=r")
-	(unspec:SI [(le:SI (match_operand:VQIHI 1 "register_operand" " r")
-			   (match_operand:VQIHI 2 "register_operand" " r"))]
-		   UNSPEC_VEC_COMPARE))]
+  [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
+	(unspec:VQIHI [(le:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
+				 (match_operand:VQIHI 2 "register_operand" " r"))]
+		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
   "scmple<bits>\t%0, %1, %2"
-  [(set_attr "mode" "SI")])
+  [(set_attr "mode" "<MODE>")])
 
 (define_insn "ucmplt<mode>"
-  [(set (match_operand:SI 0 "register_operand"                        "=r")
-	(unspec:SI [(ltu:SI (match_operand:VQIHI 1 "register_operand" " r")
-			    (match_operand:VQIHI 2 "register_operand" " r"))]
-		   UNSPEC_VEC_COMPARE))]
+  [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
+	(unspec:VQIHI [(ltu:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
+				  (match_operand:VQIHI 2 "register_operand" " r"))]
+		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
   "ucmplt<bits>\t%0, %1, %2"
   [(set_attr "mode" "SI")])
 
 (define_insn "ucmple<mode>"
-  [(set (match_operand:SI 0 "register_operand"                        "=r")
-	(unspec:SI [(leu:SI (match_operand:VQIHI 1 "register_operand" " r")
-			    (match_operand:VQIHI 2 "register_operand" " r"))]
-		   UNSPEC_VEC_COMPARE))]
+  [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
+	(unspec:VQIHI [(leu:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
+				  (match_operand:VQIHI 2 "register_operand" " r"))]
+		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
   "ucmple<bits>\t%0, %1, %2"
-  [(set_attr "mode" "SI")])
+  [(set_attr "mode" "<MODE>")])
 
 (define_insn "sclip8"
   [(set (match_operand:V4QI 0 "register_operand"               "=  r")
