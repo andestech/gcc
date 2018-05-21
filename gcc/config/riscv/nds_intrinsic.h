@@ -780,18 +780,26 @@ enum riscv_order
   (__builtin_riscv_smin16 ((a), (b)))
 #define __nds__v_smin16(a, b) \
   (__builtin_riscv_v_smin16 ((a), (b)))
+#define __nds64__v_smin16(a, b) \
+  (__builtin_riscv_v64_smin16 ((a), (b)))
 #define __nds__umin16(a, b) \
   (__builtin_riscv_umin16 ((a), (b)))
 #define __nds__v_umin16(a, b) \
   (__builtin_riscv_v_umin16 ((a), (b)))
+#define __nds64__v_umin16(a, b) \
+  (__builtin_riscv_v64_umin16 ((a), (b)))
 #define __nds__smax16(a, b) \
   (__builtin_riscv_smax16 ((a), (b)))
 #define __nds__v_smax16(a, b) \
   (__builtin_riscv_v_smax16 ((a), (b)))
+#define __nds64__v_smax16(a, b) \
+  (__builtin_riscv_v64_smax16 ((a), (b)))
 #define __nds__umax16(a, b) \
   (__builtin_riscv_umax16 ((a), (b)))
 #define __nds__v_umax16(a, b) \
   (__builtin_riscv_v_umax16 ((a), (b)))
+#define __nds64__v_umax16(a, b) \
+  (__builtin_riscv_v64_umax16 ((a), (b)))
 #define __nds__sclip16(a, b) \
   (__builtin_riscv_sclip16 ((a), (b)))
 #define __nds__v_sclip16(a, b) \
@@ -856,18 +864,26 @@ enum riscv_order
   (__builtin_riscv_smin8 ((a), (b)))
 #define __nds__v_smin8(a, b) \
   (__builtin_riscv_v_smin8 ((a), (b)))
+#define __nds64__v_smin8(a, b) \
+  (__builtin_riscv_v64_smin8 ((a), (b)))
 #define __nds__umin8(a, b) \
   (__builtin_riscv_umin8 ((a), (b)))
 #define __nds__v_umin8(a, b) \
   (__builtin_riscv_v_umin8 ((a), (b)))
+#define __nds64__v_umin8(a, b) \
+  (__builtin_riscv_v64_umin8 ((a), (b)))
 #define __nds__smax8(a, b) \
   (__builtin_riscv_smax8 ((a), (b)))
 #define __nds__v_smax8(a, b) \
   (__builtin_riscv_v_smax8 ((a), (b)))
+#define __nds64__v_smax8(a, b) \
+  (__builtin_riscv_v64_smax8 ((a), (b)))
 #define __nds__umax8(a, b) \
   (__builtin_riscv_umax8 ((a), (b)))
 #define __nds__v_umax8(a, b) \
   (__builtin_riscv_v_umax8 ((a), (b)))
+#define __nds64__v_umax8(a, b) \
+  (__builtin_riscv_v64_umax8 ((a), (b)))
 #define __nds__kabs8(a) \
   (__builtin_riscv_kabs8 ((a)))
 #define __nds__v_kabs8(a) \
