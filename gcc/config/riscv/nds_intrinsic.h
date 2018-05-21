@@ -816,18 +816,26 @@ enum riscv_order
   (__builtin_riscv_khm16 ((a), (b)))
 #define __nds__v_khm16(a, b) \
   (__builtin_riscv_v_khm16 ((a), (b)))
+#define __nds64__v_khm16(a, b) \
+  (__builtin_riscv_v64_khm16 ((a), (b)))
 #define __nds__khmx16(a, b) \
   (__builtin_riscv_khmx16 ((a), (b)))
 #define __nds__v_khmx16(a, b) \
   (__builtin_riscv_v_khmx16 ((a), (b)))
+#define __nds64__v_khmx16(a, b) \
+  (__builtin_riscv_v64_khmx16 ((a), (b)))
 #define __nds__khm8(a, b) \
   (__builtin_riscv_khm8 ((a), (b)))
 #define __nds__v_khm8(a, b) \
   (__builtin_riscv_v_khm8 ((a), (b)))
+#define __nds64__v_khm8(a, b) \
+  (__builtin_riscv_v64_khm8 ((a), (b)))
 #define __nds__khmx8(a, b) \
   (__builtin_riscv_khmx8 ((a), (b)))
 #define __nds__v_khmx8(a, b) \
   (__builtin_riscv_v_khmx8 ((a), (b)))
+#define __nds64__v_khmx8(a, b) \
+  (__builtin_riscv_v64_khmx8 ((a), (b)))
 #define __nds__kabs16(a) \
   (__builtin_riscv_kabs16 ((a)))
 #define __nds__v_kabs16(a) \

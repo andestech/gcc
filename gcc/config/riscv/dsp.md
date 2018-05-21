@@ -1420,41 +1420,45 @@
   "uclip16\t%0, %1, %2"
   [(set_attr "mode" "<MODE>")])
 
-(define_insn "khm16"
-  [(set (match_operand:V2HI 0 "register_operand"                "=r")
-	(unspec:V2HI [(match_operand:V2HI 1 "register_operand"  " r")
-		      (match_operand:V2HI 2 "register_operand" "  r")]
+(define_insn "khm16<mode>"
+  [(set (match_operand:VHI 0 "register_operand"              "=r")
+	(unspec:VHI [(match_operand:VHI 1 "register_operand" " r")
+		     (match_operand:VHI 2 "register_operand" " r")]
 		     UNSPEC_KHM))]
   "TARGET_DSP"
   "khm16\t%0, %1, %2"
-  [(set_attr "type"   "imul")])
+  [(set_attr "type"   "imul")
+   (set_attr "mode" "<MODE>")])
 
-(define_insn "khmx16"
-  [(set (match_operand:V2HI 0 "register_operand"                "=r")
-	(unspec:V2HI [(match_operand:V2HI 1 "register_operand"  " r")
-		      (match_operand:V2HI 2 "register_operand" "  r")]
+(define_insn "khmx16<mode>"
+  [(set (match_operand:VHI 0 "register_operand"              "=r")
+	(unspec:VHI [(match_operand:VHI 1 "register_operand" " r")
+		     (match_operand:VHI 2 "register_operand" " r")]
 		     UNSPEC_KHMX))]
   "TARGET_DSP"
   "khmx16\t%0, %1, %2"
-  [(set_attr "type"   "imul")])
+  [(set_attr "type"   "imul")
+   (set_attr "mode" "<MODE>")])
 
-(define_insn "khm8"
-  [(set (match_operand:V4QI 0 "register_operand"                "=r")
-	(unspec:V4QI [(match_operand:V4QI 1 "register_operand"  " r")
-		      (match_operand:V4QI 2 "register_operand" "  r")]
+(define_insn "khm8<mode>"
+  [(set (match_operand:VQI 0 "register_operand"              "=r")
+	(unspec:VQI [(match_operand:VQI 1 "register_operand" " r")
+		     (match_operand:VQI 2 "register_operand" " r")]
 		     UNSPEC_KHM))]
   "TARGET_DSP"
   "khm8\t%0, %1, %2"
-  [(set_attr "type"   "imul")])
+  [(set_attr "type"   "imul")
+   (set_attr "mode" "<MODE>")])
 
-(define_insn "khmx8"
-  [(set (match_operand:V4QI 0 "register_operand"                "=r")
-	(unspec:V4QI [(match_operand:V4QI 1 "register_operand"  " r")
-		      (match_operand:V4QI 2 "register_operand" "  r")]
+(define_insn "khmx8<mode>"
+  [(set (match_operand:VQI 0 "register_operand"              "=r")
+	(unspec:VQI [(match_operand:VQI 1 "register_operand" " r")
+		     (match_operand:VQI 2 "register_operand" " r")]
 		     UNSPEC_KHMX))]
   "TARGET_DSP"
   "khmx8\t%0, %1, %2"
-  [(set_attr "type"   "imul")])
+  [(set_attr "type"   "imul")
+   (set_attr "mode" "<MODE>")])
 
 (define_expand "vec_setv4qi"
   [(match_operand:V4QI 0 "register_operand" "")
