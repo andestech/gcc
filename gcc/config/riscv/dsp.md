@@ -27,6 +27,10 @@
 
 (define_mode_iterator VQI [(V4QI "") (V8QI "TARGET_64BIT")])
 
+(define_mode_iterator VSI [(V2SI "") (V4SI "TARGET_64BIT")])
+
+(define_mode_iterator VMUL [(V4HI "") (V8HI "TARGET_64BIT")])
+
 ;; Give the number of DSP instructions in the mode
 (define_mode_attr bits [(V8QI "8") (V4QI "8") (QI "8") (V4HI "16") (V2HI "16") (HI "16") (DI "64")])
 
@@ -35,6 +39,8 @@
 (define_mode_attr VELT [(V4QI "QI") (V2HI "HI") (V8QI "QI") (V4HI "HI")])
 
 (define_mode_attr VEXT [(V4QI "V4HI") (V2HI "V2SI") (V8QI "V8HI") (V4HI "V4SI")])
+
+(define_mode_attr VNARROW [(V2SI "V2HI") (V4SI "V4HI") (V4HI "V4QI") (V8HI "V8QI")])
 
 (define_code_iterator all_plus [plus ss_plus us_plus])
 
@@ -1945,32 +1951,34 @@
   "srli\t%0, %1, 16"
 )
 
-(define_insn "<su>mul16"
-  [(set (match_operand:V2SI 0 "register_operand"                         "=r")
-	(mult:V2SI (any_extend:V2SI (match_operand:V2HI 1 "register_operand" "%r"))
-		   (any_extend:V2SI (match_operand:V2HI 2 "register_operand" " r"))))]
+(define_insn "<su>mul16<mode>"
+  [(set (match_operand:VSI 0 "register_operand"                                 "=r")
+	(mult:VSI (any_extend:VSI (match_operand:<VNARROW> 1 "register_operand" "%r"))
+		  (any_extend:VSI (match_operand:<VNARROW> 2 "register_operand" " r"))))]
   "TARGET_DSP"
   "<su>mul16\t%0, %1, %2"
-  [(set_attr "type"   "imul")
-   (set_attr "mode"   "V2SI")])
+  [(set_attr "type" "imul")
+   (set_attr "mode" "<MODE>")])
 
-(define_insn "smul8"
-  [(set (match_operand:V4HI 0 "register_operand"                "=r")
-	(unspec:V4HI [(match_operand:V4QI 1 "register_operand"  " r")
-		      (match_operand:V4QI 2 "register_operand" "  r")]
-		     UNSPEC_SMUL8))]
+(define_insn "smul8<mode>"
+  [(set (match_operand:VMUL 0 "register_operand"                    "=r")
+	(unspec:VMUL [(match_operand:<VNARROW> 1 "register_operand" " r")
+		      (match_operand:<VNARROW> 2 "register_operand" " r")]
+		      UNSPEC_SMUL8))]
   "TARGET_DSP"
   "smul8\t%0, %1, %2"
-  [(set_attr "type"   "imul")])
+  [(set_attr "type" "imul")
+   (set_attr "mode" "<MODE>")])
 
-(define_insn "umul8"
-  [(set (match_operand:V4HI 0 "register_operand"                "=r")
-	(unspec:V4HI [(match_operand:V4QI 1 "register_operand"  " r")
-		      (match_operand:V4QI 2 "register_operand" "  r")]
-		     UNSPEC_UMUL8))]
+(define_insn "umul8<mode>"
+  [(set (match_operand:VMUL 0 "register_operand"                    "=r")
+	(unspec:VMUL [(match_operand:<VNARROW> 1 "register_operand" " r")
+		      (match_operand:<VNARROW> 2 "register_operand" " r")]
+		      UNSPEC_UMUL8))]
   "TARGET_DSP"
   "umul8\t%0, %1, %2"
-  [(set_attr "type"   "imul")])
+  [(set_attr "type" "imul")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "<su>mulx16"
   [(set (match_operand:V2SI 0 "register_operand"         "=r")
