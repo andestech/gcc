@@ -6,11 +6,13 @@ typedef signed char int8x8_t __attribute ((vector_size(8)));
 typedef short int16x2_t __attribute ((vector_size(4)));
 typedef short int16x4_t __attribute__((vector_size (8)));
 typedef int int32x2_t __attribute__((vector_size(8)));
+typedef int int32x4_t __attribute__((vector_size(16)));
 typedef unsigned char uint8x4_t __attribute__ ((vector_size (4)));
 typedef unsigned char uint8x8_t __attribute__ ((vector_size (8)));
 typedef unsigned short uint16x2_t __attribute__ ((vector_size (4)));
 typedef unsigned short uint16x4_t __attribute__((vector_size (8)));
 typedef unsigned int uint32x2_t __attribute__((vector_size(8)));
+typedef unsigned int uint32x4_t __attribute__((vector_size(16)));
 
 enum riscv_csrs
 {
@@ -846,6 +848,8 @@ enum riscv_order
   (__builtin_riscv_smul16 ((a), (b)))
 #define __nds__v_smul16(a, b) \
   (__builtin_riscv_v_smul16 ((a), (b)))
+#define __nds64__v_smul16(a, b) \
+  (__builtin_riscv_v64_smul16 ((a), (b)))
 #define __nds__smulx16(a, b) \
   (__builtin_riscv_smulx16 ((a), (b)))
 #define __nds__v_smulx16(a, b) \
@@ -854,6 +858,8 @@ enum riscv_order
   (__builtin_riscv_umul16 ((a), (b)))
 #define __nds__v_umul16(a, b) \
   (__builtin_riscv_v_umul16 ((a), (b)))
+#define __nds64__v_umul16(a, b) \
+  (__builtin_riscv_v64_umul16 ((a), (b)))
 #define __nds__umulx16(a, b) \
   (__builtin_riscv_umulx16 ((a), (b)))
 #define __nds__v_umulx16(a, b) \
@@ -862,6 +868,8 @@ enum riscv_order
   (__builtin_riscv_smul8 ((a), (b)))
 #define __nds__v_smul8(a, b) \
   (__builtin_riscv_v_smul8 ((a), (b)))
+#define __nds64__v_smul8(a, b) \
+  (__builtin_riscv_v64_smul8 ((a), (b)))
 #define __nds__smulx8(a, b) \
   (__builtin_riscv_smulx8 ((a), (b)))
 #define __nds__v_smulx8(a, b) \
@@ -870,6 +878,8 @@ enum riscv_order
   (__builtin_riscv_umul8 ((a), (b)))
 #define __nds__v_umul8(a, b) \
   (__builtin_riscv_v_umul8 ((a), (b)))
+#define __nds64__v_umul8(a, b) \
+  (__builtin_riscv_v64_umul8 ((a), (b)))
 #define __nds__umulx8(a, b) \
   (__builtin_riscv_umulx8 ((a), (b)))
 #define __nds__v_umulx8(a, b) \
