@@ -536,6 +536,8 @@ enum riscv_builtins
   RISCV_BUILTIN_V64_KHMX16,
   RISCV_BUILTIN_V64_KHM8,
   RISCV_BUILTIN_V64_KHMX8,
+  RISCV_BUILTIN_V64_KABS16,
+  RISCV_BUILTIN_V64_KABS8,
   RISCV_BUILTIN_DSP_END
 };
 
@@ -1143,10 +1145,12 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		      RISCV_V4QI_FTYPE_V4QI_V4QI, V_KHMX8),
   DIRECT_DSP_BUILTIN (khmx8v8qi, khmx8v8qi, v64_khmx8,
 		      RISCV_V8QI_FTYPE_V8QI_V8QI, V64_KHMX8),
-  DIRECT_DSP_BUILTIN (kabsv2hi2, kabsv2hi2, kabs16,
+  DIRECT_DSP_BUILTIN (kabsv2hi2, kabsv4hi2, kabs16,
 		      RISCV_ULONG_FTYPE_ULONG, KABS16),
   DIRECT_DSP_BUILTIN (kabsv2hi2, kabsv2hi2, v_kabs16,
 		      RISCV_V2HI_FTYPE_V2HI, V_KABS16),
+  DIRECT_DSP_BUILTIN (kabsv4hi2, kabsv4hi2, v64_kabs16,
+		      RISCV_V4HI_FTYPE_V4HI, V64_KABS16),
   DIRECT_DSP_BUILTIN (smul16, smul16, smul16,
 		      RISCV_ULLONG_FTYPE_USI_USI, SMUL16),
   DIRECT_DSP_BUILTIN (smul16, smul16, v_smul16,
@@ -1204,10 +1208,12 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		      RISCV_UV4QI_FTYPE_UV4QI_UV4QI, V_UMAX8),
   DIRECT_DSP_BUILTIN (umaxv8qi3, umaxv8qi3, v64_umax8,
 		      RISCV_UV8QI_FTYPE_UV8QI_UV8QI, V64_UMAX8),
-  DIRECT_DSP_BUILTIN (kabsv4qi2, kabsv4qi2, kabs8,
+  DIRECT_DSP_BUILTIN (kabsv4qi2, kabsv8qi2, kabs8,
 		      RISCV_ULONG_FTYPE_ULONG, KABS8),
   DIRECT_DSP_BUILTIN (kabsv4qi2, kabsv4qi2, v_kabs8,
 		      RISCV_V2HI_FTYPE_V2HI, V_KABS8),
+  DIRECT_DSP_BUILTIN (kabsv8qi2, kabsv8qi2, v64_kabs8,
+		      RISCV_V2HI_FTYPE_V2HI, V64_KABS8),
   /* DSP Extension: 8bit Unpacking.  */
   DIRECT_DSP_BUILTIN (sunpkd810, sunpkd810, sunpkd810,
 		      RISCV_ULONG_FTYPE_ULONG, SUNPKD810),

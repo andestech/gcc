@@ -840,6 +840,8 @@ enum riscv_order
   (__builtin_riscv_kabs16 ((a)))
 #define __nds__v_kabs16(a) \
   (__builtin_riscv_v_kabs16 ((a)))
+#define __nds64__v_kabs16(a) \
+  (__builtin_riscv_v64_kabs16 ((a)))
 #define __nds__smul16(a, b) \
   (__builtin_riscv_smul16 ((a), (b)))
 #define __nds__v_smul16(a, b) \
@@ -900,6 +902,8 @@ enum riscv_order
   (__builtin_riscv_kabs8 ((a)))
 #define __nds__v_kabs8(a) \
   (__builtin_riscv_v_kabs8 ((a)))
+#define __nds64__v_kabs8(a) \
+  (__builtin_riscv_v64_kabs8 ((a)))
 
 #define __nds__sunpkd810(a) \
   (__builtin_riscv_sunpkd810 ((a)))
