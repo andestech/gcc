@@ -804,10 +804,14 @@ enum riscv_order
   (__builtin_riscv_sclip16 ((a), (b)))
 #define __nds__v_sclip16(a, b) \
   (__builtin_riscv_v_sclip16 ((a), (b)))
+#define __nds64__v_sclip16(a, b) \
+  (__builtin_riscv_v64_sclip16 ((a), (b)))
 #define __nds__uclip16(a, b) \
   (__builtin_riscv_uclip16 ((a), (b)))
 #define __nds__v_uclip16(a, b) \
   (__builtin_riscv_v_uclip16 ((a), (b)))
+#define __nds64__v_uclip16(a, b) \
+  (__builtin_riscv_v64_uclip16 ((a), (b)))
 #define __nds__khm16(a, b) \
   (__builtin_riscv_khm16 ((a), (b)))
 #define __nds__v_khm16(a, b) \
@@ -1308,10 +1312,14 @@ enum riscv_order
   (__builtin_riscv_sclip8 ((a), (b)))
 #define __nds__v_sclip8(a, b) \
   (__builtin_riscv_v_sclip8 ((a), (b)))
+#define __nds64__v_sclip8(a, b) \
+  (__builtin_riscv_v64_sclip8 ((a), (b)))
 #define __nds__uclip8(a, b) \
   (__builtin_riscv_uclip8 ((a), (b)))
 #define __nds__v_uclip8(a, b) \
   (__builtin_riscv_v_uclip8 ((a), (b)))
+#define __nds64__v_uclip8(a, b) \
+  (__builtin_riscv_v64_uclip8 ((a), (b)))
 
 #define __nds__ffb(a, b) \
   (__builtin_riscv_ffb ((a), (b)))

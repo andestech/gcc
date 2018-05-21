@@ -1384,41 +1384,41 @@
   "ucmple<bits>\t%0, %1, %2"
   [(set_attr "mode" "<MODE>")])
 
-(define_insn "sclip8"
-  [(set (match_operand:V4QI 0 "register_operand"               "=  r")
-	(unspec:V4QI [(match_operand:V4QI 1 "register_operand" "   r")
-		      (match_operand:SI 2 "imm3u_operand"      " u03")]
+(define_insn "sclip8<mode>"
+  [(set (match_operand:VQI 0 "register_operand"              "=  r")
+	(unspec:VQI [(match_operand:VQI 1 "register_operand" "   r")
+		      (match_operand:SI 2 "imm3u_operand"    " u03")]
 		     UNSPEC_CLIPS))]
   "TARGET_DSP"
   "sclip8\t%0, %1, %2"
-  [(set_attr "mode" "V4QI")])
+  [(set_attr "mode" "<MODE>")])
 
-(define_insn "uclip8"
-  [(set (match_operand:V4QI 0 "register_operand"                "=  r")
-	(unspec:V4QI [(match_operand:V2HI 1 "register_operand"  "   r")
-		      (match_operand:SI 2 "imm3u_operand"       " u03")]
+(define_insn "uclip8<mode>"
+  [(set (match_operand:VQI 0 "register_operand"               "=  r")
+	(unspec:VQI [(match_operand:VQI 1 "register_operand"  "   r")
+		     (match_operand:SI 2 "imm3u_operand"      " u03")]
 		     UNSPEC_CLIP))]
   "TARGET_DSP"
   "uclip8\t%0, %1, %2"
-  [(set_attr "mode" "V4QI")])
+  [(set_attr "mode" "<MODE>")])
 
-(define_insn "sclip16"
-  [(set (match_operand:V2HI 0 "register_operand"               "=   r")
-	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "    r")
-		      (match_operand:SI 2 "imm4u_operand"      " u04")]
+(define_insn "sclip16<mode>"
+  [(set (match_operand:VHI 0 "register_operand"              "=   r")
+	(unspec:VHI [(match_operand:VHI 1 "register_operand" "    r")
+		     (match_operand:SI 2 "imm4u_operand"     " u04")]
 		     UNSPEC_CLIPS))]
   "TARGET_DSP"
   "sclip16\t%0, %1, %2"
-  [(set_attr "mode" "V2HI")])
+  [(set_attr "mode" "<MODE>")])
 
-(define_insn "uclip16"
-  [(set (match_operand:V2HI 0 "register_operand"                "=   r")
-	(unspec:V2HI [(match_operand:V2HI 1 "register_operand"  "    r")
-		      (match_operand:SI 2 "imm4u_operand"       " u04")]
+(define_insn "uclip16<mode>"
+  [(set (match_operand:VHI 0 "register_operand"               "=   r")
+	(unspec:VHI [(match_operand:VHI 1 "register_operand"  "    r")
+		      (match_operand:SI 2 "imm4u_operand"     " u04")]
 		     UNSPEC_CLIP))]
   "TARGET_DSP"
   "uclip16\t%0, %1, %2"
-  [(set_attr "mode" "V2HI")])
+  [(set_attr "mode" "<MODE>")])
 
 (define_insn "khm16"
   [(set (match_operand:V2HI 0 "register_operand"                "=r")
