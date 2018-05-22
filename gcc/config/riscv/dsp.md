@@ -2378,6 +2378,56 @@
   DONE;
 })
 
+(define_insn "<zs>unpkd810_64"
+  [(set (match_operand:V4HI 0 "register_operand"                    "=r")
+	(vec_select:V4HI
+	  (any_extend:V8HI (match_operand:V8QI 1 "register_operand" "r"))
+	  (parallel [(const_int 1) (const_int 0)
+		     (const_int 5) (const_int 4)])))]
+  "TARGET_DSP && TARGET_64BIT"
+  "<zs>unpkd810\t%0, %1"
+  [(set_attr "mode"  "V4HI")])
+
+(define_insn "<zs>unpkd820_64"
+  [(set (match_operand:V4HI 0 "register_operand"                    "=r")
+	(vec_select:V4HI
+	  (any_extend:V8HI (match_operand:V8QI 1 "register_operand" "r"))
+	  (parallel [(const_int 2) (const_int 0)
+		     (const_int 6) (const_int 4)])))]
+  "TARGET_DSP && TARGET_64BIT"
+  "<zs>unpkd820\t%0, %1"
+  [(set_attr "mode"  "V4HI")])
+
+(define_insn "<zs>unpkd830_64"
+  [(set (match_operand:V4HI 0 "register_operand"                    "=r")
+	(vec_select:V4HI
+	  (any_extend:V8HI (match_operand:V8QI 1 "register_operand" "r"))
+	  (parallel [(const_int 3) (const_int 0)
+		     (const_int 7) (const_int 4)])))]
+  "TARGET_DSP && TARGET_64BIT"
+  "<zs>unpkd830\t%0, %1"
+  [(set_attr "mode"  "V4HI")])
+
+(define_insn "<zs>unpkd831_64"
+  [(set (match_operand:V4HI 0 "register_operand"                    "=r")
+	(vec_select:V4HI
+	  (any_extend:V8HI (match_operand:V8QI 1 "register_operand" "r"))
+	  (parallel [(const_int 3) (const_int 1)
+		     (const_int 7) (const_int 5)])))]
+  "TARGET_DSP && TARGET_64BIT"
+  "<zs>unpkd831\t%0, %1"
+  [(set_attr "mode"  "V4HI")])
+
+(define_insn "<zs>unpkd832_64"
+  [(set (match_operand:V4HI 0 "register_operand"                    "=r")
+	(vec_select:V4HI
+	  (any_extend:V8HI (match_operand:V8QI 1 "register_operand" "r"))
+	  (parallel [(const_int 3) (const_int 2)
+		     (const_int 7) (const_int 6)])))]
+  "TARGET_DSP && TARGET_64BIT"
+  "<zs>unpkd832\t%0, %1"
+  [(set_attr "mode"  "V4HI")])
+
 (define_expand "smbb"
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:V2HI 1 "register_operand" "")
