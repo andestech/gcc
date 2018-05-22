@@ -622,6 +622,8 @@ struct riscv_builtin_description {
 #define RISCV_ATYPE_PUSI build_pointer_type (unsigned_type_node)
 #define RISCV_ATYPE_PLLONG build_pointer_type (long_long_integer_type_node)
 #define RISCV_ATYPE_PULLONG build_pointer_type (long_long_unsigned_type_node)
+#define RISCV_ATYPE_TI intTI_type_node
+#define RISCV_ATYPE_UTI unsigned_intTI_type_node
 #define RISCV_ATYPE_V4QI build_vector_type (intQI_type_node, 4)
 #define RISCV_ATYPE_UV4QI build_vector_type (unsigned_intQI_type_node, 4)
 #define RISCV_ATYPE_V8QI build_vector_type (intQI_type_node, 8)
@@ -1159,8 +1161,10 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		      RISCV_V2HI_FTYPE_V2HI, V_KABS16),
   DIRECT_DSP_BUILTIN (kabsv4hi2, kabsv4hi2, v64_kabs16,
 		      RISCV_V4HI_FTYPE_V4HI, V64_KABS16),
-  DIRECT_DSP_BUILTIN (smul16v2si, smul16v4si, smul16,
+  DIRECT_DSP_BUILTIN (smul16v2si, smul16v2si, smul16,
 		      RISCV_ULLONG_FTYPE_ULONG_ULONG, SMUL16),
+  DIRECT_DSP_BUILTIN (smul16v4si, smul16v4si, 64_smul16,
+		      RISCV_UTI_FTYPE_ULONG_ULONG, SMUL16),
   DIRECT_DSP_BUILTIN (smul16v2si, smul16v2si, v_smul16,
 		      RISCV_V2SI_FTYPE_V2HI_V2HI, V_SMUL16),
   DIRECT_DSP_BUILTIN (smul16v4si, smul16v4si, v64_smul16,
@@ -1169,8 +1173,10 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		      RISCV_ULLONG_FTYPE_USI_USI, SMULX16),
   DIRECT_DSP_BUILTIN (smulx16, smulx16, v_smulx16,
 		      RISCV_V2SI_FTYPE_V2HI_V2HI, V_SMULX16),
-  DIRECT_DSP_BUILTIN (smul8v4hi, smul8v8hi, smul8,
+  DIRECT_DSP_BUILTIN (smul8v4hi, smul8v4hi, smul8,
 		      RISCV_ULLONG_FTYPE_ULONG_ULONG, SMUL8),
+  DIRECT_DSP_BUILTIN (smul8v8hi, smul8v8hi, 64_smul8,
+		      RISCV_UTI_FTYPE_ULONG_ULONG, SMUL8),
   DIRECT_DSP_BUILTIN (smul8v4hi, smul8v4hi, v_smul8,
 		      RISCV_V4HI_FTYPE_V4QI_V4QI, V_SMUL8),
   DIRECT_DSP_BUILTIN (smul8v8hi, smul8v8hi, v64_smul8,
@@ -1179,8 +1185,10 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		      RISCV_ULLONG_FTYPE_USI_USI, SMULX8),
   DIRECT_DSP_BUILTIN (smulx8, smulx8, v_smulx8,
 		      RISCV_V4HI_FTYPE_V4QI_V4QI, V_SMULX8),
-  DIRECT_DSP_BUILTIN (umul16v2si, umul16v4si, umul16,
+  DIRECT_DSP_BUILTIN (umul16v2si, umul16v2si, umul16,
 		      RISCV_ULLONG_FTYPE_ULONG_ULONG, UMUL16),
+  DIRECT_DSP_BUILTIN (umul16v4si, umul16v4si, 64_umul16,
+		      RISCV_UTI_FTYPE_ULONG_ULONG, UMUL16),
   DIRECT_DSP_BUILTIN (umul16v2si, umul16v2si, v_umul16,
 		      RISCV_UV2SI_FTYPE_UV2HI_UV2HI, V_UMUL16),
   DIRECT_DSP_BUILTIN (umul16v4si, umul16v4si, v64_umul16,
@@ -1189,8 +1197,10 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		      RISCV_ULLONG_FTYPE_USI_USI, UMULX16),
   DIRECT_DSP_BUILTIN (umulx16, umulx16, v_umulx16,
 		      RISCV_UV2SI_FTYPE_UV2HI_UV2HI, V_UMULX16),
-  DIRECT_DSP_BUILTIN (umul8v4hi, umul8v8hi, umul8,
+  DIRECT_DSP_BUILTIN (umul8v4hi, umul8v4hi, umul8,
 		      RISCV_ULLONG_FTYPE_ULONG_ULONG, UMUL8),
+  DIRECT_DSP_BUILTIN (umul8v8hi, umul8v8hi, 64_umul8,
+		      RISCV_UTI_FTYPE_ULONG_ULONG, UMUL8),
   DIRECT_DSP_BUILTIN (umul8v4hi, umul8v4hi, v_umul8,
 		      RISCV_UV4HI_FTYPE_UV4QI_UV4QI, V_UMUL8),
   DIRECT_DSP_BUILTIN (umul8v8hi, umul8v8hi, v64_umul8,

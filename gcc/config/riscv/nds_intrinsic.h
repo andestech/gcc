@@ -5,12 +5,14 @@ typedef signed char int8x4_t __attribute ((vector_size(4)));
 typedef signed char int8x8_t __attribute ((vector_size(8)));
 typedef short int16x2_t __attribute ((vector_size(4)));
 typedef short int16x4_t __attribute__((vector_size (8)));
+typedef short int16x8_t __attribute__((vector_size (16)));
 typedef int int32x2_t __attribute__((vector_size(8)));
 typedef int int32x4_t __attribute__((vector_size(16)));
 typedef unsigned char uint8x4_t __attribute__ ((vector_size (4)));
 typedef unsigned char uint8x8_t __attribute__ ((vector_size (8)));
 typedef unsigned short uint16x2_t __attribute__ ((vector_size (4)));
 typedef unsigned short uint16x4_t __attribute__((vector_size (8)));
+typedef unsigned short uint16x8_t __attribute__((vector_size (16)));
 typedef unsigned int uint32x2_t __attribute__((vector_size(8)));
 typedef unsigned int uint32x4_t __attribute__((vector_size(16)));
 
@@ -844,8 +846,6 @@ enum riscv_order
   (__builtin_riscv_v_kabs16 ((a)))
 #define __nds64__v_kabs16(a) \
   (__builtin_riscv_v64_kabs16 ((a)))
-#define __nds__smul16(a, b) \
-  (__builtin_riscv_smul16 ((a), (b)))
 #define __nds__v_smul16(a, b) \
   (__builtin_riscv_v_smul16 ((a), (b)))
 #define __nds64__v_smul16(a, b) \
@@ -854,8 +854,6 @@ enum riscv_order
   (__builtin_riscv_smulx16 ((a), (b)))
 #define __nds__v_smulx16(a, b) \
   (__builtin_riscv_v_smulx16 ((a), (b)))
-#define __nds__umul16(a, b) \
-  (__builtin_riscv_umul16 ((a), (b)))
 #define __nds__v_umul16(a, b) \
   (__builtin_riscv_v_umul16 ((a), (b)))
 #define __nds64__v_umul16(a, b) \
@@ -864,8 +862,6 @@ enum riscv_order
   (__builtin_riscv_umulx16 ((a), (b)))
 #define __nds__v_umulx16(a, b) \
   (__builtin_riscv_v_umulx16 ((a), (b)))
-#define __nds__smul8(a, b) \
-  (__builtin_riscv_smul8 ((a), (b)))
 #define __nds__v_smul8(a, b) \
   (__builtin_riscv_v_smul8 ((a), (b)))
 #define __nds64__v_smul8(a, b) \
@@ -874,8 +870,6 @@ enum riscv_order
   (__builtin_riscv_smulx8 ((a), (b)))
 #define __nds__v_smulx8(a, b) \
   (__builtin_riscv_v_smulx8 ((a), (b)))
-#define __nds__umul8(a, b) \
-  (__builtin_riscv_umul8 ((a), (b)))
 #define __nds__v_umul8(a, b) \
   (__builtin_riscv_v_umul8 ((a), (b)))
 #define __nds64__v_umul8(a, b) \
@@ -1349,6 +1343,27 @@ enum riscv_order
   (__builtin_riscv_ffmism ((a), (b)))
 #define __nds__flmism(a, b) \
   (__builtin_riscv_flmism ((a), (b)))
+
+#if __riscv_xlen == 32
+#define __nds__smul16(a, b) \
+  (__builtin_riscv_smul16 ((a), (b)))
+#define __nds__umul16(a, b) \
+  (__builtin_riscv_umul16 ((a), (b)))
+#define __nds__smul8(a, b) \
+  (__builtin_riscv_smul8 ((a), (b)))
+#define __nds__umul8(a, b) \
+  (__builtin_riscv_umul8 ((a), (b)))
+#else
+#define __nds__smul16(a, b) \
+  (__builtin_riscv_64_smul16 ((a), (b)))
+#define __nds__umul16(a, b) \
+  (__builtin_riscv_64_umul16 ((a), (b)))
+#define __nds__smul8(a, b) \
+  (__builtin_riscv_64_smul8 ((a), (b)))
+#define __nds__umul8(a, b) \
+  (__builtin_riscv_64_umul8 ((a), (b)))
+#endif
+
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
