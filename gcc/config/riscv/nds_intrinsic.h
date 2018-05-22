@@ -913,42 +913,63 @@ enum riscv_order
   (__builtin_riscv_sunpkd810 ((a)))
 #define __nds__v_sunpkd810(a) \
   (__builtin_riscv_v_sunpkd810 ((a)))
+#define __nds64__v_sunpkd810(a) \
+  (__builtin_riscv_v64_sunpkd810 ((a)))
 #define __nds__sunpkd820(a) \
   (__builtin_riscv_sunpkd820 ((a)))
 #define __nds__v_sunpkd820(a) \
   (__builtin_riscv_v_sunpkd820 ((a)))
+#define __nds64__v_sunpkd820(a) \
+  (__builtin_riscv_v64_sunpkd820 ((a)))
 #define __nds__sunpkd830(a) \
   (__builtin_riscv_sunpkd830 ((a)))
 #define __nds__v_sunpkd830(a) \
   (__builtin_riscv_v_sunpkd830 ((a)))
+#define __nds64__v_sunpkd830(a) \
+  (__builtin_riscv_v64_sunpkd830 ((a)))
 #define __nds__sunpkd831(a) \
   (__builtin_riscv_sunpkd831 ((a)))
 #define __nds__v_sunpkd831(a) \
   (__builtin_riscv_v_sunpkd831 ((a)))
+#define __nds64__v_sunpkd831(a) \
+  (__builtin_riscv_v64_sunpkd831 ((a)))
 #define __nds__sunpkd832(a) \
   (__builtin_riscv_sunpkd832 ((a)))
 #define __nds__v_sunpkd832(a) \
   (__builtin_riscv_v_sunpkd832 ((a)))
+#define __nds64__v_sunpkd832(a) \
+  (__builtin_riscv_v64_sunpkd832 ((a)))
+
 #define __nds__zunpkd810(a) \
   (__builtin_riscv_zunpkd810 ((a)))
 #define __nds__v_zunpkd810(a) \
   (__builtin_riscv_v_zunpkd810 ((a)))
+#define __nds64__v_zunpkd810(a) \
+  (__builtin_riscv_v64_zunpkd810 ((a)))
 #define __nds__zunpkd820(a) \
   (__builtin_riscv_zunpkd820 ((a)))
 #define __nds__v_zunpkd820(a) \
   (__builtin_riscv_v_zunpkd820 ((a)))
+#define __nds64__v_zunpkd820(a) \
+  (__builtin_riscv_v64_zunpkd820 ((a)))
 #define __nds__zunpkd830(a) \
   (__builtin_riscv_zunpkd830 ((a)))
 #define __nds__v_zunpkd830(a) \
   (__builtin_riscv_v_zunpkd830 ((a)))
+#define __nds64__v_zunpkd830(a) \
+  (__builtin_riscv_v64_zunpkd830 ((a)))
 #define __nds__zunpkd831(a) \
   (__builtin_riscv_zunpkd831 ((a)))
 #define __nds__v_zunpkd831(a) \
   (__builtin_riscv_v_zunpkd831 ((a)))
+#define __nds64__v_zunpkd831(a) \
+  (__builtin_riscv_v64_zunpkd831 ((a)))
 #define __nds__zunpkd832(a) \
   (__builtin_riscv_zunpkd832 ((a)))
 #define __nds__v_zunpkd832(a) \
   (__builtin_riscv_v_zunpkd832 ((a)))
+#define __nds64__v_zunpkd832(a) \
+  (__builtin_riscv_v64_zunpkd832 ((a)))
 
 #define __nds__raddw(a, b) \
   (__builtin_riscv_raddw ((a), (b)))
