@@ -2009,23 +2009,77 @@
   [(set_attr "type" "imul")
    (set_attr "mode" "V2SI")])
 
-(define_insn "smulx8"
-  [(set (match_operand:V4HI 0 "register_operand"                "=r")
-	(unspec:V4HI [(match_operand:V4QI 1 "register_operand"  " r")
-		      (match_operand:V4QI 2 "register_operand" "  r")]
-		     UNSPEC_SMULX8))]
+(define_insn "<su>mulx16_64"
+  [(set (match_operand:V4SI 0 "register_operand"         "=r")
+	(vec_concat:V4SI
+	  (vec_merge:V2SI
+	    (vec_duplicate:V2SI
+	      (mult:SI
+		(any_extend:SI
+		  (vec_select:HI
+		    (match_operand:V4HI 1 "register_operand" " r")
+		    (parallel [(const_int 0)])))
+		(any_extend:SI
+		  (vec_select:HI
+		    (match_operand:V4HI 2 "register_operand" " r")
+		    (parallel [(const_int 1)])))))
+	    (vec_duplicate:V2SI
+	      (mult:SI
+		(any_extend:SI
+		  (vec_select:HI
+		    (match_dup 1)
+		    (parallel [(const_int 1)])))
+		(any_extend:SI
+		  (vec_select:HI
+		    (match_dup 2)
+		    (parallel [(const_int 0)])))))
+	    (const_int 1))
+	  (vec_merge:V2SI
+	    (vec_duplicate:V2SI
+	      (mult:SI
+		(any_extend:SI
+		  (vec_select:HI
+		    (match_dup 1)
+		    (parallel [(const_int 2)])))
+		(any_extend:SI
+		  (vec_select:HI
+		    (match_dup 0)
+		    (parallel [(const_int 3)])))))
+	    (vec_duplicate:V2SI
+	      (mult:SI
+		(any_extend:SI
+		  (vec_select:HI
+		    (match_dup 1)
+		    (parallel [(const_int 3)])))
+		(any_extend:SI
+		  (vec_select:HI
+		    (match_dup 2)
+		    (parallel [(const_int 2)])))))
+	    (const_int 1))))]
+  "TARGET_DSP"
+  "<su>mulx16\t%0, %1, %2"
+  [(set_attr "type" "imul")
+   (set_attr "mode" "V4SI")])
+
+(define_insn "smulx8<mode>"
+  [(set (match_operand:VMUL 0 "register_operand"                    "=r")
+	(unspec:VMUL [(match_operand:<VNARROW> 1 "register_operand" " r")
+		      (match_operand:<VNARROW> 2 "register_operand" " r")]
+		      UNSPEC_SMULX8))]
   "TARGET_DSP"
   "smulx8\t%0, %1, %2"
-  [(set_attr "type"   "imul")])
+  [(set_attr "type" "imul")
+   (set_attr "mode" "<MODE>")])
 
-(define_insn "umulx8"
-  [(set (match_operand:V4HI 0 "register_operand"                "=r")
-	(unspec:V4HI [(match_operand:V4QI 1 "register_operand"  " r")
-		      (match_operand:V4QI 2 "register_operand" "  r")]
-		     UNSPEC_UMULX8))]
+(define_insn "umulx8<mode>"
+  [(set (match_operand:VMUL 0 "register_operand"                    "=r")
+	(unspec:VMUL [(match_operand:<VNARROW> 1 "register_operand" " r")
+		      (match_operand:<VNARROW> 2 "register_operand" " r")]
+		      UNSPEC_UMULX8))]
   "TARGET_DSP"
   "umulx8\t%0, %1, %2"
-  [(set_attr "type"   "imul")])
+  [(set_attr "type" "imul")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "v4qi_dup_10"
   [(set (match_operand:V4QI 0 "register_operand"    "=r")
