@@ -130,6 +130,11 @@
   (and (match_code "const_int")
        (match_test "ival == 2")))
 
+(define_constraint "v03"
+  "Constant value 3"
+  (and (match_code "const_int")
+       (match_test "ival == 3")))
+
 (define_constraint "v04"
   "Constant value 4"
   (and (match_code "const_int")

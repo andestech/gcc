@@ -1951,6 +1951,81 @@
   "srli\t%0, %1, 16"
 )
 
+(define_expand "pkbb64"
+  [(match_operand:V4HI 0 "register_operand")
+   (match_operand:V4HI 1 "register_operand")
+   (match_operand:V4HI 2 "register_operand")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_vec_mergevv64 (operands[0], operands[1], operands[2],
+				GEN_INT (0), GEN_INT (0), GEN_INT (2), GEN_INT (2)));
+  DONE;
+})
+
+(define_expand "pkbt64"
+  [(match_operand:V4HI 0 "register_operand")
+   (match_operand:V4HI 1 "register_operand")
+   (match_operand:V4HI 2 "register_operand")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_vec_mergevv64 (operands[0], operands[1], operands[2],
+				GEN_INT (0), GEN_INT (1), GEN_INT (2), GEN_INT (3)));
+  DONE;
+})
+
+(define_expand "pktt64"
+  [(match_operand:V4HI 0 "register_operand")
+   (match_operand:V4HI 1 "register_operand")
+   (match_operand:V4HI 2 "register_operand")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_vec_mergevv64 (operands[0], operands[1], operands[2],
+				GEN_INT (1), GEN_INT (1), GEN_INT (3), GEN_INT (3)));
+  DONE;
+})
+
+(define_expand "pktb64"
+  [(match_operand:V4HI 0 "register_operand")
+   (match_operand:V4HI 1 "register_operand")
+   (match_operand:V4HI 2 "register_operand")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_vec_mergevv64 (operands[0], operands[1], operands[2],
+				GEN_INT (1), GEN_INT (0), GEN_INT (3), GEN_INT (2)));
+  DONE;
+})
+
+(define_insn "vec_mergevv64"
+  [(set (match_operand:V4HI 0 "register_operand"                 "= r,   r,   r,   r")
+	(vec_concat:V4HI
+	  (vec_merge:V2HI
+	    (vec_duplicate:V2HI
+	      (vec_select:HI
+		(match_operand:V4HI 1 "register_operand"         "  r,   r,   r,   r")
+		(parallel [(match_operand:SI 3 "imm_0_1_operand" "v00, v00, v01, v01")])))
+	    (vec_duplicate:V2HI
+	      (vec_select:HI
+		(match_operand:V4HI 2 "register_operand"         "  r,   r,   r,   r")
+		(parallel [(match_operand:SI 4 "imm_0_1_operand" "v00, v01, v01, v00")])))
+	    (const_int 2))
+	  (vec_merge:V2HI
+	    (vec_duplicate:V2HI
+	      (vec_select:HI
+		(match_dup 1)
+		(parallel [(match_operand:SI 5 "imm_2_3_operand" "v02, v02, v03, v03")])))
+	    (vec_duplicate:V2HI
+	      (vec_select:HI
+		(match_dup 2)
+		(parallel [(match_operand:SI 6 "imm_2_3_operand" "v02, v03, v03, v02")])))
+	    (const_int 2))))]
+  "TARGET_DSP"
+  "@
+  pkbb16\t%0, %1, %2
+  pkbt16\t%0, %1, %2
+  pktt16\t%0, %1, %2
+  pktb16\t%0, %1, %2"
+  [(set_attr "mode" "V4HI")])
+
 (define_insn "<su>mul16<mode>"
   [(set (match_operand:VSI 0 "register_operand"                                 "=r")
 	(mult:VSI (any_extend:VSI (match_operand:<VNARROW> 1 "register_operand" "%r"))
