@@ -988,18 +988,26 @@ enum riscv_order
   (__builtin_riscv_pkbb16 ((a), (b)))
 #define __nds__v_pkbb16(a, b) \
   (__builtin_riscv_v_pkbb16 ((a), (b)))
+#define __nds64__v_pkbb16(a, b) \
+  (__builtin_riscv_v64_pkbb16 ((a), (b)))
 #define __nds__pkbt16(a, b) \
   (__builtin_riscv_pkbt16 ((a), (b)))
 #define __nds__v_pkbt16(a, b) \
   (__builtin_riscv_v_pkbt16 ((a), (b)))
+#define __nds64__v_pkbt16(a, b) \
+  (__builtin_riscv_v64_pkbt16 ((a), (b)))
 #define __nds__pktb16(a, b) \
   (__builtin_riscv_pktb16 ((a), (b)))
 #define __nds__v_pktb16(a, b) \
   (__builtin_riscv_v_pktb16 ((a), (b)))
+#define __nds64__v_pktb16(a, b) \
+  (__builtin_riscv_v64_pktb16 ((a), (b)))
 #define __nds__pktt16(a, b) \
   (__builtin_riscv_pktt16 ((a), (b)))
 #define __nds__v_pktt16(a, b) \
   (__builtin_riscv_v_pktt16 ((a), (b)))
+#define __nds64__v_pktt16(a, b) \
+  (__builtin_riscv_v64_pktt16 ((a), (b)))
 
 #define __nds__smmul(a, b) \
   (__builtin_riscv_smmul ((a), (b)))
