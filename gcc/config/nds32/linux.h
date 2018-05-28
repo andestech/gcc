@@ -46,7 +46,7 @@
    1 means  hard ABI and using full floating-point instruction,
    2 means hard ABI and only using single-precision floating-point
    instruction  */
-#if TARGET_DEFAULT_ABI
+#if TARGET_ARCH_DEFAULT
 #define LD_SO_ABI_SPEC "%{!mabi=2:f}"
 #else
 #define LD_SO_ABI_SPEC "%{mabi=2fp+:f}"
