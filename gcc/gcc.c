@@ -3670,10 +3670,15 @@ add_preprocessor_option (const char *option, int len)
   preprocessor_options.safe_push (save_string (option, len));
 }
 
+/* -mace=/path/to/libacetool.so */
+static const char *acetool = NULL;
+
 static void
 add_assembler_option (const char *option, int len)
 {
   assembler_options.safe_push (save_string (option, len));
+  if (strncmp(option, "-mace=", 6) == 0)
+    acetool = assembler_options.last();
 }
 
 static void
@@ -4854,6 +4859,15 @@ set_collect_gcc_options (void)
 		sizeof ("COLLECT_GCC_OPTIONS=") - 1);
 
   first_time = TRUE;
+
+  if (acetool != NULL)
+    {
+      obstack_grow (&collect_obstack, "'-Wa,", 5);
+      obstack_grow (&collect_obstack, acetool, strlen (acetool));
+      obstack_grow (&collect_obstack, "'", 1);
+      first_time = FALSE;
+    }
+
   for (i = 0; (int) i < n_switches; i++)
     {
       const char *const *args;
@@ -10329,6 +10343,7 @@ driver::finalize ()
   added_libraries = 0;
   XDELETEVEC (outfiles);
   outfiles = NULL;
+  acetool = NULL;
   spec_lang = 0;
   last_language_n_infiles = 0;
   gcc_input_filename = NULL;
