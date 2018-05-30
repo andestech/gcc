@@ -1011,7 +1011,11 @@ enum riscv_order
 
 #define __nds__smmul(a, b) \
   (__builtin_riscv_smmul ((a), (b)))
+#define __nds64__smmul(a, b) \
+  (__builtin_riscv_smmul ((a), (b)))
 #define __nds__smmul_u(a, b) \
+  (__builtin_riscv_smmul_u ((a), (b)))
+#define __nds64__smmul_u(a, b) \
   (__builtin_riscv_smmul_u ((a), (b)))
 #define __nds__kmmac(r, a, b) \
   (__builtin_riscv_kmmac ((r), (a), (b)))

@@ -2883,6 +2883,35 @@
   [(set_attr "type" "imul")
    (set_attr "mode" "HI")])
 
+(define_insn "smuldi3_highpart"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(sign_extend:DI
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (mult:DI
+		(match_operand:DI 1 "register_operand" " r")
+		(match_operand:DI 2 "register_operand" " r"))
+	      (const_int 32)))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "smmul\t%0, %1, %2"
+  [(set_attr "type" "imul")
+   (set_attr "mode" "DI")])
+
+(define_insn "smmuldi3_round"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(sign_extend:DI
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (unspec:DI [(mult:DI
+			    (match_operand:DI 1 "register_operand" " r")
+			    (match_operand:DI 2 "register_operand" " r"))]
+			  UNSPEC_ROUND)
+	      (const_int 32)))))]
+  "TARGET_DSP  && TARGET_64BIT"
+  "smmul.u\t%0, %1, %2"
+  [(set_attr "type" "imul")
+   (set_attr "mode" "DI")])
+
 (define_insn "kmmac"
   [(set (match_operand:SI 0 "register_operand"                         "=r")
 	(ss_plus:SI (match_operand:SI 1 "register_operand"             " 0")
