@@ -149,8 +149,8 @@ struct GTY(())  machine_function {
   /* The current frame information, calculated by riscv_compute_frame_info.  */
   struct riscv_frame_info frame;
 
-  /* Indicate this funciton should not apply ex9 optimization.  */
-  bool no_ex9;
+  /* Indicate this funciton should not apply execit optimization.  */
+  bool no_execit;
 };
 
 /* Information about a single argument.  */
@@ -640,8 +640,8 @@ static const struct attribute_spec riscv_attribute_table[] =
 
   { "no_prologue",  0,  0, true, false, false, false, NULL, NULL },
 
-  /* The attribute telling no ex9 optimization for this function.  */
-  { "no_ex9",       0,  0, true, false, false, false, NULL, NULL },
+  /* The attribute telling no execit optimization for this function.  */
+  { "no_execit",       0,  0, true, false, false, false, NULL, NULL},
 
   /* The last attribute spec is set to be NULL.  */
   { NULL,	0,  0, false, false, false, false, NULL, NULL }
@@ -4163,7 +4163,7 @@ riscv_compute_frame_info (void)
 
   attr = DECL_ATTRIBUTES (current_function_decl);
 
-  cfun->machine->no_ex9 = (lookup_attribute ("no_ex9", attr) != NULL);
+  cfun->machine->no_execit = (lookup_attribute ("no_execit", attr) != NULL);
 
   frame = &cfun->machine->frame;
 
@@ -4808,8 +4808,8 @@ riscv_epilogue_uses (unsigned int regno)
 static void
 riscv_asm_function_prologue (FILE *file)
 {
-  if (cfun->machine->no_ex9)
-    fprintf (file, "\t.no_ex9_begin\n");
+  if (cfun->machine->no_execit)
+    fprintf (file, "\t.no_execit_begin\n");
 }
 
 /* The content produced from this function
@@ -4817,8 +4817,8 @@ riscv_asm_function_prologue (FILE *file)
 static void
 riscv_asm_function_epilogue (FILE *file)
 {
-  if (cfun->machine->no_ex9)
-    fprintf (file, "\t.no_ex9_end\n");
+  if (cfun->machine->no_execit)
+    fprintf (file, "\t.no_execit_end\n");
 }
 
 /* Return nonzero if this function is known to have a null epilogue.
@@ -5077,8 +5077,8 @@ riscv_file_start (void)
   if (riscv_emit_attribute_p)
     riscv_emit_attribute ();
 
-  if (TARGET_EX9 && TARGET_RVC)
-    fprintf (asm_out_file, "\t.option ex9\n");
+  if (TARGET_EXECIT && TARGET_RVC)
+    fprintf (asm_out_file, "\t.option execit\n");
 
   fprintf (asm_out_file, "\t.attribute arch, \"%s\"\n", arch.c_str());
 

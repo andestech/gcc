@@ -111,7 +111,7 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
   if (TARGET_V5M)
     {
       builtin_define ("__nds_v5m");
-      builtin_define ("__nds_ex9");
+      builtin_define ("__nds_execit");
     }
   if (TARGET_BFO)
     builtin_define ("__nds_bfo");

@@ -975,26 +975,28 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
 #define ASM_OUTPUT_POOL_EPILOGUE riscv_asm_output_pool_epilogue
 
 #ifdef TARGET_OS_DEFAULT_EX9
-#define NDS32_EX9_DRIVER_SPEC " %{Os3|Os:%{!mno-ex9:-mex9}}"
+#define NDS32_EX9_DRIVER_SPEC " %{Os3|Os:%{!mno-execit:-mexecit}}"
 #else
 #define NDS32_EX9_DRIVER_SPEC ""
 #endif
 
 #define NDS_DRIVER_SPEC \
   " %{frepo:-fuse-ld=bfd}" \
+  " %{mex9:-mexecit}" \
+  " %{mno-ex9:-mno-execit}" \
   " %{mnds:-mv5m-nds}" \
   " %{mno-nds:-mno-v5m-nds -mno-ext-dsp}" \
   " %{mv5m-nds:%{!mno-bfo:-mbfo}}" \
   " %{mv5m-nds:%{!mno-bbcs:-mbbcs}}" \
   " %{mv5m-nds:%{!mno-bimm:-mbimm}}" \
   " %{mv5m-nds:%{!mno-lea:-mlea}}" \
-  " %{mv5m-nds:%{!mno-ex9:-mex9}}" \
+  " %{mv5m-nds:%{!mno-execit:-mexecit}}" \
   " %{mv5m-nds:%{!mno-gp-insn-relax:-mgp-insn-relax}}" \
   " %{mno-v5m-nds:%{!mbfo:-mno-bfo}}" \
   " %{mno-v5m-nds:%{!mbbcs:-mno-bbcs}}" \
   " %{mno-v5m-nds:%{!mbimm:-mno-bimm}}" \
   " %{mno-v5m-nds:%{!mlea:-mno-lea}}" \
-  " %{mno-v5m-nds:%{!mex9:-mno-ex9}}" \
+  " %{mno-v5m-nds:%{!mexecit:-mno-execit}}" \
   " %{mno-v5m-nds:%{!mgp-insn-relax:-mno-gp-insn-relax}}"
 
 #define CMODEL_SPEC \

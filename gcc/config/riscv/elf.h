@@ -18,9 +18,9 @@ along with GCC; see the file COPYING3.  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #ifdef TARGET_OS_DEFAULT_EX9
-#define NDS32_EX9_SPEC " %{Os3|Os|mex9:%{!mno-ex9:--mex9}}"
+#define NDS32_EX9_SPEC " %{Os3|Os|mexecit:%{!mno-execit:--mexecit}}"
 #else
-#define NDS32_EX9_SPEC " %{mex9:--mex9}"
+#define NDS32_EX9_SPEC " %{mexecit:--mexecit}"
 #endif
 
 #ifdef TARGET_DEFAULT_GP_RELAX

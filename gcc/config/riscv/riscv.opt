@@ -263,9 +263,13 @@ mno-16-bit
 Target Report RejectNegative
 Do not genearte C extension instructions.
 
+mexecit
+Target Report Var(TARGET_EXECIT) Undocumented
+Use special directives to guide linker doing execit optimization.
+
 mex9
-Target Report Mask(EX9)
-Use special directives to guide linker doing ex9 optimization.
+Target Report Undocumented
+Use special directives to guide linker doing execit optimization.
 
 minnermost-loop
 Target Report Mask(INNERMOST_LOOP)
