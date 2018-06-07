@@ -681,6 +681,7 @@ static const struct default_options riscv_option_optimization_table[] =
 #ifdef TARGET_DEFAULT_ERROR_ON_NO_ATOMIC
     { OPT_LEVELS_ALL, OPT_merror_on_no_atomic, NULL, 1 },
 #endif
+    { OPT_LEVELS_3_PLUS, OPT_mipa_escape_analysis, NULL, 1 },
     { OPT_LEVELS_NONE, 0, NULL, 0 }
   };
 
