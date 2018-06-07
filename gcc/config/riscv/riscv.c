@@ -642,6 +642,8 @@ static const struct attribute_spec riscv_attribute_table[] =
 
   /* The attribute telling no execit optimization for this function.  */
   { "no_execit",       0,  0, true, false, false, false, NULL, NULL},
+  /* For backward compatibility.  */
+  { "no_ex9",          0,  0, true, false, false, false, NULL, NULL},
 
   /* The last attribute spec is set to be NULL.  */
   { NULL,	0,  0, false, false, false, false, NULL, NULL }
@@ -4163,7 +4165,9 @@ riscv_compute_frame_info (void)
 
   attr = DECL_ATTRIBUTES (current_function_decl);
 
-  cfun->machine->no_execit = (lookup_attribute ("no_execit", attr) != NULL);
+  cfun->machine->no_execit =
+    ((lookup_attribute ("no_execit", attr) != NULL)
+     || (lookup_attribute ("no_ex9", attr) != NULL));
 
   frame = &cfun->machine->frame;
 
