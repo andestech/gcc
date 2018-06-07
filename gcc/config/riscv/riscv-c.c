@@ -108,9 +108,9 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
       break;
     }
 
-  if (TARGET_V5M)
+  if (TARGET_V5)
     {
-      builtin_define ("__nds_v5m");
+      builtin_define ("__nds_v5");
       builtin_define ("__nds_execit");
 
       /* Also define __nds_ex9 for backward compatibility.  */

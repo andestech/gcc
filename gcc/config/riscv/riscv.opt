@@ -156,8 +156,8 @@ mlea
 Target Report Mask(LEA)
 Use hardware load effective address instructions: lea.
 
-mv5m-nds
-Target Report Mask(V5M)
+mv5-nds
+Target Report Mask(V5)
 Enable all v5m instructions.
 
 mnds
