@@ -61,15 +61,26 @@ along with GCC; see the file COPYING3.  If not see
   " %{Os2:-Os -minnermost-loop}" \
   " %{Os3:-Os}"
 
+extern const char *riscv_arch (int, const char **);
+#undef EXTRA_SPEC_FUNCTIONS
+#define EXTRA_SPEC_FUNCTIONS \
+  { "riscv_arch", riscv_arch },			\
+
 #undef ASM_SPEC
 #define ASM_SPEC "\
 %(subtarget_asm_debugging_spec) \
 %{" FPIE_OR_FPIC_SPEC ":-fpic} \
-%{march=*} \
-%{matomic} \
+-march=%:riscv_arch(%{march=*} \
+		    %{mv5-nds} \
+		    %{mno-v5-nds} \
+		    %{mnds} \
+		    %{mno-nds} \
+		    %{matomic} \
+		    %{mno-atomic} \
+		    %{mno-16-bit} \
+		    %{mext-dsp} \
+		    %{mno-ext-dsp}) \
 %{mabi=*} \
-%{mno-16-bit} \
-%{mext-dsp} \
 %(subtarget_asm_spec)" \
 " %{O|O1|O2|O3|Ofast:-O1;:-Os}"
 
