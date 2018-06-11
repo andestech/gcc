@@ -318,7 +318,7 @@ static const struct riscv_tune_info vicuna_tune_info = {
   1,						/* issue_rate */
   3,						/* branch_cost */
   3,						/* memory_cost */
-  true,						/* slow_unaligned_access */
+  false,					/* slow_unaligned_access */
 };
 
 /* Costs to use when optimizing for size.  */
