@@ -1957,10 +1957,20 @@
    (match_operand:V4HI 2 "register_operand")]
   "TARGET_DSP && TARGET_64BIT"
 {
-  emit_insn (gen_vec_mergevv64 (operands[0], operands[1], operands[2],
-				GEN_INT (0), GEN_INT (0), GEN_INT (2), GEN_INT (2)));
+  emit_insn (gen_vec_pkbb64 (operands[0], operands[1], operands[2]));
   DONE;
 })
+
+(define_insn "vec_pkbb64"
+  [(set (match_operand:V4HI 0 "register_operand" "=r")
+	(vec_select:V4HI
+	 (vec_concat:V8HI (match_operand:V4HI 1 "register_operand" "r")
+			  (match_operand:V4HI 2 "register_operand" "r"))
+	 (parallel [(const_int 0) (const_int 1)
+		    (const_int 4) (const_int 5)])))]
+  "TARGET_DSP && TARGET_64BIT"
+  "pkbb16\t%0, %1, %2"
+  [(set_attr "mode" "V4HI")])
 
 (define_expand "pkbt64"
   [(match_operand:V4HI 0 "register_operand")
@@ -1968,10 +1978,20 @@
    (match_operand:V4HI 2 "register_operand")]
   "TARGET_DSP && TARGET_64BIT"
 {
-  emit_insn (gen_vec_mergevv64 (operands[0], operands[1], operands[2],
-				GEN_INT (0), GEN_INT (1), GEN_INT (2), GEN_INT (3)));
+  emit_insn (gen_vec_pkbt64 (operands[0], operands[1], operands[2]));
   DONE;
 })
+
+(define_insn "vec_pkbt64"
+  [(set (match_operand:V4HI 0 "register_operand" "=r")
+	(vec_select:V4HI
+	 (vec_concat:V8HI (match_operand:V4HI 1 "register_operand" "r")
+			  (match_operand:V4HI 2 "register_operand" "r"))
+	 (parallel [(const_int 2) (const_int 3)
+		    (const_int 4) (const_int 5)])))]
+  "TARGET_DSP && TARGET_64BIT"
+  "pkbt16\t%0, %1, %2"
+  [(set_attr "mode" "V4HI")])
 
 (define_expand "pktt64"
   [(match_operand:V4HI 0 "register_operand")
@@ -1979,10 +1999,20 @@
    (match_operand:V4HI 2 "register_operand")]
   "TARGET_DSP && TARGET_64BIT"
 {
-  emit_insn (gen_vec_mergevv64 (operands[0], operands[1], operands[2],
-				GEN_INT (1), GEN_INT (1), GEN_INT (3), GEN_INT (3)));
+  emit_insn (gen_vec_pktt64 (operands[0], operands[1], operands[2]));
   DONE;
 })
+
+(define_insn "vec_pktt64"
+  [(set (match_operand:V4HI 0 "register_operand" "=r")
+	(vec_select:V4HI
+	 (vec_concat:V8HI (match_operand:V4HI 1 "register_operand" "r")
+			  (match_operand:V4HI 2 "register_operand" "r"))
+	 (parallel [(const_int 2) (const_int 3)
+		    (const_int 6) (const_int 7)])))]
+  "TARGET_DSP && TARGET_64BIT"
+  "pktt16\t%0, %1, %2"
+  [(set_attr "mode" "V4HI")])
 
 (define_expand "pktb64"
   [(match_operand:V4HI 0 "register_operand")
@@ -1990,40 +2020,19 @@
    (match_operand:V4HI 2 "register_operand")]
   "TARGET_DSP && TARGET_64BIT"
 {
-  emit_insn (gen_vec_mergevv64 (operands[0], operands[1], operands[2],
-				GEN_INT (1), GEN_INT (0), GEN_INT (3), GEN_INT (2)));
+  emit_insn (gen_vec_pktb64 (operands[0], operands[1], operands[2]));
   DONE;
 })
 
-(define_insn "vec_mergevv64"
-  [(set (match_operand:V4HI 0 "register_operand"                 "= r,   r,   r,   r")
-	(vec_concat:V4HI
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (vec_select:HI
-		(match_operand:V4HI 1 "register_operand"         "  r,   r,   r,   r")
-		(parallel [(match_operand:SI 3 "imm_0_1_operand" "v00, v00, v01, v01")])))
-	    (vec_duplicate:V2HI
-	      (vec_select:HI
-		(match_operand:V4HI 2 "register_operand"         "  r,   r,   r,   r")
-		(parallel [(match_operand:SI 4 "imm_0_1_operand" "v00, v01, v01, v00")])))
-	    (const_int 2))
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (vec_select:HI
-		(match_dup 1)
-		(parallel [(match_operand:SI 5 "imm_2_3_operand" "v02, v02, v03, v03")])))
-	    (vec_duplicate:V2HI
-	      (vec_select:HI
-		(match_dup 2)
-		(parallel [(match_operand:SI 6 "imm_2_3_operand" "v02, v03, v03, v02")])))
-	    (const_int 2))))]
-  "TARGET_DSP"
-  "@
-  pkbb16\t%0, %1, %2
-  pkbt16\t%0, %1, %2
-  pktt16\t%0, %1, %2
-  pktb16\t%0, %1, %2"
+(define_insn "vec_pktb64"
+  [(set (match_operand:V4HI 0 "register_operand" "=r")
+	(vec_select:V4HI
+	 (vec_concat:V8HI (match_operand:V4HI 1 "register_operand" "r")
+			  (match_operand:V4HI 2 "register_operand" "r"))
+	 (parallel [(const_int 0) (const_int 1)
+		    (const_int 6) (const_int 7)])))]
+  "TARGET_DSP && TARGET_64BIT"
+  "pktb16\t%0, %1, %2"
   [(set_attr "mode" "V4HI")])
 
 (define_insn "<su>mul16<mode>"
