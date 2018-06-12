@@ -247,6 +247,9 @@ bool riscv_slow_unaligned_access_p;
 /* Stack alignment to assume/maintain.  */
 unsigned riscv_stack_boundary;
 
+/* Whether in riscv_output_mi_thunk. */
+static bool riscv_in_thunk_func = false;
+
 /* If non-zero, this is an offset to be added to SP to redefine the CFA
    when restoring the FP register from the stack.  Only valid when generating
    the epilogue.  */
@@ -1666,7 +1669,19 @@ static rtx
 riscv_force_address (rtx x, machine_mode mode)
 {
   if (!riscv_legitimate_address_p (mode, x, false))
-    x = force_reg (Pmode, x);
+    {
+      if (can_create_pseudo_p ())
+	return force_reg (Pmode, x);
+      else
+	{
+	  /* It's only safe for the thunk function.*/
+	  gcc_assert (riscv_in_thunk_func);
+	  rtx reg = RISCV_PROLOGUE_TEMP (Pmode);
+	  riscv_emit_move (reg, x);
+	  return reg;
+	}
+    }
+
   return x;
 }
 
@@ -5105,6 +5120,8 @@ riscv_output_mi_thunk (FILE *file, tree thunk_fndecl ATTRIBUTE_UNUSED,
   rtx this_rtx, temp1, temp2, fnaddr;
   rtx_insn *insn;
 
+  riscv_in_thunk_func = true;
+
   /* Pretend to be a post-reload pass while generating rtl.  */
   reload_completed = 1;
 
@@ -5170,6 +5187,7 @@ riscv_output_mi_thunk (FILE *file, tree thunk_fndecl ATTRIBUTE_UNUSED,
   /* Clean up the vars set above.  Note that final_end_function resets
      the global pointer for us.  */
   reload_completed = 0;
+  riscv_in_thunk_func = false;
 }
 
 /* Allocate a chunk of memory for per-function machine-dependent data.  */
