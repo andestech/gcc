@@ -2505,6 +2505,9 @@ riscv*-*-elf* | riscv*-*-rtems*)
 		  cmodel )
 			  tmake_file="${tmake_file} riscv/t-elf-cmodel"
 			  ;;
+		  dsp )
+			  tmake_file="${tmake_file} riscv/t-elf-dsp"
+			  ;;
 		  *)
 			  echo "--with-multilib-list=${riscv_multilib} not supported."
 			  exit 1
