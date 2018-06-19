@@ -138,6 +138,9 @@ struct GTY(())  machine_function {
   /* True if current function is a naked function.  */
   bool naked_p;
 
+  /* True if current function is a naked function.  */
+  bool no_prologue_p;
+
   /* True if current function is an interrupt function.  */
   bool interrupt_handler_p;
   /* For an interrupt handler, indicates the privilege level.  */
@@ -2438,7 +2441,7 @@ riscv_output_move (rtx dest, rtx src)
 const char *
 riscv_output_return ()
 {
-  if (cfun->machine->naked_p)
+  if (cfun->machine->naked_p && !cfun->machine->no_prologue_p)
     return "";
 
   return "ret";
@@ -3431,6 +3434,17 @@ riscv_naked_function_p (tree func)
   if (func == NULL_TREE)
     func_decl = current_function_decl;
   return NULL_TREE != lookup_attribute ("naked", DECL_ATTRIBUTES (func_decl));
+}
+
+/* Return true if FUNC is a no_prologue function.  */
+static bool
+riscv_no_prologue_function_p (tree func)
+{
+  tree func_decl = func;
+  if (func == NULL_TREE)
+    func_decl = current_function_decl;
+  return NULL_TREE != lookup_attribute ("no_prologue",
+					DECL_ATTRIBUTES (func_decl));
 }
 
 /* Implement TARGET_ALLOCATE_STACK_SLOTS_FOR_ARGS.  */
@@ -5625,6 +5639,7 @@ riscv_set_current_function (tree decl)
     return;
 
   cfun->machine->naked_p = riscv_naked_function_p (decl);
+  cfun->machine->no_prologue_p = riscv_no_prologue_function_p (decl);
   cfun->machine->interrupt_handler_p
     = riscv_interrupt_type_p (TREE_TYPE (decl));
 
