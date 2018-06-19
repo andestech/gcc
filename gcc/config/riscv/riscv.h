@@ -1022,7 +1022,7 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   CMODEL_SPEC
 
 #define MULTILIB_DEFAULTS \
-  { "mcmodel=medlow", "" }
+  { "mcmodel=medlow", "mfma" }
 
 extern tree riscv_fp16_type_node;
 #endif /* ! GCC_RISCV_H */

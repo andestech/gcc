@@ -2508,6 +2508,9 @@ riscv*-*-elf* | riscv*-*-rtems*)
 		  dsp )
 			  tmake_file="${tmake_file} riscv/t-elf-dsp"
 			  ;;
+		  fma )
+			  tmake_file="${tmake_file} riscv/t-elf-fma"
+			  ;;
 		  *)
 			  echo "--with-multilib-list=${riscv_multilib} not supported."
 			  exit 1
