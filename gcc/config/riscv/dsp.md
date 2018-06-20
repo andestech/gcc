@@ -943,23 +943,6 @@
   DONE;
 })
 
-;; v0 = (v1 & 0xff00ffff) | v2
-(define_insn_and_split "ior_and0xff00ffff_reg"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(ior:SI (and:SI (match_operand:SI 1 "register_operand" "r")
-			(const_int -16711681))
-		(match_operand:SI 2 "register_operand" "r")))]
-  "TARGET_DSP && !reload_completed"
-  "#"
-  "TARGET_DSP && !reload_completed"
-  [(const_int 1)]
-{
-  rtx tmp = gen_reg_rtx (SImode);
-  emit_insn (gen_andsi3 (tmp, operands[1], gen_int_mode (0xff00ffff, SImode)));
-  emit_insn (gen_iorsi3 (operands[0], tmp, operands[2]));
-  DONE;
-})
-
 (define_insn "vec_setv4qi_internal"
   [(set (match_operand:V4QI 0 "register_operand"    "=   r,    r,    r,    r")
 	(vec_merge:V4QI
