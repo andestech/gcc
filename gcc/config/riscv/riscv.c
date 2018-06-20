@@ -605,7 +605,17 @@ static const char * const riscv_csr_register_names[] =
   "scounterinten",
   "scountermask_s",
   "scountermask_u",
-  "scounterovf"
+  "scounterovf",
+  "mcctlbeginaddr",
+  "mcctlcommand",
+  "mcctldata",
+  "mslideleg",
+  "slie",
+  "slip",
+  "scctldata",
+  "smisc_ctl",
+  "ucctlbeginaddr",
+  "ucctlcommand"
 };
 
 static const char * const riscv_fence_operations [] =
