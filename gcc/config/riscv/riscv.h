@@ -71,8 +71,8 @@ extern const char *riscv_arch (int, const char **);
 %(subtarget_asm_debugging_spec) \
 %{" FPIE_OR_FPIC_SPEC ":-fpic} \
 -march=%:riscv_arch(%{march=*} \
-		    %{mv5-nds} \
-		    %{mno-v5-nds} \
+		    %{mnds} \
+		    %{mno-nds} \
 		    %{mnds} \
 		    %{mno-nds} \
 		    %{matomic} \
@@ -995,20 +995,19 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   " %{frepo:-fuse-ld=bfd}" \
   " %{mex9:-mexecit}" \
   " %{mno-ex9:-mno-execit}" \
-  " %{mnds:-mv5m-nds}" \
-  " %{mno-nds:-mno-v5m-nds -mno-ext-dsp}" \
-  " %{mv5m-nds:%{!mno-bfo:-mbfo}}" \
-  " %{mv5m-nds:%{!mno-bbcs:-mbbcs}}" \
-  " %{mv5m-nds:%{!mno-bimm:-mbimm}}" \
-  " %{mv5m-nds:%{!mno-lea:-mlea}}" \
-  " %{mv5m-nds:%{!mno-execit:-mexecit}}" \
-  " %{mv5m-nds:%{!mno-gp-insn-relax:-mgp-insn-relax}}" \
-  " %{mno-v5m-nds:%{!mbfo:-mno-bfo}}" \
-  " %{mno-v5m-nds:%{!mbbcs:-mno-bbcs}}" \
-  " %{mno-v5m-nds:%{!mbimm:-mno-bimm}}" \
-  " %{mno-v5m-nds:%{!mlea:-mno-lea}}" \
-  " %{mno-v5m-nds:%{!mexecit:-mno-execit}}" \
-  " %{mno-v5m-nds:%{!mgp-insn-relax:-mno-gp-insn-relax}}"
+  " %{mno-nds:-mno-ext-dsp}" \
+  " %{mnds:%{!mno-bfo:-mbfo}}" \
+  " %{mnds:%{!mno-bbcs:-mbbcs}}" \
+  " %{mnds:%{!mno-bimm:-mbimm}}" \
+  " %{mnds:%{!mno-lea:-mlea}}" \
+  " %{mnds:%{!mno-execit:-mexecit}}" \
+  " %{mnds:%{!mno-gp-insn-relax:-mgp-insn-relax}}" \
+  " %{mno-nds:%{!mbfo:-mno-bfo}}" \
+  " %{mno-nds:%{!mbbcs:-mno-bbcs}}" \
+  " %{mno-nds:%{!mbimm:-mno-bimm}}" \
+  " %{mno-nds:%{!mlea:-mno-lea}}" \
+  " %{mno-nds:%{!mexecit:-mno-execit}}" \
+  " %{mno-nds:%{!mgp-insn-relax:-mno-gp-insn-relax}}"
 
 #define CMODEL_SPEC \
   " %{mcmodel=small:-mcmodel=medlow}" \

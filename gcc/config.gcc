@@ -2499,8 +2499,8 @@ riscv*-*-elf* | riscv*-*-rtems*)
 		  vh )
 			  tmake_file="${tmake_file} riscv/t-elf-vh"
 			  ;;
-		  no-v5 )
-			  tmake_file="${tmake_file} riscv/t-elf-no-v5"
+		  no-nds )
+			  tmake_file="${tmake_file} riscv/t-elf-nds"
 			  ;;
 		  cmodel )
 			  tmake_file="${tmake_file} riscv/t-elf-cmodel"

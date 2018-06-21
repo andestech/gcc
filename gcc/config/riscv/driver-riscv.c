@@ -37,7 +37,6 @@ struct arch_options_t
   bool *val;
 };
 
-static bool v5m_ext = false;
 static bool nds_ext = true;
 static bool std_ext[26];
 static  bool rv64_p = false;
@@ -49,8 +48,7 @@ static arch_options_t arch_options[] = {
   {"d", NULL, &std_ext['d' - 'a']},
   {"c", "16-bit", &std_ext['c' - 'a']},
   {"p", "ext-dsp", &std_ext['p' - 'a']},
-  {"xv5m", "v5m", &v5m_ext},
-  {NULL, "nds", &nds_ext},
+  {"xv5", "nds", &nds_ext},
   {NULL, NULL, NULL},
 };
 
@@ -159,12 +157,6 @@ riscv_arch (int argc ATTRIBUTE_UNUSED, const char **argv ATTRIBUTE_UNUSED)
       if (strcmp (argv[i], "-") == 0)
 	continue;
       parsing_long_option (argv[i]);
-    }
-
-  /* Turn off all nds extension if -mno-nds is present.  */
-  if (!nds_ext)
-    {
-      v5m_ext = false;
     }
 
   arch_options_t *opt = &arch_options[0];
