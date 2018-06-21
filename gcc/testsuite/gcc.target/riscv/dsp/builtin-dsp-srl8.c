@@ -26,10 +26,10 @@ main ()
 
   if (a != 0x1020304)
     abort ();
-  else if (va[0] != 0xff
-	   || va[1] != 0xfe
-	   || va[2] != 0xfd
-	   || va[3] != 0xfc)
+  else if (va[0] != 0xf
+	   || va[1] != 0xe
+	   || va[2] != 0xd
+	   || va[3] != 0xc)
     abort ();
   else
     exit (0);

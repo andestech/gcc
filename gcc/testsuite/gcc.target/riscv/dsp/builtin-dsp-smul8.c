@@ -25,12 +25,12 @@ main ()
   int16x4_t va = v_smul8 ((int8x4_t) {0xff, 0xee, 0xdd, 0xcc},
 			   (int8x4_t) {0x11, 0x22, 0x33, 0x44});
 
-  if (a != 0xffff000000000000)
+  if (a != 0x0000ffff00000000)
     abort ();
   else if (va[0] != (short) 0xffef
            || va[1] != (short) 0xfd9c
-           || va[2] != (short) 0xf230
-           || va[3] != (short) 0xf907)
+           || va[2] != (short) 0xf907
+           || va[3] != (short) 0xf230)
     abort ();
   else
     exit (0);
