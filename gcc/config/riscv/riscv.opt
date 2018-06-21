@@ -279,7 +279,7 @@ mrestrict-even-reg-for-regpair
 Target Report Mask(RESTRICT_EVEN_REG_FOR_REGPAIR)
 Restrict register pair must start with even register number.
 
-mfma
+mext-fpu-fma
 Target Report Var(TARGET_FMA) Init(1)
 Generating fma instructions.
 

@@ -1,1 +1,1 @@
-MULTILIB_OPTIONS += mfma/mno-fma
+MULTILIB_OPTIONS += mext-fpu-fma/mno-ext-fpu-fma
