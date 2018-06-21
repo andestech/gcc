@@ -24,15 +24,15 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #ifdef TARGET_DEFAULT_GP_RELAX
-#define NDS32_GP_RELAX_DEFAULT_SPEC " %{!mno-gp-insn-relax:--mgp-insn}"
+#define NDS32_GP_RELAX_DEFAULT_SPEC " %{!mno-gp-insn-relax:--mgp-insn-relax}"
 #else
 #define NDS32_GP_RELAX_DEFAULT_SPEC ""
 #endif
 
 #define NDS32_GP_RELAX_SPEC \
   NDS32_GP_RELAX_DEFAULT_SPEC \
-  " %{mgp-insn-relax:--mgp-insn}" \
-  " %{mno-gp-insn-relax:--mno-gp-insn}"
+  " %{mgp-insn-relax:--mgp-insn-relax}" \
+  " %{mno-gp-insn-relax:--mno-gp-insn-relax}"
 
 #define BTB_FIXUP_SPEC \
   " %{Os3|Os:--mno-avoid-btb-miss}"
