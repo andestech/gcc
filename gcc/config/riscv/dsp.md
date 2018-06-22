@@ -3790,13 +3790,13 @@
   [(set_attr "type"   "imul")
    (set_attr "mode"   "SI")])
 
-(define_insn "bswap<mode>2"
-  [(set (match_operand:HISI 0 "register_operand" "=r")
-	(bswap:HISI (match_operand:HISI 1 "register_operand" "r")))]
+(define_insn "bswaphi2"
+  [(set (match_operand:HI 0 "register_operand" "=r")
+	(bswap:HI (match_operand:HI 1 "register_operand" "r")))]
   "TARGET_DSP"
-  "swap<bsize>\t%0, %1"
+  "swap8\t%0, %1"
   [(set_attr "type"  "arith")
-   (set_attr "mode"  "<MODE>")])
+   (set_attr "mode"  "HI")])
 
 (define_insn "unspec_bswap8"
   [(set (match_operand:V4QI 0 "register_operand" "=r")
