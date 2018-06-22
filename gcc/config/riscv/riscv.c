@@ -5997,6 +5997,29 @@ riscv_split_sms (rtx out, rtx in0, rtx in1,
   emit_insn (gen_subsi3 (out, result0, result1));
 }
 
+void riscv_expand_float_hf(rtx to, rtx from, bool unsignedp)
+{
+  rtx libfunc;
+  rtx_insn *insns;
+  rtx value;
+  convert_optab tab = unsignedp ? ufloat_optab : sfloat_optab;
+
+  libfunc = convert_optab_libfunc (tab, GET_MODE (to), GET_MODE (from));
+  gcc_assert (libfunc);
+
+  start_sequence ();
+
+  value = emit_library_call_value (libfunc, NULL_RTX,
+		  		   LCT_CONST, Pmode,
+                                   to, GET_MODE (to),
+                                   from, GET_MODE (from));
+   insns = get_insns ();
+   end_sequence ();
+
+   emit_libcall_block (insns, to, value,
+		       gen_rtx_fmt_e (unsignedp ? UNSIGNED_FLOAT : FLOAT,
+				      GET_MODE (to), from));
+}
 
 /* Initialize the GCC target structure.  */
 #undef TARGET_ASM_ALIGNED_HI_OP

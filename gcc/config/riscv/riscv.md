@@ -1373,50 +1373,42 @@
    (set_attr "mode" "<ANYF:MODE>")])
 
 (define_expand "floatsihf2"
-  [(set (match_operand:HF     0 "register_operand" "")
-	(float:HF
-	    (match_operand:SI 1 "register_operand" "")))]
+  [(set (match_operand:HF    0 "register_operand" "")
+       (float:HF
+           (match_operand:SI 1 "register_operand" "")))]
   "TARGET_HARD_FLOAT && TARGET_FP16"
 {
-  rtx tmp = gen_reg_rtx (SFmode);
-  expand_float (tmp, operands[1], 0);
-  convert_move (operands[0], tmp, 0);
+  riscv_expand_float_hf(operands[0], operands[1], false);
   DONE;
 })
 
 (define_expand "floatdihf2"
-  [(set (match_operand:HF     0 "register_operand" "")
+  [(set (match_operand:HF   0 "register_operand" "")
 	(float:HF
-	    (match_operand:DI 1 "register_operand" "")))]
+	  (match_operand:DI 1 "register_operand" "")))]
   "TARGET_HARD_FLOAT && TARGET_FP16"
 {
-  rtx tmp = gen_reg_rtx (SImode);
-  convert_move (tmp, operands[1], 0);
-  expand_float (operands[0], tmp, 0);
+  riscv_expand_float_hf(operands[0], operands[1], false);
   DONE;
 })
 
 (define_expand "floatunssihf2"
   [(set (match_operand:HF     0 "register_operand" "")
 	(unsigned_float:HF
-	    (match_operand:SI 1 "register_operand" "")))]
+	  (match_operand:SI 1 "register_operand" "")))]
   "TARGET_HARD_FLOAT && TARGET_FP16"
 {
-  rtx tmp = gen_reg_rtx (SFmode);
-  expand_float (tmp, operands[1], 0);
-  convert_move (operands[0], tmp, 0);
+  riscv_expand_float_hf(operands[0], operands[1], true);
   DONE;
 })
 
 (define_expand "floatunsdihf2"
   [(set (match_operand:HF     0 "register_operand" "")
 	(unsigned_float:HF
-	    (match_operand:DI 1 "register_operand" "")))]
+	  (match_operand:DI 1 "register_operand" "")))]
   "TARGET_HARD_FLOAT && TARGET_FP16"
 {
-  rtx tmp = gen_reg_rtx (SImode);
-  convert_move (tmp, operands[1], 1);
-  expand_float (operands[0], tmp, 1);
+  riscv_expand_float_hf(operands[0], operands[1], true);
   DONE;
 })
 

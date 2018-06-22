@@ -13,11 +13,6 @@ softfp_float_modes := tf
 softfp_extensions := sftf dftf
 softfp_truncations := tfsf tfdf
 
-ifdef FP16
-softfp_extensions += hftf
-softfp_truncations += tfhf
-endif
-
 # Enable divide routines to make -mno-fdiv work.
 softfp_extras := divsf3 divdf3
 
@@ -27,11 +22,6 @@ else
 softfp_float_modes := df tf
 softfp_extensions := sfdf sftf dftf
 softfp_truncations := dfsf tfsf tfdf
-
-ifdef FP16
-softfp_extensions += hftf
-softfp_truncations += tfhf
-endif
 
 ifndef ABI_SINGLE
 softfp_float_modes += sf
@@ -51,4 +41,10 @@ else
 # Enable divide routines to make -mno-fdiv work.
 softfp_extras := divsf3 divdf3 divtf3
 
+endif
+
+ifdef FP16
+softfp_extensions += hftf
+softfp_truncations += tfhf
+softfp_extras := floatdihf floatsihf floatundihf floatunsihf
 endif

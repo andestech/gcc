@@ -102,4 +102,6 @@ extern void riscv_split_sms (rtx, rtx, rtx, rtx, rtx, rtx, rtx);
 extern void riscv_asm_output_pool_epilogue (FILE *, const char *,
 					    tree, HOST_WIDE_INT);
 
+extern void riscv_expand_float_hf(rtx, rtx, bool);
+
 #endif /* ! GCC_RISCV_PROTOS_H */
