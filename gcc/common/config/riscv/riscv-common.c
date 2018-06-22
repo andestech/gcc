@@ -634,7 +634,8 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
     {
       if (strcmp (isa, "v5") == 0)
 	{
-	  *flags |= MASK_V5;
+	  if ((target_flags_explicit & MASK_V5) == 0)
+	    *flags |= MASK_V5;
 	  if ((target_flags_explicit & MASK_BFO) == 0)
 	    *flags |= MASK_BFO;
 	  if ((target_flags_explicit & MASK_BBCS) == 0)
