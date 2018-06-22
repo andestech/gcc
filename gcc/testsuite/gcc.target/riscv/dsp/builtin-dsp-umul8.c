@@ -25,12 +25,12 @@ main ()
   uint16x4_t va = v_umul8 ((uint8x4_t) {0xff, 0xee, 0xdd, 0xcc},
 			    (uint8x4_t) {0x11, 0x22, 0x33, 0x44});
 
-  if (a != 0xff000000000000)
+  if (a != 0xff00000000)
     abort ();
   else if (va[0] != 0x10ef
            || va[1] != 0x1f9c
-           || va[2] != 0x3630
-           || va[3] != 0x2c07)
+           || va[2] != 0x2c07
+           || va[3] != 0x3630)
     abort ();
   else
     exit (0);
