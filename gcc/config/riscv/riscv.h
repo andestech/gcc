@@ -996,6 +996,8 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   " %{mex9:-mexecit}" \
   " %{mno-ex9:-mno-execit}" \
   " %{mno-nds:-mno-ext-dsp}" \
+  " %{mext-fpu-fma:-mfma}" \
+  " %{mno-ext-fpu-fma:-mno-fma}" \
   " %{mnds:%{!mno-bfo:-mbfo}}" \
   " %{mnds:%{!mno-bbcs:-mbbcs}}" \
   " %{mnds:%{!mno-bimm:-mbimm}}" \
@@ -1021,7 +1023,7 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   CMODEL_SPEC
 
 #define MULTILIB_DEFAULTS \
-  { "mcmodel=medlow", "mext-fpu-fma" }
+  { "mcmodel=medlow", "mfma" }
 
 extern tree riscv_fp16_type_node;
 #endif /* ! GCC_RISCV_H */
