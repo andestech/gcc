@@ -51,7 +51,7 @@
   "csrr\t%0, %V1")
 
 (define_insn "riscv_csr<csr_pat><GPR:mode>"
-  [(unspec_volatile:GPR [(match_operand:SI  0 "csr_operand" "r, K")
+  [(unspec_volatile:GPR [(match_operand:GPR 0 "csr_operand" "r, K")
 			 (match_operand:GPR 1 "immediate_operand" "i, i")] UVCSR)]
   ""
   "@
