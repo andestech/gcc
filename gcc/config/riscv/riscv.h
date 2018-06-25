@@ -993,7 +993,6 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   " %{frepo:-fuse-ld=bfd}" \
   " %{mex9:-mexecit}" \
   " %{mno-ex9:-mno-execit}" \
-  " %{mno-nds:-mno-ext-dsp}" \
   " %{mext-fpu-fma:-mfma}" \
   " %{mno-ext-fpu-fma:-mno-fma}" \
   " %{mnds:%{!mno-bfo:-mbfo}}" \
@@ -1007,7 +1006,8 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   " %{mno-nds:%{!mbimm:-mno-bimm}}" \
   " %{mno-nds:%{!mlea:-mno-lea}}" \
   " %{mno-nds:%{!mexecit:-mno-execit}}" \
-  " %{mno-nds:%{!mgp-insn-relax:-mno-gp-insn-relax}}"
+  " %{mno-nds:%{!mgp-insn-relax:-mno-gp-insn-relax}}" \
+  " %{mno-nds:%{!mext-dsp:-mno-ext-dsp}}"
 
 #define CMODEL_SPEC \
   " %{mcmodel=small:-mcmodel=medlow}" \
