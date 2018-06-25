@@ -73,8 +73,6 @@ extern const char *riscv_arch (int, const char **);
 -march=%:riscv_arch(%{march=*} \
 		    %{mnds} \
 		    %{mno-nds} \
-		    %{mnds} \
-		    %{mno-nds} \
 		    %{matomic} \
 		    %{mno-atomic} \
 		    %{mno-16-bit} \
