@@ -34,7 +34,10 @@ along with GCC; see the file COPYING3.  If not see
 #include "recog.h"
 #include "diagnostic-core.h"
 #include "stor-layout.h"
+#include "function.h"
+#include "emit-rtl.h"
 #include "expr.h"
+#include "explow.h"
 #include "langhooks.h"
 
 /* Macros to create an enumeration identifier for a function prototype.  */
@@ -1489,6 +1492,27 @@ riscv_prepare_builtin_arg (struct expand_operand *op, tree exp, unsigned argno,
     {
       if (GET_MODE_SIZE (mode) < GET_MODE_SIZE (GET_MODE (arg)))
 	tmp_rtx = simplify_gen_subreg (mode, arg, GET_MODE (arg), 0);
+      else if (VECTOR_MODE_P (mode) && CONST_INT_P (arg))
+	{
+	  /* Handle CONST_INT covert to CONST_VECTOR.  */
+	  int nunits = GET_MODE_NUNITS (mode);
+	  int i, shift = 0;
+	  rtvec v = rtvec_alloc (nunits);
+	  int val = INTVAL (arg);
+	  enum machine_mode val_mode = (mode == V4QImode) ? QImode : HImode;
+	  int shift_acc = (val_mode == QImode) ? 8 : 16;
+	  int mask = (val_mode == QImode) ? 0xff : 0xffff;
+	  int tmp_val = val;
+
+	  for (i = 0; i < nunits; i++)
+	    {
+	      tmp_val = (val >> shift) & mask;
+	      RTVEC_ELT (v, i) = gen_int_mode (tmp_val, val_mode);
+	      shift += shift_acc;
+	    }
+
+	  arg = copy_to_mode_reg (mode, gen_rtx_CONST_VECTOR (mode, v));
+	}
       else
 	convert_move (tmp_rtx, arg, false);
       arg = tmp_rtx;
