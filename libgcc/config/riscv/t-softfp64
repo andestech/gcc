@@ -3,5 +3,6 @@ include $(srcdir)/config/riscv/t-softfp32
 softfp_int_modes += ti
 
 ifdef FP16
-softfp_extras += fixhfti fixunshfti floattihf floatuntihf
+softfp_extras += fixhfti fixunshfti floattihf floatuntihf \
+		 extendhfdf2 truncdfhf2
 endif
