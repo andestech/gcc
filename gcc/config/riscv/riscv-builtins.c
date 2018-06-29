@@ -1491,7 +1491,10 @@ riscv_prepare_builtin_arg (struct expand_operand *op, tree exp, unsigned argno,
   if (!(*insn_data[icode].operand[argno + has_target_p].predicate) (arg, mode))
     {
       if (GET_MODE_SIZE (mode) < GET_MODE_SIZE (GET_MODE (arg)))
-	tmp_rtx = simplify_gen_subreg (mode, arg, GET_MODE (arg), 0);
+	{
+	  tmp_rtx = simplify_gen_subreg (mode, arg, GET_MODE (arg), 0);
+	  arg = tmp_rtx;
+	}
       else if (VECTOR_MODE_P (mode) && CONST_INT_P (arg))
 	{
 	  /* Handle CONST_INT covert to CONST_VECTOR.  */
@@ -1514,8 +1517,10 @@ riscv_prepare_builtin_arg (struct expand_operand *op, tree exp, unsigned argno,
 	  arg = copy_to_mode_reg (mode, gen_rtx_CONST_VECTOR (mode, v));
 	}
       else
-	convert_move (tmp_rtx, arg, false);
-      arg = tmp_rtx;
+	{
+	  convert_move (tmp_rtx, arg, false);
+	  arg = tmp_rtx;
+	}
     }
 
   create_input_operand (op, arg, mode);
