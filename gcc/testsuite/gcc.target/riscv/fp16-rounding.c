@@ -12,7 +12,7 @@
 #define ORIG 0x1.0020008p0
 
 /* The expected (double)((__fp16)ORIG) value, by rounding toward zero.  */
-#define ROUNDED 0x1.0000000p0
+#define ROUNDED 0x1.0040000p0
 
 typedef union u {
   __fp16 f;
