@@ -47,5 +47,6 @@ ifdef FP16
 softfp_extensions += hftf
 softfp_truncations += tfhf
 softfp_extras := floatdihf floatsihf floatundihf floatunsihf \
-		 fixhfdi fixhfsi fixunshfdi fixunshfsi
+		 fixhfdi fixhfsi fixunshfdi fixunshfsi \
+		 extendhfdf2 truncdfhf2
 endif
