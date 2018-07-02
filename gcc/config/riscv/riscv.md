@@ -1154,21 +1154,6 @@
   [(set_attr "type" "fcvt")
    (set_attr "mode" "HF")])
 
-(define_expand "truncdfhf2"
-  [(set (match_operand:HF     0 "nonimmediate_operand" "=m")
-	(float_truncate:HF
-	    (match_operand:DF 1     "register_operand" " f")))]
-  "TARGET_DOUBLE_FLOAT && TARGET_FP16"
-{
-   /* We don't have df to hf, so we trunct df to sf and then sf to hf.  */
-   rtx tmp = gen_reg_rtx (SFmode);
-   emit_insn (gen_truncdfsf2 (tmp, operands[1]));
-   emit_insn (gen_truncsfhf2 (operands[0], tmp));
-   DONE;
-}
-  [(set_attr "type" "fcvt")
-   (set_attr "mode" "HF")])
-
 
 ;;
 ;;  ....................
@@ -1302,22 +1287,6 @@
   "flhw\t%0,%1"
   [(set_attr "type" "fcvt")
    (set_attr "mode" "SF")])
-
-(define_expand "extendhfdf2"
-  [(set (match_operand:DF     0 "register_operand" "=f")
-	(float_extend:DF
-	    (match_operand:HF 1 "general_operand"  " f")))]
-  "TARGET_DOUBLE_FLOAT && TARGET_FP16"
-{
-   /* We don't have hf to df, so we extend that to sf and then extend to df.  */
-   rtx tmp = gen_reg_rtx (SFmode);
-   emit_insn (gen_extendhfsf2 (tmp, operands[1]));
-   emit_insn (gen_extendsfdf2 (operands[0], tmp));
-   DONE;
-}
-  [(set_attr "type" "fcvt")
-   (set_attr "mode" "DF")])
-
 
 ;;
 ;;  ....................
