@@ -3134,6 +3134,62 @@
   return pats[which_alternative];
 })
 
+(define_expand "smmwb64"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V4HI 2 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_smulhisi3_highpart_64 (operands[0], operands[1], operands[2],
+					GEN_INT (0), GEN_INT (2)));
+  DONE;
+})
+
+(define_expand "smmwt64"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V4HI 2 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_smulhisi3_highpart_64 (operands[0], operands[1], operands[2],
+					GEN_INT (1), GEN_INT (3)));
+  DONE;
+})
+
+(define_insn "smulhisi3_highpart_64"
+  [(set (match_operand:V2SI 0 "register_operand"                       "=r,    r")
+	(vec_concat:V2SI
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (mult:DI
+		(sign_extend:DI
+		  (vec_select:SI
+		    (match_operand:V2SI 1 "register_operand"           "  r,   r")
+		      (parallel [(const_int 0)])))
+		(sign_extend:DI
+		  (vec_select:HI
+		    (match_operand:V4HI 2 "register_operand"           "  r,   r")
+		      (parallel [(match_operand:SI 3 "imm_0_1_operand"   "v00, v01")]))))
+	      (const_int 16)))
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (mult:DI
+		(sign_extend:DI
+		  (vec_select:SI
+		    (match_dup 1)
+		      (parallel [(const_int 1)])))
+		(sign_extend:DI
+		  (vec_select:HI
+		    (match_dup 2)
+		      (parallel [(match_operand:SI 4 "imm_2_3_operand"   "v02, v03")]))))
+	      (const_int 16)))))]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  const char *pats[] = { "smmwb\t%0, %1, %2",
+			 "smmwt\t%0, %1, %2" };
+  return pats[which_alternative];
+})
+
 (define_expand "smmwb_round"
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:SI 1 "register_operand" "")
@@ -3168,6 +3224,66 @@
 	      UNSPEC_ROUND)
 	    (const_int 16))))]
   "TARGET_DSP"
+{
+  const char *pats[] = { "smmwb.u\t%0, %1, %2",
+			 "smmwt.u\t%0, %1, %2" };
+  return pats[which_alternative];
+})
+
+(define_expand "smmwb64_round"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V4HI 2 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_smmw64_round_internal (operands[0], operands[1], operands[2],
+					GEN_INT (0), GEN_INT (2)));
+  DONE;
+})
+
+(define_expand "smmwt64_round"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V4HI 2 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_smmw64_round_internal (operands[0], operands[1], operands[2],
+					GEN_INT (1), GEN_INT (3)));
+  DONE;
+})
+
+(define_insn "smmw64_round_internal"
+  [(set (match_operand:V2SI 0 "register_operand"                       "=r,    r")
+	(vec_concat:V2SI
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (unspec:DI
+	        [(mult:DI
+		  (sign_extend:DI
+		    (vec_select:SI
+		      (match_operand:V2SI 1 "register_operand"           "  r,   r")
+		      (parallel [(const_int 0)])))
+		  (sign_extend:DI
+		    (vec_select:HI
+		      (match_operand:V4HI 2 "register_operand"           "  r,   r")
+		      (parallel [(match_operand:SI 3 "imm_0_1_operand"   "v00, v01")]))))]
+	        UNSPEC_ROUND)
+	      (const_int 16)))
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (unspec:DI
+		[(mult:DI
+		  (sign_extend:DI
+		    (vec_select:SI
+		      (match_dup 1)
+		      (parallel [(const_int 1)])))
+		  (sign_extend:DI
+		    (vec_select:HI
+		      (match_dup 2)
+		      (parallel [(match_operand:SI 4 "imm_2_3_operand"   "v02, v03")]))))]
+	        UNSPEC_ROUND)
+	      (const_int 16)))))]
+  "TARGET_DSP && TARGET_64BIT"
 {
   const char *pats[] = { "smmwb.u\t%0, %1, %2",
 			 "smmwt.u\t%0, %1, %2" };
