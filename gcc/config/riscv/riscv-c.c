@@ -100,6 +100,10 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
       builtin_define ("__riscv_cmodel_medany");
       break;
 
+    case CM_LARGE:
+      builtin_define ("__riscv_cmodel_large");
+      break;
+
     case CM_PIC:
       builtin_define ("__riscv_cmodel_pic");
       break;
