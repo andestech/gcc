@@ -1019,6 +1019,10 @@ enum riscv_order
   (__builtin_riscv_smmul_u ((a), (b)))
 #define __nds__kmmac(r, a, b) \
   (__builtin_riscv_kmmac ((r), (a), (b)))
+#define __nds64__kmmac(r, a, b) \
+  (__builtin_riscv_kmmac ((r), (a), (b)))
+#define __nds64__kmmac_u(r, a, b) \
+  (__builtin_riscv_kmmac_u ((r), (a), (b)))
 #define __nds__kmmac_u(r, a, b) \
   (__builtin_riscv_kmmac_u ((r), (a), (b)))
 #define __nds__kmmsb(r, a, b) \
