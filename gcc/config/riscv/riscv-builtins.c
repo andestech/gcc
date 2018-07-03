@@ -1375,9 +1375,9 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (pktt64, pktt64, v64_pktt16,
 		      RISCV_UV4HI_FTYPE_UV4HI_UV4HI, V64_PKTT16),
   /* DSP Extension: Signed MSW 32x32 Multiply and ADD.  */
-  DIRECT_DSP_BUILTIN (smulsi3_highpart, smuldi3_highpart, smmul,
+  DIRECT_DSP_BUILTIN (smulsi3_highpart, smulv2si3_highpart, smmul,
 		      RISCV_LONG_FTYPE_LONG_LONG, SMMUL),
-  DIRECT_DSP_BUILTIN (smmul_round, smmuldi3_round, smmul_u,
+  DIRECT_DSP_BUILTIN (smmul_round, smmulv2si3_round, smmul_u,
 		      RISCV_LONG_FTYPE_LONG_LONG, SMMUL_U),
   DIRECT_DSP_BUILTIN (kmmac, kmmac, kmmac,
 		      RISCV_LONG_FTYPE_LONG_LONG_LONG, KMMAC),

@@ -2892,30 +2892,27 @@
   [(set_attr "type" "imul")
    (set_attr "mode" "HI")])
 
-(define_insn "smuldi3_highpart"
-  [(set (match_operand:DI 0 "register_operand" "=r")
-	(sign_extend:DI
-	  (truncate:SI
-	    (lshiftrt:DI
-	      (mult:DI
-		(match_operand:DI 1 "register_operand" " r")
-		(match_operand:DI 2 "register_operand" " r"))
-	      (const_int 32)))))]
+(define_insn "smulv2si3_highpart"
+  [(set (match_operand:V2SI 0 "register_operand" "=r")
+	(truncate:V2SI
+	  (lshiftrt:V2DI
+	    (mult:V2DI (sign_extend:V2DI (match_operand:V2SI 1 "register_operand" " r"))
+		       (sign_extend:V2DI (match_operand:V2SI 2 "register_operand" " r")))
+	    (const_int 32))))]
   "TARGET_DSP && TARGET_64BIT"
   "smmul\t%0, %1, %2"
   [(set_attr "type" "imul")
-   (set_attr "mode" "DI")])
+   (set_attr "mode" "V2SI")])
 
-(define_insn "smmuldi3_round"
-  [(set (match_operand:DI 0 "register_operand" "=r")
-	(sign_extend:DI
-	  (truncate:SI
-	    (lshiftrt:DI
-	      (unspec:DI [(mult:DI
-			    (match_operand:DI 1 "register_operand" " r")
-			    (match_operand:DI 2 "register_operand" " r"))]
+(define_insn "smmulv2si3_round"
+  [(set (match_operand:V2SI 0 "register_operand" "=r")
+	(truncate:V2SI
+	  (lshiftrt:V2DI
+	    (unspec:V2DI [(mult:V2DI
+			    (sign_extend:V2DI (match_operand:V2SI 1 "register_operand" " r"))
+			    (sign_extend:V2DI (match_operand:V2SI 2 "register_operand" " r")))]
 			  UNSPEC_ROUND)
-	      (const_int 32)))))]
+	    (const_int 32))))]
   "TARGET_DSP  && TARGET_64BIT"
   "smmul.u\t%0, %1, %2"
   [(set_attr "type" "imul")
