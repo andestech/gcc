@@ -1128,10 +1128,14 @@ enum riscv_order
   (__builtin_riscv_kmda ((a), (b)))
 #define __nds__v_kmda(a, b) \
   (__builtin_riscv_v_kmda ((a), (b)))
+#define __nds64__v_kmda(a, b) \
+  (__builtin_riscv_v64_kmda ((a), (b)))
 #define __nds__kmxda(a, b) \
   (__builtin_riscv_kmxda ((a), (b)))
 #define __nds__v_kmxda(a, b) \
   (__builtin_riscv_v_kmxda ((a), (b)))
+#define __nds64__v_kmxda(a, b) \
+  (__builtin_riscv_v64_kmxda ((a), (b)))
 #define __nds__smds(a, b) \
   (__builtin_riscv_smds ((a), (b)))
 #define __nds__v_smds(a, b) \
@@ -1160,6 +1164,8 @@ enum riscv_order
   (__builtin_riscv_kmada ((r), (a), (b)))
 #define __nds__v_kmada(r, a, b) \
   (__builtin_riscv_v_kmada ((r), (a), (b)))
+#define __nds64__v_kmada(r, a, b) \
+  (__builtin_riscv_v64_kmada ((r), (a), (b)))
 #define __nds__kmaxda(r, a, b) \
   (__builtin_riscv_kmaxda ((r), (a), (b)))
 #define __nds__v_kmaxda(r, a, b) \
