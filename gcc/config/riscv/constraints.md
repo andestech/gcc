@@ -149,3 +149,13 @@
   "Sequence bit extract."
   (and (match_code "const_int")
        (match_test "(ival & (ival + 1)) == 0")))
+
+(define_constraint "v15"
+  "Constant value 15"
+  (and (match_code "const_int")
+       (match_test "ival == 15")))
+
+(define_constraint "v16"
+  "Constant value 16"
+  (and (match_code "const_int")
+       (match_test "ival == 16")))

@@ -3297,7 +3297,8 @@
    (match_operand:V2HI 3 "register_operand" "")]
   "TARGET_DSP"
 {
-  emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3], GEN_INT (0), operands[1]));
+  emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3],
+				 GEN_INT (0), operands[1], GEN_INT (16)));
   DONE;
 })
 
@@ -3308,29 +3309,144 @@
    (match_operand:V2HI 3 "register_operand" "")]
   "TARGET_DSP"
 {
-  emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3], GEN_INT (1), operands[1]));
+  emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3],
+				 GEN_INT (1), operands[1], GEN_INT (16)));
+  DONE;
+})
+
+(define_expand "kmmawb2"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:SI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3],
+				 GEN_INT (0), operands[1], GEN_INT (15)));
+  DONE;
+})
+
+(define_expand "kmmawt2"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:SI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3],
+				 GEN_INT (1), operands[1], GEN_INT (15)));
   DONE;
 })
 
 (define_insn "kmmaw_internal"
-  [(set (match_operand:SI 0 "register_operand"                         "=  r,   r")
+  [(set (match_operand:SI 0 "register_operand"                         "=  r,   r,   r,   r")
 	(ss_plus:SI
-	  (match_operand:SI 4 "register_operand"                       "   0,   0")
+	  (match_operand:SI 4 "register_operand"                       "   0,   0,   0,   0")
 	  (truncate:SI
 	    (lshiftrt:DI
 	      (mult:DI
-		(sign_extend:DI (match_operand:SI 1 "register_operand" "   r,   r"))
+		(sign_extend:DI (match_operand:SI 1 "register_operand" "   r,   r,   r,   r"))
 		  (sign_extend:DI
 		    (vec_select:HI
-		      (match_operand:V2HI 2 "register_operand"         "   r,   r")
-		      (parallel [(match_operand:SI 3 "imm_0_1_operand" " v00, v01")]))))
-	      (const_int 16)))))]
+		      (match_operand:V2HI 2 "register_operand"         "   r,   r,   r,   r")
+		      (parallel [(match_operand:SI 3 "imm_0_1_operand" " v00, v01, v00, v01")]))))
+	      (match_operand:SI 5 "imm_15_16_operand"                  " v16, v16, v15, v15" )))))]
   "TARGET_DSP"
+  "@
+  kmmawb\t%0, %1, %2
+  kmmawt\t%0, %1, %2
+  kmmawb2\t%0, %1, %2
+  kmmawt2\t%0, %1, %2"
+)
+
+(define_expand "kmmawb64"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V2SI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
 {
-  const char *pats[] = { "kmmawb\t%0, %1, %2",
-			 "kmmawt\t%0, %1, %2" };
-  return pats[which_alternative];
+  emit_insn (gen_kmmaw64_internal (operands[0], operands[2], operands[3],
+				   GEN_INT (0), GEN_INT (2), operands[1],
+				   GEN_INT (16)));
+  DONE;
 })
+
+(define_expand "kmmawt64"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V2SI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_kmmaw64_internal (operands[0], operands[2], operands[3],
+				   GEN_INT (1), GEN_INT (3), operands[1],
+				   GEN_INT (16)));
+  DONE;
+})
+
+(define_expand "kmmawb2_64"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V2SI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_kmmaw64_internal (operands[0], operands[2], operands[3],
+				   GEN_INT (0), GEN_INT (2), operands[1],
+				   GEN_INT (15)));
+  DONE;
+})
+
+(define_expand "kmmawt2_64"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V2SI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_kmmaw64_internal (operands[0], operands[2], operands[3],
+				   GEN_INT (1), GEN_INT (3), operands[1],
+				   GEN_INT (15)));
+  DONE;
+})
+
+(define_insn "kmmaw64_internal"
+[(set (match_operand:V2SI 0 "register_operand" "=r, r, r, r")
+      (ss_plus:V2SI
+	(match_operand:V2SI 5 "register_operand" "0, 0, 0, 0")
+	(vec_concat:V2SI
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (mult:DI
+		(sign_extend:DI
+		  (vec_select:SI
+		    (match_operand:V2SI 1 "register_operand" "r, r, r, r")
+		      (parallel [(const_int 0)])))
+		(sign_extend:DI
+		  (vec_select:HI
+		    (match_operand:V4HI 2 "register_operand"           "  r,   r,   r,   r")
+		      (parallel [(match_operand:SI 3 "imm_0_1_operand" "v00, v01, v00, v01")]))))
+	      (match_operand:SI 6 "imm_15_16_operand"                  "v16, v16, v15, v15")))
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (mult:DI
+		(sign_extend:DI
+		  (vec_select:SI
+		    (match_dup 1)
+		      (parallel [(const_int 1)])))
+		(sign_extend:DI
+		  (vec_select:HI
+		    (match_dup 2)
+		      (parallel [(match_operand:SI 4 "imm_2_3_operand" "v02, v03, v02, v03")]))))
+	      (match_dup 6))))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "@
+  kmmawb\t%0, %1, %2
+  kmmawt\t%0, %1, %2
+  kmmawb2\t%0, %1, %2
+  kmmawt2\t%0, %1, %2"
+)
 
 (define_expand "kmmawb_round"
   [(match_operand:SI 0 "register_operand" "")
@@ -3339,7 +3455,8 @@
    (match_operand:V2HI 3 "register_operand" "")]
   "TARGET_DSP"
 {
-  emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3], GEN_INT (0), operands[1]));
+  emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3],
+				       GEN_INT (0), operands[1], GEN_INT (16)));
   DONE;
 })
 
@@ -3350,31 +3467,150 @@
    (match_operand:V2HI 3 "register_operand" "")]
   "TARGET_DSP"
 {
-  emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3], GEN_INT (1), operands[1]));
+  emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3],
+				       GEN_INT (1), operands[1], GEN_INT (16)));
+  DONE;
+})
+
+(define_expand "kmmawb2_round"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:SI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3],
+				       GEN_INT (0), operands[1], GEN_INT (15)));
+  DONE;
+})
+
+(define_expand "kmmawt2_round"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:SI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP"
+{
+  emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3],
+				       GEN_INT (1), operands[1], GEN_INT (15)));
   DONE;
 })
 
 (define_insn "kmmaw_round_internal"
-  [(set (match_operand:SI 0 "register_operand"                            "=  r,   r")
+  [(set (match_operand:SI 0 "register_operand"                            "=  r,   r,   r,   r")
 	(ss_plus:SI
-	  (match_operand:SI 4 "register_operand"                          "   0,   0")
+	  (match_operand:SI 4 "register_operand"                          "   0,   0,   0,   0")
 	  (truncate:SI
 	    (lshiftrt:DI
 	      (unspec:DI
 		[(mult:DI
-		   (sign_extend:DI (match_operand:SI 1 "register_operand" "   r,   r"))
+		   (sign_extend:DI (match_operand:SI 1 "register_operand" "   r,   r,   r,   r"))
 		   (sign_extend:DI
 		     (vec_select:HI
-		       (match_operand:V2HI 2 "register_operand"           "   r,   r")
-		       (parallel [(match_operand:SI 3 "imm_0_1_operand"   " v00, v01")]))))]
+		       (match_operand:V2HI 2 "register_operand"           "   r,   r,   r,   r")
+		       (parallel [(match_operand:SI 3 "imm_0_1_operand"   " v00, v01, v00, v01")]))))]
 		UNSPEC_ROUND)
-	      (const_int 16)))))]
+	      (match_operand:SI 5 "imm_15_16_operand"                     " v16, v16, v15, v15")))))]
   "TARGET_DSP"
+  "@
+  kmmawb.u\t%0, %1, %2
+  kmmawt.u\t%0, %1, %2
+  kmmawb2.u\t%0, %1, %2
+  kmmawt2.u\t%0, %1, %2"
+)
+
+(define_expand "kmmawb64_round"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V2SI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
 {
-  const char *pats[] = { "kmmawb.u\t%0, %1, %2",
-			 "kmmawt.u\t%0, %1, %2" };
-  return pats[which_alternative];
+  emit_insn (gen_kmmaw64_round_internal (operands[0], operands[2], operands[3],
+					 GEN_INT (0), GEN_INT (2), operands[1],
+					 GEN_INT (16)));
+  DONE;
 })
+
+(define_expand "kmmawt64_round"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V2SI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_kmmaw64_round_internal (operands[0], operands[2], operands[3],
+					 GEN_INT (1), GEN_INT (3), operands[1],
+					 GEN_INT (16)));
+  DONE;
+})
+
+(define_expand "kmmawb2_64_round"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V2SI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_kmmaw64_round_internal (operands[0], operands[2], operands[3],
+					 GEN_INT (0), GEN_INT (2), operands[1],
+					 GEN_INT (15)));
+  DONE;
+})
+
+(define_expand "kmmawt2_64_round"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V2SI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_kmmaw64_round_internal (operands[0], operands[2], operands[3],
+					 GEN_INT (1), GEN_INT (3), operands[1],
+					 GEN_INT (15)));
+  DONE;
+})
+
+(define_insn "kmmaw64_round_internal"
+[(set (match_operand:V2SI 0 "register_operand"                           "=r,    r,   r,   r")
+      (ss_plus:V2SI
+	(match_operand:V2SI 5 "register_operand"                         "  0,   0,   0,   0")
+	(vec_concat:V2SI
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (unspec:DI
+		[(mult:DI
+		  (sign_extend:DI
+		    (vec_select:SI
+		      (match_operand:V2SI 1 "register_operand"           "  r,   r,   r,   r")
+			(parallel [(const_int 0)])))
+		  (sign_extend:DI
+		    (vec_select:HI
+		      (match_operand:V4HI 2 "register_operand"           "  r,   r,   r,   r")
+			(parallel [(match_operand:SI 3 "imm_0_1_operand" "v00, v01, v00, v01")]))))]
+		UNSPEC_ROUND)
+	      (const_int 16)))
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (unspec:DI
+		[(mult:DI
+		  (sign_extend:DI
+		    (vec_select:SI
+		      (match_dup 1)
+			(parallel [(const_int 1)])))
+		  (sign_extend:DI
+		    (vec_select:HI
+		      (match_dup 2)
+			(parallel [(match_operand:SI 4 "imm_2_3_operand" "v02, v03, v02, v03")]))))]
+		  UNSPEC_ROUND)
+	      (match_operand:SI 6 "imm_15_16_operand"                    "v16, v16, v15, v15"))))))]
+"TARGET_DSP && TARGET_64BIT"
+  "@
+  kmmawb.u\t%0, %1, %2
+  kmmawt.u\t%0, %1, %2
+  kmmawb2.u\t%0, %1, %2
+  kmmawt2.u\t%0, %1, %2"
+)
 
 (define_expand "smalbb"
   [(match_operand:DI 0 "register_operand" "")

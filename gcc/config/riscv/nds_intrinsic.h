@@ -1062,19 +1062,50 @@ enum riscv_order
   (__builtin_riscv_kmmawb ((r), (a), (b)))
 #define __nds__v_kmmawb(r, a, b) \
   (__builtin_riscv_v_kmmawb ((r), (a), (b)))
+#define __nds64__v_kmmawb(r, a, b) \
+  (__builtin_riscv_v64_kmmawb ((r), (a), (b)))
 #define __nds__kmmawb_u(r, a, b) \
   (__builtin_riscv_kmmawb_u ((r), (a), (b)))
 #define __nds__v_kmmawb_u(r, a, b) \
   (__builtin_riscv_v_kmmawb_u ((r), (a), (b)))
+#define __nds64__v_kmmawb_u(r, a, b) \
+  (__builtin_riscv_v64_kmmawb_u ((r), (a), (b)))
 #define __nds__kmmawt(r, a, b) \
   (__builtin_riscv_kmmawt ((r), (a), (b)))
 #define __nds__v_kmmawt(r, a, b) \
   (__builtin_riscv_v_kmmawt ((r), (a), (b)))
+#define __nds64__v_kmmawt(r, a, b) \
+  (__builtin_riscv_v64_kmmawt ((r), (a), (b)))
 #define __nds__kmmawt_u(r, a, b) \
   (__builtin_riscv_kmmawt_u ((r), (a), (b)))
 #define __nds__v_kmmawt_u(r, a, b) \
   (__builtin_riscv_v_kmmawt_u ((r), (a), (b)))
-
+#define __nds64__v_kmmawt_u(r, a, b) \
+  (__builtin_riscv_v64_kmmawt_u ((r), (a), (b)))
+#define __nds__kmmawb2(r, a, b) \
+  (__builtin_riscv_kmmawb2 ((r), (a), (b)))
+#define __nds__v_kmmawb2(r, a, b) \
+  (__builtin_riscv_v_kmmawb2 ((r), (a), (b)))
+#define __nds64__v_kmmawb2(r, a, b) \
+  (__builtin_riscv_v64_kmmawb2 ((r), (a), (b)))
+#define __nds__kmmawb2_u(r, a, b) \
+  (__builtin_riscv_kmmawb2_u ((r), (a), (b)))
+#define __nds__v_kmmawb2_u(r, a, b) \
+  (__builtin_riscv_v_kmmawb2_u ((r), (a), (b)))
+#define __nds64__v_kmmawb2_u(r, a, b) \
+  (__builtin_riscv_v64_kmmawb2_u ((r), (a), (b)))
+#define __nds__kmmawt2(r, a, b) \
+  (__builtin_riscv_kmmawt2 ((r), (a), (b)))
+#define __nds__v_kmmawt2(r, a, b) \
+  (__builtin_riscv_v_kmmawt2 ((r), (a), (b)))
+#define __nds64__v_kmmawt2(r, a, b) \
+  (__builtin_riscv_v64_kmmawt2 ((r), (a), (b)))
+#define __nds__kmmawt2_u(r, a, b) \
+  (__builtin_riscv_kmmawt2_u ((r), (a), (b)))
+#define __nds__v_kmmawt2_u(r, a, b) \
+  (__builtin_riscv_v_kmmawt2_u ((r), (a), (b)))
+#define __nds64__v_kmmawt2_u(r, a, b) \
+  (__builtin_riscv_v64_kmmawt2_u ((r), (a), (b)))
 #define __nds__smbb(a, b) \
   (__builtin_riscv_smbb ((a), (b)))
 #define __nds__v_smbb(a, b) \
