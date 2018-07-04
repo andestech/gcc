@@ -95,6 +95,11 @@
   (and (match_code "const_int")
        (match_test "ival == 1 || ival == 0")))
 
+(define_constraint "u02"
+  "Unsigned immediate 2-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 2) && ival >= 0")))
+
 (define_constraint "u03"
   "Unsigned immediate 3-bit value"
   (and (match_code "const_int")

@@ -1110,14 +1110,20 @@ enum riscv_order
   (__builtin_riscv_smbb ((a), (b)))
 #define __nds__v_smbb(a, b) \
   (__builtin_riscv_v_smbb ((a), (b)))
+#define __nds64__v_smbb(a, b) \
+  (__builtin_riscv_v64_smbb ((a), (b)))
 #define __nds__smbt(a, b) \
   (__builtin_riscv_smbt ((a), (b)))
 #define __nds__v_smbt(a, b) \
   (__builtin_riscv_v_smbt ((a), (b)))
+#define __nds64__v_smbt(a, b) \
+  (__builtin_riscv_v64_smbt ((a), (b)))
 #define __nds__smtt(a, b) \
   (__builtin_riscv_smtt ((a), (b)))
 #define __nds__v_smtt(a, b) \
   (__builtin_riscv_v_smtt ((a), (b)))
+#define __nds64__v_smtt(a, b) \
+  (__builtin_riscv_v64_smtt ((a), (b)))
 #define __nds__kmda(a, b) \
   (__builtin_riscv_kmda ((a), (b)))
 #define __nds__v_kmda(a, b) \
