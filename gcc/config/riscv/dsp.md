@@ -1710,8 +1710,8 @@
 	(vec_select:V4HI
 	 (vec_concat:V8HI (match_operand:V4HI 1 "register_operand" "r")
 			  (match_operand:V4HI 2 "register_operand" "r"))
-	 (parallel [(const_int 0) (const_int 1)
-		    (const_int 4) (const_int 5)])))]
+	 (parallel [(const_int 0) (const_int 4)
+		    (const_int 2) (const_int 6)])))]
   "TARGET_DSP && TARGET_64BIT"
   "pkbb16\t%0, %1, %2"
   [(set_attr "mode" "V4HI")])
@@ -1731,8 +1731,8 @@
 	(vec_select:V4HI
 	 (vec_concat:V8HI (match_operand:V4HI 1 "register_operand" "r")
 			  (match_operand:V4HI 2 "register_operand" "r"))
-	 (parallel [(const_int 2) (const_int 3)
-		    (const_int 4) (const_int 5)])))]
+	 (parallel [(const_int 0) (const_int 5)
+		    (const_int 2) (const_int 7)])))]
   "TARGET_DSP && TARGET_64BIT"
   "pkbt16\t%0, %1, %2"
   [(set_attr "mode" "V4HI")])
@@ -1752,8 +1752,8 @@
 	(vec_select:V4HI
 	 (vec_concat:V8HI (match_operand:V4HI 1 "register_operand" "r")
 			  (match_operand:V4HI 2 "register_operand" "r"))
-	 (parallel [(const_int 2) (const_int 3)
-		    (const_int 6) (const_int 7)])))]
+	 (parallel [(const_int 1) (const_int 5)
+		    (const_int 3) (const_int 7)])))]
   "TARGET_DSP && TARGET_64BIT"
   "pktt16\t%0, %1, %2"
   [(set_attr "mode" "V4HI")])
@@ -1773,8 +1773,8 @@
 	(vec_select:V4HI
 	 (vec_concat:V8HI (match_operand:V4HI 1 "register_operand" "r")
 			  (match_operand:V4HI 2 "register_operand" "r"))
-	 (parallel [(const_int 0) (const_int 1)
-		    (const_int 6) (const_int 7)])))]
+	 (parallel [(const_int 1) (const_int 4)
+		    (const_int 3) (const_int 6)])))]
   "TARGET_DSP && TARGET_64BIT"
   "pktb16\t%0, %1, %2"
   [(set_attr "mode" "V4HI")])
@@ -2182,8 +2182,8 @@
   [(set (match_operand:V4HI 0 "register_operand"                    "=r")
 	(vec_select:V4HI
 	  (any_extend:V8HI (match_operand:V8QI 1 "register_operand" "r"))
-	  (parallel [(const_int 1) (const_int 0)
-		     (const_int 5) (const_int 4)])))]
+	  (parallel [(const_int 0) (const_int 1)
+		     (const_int 4) (const_int 5)])))]
   "TARGET_DSP && TARGET_64BIT"
   "<zs>unpkd810\t%0, %1"
   [(set_attr "mode"  "V4HI")])
@@ -2192,8 +2192,8 @@
   [(set (match_operand:V4HI 0 "register_operand"                    "=r")
 	(vec_select:V4HI
 	  (any_extend:V8HI (match_operand:V8QI 1 "register_operand" "r"))
-	  (parallel [(const_int 2) (const_int 0)
-		     (const_int 6) (const_int 4)])))]
+	  (parallel [(const_int 0) (const_int 2)
+		     (const_int 4) (const_int 6)])))]
   "TARGET_DSP && TARGET_64BIT"
   "<zs>unpkd820\t%0, %1"
   [(set_attr "mode"  "V4HI")])
@@ -2202,8 +2202,8 @@
   [(set (match_operand:V4HI 0 "register_operand"                    "=r")
 	(vec_select:V4HI
 	  (any_extend:V8HI (match_operand:V8QI 1 "register_operand" "r"))
-	  (parallel [(const_int 3) (const_int 0)
-		     (const_int 7) (const_int 4)])))]
+	  (parallel [(const_int 0) (const_int 3)
+		     (const_int 4) (const_int 7)])))]
   "TARGET_DSP && TARGET_64BIT"
   "<zs>unpkd830\t%0, %1"
   [(set_attr "mode"  "V4HI")])
@@ -2212,8 +2212,8 @@
   [(set (match_operand:V4HI 0 "register_operand"                    "=r")
 	(vec_select:V4HI
 	  (any_extend:V8HI (match_operand:V8QI 1 "register_operand" "r"))
-	  (parallel [(const_int 3) (const_int 1)
-		     (const_int 7) (const_int 5)])))]
+	  (parallel [(const_int 1) (const_int 3)
+		     (const_int 5) (const_int 7)])))]
   "TARGET_DSP && TARGET_64BIT"
   "<zs>unpkd831\t%0, %1"
   [(set_attr "mode"  "V4HI")])
@@ -2222,8 +2222,8 @@
   [(set (match_operand:V4HI 0 "register_operand"                    "=r")
 	(vec_select:V4HI
 	  (any_extend:V8HI (match_operand:V8QI 1 "register_operand" "r"))
-	  (parallel [(const_int 3) (const_int 2)
-		     (const_int 7) (const_int 6)])))]
+	  (parallel [(const_int 2) (const_int 3)
+		     (const_int 6) (const_int 7)])))]
   "TARGET_DSP && TARGET_64BIT"
   "<zs>unpkd832\t%0, %1"
   [(set_attr "mode"  "V4HI")])
