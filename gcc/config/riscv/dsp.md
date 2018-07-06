@@ -628,42 +628,18 @@
 (define_insn "cras16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
 	(vec_concat:V4HI
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (minus:HI
-		(vec_select:HI
-		  (match_operand:V4HI 1 "register_operand" " r")
-		  (parallel [(const_int 0)]))
-		(vec_select:HI
-		  (match_operand:V4HI 2 "register_operand" " r")
-		  (parallel [(const_int 1)]))))
-	    (vec_duplicate:V2HI
-	      (plus:HI
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 0)]))
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 1)]))))
-	    (const_int 1))
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (minus:HI
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 2)]))
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 3)]))))
-	    (vec_duplicate:V2HI
-	      (plus:HI
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 2)]))
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 3)]))))
-	    (const_int 1))))]
+	  (vec_concat:V2HI
+	    (minus:HI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
+				     (parallel [(const_int 0)]))
+		      (vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
+				     (parallel [(const_int 1)])))
+	    (plus:HI (vec_select:HI (match_dup 1) (parallel [(const_int 1)]))
+		     (vec_select:HI (match_dup 2) (parallel [(const_int 0)]))))
+	  (vec_concat:V2HI
+	    (minus:HI (vec_select:HI (match_dup 1) (parallel [(const_int 2)]))
+		      (vec_select:HI (match_dup 2) (parallel [(const_int 3)])))
+	    (plus:HI  (vec_select:HI (match_dup 1) (parallel [(const_int 3)]))
+		      (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "cras16\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -682,42 +658,18 @@
 (define_insn "kcras16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
 	(vec_concat:V4HI
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (ss_minus:HI
-		(vec_select:HI
-		  (match_operand:V4HI 1 "register_operand" " r")
-		  (parallel [(const_int 0)]))
-		(vec_select:HI
-		  (match_operand:V4HI 2 "register_operand" " r")
-		  (parallel [(const_int 1)]))))
-	    (vec_duplicate:V2HI
-	      (ss_plus:HI
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 0)]))
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 1)]))))
-	    (const_int 1))
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (ss_minus:HI
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 2)]))
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 3)]))))
-	    (vec_duplicate:V2HI
-	      (ss_plus:HI
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 2)]))
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 3)]))))
-	    (const_int 1))))]
+	  (vec_concat:V2HI
+	    (ss_minus:HI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
+					(parallel [(const_int 0)]))
+			 (vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
+					(parallel [(const_int 1)])))
+	    (ss_plus:HI (vec_select:HI (match_dup 1) (parallel [(const_int 1)]))
+			(vec_select:HI (match_dup 2) (parallel [(const_int 0)]))))
+	  (vec_concat:V2HI
+	    (ss_minus:HI (vec_select:HI (match_dup 1) (parallel [(const_int 2)]))
+			 (vec_select:HI (match_dup 2) (parallel [(const_int 3)])))
+	    (ss_plus:HI  (vec_select:HI (match_dup 1) (parallel [(const_int 3)]))
+			 (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kcras16\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -736,42 +688,18 @@
 (define_insn "ukcras16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
 	(vec_concat:V4HI
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (us_minus:HI
-		(vec_select:HI
-		  (match_operand:V4HI 1 "register_operand" " r")
-		  (parallel [(const_int 0)]))
-		(vec_select:HI
-		  (match_operand:V4HI 2 "register_operand" " r")
-		  (parallel [(const_int 1)]))))
-	    (vec_duplicate:V2HI
-	      (us_plus:HI
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 0)]))
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 1)]))))
-	    (const_int 1))
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (us_minus:HI
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 2)]))
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 3)]))))
-	    (vec_duplicate:V2HI
-	      (us_plus:HI
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 2)]))
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 3)]))))
-	    (const_int 1))))]
+	  (vec_concat:V2HI
+	    (us_minus:HI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
+					(parallel [(const_int 0)]))
+			 (vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
+					(parallel [(const_int 1)])))
+	    (us_plus:HI (vec_select:HI (match_dup 1) (parallel [(const_int 1)]))
+			(vec_select:HI (match_dup 2) (parallel [(const_int 0)]))))
+	  (vec_concat:V2HI
+	    (us_minus:HI (vec_select:HI (match_dup 1) (parallel [(const_int 2)]))
+			 (vec_select:HI (match_dup 2) (parallel [(const_int 3)])))
+	    (us_plus:HI  (vec_select:HI (match_dup 1) (parallel [(const_int 3)]))
+			 (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "ukcras16\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -790,42 +718,18 @@
 (define_insn "crsa16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
 	(vec_concat:V4HI
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (plus:HI
-		(vec_select:HI
-		  (match_operand:V4HI 1 "register_operand" " r")
-		  (parallel [(const_int 0)]))
-		(vec_select:HI
-		  (match_operand:V4HI 2 "register_operand" " r")
-		  (parallel [(const_int 1)]))))
-	    (vec_duplicate:V2HI
-	      (minus:HI
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 0)]))
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 1)]))))
-	    (const_int 1))
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (plus:HI
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 2)]))
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 3)]))))
-	    (vec_duplicate:V2HI
-	      (minus:HI
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 2)]))
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 3)]))))
-	    (const_int 1))))]
+	  (vec_concat:V2HI
+	    (plus:HI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
+				    (parallel [(const_int 0)]))
+		     (vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
+				    (parallel [(const_int 1)])))
+	    (minus:HI (vec_select:HI (match_dup 1) (parallel [(const_int 1)]))
+		      (vec_select:HI (match_dup 2) (parallel [(const_int 0)]))))
+	  (vec_concat:V2HI
+	    (plus:HI (vec_select:HI (match_dup 1) (parallel [(const_int 2)]))
+		     (vec_select:HI (match_dup 2) (parallel [(const_int 3)])))
+	    (minus:HI  (vec_select:HI (match_dup 1) (parallel [(const_int 3)]))
+		       (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "crsa16\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -844,42 +748,18 @@
 (define_insn "kcrsa16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
 	(vec_concat:V4HI
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (ss_plus:HI
-		(vec_select:HI
-		  (match_operand:V4HI 1 "register_operand" " r")
-		  (parallel [(const_int 0)]))
-		(vec_select:HI
-		  (match_operand:V4HI 2 "register_operand" " r")
-		  (parallel [(const_int 1)]))))
-	    (vec_duplicate:V2HI
-	      (ss_minus:HI
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 0)]))
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 1)]))))
-	    (const_int 1))
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (ss_plus:HI
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 2)]))
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 3)]))))
-	    (vec_duplicate:V2HI
-	      (ss_minus:HI
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 2)]))
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 3)]))))
-	    (const_int 1))))]
+	  (vec_concat:V2HI
+	    (ss_plus:HI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
+				       (parallel [(const_int 0)]))
+			(vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
+				       (parallel [(const_int 1)])))
+	    (ss_minus:HI (vec_select:HI (match_dup 1) (parallel [(const_int 1)]))
+			 (vec_select:HI (match_dup 2) (parallel [(const_int 0)]))))
+	  (vec_concat:V2HI
+	    (ss_plus:HI (vec_select:HI (match_dup 1) (parallel [(const_int 2)]))
+			(vec_select:HI (match_dup 2) (parallel [(const_int 3)])))
+	    (ss_minus:HI  (vec_select:HI (match_dup 1) (parallel [(const_int 3)]))
+			  (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kcrsa16\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -898,42 +778,18 @@
 (define_insn "ukcrsa16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
 	(vec_concat:V4HI
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (us_plus:HI
-		(vec_select:HI
-		  (match_operand:V4HI 1 "register_operand" " r")
-		  (parallel [(const_int 0)]))
-		(vec_select:HI
-		  (match_operand:V4HI 2 "register_operand" " r")
-		  (parallel [(const_int 1)]))))
-	    (vec_duplicate:V2HI
-	      (us_minus:HI
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 0)]))
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 1)]))))
-	    (const_int 1))
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (us_plus:HI
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 2)]))
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 3)]))))
-	    (vec_duplicate:V2HI
-	      (us_minus:HI
-		(vec_select:HI
-		  (match_dup 2)
-		  (parallel [(const_int 2)]))
-		(vec_select:HI
-		  (match_dup 1)
-		  (parallel [(const_int 3)]))))
-	    (const_int 1))))]
+	  (vec_concat:V2HI
+	    (us_plus:HI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
+				       (parallel [(const_int 0)]))
+			(vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
+				       (parallel [(const_int 1)])))
+	    (us_minus:HI (vec_select:HI (match_dup 1) (parallel [(const_int 1)]))
+			 (vec_select:HI (match_dup 2) (parallel [(const_int 0)]))))
+	  (vec_concat:V2HI
+	    (us_plus:HI (vec_select:HI (match_dup 1) (parallel [(const_int 2)]))
+			(vec_select:HI (match_dup 2) (parallel [(const_int 3)])))
+	    (us_minus:HI  (vec_select:HI (match_dup 1) (parallel [(const_int 3)]))
+			  (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "ukcrsa16\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -950,64 +806,36 @@
 })
 
 (define_insn "rcras16_64_le"
-  [(set (match_operand:V4HI 0 "register_operand" "=r")
+  [(set (match_operand:V4HI 0 "register_operand"         "=r")
 	(vec_concat:V4HI
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(ashiftrt:SI
-		  (minus:SI
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_operand:V4HI 1 "register_operand" " r")
-			(parallel [(const_int 0)])))
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_operand:V4HI 2 "register_operand" " r")
-			(parallel [(const_int 1)]))))
-		  (const_int 1))))
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(ashiftrt:SI
-		  (plus:SI
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_dup 2)
-			(parallel [(const_int 0)])))
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_dup 1)
-			(parallel [(const_int 1)]))))
-		  (const_int 1))))
-	    (const_int 1))
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(ashiftrt:SI
-		  (minus:SI
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_dup 1)
-			(parallel [(const_int 2)])))
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_dup 2)
-			(parallel [(const_int 3)]))))
-		  (const_int 1))))
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(ashiftrt:SI
-		  (plus:SI
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_dup 2)
-			(parallel [(const_int 2)])))
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_dup 1)
-			(parallel [(const_int 3)]))))
-		  (const_int 1))))
-	    (const_int 1))))]
+	  (vec_concat:V2HI
+	    (truncate:HI
+	      (ashiftrt:SI
+		(minus:SI
+		  (sign_extend:SI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
+						 (parallel [(const_int 0)])))
+		  (sign_extend:SI (vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
+						  (parallel [(const_int 1)]))))
+		(const_int 1)))
+	    (truncate:HI
+	      (ashiftrt:SI
+		(plus:SI
+		  (sign_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 1)])))
+		  (sign_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 0)]))))
+		(const_int 1))))
+	  (vec_concat:V2HI
+	    (truncate:HI
+	      (ashiftrt:SI
+		(minus:SI
+		  (sign_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 2)])))
+		  (sign_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 3)]))))
+		(const_int 1)))
+	    (truncate:HI
+	      (ashiftrt:SI
+		(plus:SI
+		  (sign_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 3)])))
+		  (sign_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))
+		(const_int 1))))))]
   "TARGET_DSP && TARGET_64BIT"
   "rcras16\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -1024,64 +852,36 @@
 })
 
 (define_insn "urcras16_64_le"
-  [(set (match_operand:V4HI 0 "register_operand" "=r")
+  [(set (match_operand:V4HI 0 "register_operand"         "=r")
 	(vec_concat:V4HI
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(lshiftrt:SI
-		  (minus:SI
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_operand:V4HI 1 "register_operand" " r")
-			(parallel [(const_int 0)])))
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_operand:V4HI 2 "register_operand" " r")
-			(parallel [(const_int 1)]))))
-		  (const_int 1))))
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(lshiftrt:SI
-		  (plus:SI
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_dup 2)
-			(parallel [(const_int 0)])))
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_dup 1)
-			(parallel [(const_int 1)]))))
-		  (const_int 1))))
-	    (const_int 1))
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(lshiftrt:SI
-		  (minus:SI
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_dup 1)
-			(parallel [(const_int 2)])))
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_dup 2)
-			(parallel [(const_int 3)]))))
-		  (const_int 1))))
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(lshiftrt:SI
-		  (plus:SI
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_dup 2)
-			(parallel [(const_int 2)])))
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_dup 1)
-			(parallel [(const_int 3)]))))
-		  (const_int 1))))
-	    (const_int 1))))]
+	  (vec_concat:V2HI
+	    (truncate:HI
+	      (lshiftrt:SI
+		(minus:SI
+		  (zero_extend:SI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
+						 (parallel [(const_int 0)])))
+		  (zero_extend:SI (vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
+						  (parallel [(const_int 1)]))))
+		(const_int 1)))
+	    (truncate:HI
+	      (lshiftrt:SI
+		(plus:SI
+		  (zero_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 1)])))
+		  (zero_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 0)]))))
+		(const_int 1))))
+	  (vec_concat:V2HI
+	    (truncate:HI
+	      (lshiftrt:SI
+		(minus:SI
+		  (zero_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 2)])))
+		  (zero_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 3)]))))
+		(const_int 1)))
+	    (truncate:HI
+	      (lshiftrt:SI
+		(plus:SI
+		  (zero_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 3)])))
+		  (zero_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))
+		(const_int 1))))))]
   "TARGET_DSP && TARGET_64BIT"
   "urcras16\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -1098,64 +898,36 @@
 })
 
 (define_insn "rcrsa16_64_le"
-  [(set (match_operand:V4HI 0 "register_operand" "=r")
+  [(set (match_operand:V4HI 0 "register_operand"         "=r")
 	(vec_concat:V4HI
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(ashiftrt:SI
-		  (minus:SI
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_operand:V4HI 1 "register_operand" " r")
-			(parallel [(const_int 1)])))
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_operand:V4HI 2 "register_operand" " r")
-			(parallel [(const_int 0)]))))
-		  (const_int 1))))
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(ashiftrt:SI
-		  (plus:SI
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_dup 2)
-			(parallel [(const_int 0)])))
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_dup 1)
-			(parallel [(const_int 1)]))))
-		  (const_int 1))))
-	    (const_int 1))
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(ashiftrt:SI
-		  (minus:SI
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_dup 1)
-			(parallel [(const_int 3)])))
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_dup 2)
-			(parallel [(const_int 2)]))))
-		  (const_int 1))))
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(ashiftrt:SI
-		  (plus:SI
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_dup 2)
-			(parallel [(const_int 2)])))
-		    (sign_extend:SI
-		      (vec_select:HI
-			(match_dup 1)
-			(parallel [(const_int 3)]))))
-		  (const_int 1))))
-	    (const_int 1))))]
+	  (vec_concat:V2HI
+	    (truncate:HI
+	      (ashiftrt:SI
+		(plus:SI
+		  (sign_extend:SI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
+						 (parallel [(const_int 0)])))
+		  (sign_extend:SI (vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
+						  (parallel [(const_int 1)]))))
+		(const_int 1)))
+	    (truncate:HI
+	      (ashiftrt:SI
+		(minus:SI
+		  (sign_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 1)])))
+		  (sign_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 0)]))))
+		(const_int 1))))
+	  (vec_concat:V2HI
+	    (truncate:HI
+	      (ashiftrt:SI
+		(plus:SI
+		  (sign_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 2)])))
+		  (sign_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 3)]))))
+		(const_int 1)))
+	    (truncate:HI
+	      (ashiftrt:SI
+		(minus:SI
+		  (sign_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 3)])))
+		  (sign_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))
+		(const_int 1))))))]
   "TARGET_DSP && TARGET_64BIT"
   "rcrsa16\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -1172,64 +944,36 @@
 })
 
 (define_insn "urcrsa16_64_le"
-  [(set (match_operand:V4HI 0 "register_operand" "=r")
+  [(set (match_operand:V4HI 0 "register_operand"         "=r")
 	(vec_concat:V4HI
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(lshiftrt:SI
-		  (minus:SI
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_operand:V4HI 1 "register_operand" " r")
-			(parallel [(const_int 1)])))
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_operand:V4HI 2 "register_operand" " r")
-			(parallel [(const_int 0)]))))
-		  (const_int 1))))
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(lshiftrt:SI
-		  (plus:SI
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_dup 2)
-			(parallel [(const_int 0)])))
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_dup 1)
-			(parallel [(const_int 1)]))))
-		  (const_int 1))))
-	    (const_int 1))
-	  (vec_merge:V2HI
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(lshiftrt:SI
-		  (minus:SI
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_dup 1)
-			(parallel [(const_int 3)])))
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_dup 2)
-			(parallel [(const_int 2)]))))
-		  (const_int 1))))
-	    (vec_duplicate:V2HI
-	      (truncate:HI
-		(lshiftrt:SI
-		  (plus:SI
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_dup 2)
-			(parallel [(const_int 2)])))
-		    (zero_extend:SI
-		      (vec_select:HI
-			(match_dup 1)
-			(parallel [(const_int 3)]))))
-		  (const_int 1))))
-	    (const_int 1))))]
+	  (vec_concat:V2HI
+	    (truncate:HI
+	      (lshiftrt:SI
+		(plus:SI
+		  (zero_extend:SI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
+						 (parallel [(const_int 0)])))
+		  (zero_extend:SI (vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
+						  (parallel [(const_int 1)]))))
+		(const_int 1)))
+	    (truncate:HI
+	      (lshiftrt:SI
+		(minus:SI
+		  (zero_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 1)])))
+		  (zero_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 0)]))))
+		(const_int 1))))
+	  (vec_concat:V2HI
+	    (truncate:HI
+	      (lshiftrt:SI
+		(plus:SI
+		  (zero_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 2)])))
+		  (zero_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 3)]))))
+		(const_int 1)))
+	    (truncate:HI
+	      (lshiftrt:SI
+		(minus:SI
+		  (zero_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 3)])))
+		  (zero_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))
+		(const_int 1))))))]
   "TARGET_DSP && TARGET_64BIT"
   "urcrsa16\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -2096,50 +1840,22 @@
 (define_insn "<su>mulx16_64"
   [(set (match_operand:V4SI 0 "register_operand"         "=r")
 	(vec_concat:V4SI
-	  (vec_merge:V2SI
-	    (vec_duplicate:V2SI
-	      (mult:SI
-		(any_extend:SI
-		  (vec_select:HI
-		    (match_operand:V4HI 1 "register_operand" " r")
-		    (parallel [(const_int 0)])))
-		(any_extend:SI
-		  (vec_select:HI
-		    (match_operand:V4HI 2 "register_operand" " r")
-		    (parallel [(const_int 1)])))))
-	    (vec_duplicate:V2SI
-	      (mult:SI
-		(any_extend:SI
-		  (vec_select:HI
-		    (match_dup 1)
-		    (parallel [(const_int 1)])))
-		(any_extend:SI
-		  (vec_select:HI
-		    (match_dup 2)
-		    (parallel [(const_int 0)])))))
-	    (const_int 1))
-	  (vec_merge:V2SI
-	    (vec_duplicate:V2SI
-	      (mult:SI
-		(any_extend:SI
-		  (vec_select:HI
-		    (match_dup 1)
-		    (parallel [(const_int 2)])))
-		(any_extend:SI
-		  (vec_select:HI
-		    (match_dup 0)
-		    (parallel [(const_int 3)])))))
-	    (vec_duplicate:V2SI
-	      (mult:SI
-		(any_extend:SI
-		  (vec_select:HI
-		    (match_dup 1)
-		    (parallel [(const_int 3)])))
-		(any_extend:SI
-		  (vec_select:HI
-		    (match_dup 2)
-		    (parallel [(const_int 2)])))))
-	    (const_int 1))))]
+	  (vec_concat:V2SI
+	    (mult:SI
+	      (any_extend:SI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
+					    (parallel [(const_int 0)])))
+	      (any_extend:SI (vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
+					    (parallel [(const_int 1)]))))
+	    (mult:SI
+	      (any_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 1)])))
+	      (any_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 0)])))))
+	  (vec_concat:V2SI
+	    (mult:SI
+	      (any_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 2)])))
+	      (any_extend:SI (vec_select:HI (match_dup 0) (parallel [(const_int 3)]))))
+	    (mult:SI
+	      (any_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 3)])))
+	      (any_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 2)])))))))]
   "TARGET_DSP"
   "<su>mulx16\t%0, %1, %2"
   [(set_attr "type" "imul")
