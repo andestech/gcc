@@ -1140,14 +1140,20 @@ enum riscv_order
   (__builtin_riscv_smds ((a), (b)))
 #define __nds__v_smds(a, b) \
   (__builtin_riscv_v_smds ((a), (b)))
+#define __nds64__v_smds(a, b) \
+  (__builtin_riscv_v64_smds ((a), (b)))
 #define __nds__smdrs(a, b) \
   (__builtin_riscv_smdrs ((a), (b)))
 #define __nds__v_smdrs(a, b) \
   (__builtin_riscv_v_smdrs ((a), (b)))
+#define __nds64__v_smdrs(a, b) \
+  (__builtin_riscv_v64_smdrs ((a), (b)))
 #define __nds__smxds(a, b) \
   (__builtin_riscv_smxds ((a), (b)))
 #define __nds__v_smxds(a, b) \
   (__builtin_riscv_v_smxds ((a), (b)))
+#define __nds64__v_smxds(a, b) \
+  (__builtin_riscv_v64_smxds ((a), (b)))
 #define __nds__kmabb(r, a, b) \
   (__builtin_riscv_kmabb ((r), (a), (b)))
 #define __nds__v_kmabb(r, a, b) \

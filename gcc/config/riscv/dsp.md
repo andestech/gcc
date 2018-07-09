@@ -2429,6 +2429,27 @@
 {
 })
 
+(define_insn "smds64"
+  [(set (match_operand:V2SI 0 "register_operand"                      "=r")
+	(minus:V2SI
+	  (mult:V2SI
+	    (sign_extend:V2SI (vec_select:V2HI
+				(match_operand:V4HI 1 "register_operand" "r")
+				(parallel [(const_int 1) (const_int 3)])))
+	    (sign_extend:V2SI (vec_select:V2HI
+				(match_operand:V4HI 2 "register_operand" "r")
+				(parallel [(const_int 1) (const_int 3)]))))
+	  (mult:V2SI
+	    (sign_extend:V2SI (vec_select:V2HI
+				(match_dup 1)
+				(parallel [(const_int 0) (const_int 2)])))
+	    (sign_extend:V2SI (vec_select:V2HI
+				(match_dup 2)
+				(parallel [(const_int 0) (const_int 2)]))))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "smds\t%0, %1, %2"
+)
+
 (define_expand "smdrs"
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:V2HI 1 "register_operand" "")
@@ -2459,6 +2480,27 @@
   "TARGET_DSP"
 {
 })
+
+(define_insn "smdrs64"
+  [(set (match_operand:V2SI 0 "register_operand"                      "=r")
+	(minus:V2SI
+	  (mult:V2SI
+	    (sign_extend:V2SI (vec_select:V2HI
+				(match_operand:V4HI 1 "register_operand" "r")
+				(parallel [(const_int 0) (const_int 2)])))
+	    (sign_extend:V2SI (vec_select:V2HI
+				(match_operand:V4HI 2 "register_operand" "r")
+				(parallel [(const_int 0) (const_int 2)]))))
+	  (mult:V2SI
+	    (sign_extend:V2SI (vec_select:V2HI
+				(match_dup 1)
+				(parallel [(const_int 1) (const_int 3)])))
+	    (sign_extend:V2SI (vec_select:V2HI
+				(match_dup 2)
+				(parallel [(const_int 1) (const_int 3)]))))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "smdrs\t%0, %1, %2"
+)
 
 (define_expand "smxdsv"
   [(match_operand:SI 0 "register_operand" "")
@@ -2491,6 +2533,27 @@
   "TARGET_DSP"
 {
 })
+
+(define_insn "smxds64"
+  [(set (match_operand:V2SI 0 "register_operand"                      "=r")
+	(minus:V2SI
+	  (mult:V2SI
+	    (sign_extend:V2SI (vec_select:V2HI
+				(match_operand:V4HI 1 "register_operand" "r")
+				(parallel [(const_int 1) (const_int 3)])))
+	    (sign_extend:V2SI (vec_select:V2HI
+				(match_operand:V4HI 2 "register_operand" "r")
+				(parallel [(const_int 0) (const_int 2)]))))
+	  (mult:V2SI
+	    (sign_extend:V2SI (vec_select:V2HI
+				(match_dup 1)
+				(parallel [(const_int 0) (const_int 2)])))
+	    (sign_extend:V2SI (vec_select:V2HI
+				(match_dup 2)
+				(parallel [(const_int 1) (const_int 3)]))))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "smxds\t%0, %1, %2"
+)
 
 (define_insn "smal1"
   [(set (match_operand:DI 0 "register_operand"             "=r")
