@@ -4439,9 +4439,31 @@
 	      (match_operand:SI 2 "register_operand" " r"))
 	    (any_extend:DI
 	      (match_operand:SI 3 "register_operand" " r")))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<su>mar64\t%0, %2, %3"
   [(set_attr "mode"   "DI")])
+
+(define_insn "v<su>mar64_1"
+  [(set (match_operand:DI 0 "register_operand"             "=r")
+	(plus:DI (match_operand:DI 1 "register_operand"    " 0")
+	  (plus:DI
+	    (mult:DI
+	      (any_extend:DI
+		(vec_select:SI
+		  (match_operand:V2SI 2 "register_operand" " r")
+		  (parallel [(const_int 0)])))
+	      (any_extend:DI
+		(vec_select:SI
+		  (match_operand:V2SI 3 "register_operand" " r")
+		  (parallel [(const_int 0)]))))
+	    (mult:DI
+	      (any_extend:DI
+		(vec_select:SI (match_dup 2) (parallel [(const_int 1)])))
+	      (any_extend:DI
+		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "<su>mar64\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
 
 (define_insn "<su>mar64_2"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -4452,7 +4474,7 @@
 	    (any_extend:DI
 	      (match_operand:SI 3 "register_operand" " r")))
 	  (match_operand:DI 1 "register_operand"     " 0")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<su>mar64\t%0, %2, %3"
   [(set_attr "mode"   "DI")])
 
@@ -4464,7 +4486,7 @@
 	    (mult:SI
 	      (match_operand:SI 2 "register_operand" " r")
 	      (match_operand:SI 3 "register_operand" " r")))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<su>mar64\t%0, %2, %3"
   [(set_attr "mode"   "DI")])
 
@@ -4476,7 +4498,7 @@
 	      (match_operand:SI 2 "register_operand" " r")
 	      (match_operand:SI 3 "register_operand" " r")))
 	  (match_operand:DI 1 "register_operand"     " 0")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<su>mar64\t%0, %2, %3"
   [(set_attr "mode"   "DI")])
 
@@ -4489,9 +4511,31 @@
 	      (match_operand:SI 2 "register_operand" " r"))
 	    (any_extend:DI
 	      (match_operand:SI 3 "register_operand" " r")))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<su>msr64\t%0, %2, %3"
   [(set_attr "mode"   "DI")])
+
+(define_insn "v<su>msr64"
+  [(set (match_operand:DI 0 "register_operand"             "=r")
+	(minus:DI (match_operand:DI 1 "register_operand"    " 0")
+	  (minus:DI
+	    (mult:DI
+	      (any_extend:DI
+		(vec_select:SI
+		  (match_operand:V2SI 2 "register_operand" " r")
+		  (parallel [(const_int 0)])))
+	      (any_extend:DI
+		(vec_select:SI
+		  (match_operand:V2SI 3 "register_operand" " r")
+		  (parallel [(const_int 0)]))))
+	    (mult:DI
+	      (any_extend:DI
+		(vec_select:SI (match_dup 2) (parallel [(const_int 1)])))
+	      (any_extend:DI
+		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "<su>msr64\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
 
 (define_insn "<su>msr64_2"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -4501,7 +4545,7 @@
 	    (mult:SI
 	      (match_operand:SI 2 "register_operand" " r")
 	      (match_operand:SI 3 "register_operand" " r")))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<su>msr64\t%0, %2, %3"
   [(set_attr "mode"   "DI")])
 
