@@ -4559,7 +4559,7 @@
 	      (match_operand:SI 2 "register_operand" " r"))
 	    (sign_extend:DI
 	      (match_operand:SI 3 "register_operand" " r")))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmar64\t%0, %2, %3"
   [(set_attr "mode"   "DI")])
 
@@ -4572,9 +4572,31 @@
 	    (sign_extend:DI
 	      (match_operand:SI 3 "register_operand" " r")))
 	  (match_operand:DI 1 "register_operand"     " 0")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmar64\t%0, %2, %3"
   [(set_attr "mode"   "DI")])
+
+(define_insn "vkmar64"
+  [(set (match_operand:DI 0 "register_operand"             "=r")
+	(ss_plus:DI (match_operand:DI 1 "register_operand"    " 0")
+	  (plus:DI
+	    (mult:DI
+	      (sign_extend:DI
+		(vec_select:SI
+		  (match_operand:V2SI 2 "register_operand" " r")
+		  (parallel [(const_int 0)])))
+	      (sign_extend:DI
+		(vec_select:SI
+		  (match_operand:V2SI 3 "register_operand" " r")
+		  (parallel [(const_int 0)]))))
+	    (mult:DI
+	      (sign_extend:DI
+		(vec_select:SI (match_dup 2) (parallel [(const_int 1)])))
+	      (sign_extend:DI
+		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "kmar64\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
 
 (define_insn "kmsr64"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -4585,9 +4607,31 @@
 	      (match_operand:SI 2 "register_operand" " r"))
 	    (sign_extend:DI
 	      (match_operand:SI 3 "register_operand" " r")))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmsr64\t%0, %2, %3"
   [(set_attr "mode"   "DI")])
+
+(define_insn "vkmsr64"
+  [(set (match_operand:DI 0 "register_operand"             "=r")
+	(ss_minus:DI (match_operand:DI 1 "register_operand"    " 0")
+	  (minus:DI
+	    (mult:DI
+	      (sign_extend:DI
+		(vec_select:SI
+		  (match_operand:V2SI 2 "register_operand" " r")
+		  (parallel [(const_int 0)])))
+	      (sign_extend:DI
+		(vec_select:SI
+		  (match_operand:V2SI 3 "register_operand" " r")
+		  (parallel [(const_int 0)]))))
+	    (mult:DI
+	      (sign_extend:DI
+		(vec_select:SI (match_dup 2) (parallel [(const_int 1)])))
+	      (sign_extend:DI
+		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "kmsr64\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
 
 (define_insn "ukmar64_1"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -4598,9 +4642,31 @@
 	      (match_operand:SI 2 "register_operand" " r"))
 	    (zero_extend:DI
 	      (match_operand:SI 3 "register_operand" " r")))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "ukmar64\t%0, %2, %3"
   [(set_attr "mode"   "DI")])
+
+(define_insn "vukmar64"
+  [(set (match_operand:DI 0 "register_operand"             "=r")
+	(us_plus:DI (match_operand:DI 1 "register_operand"    " 0")
+	  (plus:DI
+	    (mult:DI
+	      (zero_extend:DI
+		(vec_select:SI
+		  (match_operand:V2SI 2 "register_operand" " r")
+		  (parallel [(const_int 0)])))
+	      (zero_extend:DI
+		(vec_select:SI
+		  (match_operand:V2SI 3 "register_operand" " r")
+		  (parallel [(const_int 0)]))))
+	    (mult:DI
+	      (sign_extend:DI
+		(vec_select:SI (match_dup 2) (parallel [(const_int 1)])))
+	      (sign_extend:DI
+		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "ukmar64\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
 
 (define_insn "ukmar64_2"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -4611,7 +4677,7 @@
 	    (zero_extend:DI
 	      (match_operand:SI 3 "register_operand" " r")))
 	  (match_operand:DI 1 "register_operand"     " 0")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "ukmar64\t%0, %2, %3"
   [(set_attr "mode"   "DI")])
 
@@ -4624,9 +4690,31 @@
 	      (match_operand:SI 2 "register_operand" " r"))
 	    (zero_extend:DI
 	      (match_operand:SI 3 "register_operand" " r")))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "ukmsr64\t%0, %2, %3"
   [(set_attr "mode"   "DI")])
+
+(define_insn "vukmsr64"
+  [(set (match_operand:DI 0 "register_operand"             "=r")
+	(us_minus:DI (match_operand:DI 1 "register_operand"    " 0")
+	  (minus:DI
+	    (mult:DI
+	      (zero_extend:DI
+		(vec_select:SI
+		  (match_operand:V2SI 2 "register_operand" " r")
+		  (parallel [(const_int 0)])))
+	      (zero_extend:DI
+		(vec_select:SI
+		  (match_operand:V2SI 3 "register_operand" " r")
+		  (parallel [(const_int 0)]))))
+	    (mult:DI
+	      (sign_extend:DI
+		(vec_select:SI (match_dup 2) (parallel [(const_int 1)])))
+	      (sign_extend:DI
+		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "ukmsr64\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
 
 (define_insn "bpick1<mode>"
   [(set (match_operand:GPR 0 "register_operand"       "=r")
