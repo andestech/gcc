@@ -2398,6 +2398,68 @@
 }
   [(set_attr "mode" "SI")])
 
+(define_expand "kmabb64"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V4HI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_kma64_internal (operands[0], operands[2], operands[3],
+				 GEN_INT (0), GEN_INT (2), GEN_INT (0),
+				 GEN_INT (2), operands[1]));
+  DONE;
+})
+
+(define_expand "kmabt64"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V4HI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_kma64_internal (operands[0], operands[2], operands[3],
+				 GEN_INT (0), GEN_INT (2), GEN_INT (1),
+				 GEN_INT (3), operands[1]));
+  DONE;
+})
+
+(define_expand "kmatt64"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V4HI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_kma64_internal (operands[0], operands[2], operands[3],
+				 GEN_INT (1), GEN_INT (3), GEN_INT (1),
+				 GEN_INT (3), operands[1]));
+  DONE;
+})
+
+(define_insn "kma64_internal"
+  [(set (match_operand:V2SI 0 "register_operand"                 "=   r,   r,   r,   r")
+	(ss_plus:V2SI
+	  (mult:V2SI
+	    (sign_extend:V2SI
+	      (vec_select:V2HI
+		(match_operand:V4HI 1 "register_operand"         "   r,   r,   r,   r")
+	        (parallel [(match_operand:SI 3 "imm_0_1_operand" " v00, v00, v01, v01")
+			   (match_operand:SI 4 "imm_2_3_operand" " v02, v02, v03, v03")])))
+	    (sign_extend:V2SI
+	      (vec_select:V2HI
+	        (match_operand:V4HI 2 "register_operand"         "   r,   r,   r,   r")
+	        (parallel [(match_operand:SI 5 "imm_0_1_operand" " v00, v01, v01, v00")
+			   (match_operand:SI 6 "imm_2_3_operand" " v02, v03, v03, v02")]))))
+	  (match_operand:V2SI 7 "register_operand"               "   0,   0,   0,   0")))]
+  "TARGET_DSP && TARGET_64BIT"
+  "@
+  kmabb\t%0, %1, %2
+  kmabt\t%0, %1, %2
+  kmatt\t%0, %1, %2
+  kmabt\t%0, %2, %1"
+  [(set_attr "mode" "V2SI")])
+
 (define_expand "smds"
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:V2HI 1 "register_operand" "")

@@ -1158,14 +1158,20 @@ enum riscv_order
   (__builtin_riscv_kmabb ((r), (a), (b)))
 #define __nds__v_kmabb(r, a, b) \
   (__builtin_riscv_v_kmabb ((r), (a), (b)))
+#define __nds64__v_kmabb(r, a, b) \
+  (__builtin_riscv_v64_kmabb ((r), (a), (b)))
 #define __nds__kmabt(r, a, b) \
   (__builtin_riscv_kmabt ((r), (a), (b)))
 #define __nds__v_kmabt(r, a, b) \
   (__builtin_riscv_v_kmabt ((r), (a), (b)))
+#define __nds64__v_kmabt(r, a, b) \
+  (__builtin_riscv_v64_kmabt ((r), (a), (b)))
 #define __nds__kmatt(r, a, b) \
   (__builtin_riscv_kmatt ((r), (a), (b)))
 #define __nds__v_kmatt(r, a, b) \
   (__builtin_riscv_v_kmatt ((r), (a), (b)))
+#define __nds64__v_kmatt(r, a, b) \
+  (__builtin_riscv_v64_kmatt ((r), (a), (b)))
 #define __nds__kmada(r, a, b) \
   (__builtin_riscv_kmada ((r), (a), (b)))
 #define __nds__v_kmada(r, a, b) \
