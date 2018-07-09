@@ -31,6 +31,8 @@
 
 (define_mode_iterator VMUL [(V4HI "") (V8HI "TARGET_64BIT")])
 
+(define_mode_iterator VD_SI [(SI "") (V2SI "TARGET_64BIT")])
+
 ;; Give the number of DSP instructions in the mode
 (define_mode_attr bits [(V8QI "8") (V4QI "8") (QI "8") (V4HI "16") (V2HI "16") (HI "16") (DI "64")])
 
@@ -4582,96 +4584,109 @@
   "ukmsr64\t%0, %2, %3"
   [(set_attr "mode"   "DI")])
 
-(define_insn "bpick1"
-  [(set (match_operand:SI 0 "register_operand"       "=r")
-	  (ior:SI
-	    (and:SI
-	      (match_operand:SI 1 "register_operand" " r")
-	      (match_operand:SI 3 "register_operand" " r"))
-	    (and:SI
-	      (match_operand:SI 2 "register_operand" " r")
-	      (not:SI (match_dup 3)))))]
+(define_insn "bpick1<mode>"
+  [(set (match_operand:GPR 0 "register_operand"       "=r")
+	  (ior:GPR
+	    (and:GPR
+	      (match_operand:GPR 1 "register_operand" " r")
+	      (match_operand:GPR 3 "register_operand" " r"))
+	    (and:GPR
+	      (match_operand:GPR 2 "register_operand" " r")
+	      (not:GPR (match_dup 3)))))]
   "TARGET_DSP"
   "bpick\t%0, %1, %2, %3"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "mode"   "<MODE>")])
 
-(define_insn "bpick2"
-  [(set (match_operand:SI 0 "register_operand"       "=r")
-	  (ior:SI
-	    (and:SI
-	      (match_operand:SI 1 "register_operand" " r")
-	      (match_operand:SI 2 "register_operand" " r"))
-	    (and:SI
-	      (not:SI (match_dup 2))
-	      (match_operand:SI 3 "register_operand" " r"))))]
+(define_insn "bpick2<mode>"
+  [(set (match_operand:GPR 0 "register_operand"       "=r")
+	  (ior:GPR
+	    (and:GPR
+	      (match_operand:GPR 1 "register_operand" " r")
+	      (match_operand:GPR 2 "register_operand" " r"))
+	    (and:GPR
+	      (not:GPR (match_dup 2))
+	      (match_operand:GPR 3 "register_operand" " r"))))]
   "TARGET_DSP"
   "bpick\t%0, %1, %3, %2"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "mode"   "<MODE>")])
 
-(define_insn "bpick3"
-  [(set (match_operand:SI 0 "register_operand"       "=r")
-	  (ior:SI
-	    (and:SI
-	      (match_operand:SI 1 "register_operand" " r")
-	      (match_operand:SI 2 "register_operand" " r"))
-	    (and:SI
-	      (match_operand:SI 3 "register_operand" " r")
-	      (not:SI (match_dup 1)))))]
+(define_insn "bpick3<mode>"
+  [(set (match_operand:GPR 0 "register_operand"       "=r")
+	  (ior:GPR
+	    (and:GPR
+	      (match_operand:GPR 1 "register_operand" " r")
+	      (match_operand:GPR 2 "register_operand" " r"))
+	    (and:GPR
+	      (match_operand:GPR 3 "register_operand" " r")
+	      (not:GPR (match_dup 1)))))]
   "TARGET_DSP"
   "bpick\t%0, %2, %3, %1"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "mode"   "<MODE>")])
 
-(define_insn "bpick4"
-  [(set (match_operand:SI 0 "register_operand"       "=r")
-	  (ior:SI
-	    (and:SI
-	      (match_operand:SI 1 "register_operand" " r")
-	      (match_operand:SI 2 "register_operand" " r"))
-	    (and:SI
-	      (not:SI (match_dup 1))
-	      (match_operand:SI 3 "register_operand" " r"))))]
+(define_insn "bpick4<mode>"
+  [(set (match_operand:GPR 0 "register_operand"       "=r")
+	  (ior:GPR
+	    (and:GPR
+	      (match_operand:GPR 1 "register_operand" " r")
+	      (match_operand:GPR 2 "register_operand" " r"))
+	    (and:GPR
+	      (not:GPR (match_dup 1))
+	      (match_operand:GPR 3 "register_operand" " r"))))]
   "TARGET_DSP"
   "bpick\t%0, %2, %3, %1"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "mode"   "<MODE>")])
 
-(define_insn "bpick5"
-  [(set (match_operand:SI 0 "register_operand"               "=r")
-	  (ior:SI
-	    (and:SI
-	      (match_operand:SI 1 "register_operand"         " r")
-	      (not:SI (match_operand:SI 2 "register_operand" " r")))
-	    (and:SI
-	      (match_operand:SI 3 "register_operand"         " r")
+(define_insn "bpick5<mode>"
+  [(set (match_operand:GPR 0 "register_operand"               "=r")
+	  (ior:GPR
+	    (and:GPR
+	      (match_operand:GPR 1 "register_operand"         " r")
+	      (not:GPR (match_operand:GPR 2 "register_operand" " r")))
+	    (and:GPR
+	      (match_operand:GPR 3 "register_operand"         " r")
 	      (match_dup 2))))]
   "TARGET_DSP"
   "bpick\t%0, %3, %1, %2"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "mode"   "<MODE>")])
 
-(define_insn "bpick6"
-  [(set (match_operand:SI 0 "register_operand"               "=r")
-	  (ior:SI
-	    (and:SI
-	      (not:SI (match_operand:SI 1 "register_operand" " r"))
-	      (match_operand:SI 2 "register_operand"         " r"))
-	    (and:SI
-	      (match_operand:SI 3 "register_operand" " r")
+(define_insn "bpick6<mode>"
+  [(set (match_operand:GPR 0 "register_operand"               "=r")
+	  (ior:GPR
+	    (and:GPR
+	      (not:GPR (match_operand:GPR 1 "register_operand" " r"))
+	      (match_operand:GPR 2 "register_operand"         " r"))
+	    (and:GPR
+	      (match_operand:GPR 3 "register_operand" " r")
 	      (match_dup 1))))]
   "TARGET_DSP"
   "bpick\t%0, %3, %2, %1"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "mode"   "<MODE>")])
 
-(define_insn "bpick7"
-  [(set (match_operand:SI 0 "register_operand"               "=r")
-	  (ior:SI
-	    (and:SI
-	      (match_operand:SI 1 "register_operand"         " r")
-	      (not:SI (match_operand:SI 2 "register_operand" " r")))
-	    (and:SI
+(define_insn "bpick7<mode>"
+  [(set (match_operand:GPR 0 "register_operand"               "=r")
+	  (ior:GPR
+	    (and:GPR
+	      (match_operand:GPR 1 "register_operand"         " r")
+	      (not:GPR (match_operand:GPR 2 "register_operand" " r")))
+	    (and:GPR
 	      (match_dup 2)
-	      (match_operand:SI 3 "register_operand"         " r"))))]
+	      (match_operand:GPR 3 "register_operand"         " r"))))]
   "TARGET_DSP"
   "bpick\t%0, %3, %1, %2"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "mode"   "<MODE>")])
+
+(define_insn "bpick8<mode>"
+  [(set (match_operand:GPR 0 "register_operand"               "=r")
+	  (ior:GPR
+	    (and:GPR
+	      (not:GPR (match_operand:GPR 1 "register_operand" " r"))
+	      (match_operand:GPR 2 "register_operand"         " r"))
+	    (and:GPR
+	      (match_dup 1)
+	      (match_operand:GPR 3 "register_operand"         " r"))))]
+  "TARGET_DSP"
+  "bpick\t%0, %3, %2, %1"
+  [(set_attr "mode"   "<MODE>")])
 
 (define_insn "bpick8"
   [(set (match_operand:SI 0 "register_operand"               "=r")
@@ -4721,28 +4736,39 @@
   "kslraw.u\t%0, %1, %2"
   [(set_attr "mode"   "SI")])
 
-(define_insn "sclip32"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
-		    (match_operand:SI 2 "immediate_operand" "i")] UNSPEC_CLIPS_OV))]
+(define_insn "sclip32<mode>"
+  [(set (match_operand:VD_SI 0 "register_operand" "=r")
+	(unspec:VD_SI [(match_operand:VD_SI 1 "register_operand" "r")
+		       (match_operand:SI 2 "immediate_operand" "i")] UNSPEC_CLIPS_OV))]
   "TARGET_DSP"
   "sclip32\t%0, %1, %2"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "mode" "<MODE>")])
 
-(define_insn "uclip32"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
-		    (match_operand:SI 2 "immediate_operand" "i")] UNSPEC_CLIP_OV))]
+(define_insn "uclip32<mode>"
+  [(set (match_operand:VD_SI 0 "register_operand" "=r")
+	(unspec:VD_SI [(match_operand:VD_SI 1 "register_operand" "r")
+		       (match_operand:SI 2 "immediate_operand" "i")] UNSPEC_CLIP_OV))]
   "TARGET_DSP"
   "uclip32\t%0, %1, %2"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "mode" "<MODE>")])
 
 (define_insn "bitrev"
   [(set (match_operand:SI 0 "register_operand"             "=r,   r")
 	(unspec:SI [(match_operand:SI 1 "register_operand" " r,   r")
 		    (match_operand:SI 2 "rimm5u_operand"   " r, u05")]
 		   UNSPEC_BITREV))]
-  ""
+  "TARGET_DSP && !TARGET_64BIT"
+  "@
+   bitrev\t%0, %1, %2
+   bitrevi\t%0, %1, %2"
+  [(set_attr "mode"   "SI")])
+
+(define_insn "bitrev64"
+  [(set (match_operand:DI 0 "register_operand"             "=r,   r")
+	(unspec:DI [(match_operand:DI 1 "register_operand" " r,   r")
+		    (match_operand:SI 2 "rimm6u_operand"   " r, u06")]
+		   UNSPEC_BITREV))]
+  "TARGET_DSP && TARGET_64BIT"
   "@
    bitrev\t%0, %1, %2
    bitrevi\t%0, %1, %2"
@@ -4755,11 +4781,24 @@
 	  (any_shiftrt:DI
 	    (match_operand:DI 1 "register_operand" " r,  r")
 	    (match_operand:SI 2 "rimm5u_operand"   " r,u05"))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "@
    wext\t%0, %1, %2
    wexti\t%0, %1, %2"
   [(set_attr "mode"   "SI")])
+
+(define_insn "wext64"
+  [(set (match_operand:DI 0 "register_operand"     "=r,  r")
+	(sign_extend:DI
+	  (truncate:SI
+	    (ashiftrt:DI
+	      (match_operand:DI 1 "register_operand" " r,  r")
+	      (match_operand:SI 2 "rimm5u_operand"   " r,u05")))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "@
+   wext\t%0, %1, %2
+   wexti\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
 
 ;; 32-bit add/sub instruction: raddw and rsubw.
 (define_insn "r<opcode>si3"
