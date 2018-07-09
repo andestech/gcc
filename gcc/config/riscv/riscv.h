@@ -1024,4 +1024,25 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   { "mcmodel=medlow", "mfma" }
 
 extern tree riscv_fp16_type_node;
+
+#ifdef TARGET_OS_DEFAULT_EX9
+#define NDS32_EX9_SPEC " %{Os3|Os|mexecit:%{!mno-execit:--mexecit}}"
+#else
+#define NDS32_EX9_SPEC " %{mexecit:--mexecit}"
+#endif
+
+#ifdef TARGET_DEFAULT_GP_RELAX
+#define NDS32_GP_RELAX_DEFAULT_SPEC " %{!mno-gp-insn-relax:--mgp-insn-relax}"
+#else
+#define NDS32_GP_RELAX_DEFAULT_SPEC ""
+#endif
+
+#define NDS32_GP_RELAX_SPEC \
+  NDS32_GP_RELAX_DEFAULT_SPEC \
+  " %{mgp-insn-relax:--mgp-insn-relax}" \
+  " %{mno-gp-insn-relax:--mno-gp-insn-relax}"
+
+#define BTB_FIXUP_SPEC \
+  " %{Os3|Os:--mno-avoid-btb-miss}"
+
 #endif /* ! GCC_RISCV_H */

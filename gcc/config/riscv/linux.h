@@ -66,7 +66,9 @@ along with GCC; see the file COPYING3.  If not see
     %{!static: \
       %{rdynamic:-export-dynamic} \
       -dynamic-linker " GNU_USER_DYNAMIC_LINKER "} \
-    %{static:-static}}"
+    %{static:-static}}" \
+NDS32_GP_RELAX_SPEC \
+BTB_FIXUP_SPEC
 
 #define TARGET_ASM_FILE_END file_end_indicate_exec_stack
 
