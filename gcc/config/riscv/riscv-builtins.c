@@ -1956,9 +1956,9 @@ riscv_prepare_builtin_arg (struct expand_operand *op, tree exp, unsigned argno,
 	  int i, shift = 0;
 	  rtvec v = rtvec_alloc (nunits);
 	  int val = INTVAL (arg);
-	  enum machine_mode val_mode = (mode == V4QImode) ? QImode : HImode;
-	  int shift_acc = (val_mode == QImode) ? 8 : 16;
-	  int mask = (val_mode == QImode) ? 0xff : 0xffff;
+	  enum machine_mode val_mode = GET_MODE_INNER (mode);
+	  int shift_acc = GET_MODE_BITSIZE (val_mode);
+	  int mask = GET_MODE_MASK (val_mode);
 	  int tmp_val = val;
 
 	  for (i = 0; i < nunits; i++)
