@@ -1218,6 +1218,8 @@ enum riscv_order
   (__builtin_riscv_smal ((a), (b)))
 #define __nds__v_smal(a, b) \
   (__builtin_riscv_v_smal ((a), (b)))
+#define __nds64__v_smal(a, b) \
+  (__builtin_riscv_v64_smal ((a), (b)))
 
 #define __nds__bitrev(a, b) \
   (__builtin_riscv_bitrev ((a), (b)))

@@ -2630,7 +2630,7 @@
 		(vec_select:HI
 		  (match_dup 2)
 		  (parallel [(const_int 1)])))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
   [(set_attr "mode" "DI")])
 
@@ -2646,7 +2646,7 @@
 	      (vec_select:HI
 		(match_dup 2)
 		(parallel [(const_int 1)]))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
   [(set_attr "mode" "DI")])
 
@@ -2663,7 +2663,7 @@
 		(vec_select:HI
 		  (match_dup 2)
 		  (parallel [(const_int 0)])))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
   [(set_attr "mode" "DI")])
 
@@ -2679,7 +2679,7 @@
 	      (vec_select:HI
 		(match_dup 2)
 		(parallel [(const_int 0)]))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
   [(set_attr "mode" "DI")])
 
@@ -2697,7 +2697,7 @@
 		  (match_dup 2)
 		  (parallel [(const_int 1)])))))
 	  (match_operand:DI 1 "register_operand"           " r")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
   [(set_attr "mode" "DI")])
 
@@ -2714,7 +2714,7 @@
 		(match_dup 2)
 		(parallel [(const_int 1)]))))
 	  (match_operand:DI 1 "register_operand"         " r")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
   [(set_attr "mode" "DI")])
 
@@ -2732,7 +2732,7 @@
 		  (match_dup 2)
 		  (parallel [(const_int 0)])))))
 	  (match_operand:DI 1 "register_operand"           " r")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
   [(set_attr "mode" "DI")])
 
@@ -2749,7 +2749,29 @@
 		(match_dup 2)
 		(parallel [(const_int 0)]))))
 	  (match_operand:DI 1 "register_operand"         " r")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
+  "smal\t%0, %1, %2"
+  [(set_attr "mode" "DI")])
+
+(define_insn "smal1_64"
+  [(set (match_operand:DI 0 "register_operand"             "=r")
+	(plus:DI (match_operand:DI 1 "register_operand"    " r")
+	  (plus:DI
+	    (sign_extend:DI
+	      (mult:SI
+		(sign_extend:SI
+		  (vec_select:HI
+		    (match_operand:V4HI 2 "register_operand" " r")
+		    (parallel [(const_int 0)])))
+		(sign_extend:SI
+		  (vec_select:HI (match_dup 2) (parallel [(const_int 1)])))))
+	    (sign_extend:DI
+	      (mult:SI
+		(sign_extend:SI
+		  (vec_select:HI (match_dup 2) (parallel [(const_int 2)])))
+		(sign_extend:SI
+		  (vec_select:HI (match_dup 2) (parallel [(const_int 3)]))))))))]
+  "TARGET_DSP && TARGET_64BIT"
   "smal\t%0, %1, %2"
   [(set_attr "mode" "DI")])
 

@@ -598,6 +598,7 @@ enum riscv_builtins
   RISCV_BUILTIN_V64_KMAXDS,
   RISCV_BUILTIN_V64_KMSDA,
   RISCV_BUILTIN_V64_KMSXDA,
+  RISCV_BUILTIN_V64_SMAL,
   RISCV_BUILTIN_DSP_END
 };
 
@@ -1612,10 +1613,12 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (kmsxda64, kmsxda64, v64_kmsxda,
 		      RISCV_LONG_FTYPE_LONG_V4HI_V4HI, V64_KMSXDA),
   /* DSP Extension: Signed 16bit Multiply with 64bit ADD/Subtract.  */
-  DIRECT_DSP_BUILTIN (smal1, smal1, smal,
+  DIRECT_DSP_BUILTIN (smal1, smal1_64, smal,
 		      RISCV_LLONG_FTYPE_LLONG_LONG, SMAL),
   DIRECT_DSP_BUILTIN (smal1, smal1, v_smal,
 		      RISCV_LLONG_FTYPE_LLONG_V2HI, V_SMAL),
+  DIRECT_DSP_BUILTIN (smal1_64, smal1_64, v64_smal,
+		      RISCV_LLONG_FTYPE_LLONG_V4HI, V64_SMAL),
   /* DSP Extension: 32bit MISC.  */
   DIRECT_DSP_BUILTIN (bitrev, bitrev, bitrev,
 		      RISCV_ULONG_FTYPE_ULONG_ULONG, BITREV),
