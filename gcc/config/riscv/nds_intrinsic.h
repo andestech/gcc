@@ -1477,6 +1477,51 @@ enum riscv_order
 #define __nds__flmism(a, b) \
   (__builtin_riscv_flmism ((a), (b)))
 
+#define __nds__add32(a, b) \
+  (__builtin_riscv_add32 ((a), (b)))
+#define __nds64__v_uadd32(a, b) \
+  (__builtin_riscv_v_uadd32 ((a), (b)))
+#define __nds64__v_sadd32(a, b) \
+  (__builtin_riscv_v_sadd32 ((a), (b)))
+#define __nds__radd32(a, b) \
+  (__builtin_riscv_radd32 ((a), (b)))
+#define __nds64__v_radd32(a, b) \
+  (__builtin_riscv_v_radd32 ((a), (b)))
+#define __nds__uradd32(a, b) \
+  (__builtin_riscv_uradd32 ((a), (b)))
+#define __nds64__v_uradd32(a, b) \
+  (__builtin_riscv_v_uradd32 ((a), (b)))
+#define __nds__kadd32(a, b) \
+  (__builtin_riscv_kadd32 ((a), (b)))
+#define __nds64__v_kadd32(a, b) \
+  (__builtin_riscv_v_kadd32 ((a), (b)))
+#define __nds__ukadd32(a, b) \
+  (__builtin_riscv_ukadd32 ((a), (b)))
+#define __nds64__v_ukadd32(a, b) \
+  (__builtin_riscv_v_ukadd32 ((a), (b)))
+#define __nds__sub32(a, b) \
+  (__builtin_riscv_sub32 ((a), (b)))
+#define __nds64__v_usub32(a, b) \
+  (__builtin_riscv_v_usub32 ((a), (b)))
+#define __nds64__v_ssub32(a, b) \
+  (__builtin_riscv_v_ssub32 ((a), (b)))
+#define __nds__rsub32(a, b) \
+  (__builtin_riscv_rsub32 ((a), (b)))
+#define __nds64__v_rsub32(a, b) \
+  (__builtin_riscv_v_rsub32 ((a), (b)))
+#define __nds__ursub32(a, b) \
+  (__builtin_riscv_ursub32 ((a), (b)))
+#define __nds64__v_ursub32(a, b) \
+  (__builtin_riscv_v_ursub32 ((a), (b)))
+#define __nds__ksub32(a, b) \
+  (__builtin_riscv_ksub32 ((a), (b)))
+#define __nds64__v_ksub32(a, b) \
+  (__builtin_riscv_v_ksub32 ((a), (b)))
+#define __nds__uksub32(a, b) \
+  (__builtin_riscv_uksub32 ((a), (b)))
+#define __nds64__v_uksub32(a, b) \
+  (__builtin_riscv_v_uksub32 ((a), (b)))
+
 #if __riscv_xlen == 32
 #define __nds__smul16(a, b) \
   (__builtin_riscv_smul16 ((a), (b)))

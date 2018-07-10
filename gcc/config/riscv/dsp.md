@@ -23,6 +23,10 @@
 (define_mode_iterator VQIHI [(V4QI "") (V2HI "")
                              (V8QI "TARGET_64BIT") (V4HI "TARGET_64BIT")])
 
+(define_mode_iterator VECI [(V4QI "") (V2HI "")
+                            (V8QI "TARGET_64BIT") (V4HI "TARGET_64BIT")
+			    (V2SI "TARGET_64BIT")])
+
 (define_mode_iterator VHI [(V2HI "") (V4HI "TARGET_64BIT")])
 
 (define_mode_iterator VQI [(V4QI "") (V8QI "TARGET_64BIT")])
@@ -34,13 +38,15 @@
 (define_mode_iterator VD_SI [(SI "") (V2SI "TARGET_64BIT")])
 
 ;; Give the number of DSP instructions in the mode
-(define_mode_attr bits [(V8QI "8") (V4QI "8") (QI "8") (V4HI "16") (V2HI "16") (HI "16") (DI "64")])
+(define_mode_attr bits [(V8QI "8") (V4QI "8") (QI "8") (V4HI "16") (V2HI "16")
+			(HI "16") (V2SI "32") (DI "64")])
 
 (define_mode_attr bsize [(HI "8") (SI "16")])
 
 (define_mode_attr VELT [(V4QI "QI") (V2HI "HI") (V8QI "QI") (V4HI "HI")])
 
-(define_mode_attr VEXT [(V4QI "V4HI") (V2HI "V2SI") (V8QI "V8HI") (V4HI "V4SI")])
+(define_mode_attr VEXT [(V4QI "V4HI") (V2HI "V2SI") (V8QI "V8HI") (V4HI "V4SI")
+			(V2SI "V2DI")])
 
 (define_mode_attr VNARROW [(V2SI "V2HI") (V4SI "V4HI") (V4HI "V4QI") (V8HI "V8QI")])
 
@@ -95,9 +101,9 @@
    (set_attr "mode" "<MODE>")])
 
 (define_insn "<uk>add<mode>3"
-  [(set (match_operand:VQIHI 0 "register_operand"                 "=r")
-	(all_plus:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
-			(match_operand:VQIHI 2 "register_operand" " r")))]
+  [(set (match_operand:VECI 0 "register_operand"                "=r")
+	(all_plus:VECI (match_operand:VECI 1 "register_operand" " r")
+		       (match_operand:VECI 2 "register_operand" " r")))]
   "TARGET_DSP"
   "<uk>add<bits>\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -113,11 +119,11 @@
    (set_attr "mode" "DI")])
 
 (define_insn "radd<mode>3"
-  [(set (match_operand:VQIHI 0 "register_operand" "=r")
-	(truncate:VQIHI
+  [(set (match_operand:VECI 0 "register_operand" "=r")
+	(truncate:VECI
 	  (ashiftrt:<VEXT>
-	    (plus:<VEXT> (sign_extend:<VEXT> (match_operand:VQIHI 1 "register_operand" " r"))
-			 (sign_extend:<VEXT> (match_operand:VQIHI 2 "register_operand" " r")))
+	    (plus:<VEXT> (sign_extend:<VEXT> (match_operand:VECI 1 "register_operand" " r"))
+			 (sign_extend:<VEXT> (match_operand:VECI 2 "register_operand" " r")))
 	    (const_int 1))))]
   "TARGET_DSP"
   "radd<bits>\t%0, %1, %2"
@@ -125,11 +131,11 @@
    (set_attr "mode" "<MODE>")])
 
 (define_insn "uradd<mode>3"
-  [(set (match_operand:VQIHI 0 "register_operand" "=r")
-	(truncate:VQIHI
+  [(set (match_operand:VECI 0 "register_operand" "=r")
+	(truncate:VECI
 	  (lshiftrt:<VEXT>
-	    (plus:<VEXT> (zero_extend:<VEXT> (match_operand:VQIHI 1 "register_operand" " r"))
-			 (zero_extend:<VEXT> (match_operand:VQIHI 2 "register_operand" " r")))
+	    (plus:<VEXT> (zero_extend:<VEXT> (match_operand:VECI 1 "register_operand" " r"))
+			 (zero_extend:<VEXT> (match_operand:VECI 2 "register_operand" " r")))
 	    (const_int 1))))]
   "TARGET_DSP"
   "uradd<bits>\t%0, %1, %2"
@@ -148,7 +154,6 @@
   [(set_attr "type" "arith")
    (set_attr "mode" "DI")])
 
-
 (define_insn "uradddi3"
   [(set (match_operand:DI 0 "register_operand" "=r")
 	(truncate:DI
@@ -162,9 +167,9 @@
    (set_attr "mode" "DI")])
 
 (define_insn "<uk>sub<mode>3"
-  [(set (match_operand:VQIHI 0 "register_operand"                  "=r")
-	(all_minus:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
-			 (match_operand:VQIHI 2 "register_operand" " r")))]
+  [(set (match_operand:VECI 0 "register_operand"                  "=r")
+	(all_minus:VECI (match_operand:VECI 1 "register_operand" " r")
+			(match_operand:VECI 2 "register_operand" " r")))]
   "TARGET_DSP"
   "<uk>sub<bits> %0, %1, %2"
   [(set_attr "type" "arith")
@@ -180,11 +185,11 @@
    (set_attr "mode" "DI")])
 
 (define_insn "rsub<mode>3"
-  [(set (match_operand:VQIHI 0 "register_operand"                                   "=r")
-	(truncate:VQIHI
+  [(set (match_operand:VECI 0 "register_operand"                                   "=r")
+	(truncate:VECI
 	  (ashiftrt:<VEXT>
-	    (minus:<VEXT> (sign_extend:<VEXT> (match_operand:VQIHI 1 "register_operand" " r"))
-			  (sign_extend:<VEXT> (match_operand:VQIHI 2 "register_operand" " r")))
+	    (minus:<VEXT> (sign_extend:<VEXT> (match_operand:VECI 1 "register_operand" " r"))
+			  (sign_extend:<VEXT> (match_operand:VECI 2 "register_operand" " r")))
 	    (const_int 1))))]
   "TARGET_DSP"
   "rsub<bits>\t%0, %1, %2"
@@ -192,11 +197,11 @@
    (set_attr "mode" "<MODE>")])
 
 (define_insn "ursub<mode>3"
-  [(set (match_operand:VQIHI 0 "register_operand"                                   "=r")
-	(truncate:VQIHI
+  [(set (match_operand:VECI 0 "register_operand"                                   "=r")
+	(truncate:VECI
 	  (ashiftrt:<VEXT>
-	    (minus:<VEXT> (zero_extend:<VEXT> (match_operand:VQIHI 1 "register_operand" " r"))
-			  (zero_extend:<VEXT> (match_operand:VQIHI 2 "register_operand" " r")))
+	    (minus:<VEXT> (zero_extend:<VEXT> (match_operand:VECI 1 "register_operand" " r"))
+			  (zero_extend:<VEXT> (match_operand:VECI 2 "register_operand" " r")))
 	    (const_int 1))))]
   "TARGET_DSP"
   "ursub<bits>\t%0, %1, %2"
