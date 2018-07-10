@@ -1276,43 +1276,63 @@ enum riscv_order
   (__builtin_riscv_smalbb ((r), (a), (b)))
 #define __nds__v_smalbb(r, a, b) \
   (__builtin_riscv_v_smalbb ((r), (a), (b)))
+#define __nds64__v_smalbb(r, a, b) \
+  (__builtin_riscv_v64_smalbb ((r), (a), (b)))
 #define __nds__smalbt(r, a, b) \
   (__builtin_riscv_smalbt ((r), (a), (b)))
 #define __nds__v_smalbt(r, a, b) \
   (__builtin_riscv_v_smalbt ((r), (a), (b)))
+#define __nds64__v_smalbt(r, a, b) \
+  (__builtin_riscv_v64_smalbt ((r), (a), (b)))
 #define __nds__smaltt(r, a, b) \
   (__builtin_riscv_smaltt ((r), (a), (b)))
 #define __nds__v_smaltt(r, a, b) \
   (__builtin_riscv_v_smaltt ((r), (a), (b)))
+#define __nds64__v_smaltt(r, a, b) \
+  (__builtin_riscv_v64_smaltt ((r), (a), (b)))
 
 #define __nds__smalda(r, a, b) \
   (__builtin_riscv_smalda ((r), (a), (b)))
 #define __nds__v_smalda(r, a, b) \
   (__builtin_riscv_v_smalda ((r), (a), (b)))
+#define __nds64__v_smalda(r, a, b) \
+  (__builtin_riscv_v64_smalda ((r), (a), (b)))
 #define __nds__smalxda(r, a, b) \
   (__builtin_riscv_smalxda ((r), (a), (b)))
 #define __nds__v_smalxda(r, a, b) \
   (__builtin_riscv_v_smalxda ((r), (a), (b)))
+#define __nds64__v_smalxda(r, a, b) \
+  (__builtin_riscv_v64_smalxda ((r), (a), (b)))
 #define __nds__smalds(r, a, b) \
   (__builtin_riscv_smalds ((r), (a), (b)))
 #define __nds__v_smalds(r, a, b) \
   (__builtin_riscv_v_smalds ((r), (a), (b)))
+#define __nds64__v_smalds(r, a, b) \
+  (__builtin_riscv_v64_smalds ((r), (a), (b)))
 #define __nds__smaldrs(r, a, b) \
   (__builtin_riscv_smaldrs ((r), (a), (b)))
+#define __nds64__v_smaldrs(r, a, b) \
+  (__builtin_riscv_v64_smaldrs ((r), (a), (b)))
 #define __nds__v_smaldrs(r, a, b) \
   (__builtin_riscv_v_smaldrs ((r), (a), (b)))
 #define __nds__smalxds(r, a, b) \
   (__builtin_riscv_smalxds ((r), (a), (b)))
 #define __nds__v_smalxds(r, a, b) \
   (__builtin_riscv_v_smalxds ((r), (a), (b)))
+#define __nds64__v_smalxds(r, a, b) \
+  (__builtin_riscv_v64_smalxds ((r), (a), (b)))
 #define __nds__smslda(r, a, b) \
   (__builtin_riscv_smslda ((r), (a), (b)))
 #define __nds__v_smslda(r, a, b) \
   (__builtin_riscv_v_smslda ((r), (a), (b)))
+#define __nds64__v_smslda(r, a, b) \
+  (__builtin_riscv_v64_smslda ((r), (a), (b)))
 #define __nds__smslxda(r, a, b) \
   (__builtin_riscv_smslxda ((r), (a), (b)))
 #define __nds__v_smslxda(r, a, b) \
   (__builtin_riscv_v_smslxda ((r), (a), (b)))
+#define __nds64__v_smslxda(r, a, b) \
+  (__builtin_riscv_v64_smslxda ((r), (a), (b)))
 
 #define __nds__uclip32(a, imm) \
   (__builtin_riscv_uclip32 ((a), (imm)))
