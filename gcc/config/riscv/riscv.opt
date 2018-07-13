@@ -260,7 +260,7 @@ Target Report RejectNegative
 Do not genearte C extension instructions.
 
 mexecit
-Target Report Var(TARGET_EXECIT) Undocumented
+Target Report Var(TARGET_EXECIT)
 Use special directives to guide linker doing execit optimization.
 
 mex9
