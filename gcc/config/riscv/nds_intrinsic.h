@@ -1613,6 +1613,10 @@ enum riscv_order
   (__builtin_riscv_umax32 ((a), (b)))
 #define __nds64__v_umax32(a, b) \
   (__builtin_riscv_v_umax32 ((a), (b)))
+#define __nds__kabs32(a) \
+  (__builtin_riscv_kabs32 ((a)))
+#define __nds64__v_kabs32(a) \
+  (__builtin_riscv_v_kabs32 ((a)))
 
 #if __riscv_xlen == 32
 #define __nds__smul16(a, b) \

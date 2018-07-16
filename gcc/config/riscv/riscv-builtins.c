@@ -677,6 +677,8 @@ enum riscv_builtins
   RISCV_BUILTIN_V_SMAX32,
   RISCV_BUILTIN_UMAX32,
   RISCV_BUILTIN_V_UMAX32,
+  RISCV_BUILTIN_KABS32,
+  RISCV_BUILTIN_V_KABS32,
   RISCV_BUILTIN_DSP_END
 };
 
@@ -1388,9 +1390,9 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (kabsv4qi2, kabsv8qi2, kabs8,
 		      RISCV_ULONG_FTYPE_ULONG, KABS8),
   DIRECT_DSP_BUILTIN (kabsv4qi2, kabsv4qi2, v_kabs8,
-		      RISCV_V2HI_FTYPE_V2HI, V_KABS8),
+		      RISCV_V4QI_FTYPE_V4QI, V_KABS8),
   DIRECT_DSP_BUILTIN (kabsv8qi2, kabsv8qi2, v64_kabs8,
-		      RISCV_V2HI_FTYPE_V2HI, V64_KABS8),
+		      RISCV_V8QI_FTYPE_V8QI, V64_KABS8),
   /* DSP Extension: 8bit Unpacking.  */
   DIRECT_DSP_BUILTIN (sunpkd810, sunpkd810_64, sunpkd810,
 		      RISCV_ULONG_FTYPE_ULONG, SUNPKD810),
@@ -2088,6 +2090,10 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		      RISCV_ULONG_FTYPE_ULONG_ULONG, UMAX32),
   DIRECT_DSP_BUILTIN (umaxv2si3, umaxv2si3, v_umax32,
 		      RISCV_UV2SI_FTYPE_UV2SI_UV2SI, V_UMAX32),
+  DIRECT_DSP_BUILTIN (kabsv2si2, kabsv2si2, kabs32,
+		      RISCV_ULONG_FTYPE_ULONG, KABS32),
+  DIRECT_DSP_BUILTIN (kabsv2si2, kabsv2si2, v_kabs32,
+		      RISCV_V2SI_FTYPE_V2SI, V_KABS32),
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the

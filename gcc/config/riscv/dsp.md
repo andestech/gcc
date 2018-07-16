@@ -4727,8 +4727,8 @@
 })
 
 (define_insn "kabs<mode>2"
-  [(set (match_operand:VQIHI 0 "register_operand"               "=r")
-	(ss_abs:VQIHI (match_operand:VQIHI 1 "register_operand" " r")))]
+  [(set (match_operand:VECI 0 "register_operand"              "=r")
+	(ss_abs:VECI (match_operand:VECI 1 "register_operand" " r")))]
   "TARGET_DSP"
   "kabs<bits>\t%0, %1"
   [(set_attr "type"   "arith")
