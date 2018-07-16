@@ -1050,6 +1050,18 @@
   [(set_attr "type" "arith,  arith")
    (set_attr "mode" "<MODE>, <MODE>")])
 
+(define_insn "sra32_round"
+  [(set (match_operand:V2SI 0 "register_operand"                              "=  r, r")
+	(unspec:V2SI [(ashiftrt:V2SI (match_operand:V2SI 1 "register_operand" "   r, r")
+				     (match_operand:SI 2   "rimm5u_operand"   " u05, r"))]
+		       UNSPEC_ROUND))]
+  "TARGET_DSP && TARGET_64BIT"
+  "@
+   srai32.u\t%0, %1, %2
+   sra32.u\t%0, %1, %2"
+  [(set_attr "type" "arith, arith")
+   (set_attr "mode" "V2SI,  V2SI")])
+
 (define_insn "*lshr<mode>3"
   [(set (match_operand:VHI 0 "register_operand"               "=  r, r")
 	(lshiftrt:VHI (match_operand:VHI 1 "register_operand" "   r, r")
@@ -1072,6 +1084,18 @@
    srl16.u\t%0, %1, %2"
   [(set_attr "type" "arith,  arith")
    (set_attr "mode" "<MODE>, <MODE>")])
+
+(define_insn "srl32_round"
+  [(set (match_operand:V2SI 0 "register_operand"                              "=  r, r")
+	(unspec:V2SI [(lshiftrt:V2SI (match_operand:V2SI 1 "register_operand" "   r, r")
+				     (match_operand:SI 2   "rimm5u_operand"   " u05, r"))]
+		       UNSPEC_ROUND))]
+  "TARGET_DSP && TARGET_64BIT"
+  "@
+   srli32.u\t%0, %1, %2
+   srl32.u\t%0, %1, %2"
+  [(set_attr "type" "arith, arith")
+   (set_attr "mode" "V2SI,  V2SI")])
 
 (define_insn "kslra<mode>"
   [(set (match_operand:VQIHI 0 "register_operand"                   "=r")
@@ -1101,6 +1125,17 @@
   "kslra<bits>.u\t%0, %1, %2"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")])
+
+(define_insn "<optab>v2si3"
+  [(set (match_operand:V2SI 0 "register_operand"                 "=  r, r")
+	(any_shift:V2SI (match_operand:V2SI 1 "register_operand" "   r, r")
+			(match_operand:SI   2  "rimm5u_operand"  " u05, r")))]
+  "TARGET_DSP && TARGET_64BIT"
+  "@
+   <insn>i32\t%0, %1, %2
+   <insn>32\t%0, %1, %2"
+  [(set_attr "type" "arith, arith")
+   (set_attr "mode" "V2SI,  V2SI")])
 
 (define_insn "cmpeq<mode>"
   [(set (match_operand:VQIHI 0 "register_operand"                          "=r")

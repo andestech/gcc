@@ -653,6 +653,16 @@ enum riscv_builtins
   RISCV_BUILTIN_V_KCRAS32,
   RISCV_BUILTIN_UKCRAS32,
   RISCV_BUILTIN_V_UKCRAS32,
+  RISCV_BUILTIN_SRA32,
+  RISCV_BUILTIN_V_SRA32,
+  RISCV_BUILTIN_SRA32_U,
+  RISCV_BUILTIN_V_SRA32_U,
+  RISCV_BUILTIN_SRL32,
+  RISCV_BUILTIN_V_SRL32,
+  RISCV_BUILTIN_SRL32_U,
+  RISCV_BUILTIN_V_SRL32_U,
+  RISCV_BUILTIN_SLL32,
+  RISCV_BUILTIN_V_SLL32,
   RISCV_BUILTIN_DSP_END
 };
 
@@ -2015,7 +2025,27 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (ukcrsav2si, ukcrsav2si, ukcrsa32,
 		      RISCV_ULONG_FTYPE_ULONG_ULONG, UKCRSA32),
   DIRECT_DSP_BUILTIN (ukcrsav2si, ukcrsav2si, v_ukcrsa32,
-		      RISCV_UV2SI_FTYPE_UV2SI_UV2SI, V_UKCRSA32)
+		      RISCV_UV2SI_FTYPE_UV2SI_UV2SI, V_UKCRSA32),
+  DIRECT_DSP_BUILTIN (ashrv2si3, ashrv2si3, sra32,
+		      RISCV_ULONG_FTYPE_ULONG_USI, SRA32),
+  DIRECT_DSP_BUILTIN (ashrv2si3, ashrv2si3, v_sra32,
+		      RISCV_V2SI_FTYPE_V2SI_USI, V_SRA32),
+  DIRECT_DSP_BUILTIN (sra32_round, sra32_round, sra32_u,
+		      RISCV_ULONG_FTYPE_ULONG_USI, SRA32_U),
+  DIRECT_DSP_BUILTIN (sra32_round, sra32_round, v_sra32_u,
+		      RISCV_V2SI_FTYPE_V2SI_USI, V_SRA32_U),
+  DIRECT_DSP_BUILTIN (lshrv2si3, lshrv2si3, srl32,
+		      RISCV_ULONG_FTYPE_ULONG_USI, SRL32),
+  DIRECT_DSP_BUILTIN (lshrv2si3, lshrv2si3, v_srl32,
+		      RISCV_V2SI_FTYPE_V2SI_USI, V_SRL32),
+  DIRECT_DSP_BUILTIN (srl32_round, srl32_round, srl32_u,
+		      RISCV_ULONG_FTYPE_ULONG_USI, SRL32_U),
+  DIRECT_DSP_BUILTIN (srl32_round, srl32_round, v_srl32_u,
+		      RISCV_V2SI_FTYPE_V2SI_USI, V_SRL32_U),
+  DIRECT_DSP_BUILTIN (ashlv2si3, ashlv2si3, sll32,
+		      RISCV_ULONG_FTYPE_ULONG_USI, SLL32),
+  DIRECT_DSP_BUILTIN (ashlv2si3, ashlv2si3, v_sll32,
+		      RISCV_UV2SI_FTYPE_UV2SI_USI, V_SLL32),
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the

@@ -1565,6 +1565,26 @@ enum riscv_order
   (__builtin_riscv_ukcrsa32 ((a), (b)))
 #define __nds64__v_ukcrsa32(a, b) \
   (__builtin_riscv_v_ukcrsa32 ((a), (b)))
+#define __nds__sra32(a, b) \
+  (__builtin_riscv_sra32 ((a), (b)))
+#define __nds64__v_sra32(a, b) \
+  (__builtin_riscv_v_sra32 ((a), (b)))
+#define __nds__sra32_u(a, b) \
+  (__builtin_riscv_sra32_u ((a), (b)))
+#define __nds64__v_sra32_u(a, b) \
+  (__builtin_riscv_v_sra32_u ((a), (b)))
+#define __nds__srl32(a, b) \
+  (__builtin_riscv_srl32 ((a), (b)))
+#define __nds64__v_srl32(a, b) \
+  (__builtin_riscv_v_srl32 ((a), (b)))
+#define __nds__srl32_u(a, b) \
+  (__builtin_riscv_srl32_u ((a), (b)))
+#define __nds64__v_srl32_u(a, b) \
+  (__builtin_riscv_v_srl32_u ((a), (b)))
+#define __nds__sll32(a, b) \
+  (__builtin_riscv_sll32 ((a), (b)))
+#define __nds64__v_sll32(a, b) \
+  (__builtin_riscv_v_sll32 ((a), (b)))
 
 #if __riscv_xlen == 32
 #define __nds__smul16(a, b) \
