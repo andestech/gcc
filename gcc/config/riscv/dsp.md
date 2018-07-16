@@ -1027,6 +1027,17 @@
   [(set_attr "type" "arith,  arith")
    (set_attr "mode" "<MODE>, <MODE>")])
 
+(define_insn "ksll32"
+  [(set (match_operand:V2SI 0 "register_operand"                 "=  r, r")
+	(ss_ashift:V2SI (match_operand:V2SI 1 "register_operand" "   r, r")
+			(match_operand:SI 2   "rimm5u_operand"   " u05, r")))]
+  "TARGET_DSP && TARGET_64BIT"
+  "@
+   kslli32\t%0, %1, %2
+   ksll32\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V2SI")])
+
 (define_insn "*ashr<mode>3"
   [(set (match_operand:VHI 0 "register_operand"               "=   r, r")
 	(ashiftrt:VHI (match_operand:VHI 1 "register_operand" "    r, r")
@@ -1098,29 +1109,29 @@
    (set_attr "mode" "V2SI,  V2SI")])
 
 (define_insn "kslra<mode>"
-  [(set (match_operand:VQIHI 0 "register_operand"                   "=r")
-	(if_then_else:VQIHI
+  [(set (match_operand:VECI 0 "register_operand"                   "=r")
+	(if_then_else:VECI
 	  (lt:SI (match_operand:SI 2 "register_operand"             " r")
 		 (const_int 0))
-	  (ashiftrt:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
-			  (neg:SI (match_dup 2)))
-	  (ss_ashift:VQIHI (match_dup 1)
-			   (match_dup 2))))]
+	  (ashiftrt:VECI (match_operand:VECI 1 "register_operand" " r")
+			 (neg:SI (match_dup 2)))
+	  (ss_ashift:VECI (match_dup 1)
+		       (match_dup 2))))]
   "TARGET_DSP"
   "kslra<bits>\t%0, %1, %2"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "kslra<mode>_round"
-  [(set (match_operand:VQIHI 0 "register_operand"                  "=r")
-	(if_then_else:VQIHI
+  [(set (match_operand:VECI 0 "register_operand"                  "=r")
+	(if_then_else:VECI
 	  (lt:SI (match_operand:SI 2 "register_operand"            " r")
 		 (const_int 0))
-	  (unspec:VQIHI [(ashiftrt:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
-					 (neg:SI (match_dup 2)))]
+	  (unspec:VECI [(ashiftrt:VECI (match_operand:VECI 1 "register_operand" " r")
+				       (neg:SI (match_dup 2)))]
 		        UNSPEC_ROUND)
-	  (ss_ashift:VQIHI (match_dup 1)
-			   (match_dup 2))))]
+	  (ss_ashift:VECI (match_dup 1)
+		       (match_dup 2))))]
   "TARGET_DSP"
   "kslra<bits>.u\t%0, %1, %2"
   [(set_attr "type" "arith")

@@ -1585,6 +1585,18 @@ enum riscv_order
   (__builtin_riscv_sll32 ((a), (b)))
 #define __nds64__v_sll32(a, b) \
   (__builtin_riscv_v_sll32 ((a), (b)))
+#define __nds__ksll32(a, b) \
+  (__builtin_riscv_ksll32 ((a), (b)))
+#define __nds64__v_ksll32(a, b) \
+  (__builtin_riscv_v_ksll32 ((a), (b)))
+#define __nds__kslra32(a, b) \
+  (__builtin_riscv_kslra32 ((a), (b)))
+#define __nds64__v_kslra32(a, b) \
+  (__builtin_riscv_v_kslra32 ((a), (b)))
+#define __nds__kslra32_u(a, b) \
+  (__builtin_riscv_kslra32_u ((a), (b)))
+#define __nds64__v_kslra32_u(a, b) \
+  (__builtin_riscv_v_kslra32_u ((a), (b)))
 
 #if __riscv_xlen == 32
 #define __nds__smul16(a, b) \
