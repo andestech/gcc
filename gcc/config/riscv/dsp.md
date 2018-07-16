@@ -4691,18 +4691,18 @@
 
 ;; smax[8|16] and umax[8|16]
 (define_insn "<opcode><mode>3"
-  [(set (match_operand:VQIHI 0 "register_operand"              "=r")
-	(sumax:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
-		     (match_operand:VQIHI 2 "register_operand" " r")))]
+  [(set (match_operand:VECI 0 "register_operand"             "=r")
+	(sumax:VECI (match_operand:VECI 1 "register_operand" " r")
+		    (match_operand:VECI 2 "register_operand" " r")))]
   "TARGET_DSP"
   "<opcode><bits>\t%0, %1, %2"
 )
 
 ;; smin[8|16] and umin[8|16]
 (define_insn "<opcode><mode>3"
-  [(set (match_operand:VQIHI 0 "register_operand"              "=r")
-	(sumin:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
-		     (match_operand:VQIHI 2 "register_operand" " r")))]
+  [(set (match_operand:VECI 0 "register_operand"             "=r")
+	(sumin:VECI (match_operand:VECI 1 "register_operand" " r")
+		    (match_operand:VECI 2 "register_operand" " r")))]
   "TARGET_DSP"
   "<opcode><bits>\t%0, %1, %2"
 )
