@@ -1617,6 +1617,30 @@ enum riscv_order
   (__builtin_riscv_kabs32 ((a)))
 #define __nds64__v_kabs32(a) \
   (__builtin_riscv_v_kabs32 ((a)))
+#define __nds__khmbb16(a, b) \
+  (__builtin_riscv_khmbb16 ((a), (b)))
+#define __nds64__v_khmbb16(a, b) \
+  (__builtin_riscv_v_khmbb16 ((a), (b)))
+#define __nds__khmbt16(a, b) \
+  (__builtin_riscv_khmbt16 ((a), (b)))
+#define __nds64__v_khmbt16(a, b) \
+  (__builtin_riscv_v_khmbt16 ((a), (b)))
+#define __nds__khmtt16(a, b) \
+  (__builtin_riscv_khmtt16 ((a), (b)))
+#define __nds64__v_khmtt16(a, b) \
+  (__builtin_riscv_v_khmtt16 ((a), (b)))
+#define __nds__kdmbb16(a, b) \
+  (__builtin_riscv_kdmbb16 ((a), (b)))
+#define __nds64__v_kdmbb16(a, b) \
+  (__builtin_riscv_v_kdmbb16 ((a), (b)))
+#define __nds__kdmbt16(a, b) \
+  (__builtin_riscv_kdmbt16 ((a), (b)))
+#define __nds64__v_kdmbt16(a, b) \
+  (__builtin_riscv_v_kdmbt16 ((a), (b)))
+#define __nds__kdmtt16(a, b) \
+  (__builtin_riscv_kdmtt16 ((a), (b)))
+#define __nds64__v_kdmtt16(a, b) \
+  (__builtin_riscv_v_kdmtt16 ((a), (b)))
 
 #if __riscv_xlen == 32
 #define __nds__smul16(a, b) \
