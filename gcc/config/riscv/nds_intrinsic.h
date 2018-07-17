@@ -1641,6 +1641,18 @@ enum riscv_order
   (__builtin_riscv_kdmtt16 ((a), (b)))
 #define __nds64__v_kdmtt16(a, b) \
   (__builtin_riscv_v_kdmtt16 ((a), (b)))
+#define __nds__smbb32(a, b) \
+  (__builtin_riscv_smbb32 ((a), (b)))
+#define __nds64__v_smbb32(a, b) \
+  (__builtin_riscv_v_smbb32 ((a), (b)))
+#define __nds__smbt32(a, b) \
+  (__builtin_riscv_smbt32 ((a), (b)))
+#define __nds64__v_smbt32(a, b) \
+  (__builtin_riscv_v_smbt32 ((a), (b)))
+#define __nds__smtt32(a, b) \
+  (__builtin_riscv_smtt32 ((a), (b)))
+#define __nds64__v_smtt32(a, b) \
+  (__builtin_riscv_v_smtt32 ((a), (b)))
 
 #if __riscv_xlen == 32
 #define __nds__smul16(a, b) \

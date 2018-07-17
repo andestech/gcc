@@ -691,6 +691,12 @@ enum riscv_builtins
   RISCV_BUILTIN_V_KDMBT16,
   RISCV_BUILTIN_KDMTT16,
   RISCV_BUILTIN_V_KDMTT16,
+  RISCV_BUILTIN_SMBB32,
+  RISCV_BUILTIN_V_SMBB32,
+  RISCV_BUILTIN_SMBT32,
+  RISCV_BUILTIN_V_SMBT32,
+  RISCV_BUILTIN_SMTT32,
+  RISCV_BUILTIN_V_SMTT32,
   RISCV_BUILTIN_DSP_END
 };
 
@@ -2130,6 +2136,18 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		      RISCV_LONG_FTYPE_ULONG_ULONG, KDMTT16),
   DIRECT_DSP_BUILTIN (kdmtt16, kdmtt16, v_kdmtt16,
 		      RISCV_LONG_FTYPE_V4HI_V4HI, V_KDMTT16),
+  DIRECT_DSP_BUILTIN (smbb32, smbb32, smbb32,
+		      RISCV_LONG_FTYPE_ULONG_ULONG, SMBB32),
+  DIRECT_DSP_BUILTIN (smbb32, smbb32, v_smbb32,
+		      RISCV_LONG_FTYPE_V2SI_V2SI, V_SMBB32),
+  DIRECT_DSP_BUILTIN (smbt32, smbt32, smbt32,
+		      RISCV_LONG_FTYPE_ULONG_ULONG, SMBT32),
+  DIRECT_DSP_BUILTIN (smbt32, smbt32, v_smbt32,
+		      RISCV_LONG_FTYPE_V2SI_V2SI, V_SMBT32),
+  DIRECT_DSP_BUILTIN (smtt32, smtt32, smtt32,
+		      RISCV_LONG_FTYPE_ULONG_ULONG, SMTT32),
+  DIRECT_DSP_BUILTIN (smtt32, smtt32, v_smtt32,
+		      RISCV_LONG_FTYPE_V2SI_V2SI, V_SMTT32),
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
