@@ -1666,6 +1666,43 @@ enum riscv_order
 #define __nds64__v_kmatt32(r, a, b) \
   (__builtin_riscv_v_kmatt32 ((r), (a), (b)))
 
+#define __nds64__kmda32(a, b) \
+  (__builtin_riscv_kmda32 ((a), (b)))
+#define __nds64__v_kmda32(a, b) \
+  (__builtin_riscv_v_kmda32 ((a), (b)))
+#define __nds64__kmxda32(a, b) \
+  (__builtin_riscv_kmxda32 ((a), (b)))
+#define __nds64__v_kmxda32(a, b) \
+  (__builtin_riscv_v_kmxda32 ((a), (b)))
+#define __nds64__kmada32(r, a, b) \
+  (__builtin_riscv_kmada32 ((r), (a), (b)))
+#define __nds64__v_kmada32(r, a, b) \
+  (__builtin_riscv_v_kmada32 ((r), (a), (b)))
+#define __nds64__kmaxda32(r, a, b) \
+  (__builtin_riscv_kmaxda32 ((r), (a), (b)))
+#define __nds64__v_kmaxda32(r, a, b) \
+  (__builtin_riscv_v_kmaxda32 ((r), (a), (b)))
+#define __nds64__kmads32(r, a, b) \
+  (__builtin_riscv_kmads32 ((r), (a), (b)))
+#define __nds64__v_kmads32(r, a, b) \
+  (__builtin_riscv_v_kmads32 ((r), (a), (b)))
+#define __nds64__kmadrs32(r, a, b) \
+  (__builtin_riscv_kmadrs32 ((r), (a), (b)))
+#define __nds64__v_kmadrs32(r, a, b) \
+  (__builtin_riscv_v_kmadrs32 ((r), (a), (b)))
+#define __nds64__kmaxds32(r, a, b) \
+  (__builtin_riscv_kmaxds32 ((r), (a), (b)))
+#define __nds64__v_kmaxds32(r, a, b) \
+  (__builtin_riscv_v_kmaxds32 ((r), (a), (b)))
+#define __nds64__kmsda32(r, a, b) \
+  (__builtin_riscv_kmsda32 ((r), (a), (b)))
+#define __nds64__v_kmsda32(r, a, b) \
+  (__builtin_riscv_v_kmsda32 ((r), (a), (b)))
+#define __nds64__kmsxda32(r, a, b) \
+  (__builtin_riscv_kmsxda32 ((r), (a), (b)))
+#define __nds64__v_kmsxda32(r, a, b) \
+  (__builtin_riscv_v_kmsxda32 ((r), (a), (b)))
+
 #if __riscv_xlen == 32
 #define __nds__smul16(a, b) \
   (__builtin_riscv_smul16 ((a), (b)))
