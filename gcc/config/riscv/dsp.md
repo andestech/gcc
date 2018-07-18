@@ -5625,7 +5625,21 @@
 	      (sign_extend:DI (match_operand:SI 1 "register_operand" " r"))
 	      (sign_extend:DI (match_operand:SI 2 "register_operand" " r")))
 	    (const_int 1))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
+  "r<opcode>w\t%0, %1, %2"
+)
+
+;; 64-bit add/sub instruction: raddw and rsubw.
+(define_insn "r<opcode>disi3"
+  [(set (match_operand:DI 0 "register_operand"                       "=r")
+	(sign_extend:DI
+	  (truncate:SI
+	    (ashiftrt:DI
+	      (plus_minus:DI
+		(sign_extend:DI (match_operand:SI 1 "register_operand" " r"))
+		(sign_extend:DI (match_operand:SI 2 "register_operand" " r")))
+	      (const_int 1)))))]
+  "TARGET_DSP && TARGET_64BIT"
   "r<opcode>w\t%0, %1, %2"
 )
 
@@ -5638,7 +5652,21 @@
 	      (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
 	      (zero_extend:DI (match_operand:SI 2 "register_operand" " r")))
 	    (const_int 1))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
+  "ur<opcode>w\t%0, %1, %2"
+)
+
+;; 64-bit add/sub instruction: uraddw and ursubw.
+(define_insn "ur<opcode>disi3"
+  [(set (match_operand:DI 0 "register_operand"                       "=r")
+	(zero_extend:DI
+	  (truncate:SI
+	    (lshiftrt:DI
+	      (plus_minus:DI
+		(zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+		(zero_extend:DI (match_operand:SI 2 "register_operand" " r")))
+	      (const_int 1)))))]
+  "TARGET_DSP && TARGET_64BIT"
   "ur<opcode>w\t%0, %1, %2"
 )
 
