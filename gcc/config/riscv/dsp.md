@@ -5935,19 +5935,39 @@
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
 		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSLRAW))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kslraw\t%0, %1, %2"
   [(set_attr "type" "arith")
-   (set_attr "mode" "V2HI")])
+   (set_attr "mode" "SI")])
+
+(define_insn "kslraw64"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(sign_extend:DI
+	  (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		      (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSLRAW)))]
+  "TARGET_DSP && TARGET_64BIT"
+  "kslraw\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
 
 (define_insn "unspec_kslrawu"
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
 		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSLRAWU))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kslraw.u\t%0, %1, %2"
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
+
+(define_insn "unspec_kslrawu64"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(sign_extend:DI
+	  (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		      (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSLRAWU)))]
+  "TARGET_DSP && TARGET_64BIT"
+  "kslraw.u\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
 
 (define_expand "unspec_ave"
   [(match_operand:SI 0 "register_operand" "")
