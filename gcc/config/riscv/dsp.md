@@ -6200,3 +6200,16 @@
   "swap16\t%0, %1"
   [(set_attr "type"  "arith")
    (set_attr "mode"  "V2HI")])
+
+(define_insn "riscv_rdov<mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+	(unspec_volatile:GPR [(const_int 0)] UNSPEC_RDOV))]
+  "TARGET_DSP"
+  "rdov\t%0"
+  [(set_attr "mode" "<MODE>")])
+
+(define_insn "riscv_clrov<mode>"
+  [(unspec_volatile:GPR [(const_int 0)] UNSPEC_CLROV)]
+  "TARGET_DSP"
+  "clrov"
+  [(set_attr "mode" "<MODE>")])

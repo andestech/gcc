@@ -110,6 +110,8 @@
   UNSPEC_UKSUBW
   UNSPEC_UKADDH
   UNSPEC_UKSUBH
+  UNSPEC_CLROV
+  UNSPEC_RDOV
 ])
 
 (define_c_enum "unspecv" [

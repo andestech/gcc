@@ -727,6 +727,8 @@ enum riscv_builtins
   RISCV_BUILTIN_V_SMDRS32,
   RISCV_BUILTIN_SMXDS32,
   RISCV_BUILTIN_V_SMXDS32,
+  RISCV_BUILTIN_RDOV,
+  RISCV_BUILTIN_CLROV,
   RISCV_BUILTIN_DSP_END
 };
 
@@ -2237,7 +2239,11 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (smxds32, smxds32, smxds32,
 		      RISCV_LONG_FTYPE_ULONG_ULONG, SMXDS32),
   DIRECT_DSP_BUILTIN (smxds32, smxds32, v_smxds32,
-		      RISCV_LONG_FTYPE_V2SI_V2SI, V_SMXDS32)
+		      RISCV_LONG_FTYPE_V2SI_V2SI, V_SMXDS32),
+  DIRECT_NO_TARGET_BUILTIN (clrovsi, clrovdi, clrov,
+			    RISCV_VOID_FTYPE_VOID, CLROV),
+  DIRECT_BUILTIN (rdovsi, rdovdi, rdov,
+		  RISCV_USI_FTYPE_VOID, RDOV),
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
@@ -2581,7 +2587,11 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
       return target;
     case RISCV_BUILTIN_EBREAK:
       return riscv_expand_builtin_ebreak (icode, exp);
-
+    case RISCV_BUILTIN_CLROV:
+      if (TARGET_64BIT)
+	return emit_insn (gen_riscv_clrovdi ());
+      else
+	return emit_insn (gen_riscv_clrovsi ());
     default:
       break;
     }

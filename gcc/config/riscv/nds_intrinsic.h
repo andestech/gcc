@@ -1714,6 +1714,10 @@ enum riscv_order
   (__builtin_riscv_smxds32 ((a), (b)))
 #define __nds64__v_smxds32(a, b) \
   (__builtin_riscv_v_smxds32 ((a), (b)))
+#define __nds__rdov() \
+  (__builtin_riscv_rdov())
+#define __nds__clrov() \
+  (__builtin_riscv_clrov())
 
 #if __riscv_xlen == 32
 #define __nds__smul16(a, b) \
