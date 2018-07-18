@@ -1512,7 +1512,7 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (ursubsi3, ursubdisi3, ursubw,
 		      RISCV_ULONG_FTYPE_USI_USI, URSUBW),
   /* DSP Extension: 32bit Shift.  */
-  DIRECT_DSP_BUILTIN (sraiu, sraiu, sra_u,
+  DIRECT_DSP_BUILTIN (sraiu, sraiu64, sra_u,
 		      RISCV_LONG_FTYPE_LONG_ULONG, SRA_U),
   DIRECT_DSP_BUILTIN (kssl, kssl, ksll,
 		      RISCV_LONG_FTYPE_LONG_ULONG, KSLL),

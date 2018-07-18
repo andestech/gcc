@@ -5522,11 +5522,22 @@
 	(unspec:SI [(ashiftrt:SI (match_operand:SI 1 "register_operand" "   r, r")
 				 (match_operand:SI 2 "rimm5u_operand"   " u05, r"))]
 		    UNSPEC_ROUND))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "@
    srai.u\t%0, %1, %2
    sra.u\t%0, %1, %2"
   [(set_attr "mode"   "SI")])
+
+(define_insn "sraiu64"
+  [(set (match_operand:DI 0 "register_operand"                          "=  r, r")
+	(unspec:DI [(ashiftrt:DI (match_operand:DI 1 "register_operand" "   r, r")
+				 (match_operand:DI 2 "rimm6u_operand"   " u06, r"))]
+		    UNSPEC_ROUND))]
+  "TARGET_DSP && TARGET_64BIT"
+  "@
+   srai.u\t%0, %1, %2
+   sra.u\t%0, %1, %2"
+  [(set_attr "mode"   "DI")])
 
 (define_insn "kssl"
   [(set (match_operand:SI 0 "register_operand"               "=   r, r")
