@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target riscv_hard_fp } */
+/* { dg-require-effective-target riscv_xv5 } */
 /* { dg-options "-mfp16" } */
 
 __fp16 xx = 0.0;

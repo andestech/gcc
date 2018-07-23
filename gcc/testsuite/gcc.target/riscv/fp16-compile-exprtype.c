@@ -1,6 +1,7 @@
 /* Test that expressions involving __fp16 values have the right types.  */
 /* { dg-do compile } */
 /* { dg-require-effective-target riscv_hard_fp } */
+/* { dg-require-effective-target riscv_xv5 } */
 /* { dg-options "-mfp16" } */
 
 /* This produces a diagnostic if EXPR doesn't have type TYPE.  */

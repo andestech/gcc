@@ -6214,7 +6214,7 @@ proc check_effective_target_riscv32 { } {
     }
 }
 
-# Return true if the riscv target supports hard floating-point unit.
+# return true if the riscv target supports hard floating-point unit.
 
 proc check_effective_target_riscv_hard_fp { } {
     if { [istarget riscv*-*-*] } {
@@ -6222,7 +6222,20 @@ proc check_effective_target_riscv_hard_fp { } {
 	    #if defined __riscv_flen
 	    int dummy;
 	    #else
-	    #error no support FPU
+	    #error no support fpu
+	    #endif
+	}]
+    }
+}
+
+# return true if the riscv target supports v5.
+proc check_effective_target_riscv_xv5 { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages xv5 object {
+	    #if defined __nds_v5
+	    int dummy;
+	    #else
+	    #error no support XV5
 	    #endif
 	}]
     }

@@ -1,5 +1,6 @@
 /* { dg-do run } */
 /* { dg-require-effective-target riscv_hard_fp } */
+/* { dg-require-effective-target riscv_xv5 } */
 /* { dg-options "-O2" } */
 /* { dg-additional-options "-mfp16" } */
 

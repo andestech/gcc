@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target riscv_hard_fp } */
+/* { dg-require-effective-target riscv_xv5 } */
 /* { dg-options "-mfp16 -pedantic" } */
 
 /* Encoding taken from:  http://en.wikipedia.org/wiki/Half_precision */
