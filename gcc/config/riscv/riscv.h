@@ -82,7 +82,16 @@ extern const char *riscv_arch (int, const char **);
 %(subtarget_asm_spec)" \
 " %{O|O1|O2|O3|Ofast:-O1;:-Os}"
 
+#ifndef TARGET_DEFAULT_MEDLOW
+#error "TARGET_DEFAULT_MEDLOW undefined!"
+#endif
+#if TARGET_DEFAULT_MEDLOW == 1
 #define TARGET_DEFAULT_CMODEL CM_MEDLOW
+#define TARGET_DEFAULT_CMODEL_STR "mcmodel=medlow"
+#else
+#define TARGET_DEFAULT_CMODEL CM_MEDANY
+#define TARGET_DEFAULT_CMODEL_STR "mcmodel=medany"
+#endif
 
 #define LOCAL_LABEL_PREFIX	"."
 #define USER_LABEL_PREFIX	""
@@ -1021,7 +1030,7 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   CMODEL_SPEC
 
 #define MULTILIB_DEFAULTS \
-  { "mcmodel=medlow", "mfma" }
+  { TARGET_DEFAULT_CMODEL_STR, "mfma" }
 
 extern tree riscv_fp16_type_node;
 

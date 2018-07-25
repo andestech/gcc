@@ -4615,8 +4615,14 @@ case "${target}" in
 		supported_defaults="abi arch tune riscv_attribute"
 
 		case "${target}" in
-		riscv-* | riscv32*) xlen=32 ;;
-		riscv64*) xlen=64 ;;
+		riscv32*)
+			xlen=32
+			tm_defines="${tm_defines} TARGET_DEFAULT_MEDLOW=1"
+		;;
+		riscv64*)
+			xlen=64
+			tm_defines="${tm_defines} TARGET_DEFAULT_MEDLOW=0"
+		;;
 		*) echo "Unsupported RISC-V target ${target}" 1>&2; exit 1 ;;
 		esac
 
