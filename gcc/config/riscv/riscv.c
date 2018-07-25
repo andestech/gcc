@@ -6232,6 +6232,9 @@ riscv_libgcc_floating_mode_supported_p
 #undef TARGET_MACHINE_DEPENDENT_REORG
 #define TARGET_MACHINE_DEPENDENT_REORG riscv_reorg
 
+#undef TARGET_REGISTER_USAGE_LEVELING_P
+#define TARGET_REGISTER_USAGE_LEVELING_P hook_bool_void_true
+
 struct gcc_target targetm = TARGET_INITIALIZER;
 
 #include "gt-riscv.h"
