@@ -738,8 +738,8 @@
 		 (const_int 0))
 	  (ashiftrt:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
 			  (neg:SI (match_dup 2)))
-	  (ashift:VQIHI (match_dup 1)
-			(match_dup 2))))]
+	  (ss_ashift:VQIHI (match_dup 1)
+			   (match_dup 2))))]
   "TARGET_DSP"
   "kslra<bits>\t%0, %1, %2"
   [(set_attr "type" "arith")])
@@ -752,8 +752,8 @@
 	  (unspec:VQIHI [(ashiftrt:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
 					 (neg:SI (match_dup 2)))]
 		        UNSPEC_ROUND)
-	  (ashift:VQIHI (match_dup 1)
-			(match_dup 2))))]
+	  (ss_ashift:VQIHI (match_dup 1)
+			   (match_dup 2))))]
   "TARGET_DSP"
   "kslra<bits>.u\t%0, %1, %2"
   [(set_attr "type" "arith")])
