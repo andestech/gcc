@@ -1756,7 +1756,7 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		      RISCV_ULONG_FTYPE_LLONG_ULONG, WEXT),
   DIRECT_DSP_BUILTIN (bpick1si, bpick1di, bpick,
 		      RISCV_ULONG_FTYPE_ULONG_ULONG_ULONG, BPICK),
-  DIRECT_DSP_BUILTIN (insb, insb, insb,
+  DIRECT_DSP_BUILTIN (insb, insb64, insb,
 		      RISCV_ULONG_FTYPE_ULONG_ULONG_ULONG, INSB),
   /* DSP Extension: 64bit Add and Subtract.  */
   DIRECT_DSP_BUILTIN (adddi3, adddi3, sadd64,

@@ -3882,7 +3882,12 @@ riscv_print_operand (FILE *file, rtx op, int letter)
 		  && (INTVAL (op) == 0
 		      || INTVAL (op) == 8
 		      || INTVAL (op) == 16
-		      || INTVAL (op) == 24));
+		      || INTVAL (op) == 24
+		      || INTVAL (op) == 32
+		      || INTVAL (op) == 40
+		      || INTVAL (op) == 48
+		      || INTVAL (op) == 56));
+
       fprintf (file, HOST_WIDE_INT_PRINT_DEC, INTVAL (op) / 8);
       break;
 

@@ -1289,7 +1289,7 @@
    (match_operand:V4QI 1 "register_operand" "")
    (match_operand:SI 2 "register_operand" "")
    (match_operand:SI 3 "const_int_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   if (INTVAL (operands[3]) > 3 || INTVAL (operands[3]) < 0)
     gcc_unreachable ();
@@ -1311,28 +1311,27 @@
 			 (match_operand:SI 1 "const_int_operand" "")
 			 (match_operand:SI 2 "insv_operand" ""))
 	(match_operand:SI 3 "register_operand" ""))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   if (INTVAL (operands[1]) != 8)
     FAIL;
 })
-
 
 (define_insn "insvsi_internal"
   [(set (zero_extract:SI (match_operand:SI 0 "register_operand"   "+r")
 			 (const_int 8)
 			 (match_operand:SI 1 "insv_operand"        "i"))
 	(match_operand:SI 2                  "register_operand"    "r"))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "insb\t%0, %2, %v1"
   [(set_attr "mode"  "SI")])
 
 (define_insn "insvsiqi_internal"
   [(set (zero_extract:SI (match_operand:SI 0 "register_operand"   "+r")
 			 (const_int 8)
-			 (match_operand:SI 1 "insv_operand"       "i"))
+			 (match_operand:SI 1 "insv64_operand"     "i"))
 	(zero_extend:SI (match_operand:QI 2 "register_operand"    "r")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "insb\t%0, %2, %v1"
   [(set_attr "mode"  "SI")])
 
@@ -1344,9 +1343,9 @@
 		(and:SI (ashift:SI (match_operand:SI 2 "register_operand" "r")
 				   (const_int 16))
 			(const_int 16711680))))]
-  "TARGET_DSP && !reload_completed"
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
   "#"
-  "TARGET_DSP && !reload_completed"
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
   [(const_int 1)]
 {
   rtx tmp = gen_reg_rtx (SImode);
@@ -1453,6 +1452,87 @@
   "andi\t%0, %1, 0xff"
   [(set_attr "type" "arith")
    (set_attr "mode" "V4QI")])
+
+(define_expand "insb64"
+  [(match_operand:V8QI 0 "register_operand" "")
+   (match_operand:V8QI 1 "register_operand" "")
+   (match_operand:SI 2 "register_operand" "")
+   (match_operand:SI 3 "const_insb64_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  if (INTVAL (operands[3]) > 7 || INTVAL (operands[3]) < 0)
+    gcc_unreachable ();
+
+  rtx src = gen_reg_rtx (QImode);
+
+  convert_move (src, operands[2], false);
+
+  HOST_WIDE_INT selector_index;
+  selector_index = INTVAL (operands[3]);
+  rtx selector = gen_int_mode (1 << selector_index, SImode);
+  emit_insn (gen_vec_setv8qi_internal (operands[0], src,
+				       operands[1], selector));
+  DONE;
+})
+
+(define_insn "vec_setv8qi_internal"
+  [(set (match_operand:V8QI 0 "register_operand"    "=r")
+	(vec_merge:V8QI
+	  (vec_duplicate:V8QI
+	    (match_operand:QI 1 "register_operand"  "r"))
+	  (match_operand:V8QI 2 "register_operand"  "0")
+	  (match_operand:SI 3 "pwr_7_operand" " D07")))]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  operands[3] = GEN_INT (exact_log2 (INTVAL (operands[3])));
+  return "insb\t%0, %1, %3";
+}
+  [(set_attr "mode"  "V8QI")])
+
+(define_expand "insvdi"
+  [(set (zero_extract:DI (match_operand:DI 0 "register_operand" "")
+			 (match_operand:SI 1 "const_int_operand" "")
+			 (match_operand:SI 2 "insv_operand" ""))
+	(match_operand:DI 3 "register_operand" ""))]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  if (INTVAL (operands[1]) != 8)
+    FAIL;
+})
+
+(define_insn "insvdi_internal"
+  [(set (zero_extract:DI (match_operand:DI 0 "register_operand"   "+r")
+			 (const_int 8)
+			 (match_operand:SI 1 "insv64_operand"      "i"))
+	(match_operand:DI 2                  "register_operand"    "r"))]
+  "TARGET_DSP && TARGET_64BIT"
+  "insb\t%0, %2, %v1"
+  [(set_attr "mode"  "DI")])
+
+(define_insn "insvdiqi_internal"
+  [(set (zero_extract:DI (match_operand:DI 0 "register_operand"   "+r")
+			 (const_int 8)
+			 (match_operand:SI 1 "insv64_operand"     "i"))
+	(zero_extend:DI (match_operand:QI 2 "register_operand"    "r")))]
+  "TARGET_DSP"
+  "insb\t%0, %2, %v1"
+  [(set_attr "mode"  "DI")])
+
+(define_insn "vec_setv8qi_internal_vec"
+  [(set (match_operand:V8QI 0 "register_operand"       "=r")
+	(vec_merge:V8QI
+	  (vec_duplicate:V8QI
+	    (vec_select:QI
+	      (match_operand:V8QI 1 "register_operand" "r")
+	      (parallel [(const_int 0)])))
+	  (match_operand:V8QI 2 "register_operand"     "0")
+	  (match_operand:SI 3 "pwr_7_operand"    "D07")))]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  operands[3] = GEN_INT (exact_log2 (INTVAL (operands[3])));
+  return "insb\t%0, %1, %3";
+}
+  [(set_attr "mode"  "V8QI")])
 
 (define_expand "vec_setv2hi"
   [(match_operand:V2HI 0 "register_operand" "")

@@ -47,6 +47,10 @@
   (and (match_code "const_int")
        (match_test "IN_RANGE (INTVAL (op), 0, 7)")))
 
+(define_predicate "const_insb64_operand"
+  (and (match_code "const_int")
+       (match_test "IN_RANGE (INTVAL (op), 0, 7)")))
+
 (define_predicate "frm_operand"
   (ior (match_operand 0 "const_frm_operand")
        (match_operand 0 "register_operand")))
@@ -370,6 +374,11 @@
   (ior (match_operand 0 "register_operand")
        (match_operand 0 "imm6u_operand")))
 
+(define_predicate "pwr_7_operand"
+  (and (match_code "const_int")
+       (match_test "INTVAL (op) != 0
+		    && (unsigned) exact_log2 (INTVAL (op)) <= 7")))
+
 (define_predicate "insv_operand"
   (match_code "const_int")
 {
@@ -377,6 +386,19 @@
 	 || INTVAL (op) == 8
 	 || INTVAL (op) == 16
 	 || INTVAL (op) == 24;
+})
+
+(define_predicate "insv64_operand"
+  (match_code "const_int")
+{
+  return INTVAL (op) == 0
+	 || INTVAL (op) == 8
+	 || INTVAL (op) == 16
+	 || INTVAL (op) == 24
+	 || INTVAL (op) == 32
+	 || INTVAL (op) == 40
+	 || INTVAL (op) == 48
+	 || INTVAL (op) == 56;
 })
 
 (define_predicate "imm_0_1_operand"

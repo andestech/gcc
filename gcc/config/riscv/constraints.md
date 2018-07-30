@@ -125,6 +125,11 @@
   (and (match_code "const_int")
        (match_test "ival < (1 << 8) && ival >= 0")))
 
+(define_constraint "D07"
+  "A constraint that matches the integers 2^(0...7)."
+  (and (match_code "const_int")
+       (match_test "(unsigned) exact_log2 (ival) <= 7")))
+
 (define_constraint "v00"
   "Constant value 1"
   (and (match_code "const_int")
