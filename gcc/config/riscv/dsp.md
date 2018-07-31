@@ -1453,6 +1453,21 @@
   [(set_attr "type" "arith")
    (set_attr "mode" "V4QI")])
 
+(define_expand "vec_setv8qi"
+  [(match_operand:V8QI 0 "register_operand" "")
+   (match_operand:QI 1 "register_operand" "")
+   (match_operand:SI 2 "immediate_operand" "")]
+  "TARGET_DSP"
+{
+  HOST_WIDE_INT pos = INTVAL (operands[2]);
+  if (pos > 7)
+    gcc_unreachable ();
+  HOST_WIDE_INT elem = (HOST_WIDE_INT) 1 << pos;
+  emit_insn (gen_vec_setv8qi_internal (operands[0], operands[1],
+				       operands[0], GEN_INT (elem)));
+  DONE;
+})
+
 (define_expand "insb64"
   [(match_operand:V8QI 0 "register_operand" "")
    (match_operand:V8QI 1 "register_operand" "")
