@@ -20,24 +20,24 @@
 ;; <http://www.gnu.org/licenses/>.
 
 ;; A list of the modes that are up to one word long vector.
-(define_mode_iterator VQIHI [(V4QI "") (V2HI "")
+(define_mode_iterator VQIHI [(V4QI "!TARGET_64BIT") (V2HI "!TARGET_64BIT")
                              (V8QI "TARGET_64BIT") (V4HI "TARGET_64BIT")])
 
-(define_mode_iterator VECI [(V4QI "") (V2HI "")
+(define_mode_iterator VECI [(V4QI "!TARGET_64BIT") (V2HI "!TARGET_64BIT")
                             (V8QI "TARGET_64BIT") (V4HI "TARGET_64BIT")
 			    (V2SI "TARGET_64BIT")])
 
-(define_mode_iterator VSHI [(V2HI "") (V2SI "TARGET_64BIT")])
+(define_mode_iterator VSHI [(V2HI "!TARGET_64BIT") (V2SI "TARGET_64BIT")])
 
-(define_mode_iterator VHI [(V2HI "") (V4HI "TARGET_64BIT")])
+(define_mode_iterator VHI [(V2HI "!TARGET_64BIT") (V4HI "TARGET_64BIT")])
 
-(define_mode_iterator VQI [(V4QI "") (V8QI "TARGET_64BIT")])
+(define_mode_iterator VQI [(V4QI "!TARGET_64BIT") (V8QI "TARGET_64BIT")])
 
-(define_mode_iterator VSI [(V2SI "") (V4SI "TARGET_64BIT")])
+(define_mode_iterator VSI [(V2SI "!TARGET_64BIT") (V4SI "TARGET_64BIT")])
 
-(define_mode_iterator VMUL [(V4HI "") (V8HI "TARGET_64BIT")])
+(define_mode_iterator VMUL [(V4HI "!TARGET_64BIT") (V8HI "TARGET_64BIT")])
 
-(define_mode_iterator VD_SI [(SI "") (V2SI "TARGET_64BIT")])
+(define_mode_iterator VD_SI [(SI "!TARGET_64BIT") (V2SI "TARGET_64BIT")])
 
 ;; Give the number of DSP instructions in the mode
 (define_mode_attr bits [(V8QI "8") (V4QI "8") (QI "8") (V4HI "16") (V2HI "16")
@@ -1273,7 +1273,7 @@
   [(match_operand:V4QI 0 "register_operand" "")
    (match_operand:QI 1 "register_operand" "")
    (match_operand:SI 2 "immediate_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   HOST_WIDE_INT pos = INTVAL (operands[2]);
   if (pos > 4)
@@ -1362,7 +1362,7 @@
 	    (match_operand:QI 1 "register_operand"  "    r,    r,    r,    r"))
 	  (match_operand:V4QI 2 "register_operand"  "    0,    0,    0,    0")
 	  (match_operand:SI 3 "imm_1_2_4_8_operand" " v01, v02, v04, v08")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "@
    insb\t%0, %1, 0
    insb\t%0, %1, 1
@@ -1379,7 +1379,7 @@
 	      (parallel [(const_int 0)])))
 	  (match_operand:V4QI 2 "register_operand"     "   0,   0,   0,   0")
 	  (match_operand:SI 3 "imm_1_2_4_8_operand"    " v01, v02, v04, v08")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "@
    insb\t%0, %1, 0
    insb\t%0, %1, 1
@@ -1400,7 +1400,7 @@
 	    (const_int 0)
 	    (const_int 0)])
 	  (const_int 1)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "andi\t%0, %1, 0xff"
   [(set_attr "type" "arith")
    (set_attr "mode" "V4QI")])
@@ -1418,7 +1418,7 @@
 	      (match_operand:V4QI 1 "register_operand" " r")
 	      (parallel [(const_int 0)])))
 	  (const_int 2)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "andi\t%0, %1, 0xff"
   [(set_attr "type" "arith")
    (set_attr "mode" "V4QI")])
@@ -1433,7 +1433,7 @@
 	    (const_int 0)
 	    (const_int 0)])
 	  (const_int 1)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "andi\t%0, %1, 0xff"
   [(set_attr "type" "arith")
    (set_attr "mode" "V4QI")])
@@ -1448,7 +1448,7 @@
 	    (const_int 0)])
 	  (vec_duplicate:V4QI (match_operand:QI 1 "register_operand" " r"))
 	  (const_int 2)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "andi\t%0, %1, 0xff"
   [(set_attr "type" "arith")
    (set_attr "mode" "V4QI")])
@@ -1457,7 +1457,7 @@
   [(match_operand:V8QI 0 "register_operand" "")
    (match_operand:QI 1 "register_operand" "")
    (match_operand:SI 2 "immediate_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && TARGET_64BIT"
 {
   HOST_WIDE_INT pos = INTVAL (operands[2]);
   if (pos > 7)
@@ -1529,7 +1529,7 @@
 			 (const_int 8)
 			 (match_operand:SI 1 "insv64_operand"     "i"))
 	(zero_extend:DI (match_operand:QI 2 "register_operand"    "r")))]
-  "TARGET_DSP"
+  "TARGET_DSP && TARGET_64BIT"
   "insb\t%0, %2, %v1"
   [(set_attr "mode"  "DI")])
 
@@ -1553,7 +1553,7 @@
   [(match_operand:V2HI 0 "register_operand" "")
    (match_operand:HI 1 "register_operand" "")
    (match_operand:SI 2 "immediate_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   HOST_WIDE_INT pos = INTVAL (operands[2]);
   if (pos > 2)
@@ -1571,7 +1571,7 @@
 	    (match_operand:HI 1 "register_operand" "   r,   r"))
 	  (match_operand:V2HI 2 "register_operand" "   r,   r")
 	  (match_operand:SI 3 "imm_1_2_operand"    " v01, v02")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   const char *pats[] = { "pktb16\t%0, %2, %1",
 			 "pkbb16\t%0, %1, %2" };
@@ -1583,7 +1583,7 @@
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V2HI 1 "register_operand")
    (match_operand:V2HI 2 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_vec_mergevv (operands[0], operands[1], operands[2],
 			      GEN_INT (2), GEN_INT (0), GEN_INT (0)));
@@ -1596,7 +1596,7 @@
 			(const_int 65535))
 		(ashift:SI (match_operand:SI 2 "register_operand" "r")
 			   (const_int 16))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "pkbb16\t%0, %2, %1"
   [(set_attr "mode"  "SI")])
 
@@ -1606,7 +1606,7 @@
 			   (const_int 16))
 		(and:SI (match_operand:SI 1 "register_operand" "r")
 			(const_int 65535))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "pkbb16\t%0, %2, %1"
   [(set_attr "mode"  "SI")])
 
@@ -1615,7 +1615,7 @@
 	(ior:SI (zero_extend:SI	(match_operand:HI 1 "register_operand" "r"))
 		(ashift:SI (match_operand:SI 2 "register_operand" "r")
 			   (const_int 16))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "pkbb16\t%0, %2, %1"
   [(set_attr "mode"  "SI")])
 
@@ -1624,7 +1624,7 @@
 	(ior:SI	(ashift:SI (match_operand:SI 2 "register_operand" "r")
 			   (const_int 16))
 		(zero_extend:SI (match_operand:HI 1 "register_operand" "r"))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "pkbb16\t%0, %2, %1"
   [(set_attr "mode"  "SI")])
 
@@ -1634,7 +1634,7 @@
 	(ior:SI (and:SI (match_operand:SI 1 "register_operand" "r")
 			(const_int -65536))
 		(zero_extend:SI (match_operand:HI 2 "register_operand" "r"))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "pktb16\t%0, %1, %2"
   [(set_attr "mode"  "SI")])
 
@@ -1644,7 +1644,7 @@
 			(const_int -65536))
 		(and:SI (match_operand:SI 2 "register_operand" "r")
 			(const_int 65535))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "pktb16\t%0, %1, %2"
   [(set_attr "mode"  "SI")])
 
@@ -1653,7 +1653,7 @@
 			 (const_int 16 )
 			 (const_int 0))
 	(match_operand:SI 1 "register_operand"                  " r"))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "pktb16\t%0, %0, %1"
   [(set_attr "mode"  "SI")])
 
@@ -1662,7 +1662,7 @@
 			 (const_int 16 )
 			 (const_int 0))
 	(zero_extend:SI (match_operand:HI 1 "register_operand"  " r")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "pktb16\t%0, %0, %1"
   [(set_attr "mode"  "SI")])
 
@@ -1672,7 +1672,7 @@
 			(const_int -65536))
 		(lshiftrt:SI (match_operand:SI 2 "register_operand" " r")
 			     (const_int 16))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "pktt16\t%0, %1, %2"
   [(set_attr "mode"  "SI")])
 
@@ -1680,7 +1680,7 @@
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V2HI 1 "register_operand")
    (match_operand:V2HI 2 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_vec_mergevv (operands[0], operands[1], operands[2],
 			      GEN_INT (2), GEN_INT (0), GEN_INT (1)));
@@ -1691,7 +1691,7 @@
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V2HI 1 "register_operand")
    (match_operand:V2HI 2 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_vec_mergevv (operands[0], operands[1], operands[2],
 			      GEN_INT (2), GEN_INT (1), GEN_INT (1)));
@@ -1702,7 +1702,7 @@
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V2HI 1 "register_operand")
    (match_operand:V2HI 2 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_vec_mergevv (operands[0], operands[1], operands[2],
 			      GEN_INT (2), GEN_INT (1), GEN_INT (0)));
@@ -1717,7 +1717,7 @@
 	  (vec_duplicate:V2HI
 	    (match_operand:HI 2 "register_operand" "   r,   r"))
 	  (match_operand:SI 3 "imm_1_2_operand"    " v01, v02")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "@
    pkbb16\t%0, %2, %1
    pkbb16\t%0, %1, %2"
@@ -1730,7 +1730,7 @@
 	  (match_operand:V2HI 1 "register_operand" "   r,   r")
 	  (match_operand:V2HI 2 "register_operand" "   r,   r")
 	  (match_operand:SI 3 "imm_1_2_operand"    " v01, v02")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   const char *pats[] = { "pktb16\t%0, %2, %1",
 			 "pktb16\t%0, %1, %2" };
@@ -1748,7 +1748,7 @@
 	      (match_operand:V2HI 2 "register_operand"         "   r,   r,   r,   r")
 	      (parallel [(match_operand:SI 4 "imm_0_1_operand" " v00, v01, v00, v01")])))
 	  (match_operand:SI 3 "imm_1_2_operand"                " v01, v01, v02, v02")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "@
    pkbb16\t%0, %2, %1
    pktb16\t%0, %2, %1
@@ -1766,7 +1766,7 @@
 	  (vec_duplicate:V2HI
 	    (match_operand:HI 2 "register_operand"              "   r,   r,   r,   r"))
 	  (match_operand:SI 3 "imm_1_2_operand"                 " v01, v01, v02, v02")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "@
    pkbb16\t%0, %2, %1
    pkbt16\t%0, %2, %1
@@ -1786,7 +1786,7 @@
 	      (match_operand:V2HI 2 "register_operand"         "  r,   r,   r,   r,   r,   r,   r,   r")
 	      (parallel [(match_operand:SI 5 "imm_0_1_operand" "v00, v01, v01, v00, v00, v01, v01, v00")])))
 	  (match_operand:SI 3 "imm_1_2_operand"                "v01, v01, v01, v01, v02, v02, v02, v02")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   const char *pats[] = { "pkbb16\t%0, %2, %1",
 			 "pktb16\t%0, %2, %1",
@@ -1806,7 +1806,7 @@
 	  (vec_select:QI
 	    (match_operand:V4QI 1 "register_operand" " r")
 	    (parallel [(const_int 3)]))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "srai\t%0, %1, 24"
   [(set_attr "mode" "V4QI")])
 
@@ -1816,7 +1816,7 @@
 	  (vec_select:QI
 	    (match_operand:V4QI 1 "register_operand" " r")
 	    (parallel [(const_int 3)]))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "srli\t%0, %1, 24"
   [(set_attr "mode" "V4QI")])
 
@@ -1825,7 +1825,7 @@
 	(vec_select:HI
 	  (match_operand:V2HI 1 "register_operand" " r")
 	  (parallel [(const_int 1)])))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "srai\t%0, %1, 16"
   [(set_attr "mode"    "V2HI")])
 
@@ -1835,7 +1835,7 @@
 	  (vec_select:HI
 	    (match_operand:V2HI 1 "register_operand" "r")
 	    (parallel [(const_int 1)]))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "srai\t%0, %1, 16"
 )
 
@@ -1845,7 +1845,7 @@
 	  (vec_select:HI
 	    (match_operand:V2HI 1 "register_operand" "r")
 	    (parallel [(const_int 1)]))))]
-  ""
+  "TARGET_DSP && !TARGET_64BIT"
   "srli\t%0, %1, 16"
 )
 
@@ -1986,7 +1986,7 @@
 		  (match_dup 2)
 		  (parallel [(const_int 0)])))))
 	  (const_int 1)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<su>mulx16\t%0, %1, %2"
   [(set_attr "type" "imul")
    (set_attr "mode" "V2SI")])
@@ -2010,7 +2010,7 @@
 	    (mult:SI
 	      (any_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 3)])))
 	      (any_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 2)])))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && TARGET_64BIT"
   "<su>mulx16\t%0, %1, %2"
   [(set_attr "type" "imul")
    (set_attr "mode" "V4SI")])
@@ -2040,7 +2040,7 @@
 	(vec_select:V4QI
 	   (match_operand:V4QI 1 "register_operand" " r")
 	   (parallel [(const_int 0) (const_int 1) (const_int 0) (const_int 1)])))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "pkbb\t%0, %1, %1"
   [(set_attr "mode"  "V4QI")])
 
@@ -2049,14 +2049,14 @@
 	(vec_select:V4QI
 	   (match_operand:V4QI 1 "register_operand" " r")
 	   (parallel [(const_int 2) (const_int 3) (const_int 2) (const_int 3)])))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "pktt\t%0, %1, %1"
   [(set_attr "mode"  "V4QI")])
 
 (define_expand "vec_unpacks_lo_v4qi"
   [(match_operand:V2HI 0 "register_operand" "=r")
    (match_operand:V4QI 1 "register_operand" " r")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_sunpkd810 (operands[0], operands[1]));
   DONE;
@@ -2065,7 +2065,7 @@
 (define_expand "sunpkd810"
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V4QI 1 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_sunpkd810_imp (operands[0], operands[1]));
   DONE;
@@ -2085,7 +2085,7 @@
 		(match_dup 1)
 		(parallel [(const_int 0)]))))
 	  (const_int 2)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd810\t%0, %1"
   [(set_attr "mode"  "V2HI")])
 
@@ -2103,14 +2103,14 @@
 		(match_dup 1)
 		(parallel [(const_int 1)]))))
 	  (const_int 1)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd810\t%0, %1"
   [(set_attr "mode"  "V2HI")])
 
 (define_expand "sunpkd820"
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V4QI 1 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_sunpkd820_imp (operands[0], operands[1]));
   DONE;
@@ -2130,7 +2130,7 @@
 		(match_dup 1)
 		(parallel [(const_int 0)]))))
 	  (const_int 2)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd820\t%0, %1"
   [(set_attr "mode"  "V2HI")])
 
@@ -2148,14 +2148,14 @@
 		(match_dup 1)
 		(parallel [(const_int 2)]))))
 	  (const_int 1)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd820\t%0, %1"
   [(set_attr "mode"  "V2HI")])
 
 (define_expand "sunpkd830"
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V4QI 1 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_sunpkd830_imp (operands[0], operands[1]));
   DONE;
@@ -2175,7 +2175,7 @@
 		(match_dup 1)
 		(parallel [(const_int 0)]))))
 	  (const_int 2)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd830\t%0, %1"
   [(set_attr "mode"  "V2HI")])
 
@@ -2193,14 +2193,14 @@
 		(match_dup 1)
 		(parallel [(const_int 3)]))))
 	  (const_int 1)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd830\t%0, %1"
   [(set_attr "mode"  "V2HI")])
 
 (define_expand "sunpkd831"
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V4QI 1 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_sunpkd831_imp (operands[0], operands[1]));
   DONE;
@@ -2220,7 +2220,7 @@
 		(match_dup 1)
 		(parallel [(const_int 1)]))))
 	  (const_int 2)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd831\t%0, %1"
   [(set_attr "mode"  "V2HI")])
 
@@ -2238,14 +2238,14 @@
 		(match_dup 1)
 		(parallel [(const_int 3)]))))
 	  (const_int 1)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd831\t%0, %1"
   [(set_attr "mode"  "V2HI")])
 
 (define_expand "sunpkd832"
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V4QI 1 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_sunpkd832_imp (operands[0], operands[1]));
   DONE;
@@ -2265,7 +2265,7 @@
 		(match_dup 1)
 		(parallel [(const_int 2)]))))
 	  (const_int 2)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd832\t%0, %1"
   [(set_attr "mode"  "V2HI")])
 
@@ -2283,14 +2283,14 @@
 		(match_dup 1)
 		(parallel [(const_int 3)]))))
 	  (const_int 1)))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd832\t%0, %1"
   [(set_attr "mode"  "V2HI")])
 
 (define_expand "zunpkd810"
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V4QI 1 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_zunpkd810_imp (operands[0], operands[1]));
   DONE;
@@ -2299,7 +2299,7 @@
 (define_expand "zunpkd820"
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V4QI 1 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_zunpkd820_imp (operands[0], operands[1]));
   DONE;
@@ -2308,7 +2308,7 @@
 (define_expand "zunpkd830"
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V4QI 1 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_zunpkd830_imp (operands[0], operands[1]));
   DONE;
@@ -2317,7 +2317,7 @@
 (define_expand "zunpkd831"
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V4QI 1 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_zunpkd831_imp (operands[0], operands[1]));
   DONE;
@@ -2326,7 +2326,7 @@
 (define_expand "zunpkd832"
   [(match_operand:V2HI 0 "register_operand")
    (match_operand:V4QI 1 "register_operand")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_zunpkd832_imp (operands[0], operands[1]));
   DONE;
@@ -2386,7 +2386,7 @@
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:V2HI 1 "register_operand" "")
    (match_operand:V2HI 2 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_mulhisi3v (operands[0], operands[1], operands[2],
 			    GEN_INT (0), GEN_INT (0)));
@@ -2397,7 +2397,7 @@
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:V2HI 1 "register_operand" "")
    (match_operand:V2HI 2 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_mulhisi3v (operands[0], operands[1], operands[2],
 			    GEN_INT (0), GEN_INT (1)));
@@ -2408,7 +2408,7 @@
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:V2HI 1 "register_operand" "")
    (match_operand:V2HI 2 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_mulhisi3v (operands[0], operands[1], operands[2],
 			    GEN_INT (1), GEN_INT (1)));
@@ -2425,7 +2425,7 @@
 	  (sign_extend:SI (vec_select:HI
 	       (match_operand:V2HI 2 "register_operand"         "   r,   r,   r,   r")
 	       (parallel [(match_operand:SI 4 "imm_0_1_operand" " v00, v01, v01, v00")])))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   const char *pats[] = { "smbb16\t%0, %1, %2",
 			 "smbt16\t%0, %1, %2",
@@ -2549,7 +2549,7 @@
    (match_operand:SI 1 "register_operand" "")
    (match_operand:V2HI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_kma_internal (operands[0], operands[2], operands[3],
 			       GEN_INT (0), GEN_INT (0),
@@ -2562,7 +2562,7 @@
    (match_operand:SI 1 "register_operand" "")
    (match_operand:V2HI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_kma_internal (operands[0], operands[2], operands[3],
 			       GEN_INT (0), GEN_INT (1),
@@ -2575,7 +2575,7 @@
    (match_operand:SI 1 "register_operand" "")
    (match_operand:V2HI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_kma_internal (operands[0], operands[2], operands[3],
 			       GEN_INT (1), GEN_INT (1),
@@ -2596,7 +2596,7 @@
 	        (match_operand:V2HI 2 "register_operand"         "   r,   r,   r,   r")
 	        (parallel [(match_operand:SI 4 "imm_0_1_operand" " v00, v01, v01, v00")]))))
 	  (match_operand:SI 5 "register_operand"                 "   0,   0,   0,   0")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   const char *pats[] = { "kmabb\t%0, %1, %2",
 			 "kmabt\t%0, %1, %2",
@@ -2732,7 +2732,7 @@
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:V2HI 1 "register_operand" "")
    (match_operand:V2HI 2 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_smds_le (operands[0], operands[1], operands[2]));
   DONE;
@@ -2755,7 +2755,7 @@
 	    (sign_extend:SI (vec_select:HI
 			      (match_dup 2)
 			      (parallel [(const_int 0)]))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
 })
 
@@ -2805,7 +2805,7 @@
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:V2HI 1 "register_operand" "")
    (match_operand:V2HI 2 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_smdrs_le (operands[0], operands[1], operands[2]));
   DONE;
@@ -2828,7 +2828,7 @@
 	    (sign_extend:SI (vec_select:HI
 			      (match_dup 2)
 			      (parallel [(const_int 1)]))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
 })
 
@@ -2878,7 +2878,7 @@
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:V2HI 1 "register_operand" "")
    (match_operand:V2HI 2 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_smxdsv_le (operands[0], operands[1], operands[2]));
   DONE;
@@ -2902,7 +2902,7 @@
 	    (sign_extend:SI (vec_select:HI
 			      (match_dup 2)
 			      (parallel [(const_int 1)]))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
 })
 
@@ -3109,7 +3109,7 @@
 (define_insn "dsp_extendqihi2"
   [(set (match_operand:HI 0 "register_operand"                 "=r")
 	(sign_extend:HI (match_operand:QI 1 "register_operand" " r")))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "sunpkd820\t%0, %1"
   [(set_attr "mode" "HI")])
 
@@ -3121,7 +3121,7 @@
 	      (sign_extend:DI (match_operand:SI 1 "register_operand" " r"))
 	      (sign_extend:DI (match_operand:SI 2 "register_operand" " r")))
 	    (const_int 32))))]
-  "TARGET_DSP"
+  "TARGET_DSP && TARGET_64BIT"
   "smmul\t%0, %1, %2"
   [(set_attr "type" "imul")
    (set_attr "mode" "HI")])
@@ -3135,7 +3135,7 @@
 			  (sign_extend:DI (match_operand:SI 2 "register_operand" " r")))]
 		       UNSPEC_ROUND)
 	    (const_int 32))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "smmul.u\t%0, %1, %2"
   [(set_attr "type" "imul")
    (set_attr "mode" "HI")])
@@ -3175,7 +3175,7 @@
 		(sign_extend:DI (match_operand:SI 2 "register_operand" " r"))
 		(sign_extend:DI (match_operand:SI 3 "register_operand" " r")))
 	      (const_int 32)))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmmac\t%0, %2, %3"
 )
 
@@ -3202,7 +3202,7 @@
 			    (sign_extend:DI (match_operand:SI 3 "register_operand" " r")))]
 			 UNSPEC_ROUND)
 	      (const_int 32)))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmmac.u\t%0, %2, %3"
 )
 
@@ -3216,7 +3216,7 @@
 			    (sign_extend:V2DI (match_operand:V2SI 3 "register_operand" " r")))]
 			 UNSPEC_ROUND)
 	      (const_int 32)))))]
-  "TARGET_DSP"
+  "TARGET_DSP && TARGET_64BIT"
   "kmmac.u\t%0, %2, %3"
 )
 
@@ -3229,7 +3229,7 @@
 		(sign_extend:DI (match_operand:SI 2 "register_operand" " r"))
 		(sign_extend:DI (match_operand:SI 3 "register_operand" " r")))
 	      (const_int 32)))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmmsb\t%0, %2, %3"
 )
 
@@ -3256,7 +3256,7 @@
 			    (sign_extend:DI (match_operand:SI 3 "register_operand" " r")))]
 			 UNSPEC_ROUND)
 	      (const_int 32)))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmmsb.u\t%0, %2, %3"
 )
 
@@ -3270,7 +3270,7 @@
 			    (sign_extend:V2DI (match_operand:V2SI 3 "register_operand" " r")))]
 			 UNSPEC_ROUND)
 	      (const_int 32)))))]
-  "TARGET_DSP"
+  "TARGET_DSP && TARGET_64BIT"
   "kmmsb.u\t%0, %2, %3"
 )
 
@@ -3282,7 +3282,7 @@
 	      (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" " r")) (const_int 2))
 	      (mult:DI (sign_extend:DI (match_operand:SI 2 "register_operand" " r")) (const_int 2)))
 	    (const_int 32))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kwmmul\t%0, %1, %2"
 )
 
@@ -3308,7 +3308,7 @@
 		(mult:DI (sign_extend:DI (match_operand:SI 2 "register_operand" " r")) (const_int 2)))]
 	      UNSPEC_ROUND)
 	    (const_int 32))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kwmmul.u\t%0, %1, %2"
 )
 
@@ -3330,7 +3330,7 @@
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:SI 1 "register_operand" "")
    (match_operand:V2HI 2 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_smulhisi3_highpart_1 (operands[0], operands[1], operands[2], GEN_INT (0)));
   DONE;
@@ -3340,7 +3340,7 @@
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:SI 1 "register_operand" "")
    (match_operand:V2HI 2 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_smulhisi3_highpart_1 (operands[0], operands[1], operands[2], GEN_INT (1)));
   DONE;
@@ -3357,7 +3357,7 @@
 		  (match_operand:V2HI 2 "register_operand"           "  r,   r")
 		  (parallel [(match_operand:SI 3 "imm_0_1_operand"   "v00, v01")]))))
 	    (const_int 16))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   const char *pats[] = { "smmwb\t%0, %1, %2",
 			 "smmwt\t%0, %1, %2" };
@@ -3375,7 +3375,7 @@
 		  (parallel [(match_operand:SI 3 "imm_0_1_operand"   "v00, v01")])))
 	      (sign_extend:DI (match_operand:SI 2 "register_operand" "  r,   r")))
 	    (const_int 16))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   const char *pats[] = { "smmwb\t%0, %1, %2",
 			     "smmwt\t%0, %1, %2" };
@@ -3442,7 +3442,7 @@
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:SI 1 "register_operand" "")
    (match_operand:V2HI 2 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_smmw_round_internal (operands[0], operands[1], operands[2], GEN_INT (0)));
   DONE;
@@ -3452,7 +3452,7 @@
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:SI 1 "register_operand" "")
    (match_operand:V2HI 2 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_smmw_round_internal (operands[0], operands[1], operands[2], GEN_INT (1)));
   DONE;
@@ -3471,7 +3471,7 @@
 		     (parallel [(match_operand:SI 3 "imm_0_1_operand"   " v00, v01")]))))]
 	      UNSPEC_ROUND)
 	    (const_int 16))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   const char *pats[] = { "smmwb.u\t%0, %1, %2",
 			 "smmwt.u\t%0, %1, %2" };
@@ -3543,7 +3543,7 @@
    (match_operand:SI 1 "register_operand" "")
    (match_operand:SI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3],
 				 GEN_INT (0), operands[1], GEN_INT (16)));
@@ -3555,7 +3555,7 @@
    (match_operand:SI 1 "register_operand" "")
    (match_operand:SI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3],
 				 GEN_INT (1), operands[1], GEN_INT (16)));
@@ -3567,7 +3567,7 @@
    (match_operand:SI 1 "register_operand" "")
    (match_operand:SI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3],
 				 GEN_INT (0), operands[1], GEN_INT (15)));
@@ -3579,7 +3579,7 @@
    (match_operand:SI 1 "register_operand" "")
    (match_operand:SI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3],
 				 GEN_INT (1), operands[1], GEN_INT (15)));
@@ -3599,7 +3599,7 @@
 		      (match_operand:V2HI 2 "register_operand"         "   r,   r,   r,   r")
 		      (parallel [(match_operand:SI 3 "imm_0_1_operand" " v00, v01, v00, v01")]))))
 	      (match_operand:SI 5 "imm_15_16_operand"                  " v16, v16, v15, v15" )))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "@
   kmmawb\t%0, %1, %2
   kmmawt\t%0, %1, %2
@@ -3701,7 +3701,7 @@
    (match_operand:SI 1 "register_operand" "")
    (match_operand:SI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3],
 				       GEN_INT (0), operands[1], GEN_INT (16)));
@@ -3713,7 +3713,7 @@
    (match_operand:SI 1 "register_operand" "")
    (match_operand:SI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3],
 				       GEN_INT (1), operands[1], GEN_INT (16)));
@@ -3725,7 +3725,7 @@
    (match_operand:SI 1 "register_operand" "")
    (match_operand:SI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3],
 				       GEN_INT (0), operands[1], GEN_INT (15)));
@@ -3737,7 +3737,7 @@
    (match_operand:SI 1 "register_operand" "")
    (match_operand:SI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3],
 				       GEN_INT (1), operands[1], GEN_INT (15)));
@@ -3759,7 +3759,7 @@
 		       (parallel [(match_operand:SI 3 "imm_0_1_operand"   " v00, v01, v00, v01")]))))]
 		UNSPEC_ROUND)
 	      (match_operand:SI 5 "imm_15_16_operand"                     " v16, v16, v15, v15")))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "@
   kmmawb.u\t%0, %1, %2
   kmmawt.u\t%0, %1, %2
@@ -4409,9 +4409,9 @@
 	    (sign_extend:SI (vec_select:HI
 			      (match_dup 2)
 			      (parallel [(match_operand:SI 6 "imm_0_1_operand" " u01")]))))))]
-  "TARGET_DSP && !reload_completed"
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
   "#"
-  "TARGET_DSP && !reload_completed"
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
   [(const_int 1)]
 {
   rtx result0 = gen_reg_rtx (SImode);
@@ -4441,9 +4441,9 @@
 	    (sign_extend:SI (vec_select:HI
 			      (match_dup 1)
 			      (parallel [(match_operand:SI 6 "imm_0_1_operand" " Iu01")]))))))]
-  "TARGET_DSP && !reload_completed"
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
   "#"
-  "TARGET_DSP && !reload_completed"
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
   [(const_int 1)]
 {
   rtx result0 = gen_reg_rtx (SImode);
@@ -4475,6 +4475,7 @@
 			      (match_dup 2)
 			      (parallel [(match_operand:SI 6 "imm_0_1_operand" " u01")]))))))]
   "TARGET_DSP
+   && !TARGET_64BIT
    && (!reload_completed
        || !riscv_need_split_sms_p (operands[3], operands[4],
 				   operands[5], operands[6]))"
@@ -4484,6 +4485,7 @@
 			   operands[5], operands[6]);
 }
   "TARGET_DSP
+   && !TARGET_64BIT
    && !reload_completed
    && riscv_need_split_sms_p (operands[3], operands[4],
 			      operands[5], operands[6])"
@@ -4513,6 +4515,7 @@
 			      (match_dup 1)
 			      (parallel [(match_operand:SI 6 "imm_0_1_operand" " u01")]))))))]
   "TARGET_DSP
+   && !TARGET_64BIT
    && (!reload_completed
        || !riscv_need_split_sms_p (operands[3], operands[4],
 				   operands[6], operands[5]))"
@@ -4521,6 +4524,7 @@
 			   operands[6], operands[5]);
 }
   "TARGET_DSP
+   && !TARGET_64BIT
    && !reload_completed
    && riscv_need_split_sms_p (operands[3], operands[4],
 			      operands[6], operands[5])"
@@ -4549,7 +4553,7 @@
 	    (sign_extend:SI (vec_select:HI
 			      (match_dup 2)
 			      (parallel [(const_int 0)]))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmda\t%0, %1, %2"
 )
 
@@ -4612,7 +4616,7 @@
 	    (sign_extend:SI (vec_select:HI
 			      (match_dup 2)
 			      (parallel [(const_int 1)]))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmxda\t%0, %1, %2"
 )
 
@@ -4677,7 +4681,7 @@
 	      (sign_extend:SI (vec_select:HI
 				(match_dup 3)
 				(parallel [(const_int 0)])))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmada\t%0, %2, %3"
 )
 
@@ -4746,7 +4750,7 @@
 	      (sign_extend:SI (vec_select:HI
 				(match_dup 3)
 				(parallel [(const_int 1)])))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmada\t%0, %2, %3"
 )
 
@@ -4769,7 +4773,7 @@
 	      (sign_extend:SI (vec_select:HI
 				(match_dup 3)
 				(parallel [(const_int 1)])))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmaxda\t%0, %2, %3"
 )
 
@@ -4838,7 +4842,7 @@
 	      (sign_extend:SI (vec_select:HI
 				(match_dup 3)
 				(parallel [(const_int 0)])))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmads\t%0, %2, %3"
 )
 
@@ -4907,7 +4911,7 @@
 	      (sign_extend:SI (vec_select:HI
 				(match_dup 3)
 				(parallel [(const_int 1)])))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmadrs\t%0, %2, %3"
 )
 
@@ -4976,7 +4980,7 @@
 	      (sign_extend:SI (vec_select:HI
 				(match_dup 3)
 				(parallel [(const_int 1)])))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmaxds\t%0, %2, %3"
 )
 
@@ -5045,7 +5049,7 @@
 	      (sign_extend:SI (vec_select:HI
 				(match_dup 3)
 				(parallel [(const_int 0)])))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmsda\t%0, %2, %3"
 )
 
@@ -5114,7 +5118,7 @@
 	      (sign_extend:SI (vec_select:HI
 				(match_dup 3)
 				(parallel [(const_int 1)])))))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "kmsxda\t%0, %2, %3"
 )
 
@@ -5608,7 +5612,7 @@
 	    (and:SI
 	      (match_dup 1)
 	      (match_operand:SI 3 "register_operand"         " r"))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "bpick\t%0, %3, %2, %1"
   [(set_attr "mode"   "SI")])
 
@@ -5974,7 +5978,7 @@
 	(sign_extend:DI
 	  (unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
 			(match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KHMBB)))]
-  "TARGET_DSP"
+  "TARGET_DSP && TARGET_64BIT"
   "khmbb\t%0, %1, %2"
   [(set_attr "type" "imul")
    (set_attr "mode" "DI")])
@@ -5984,7 +5988,7 @@
 	(sign_extend:DI
 	  (unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
 			(match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KHMBT)))]
-  "TARGET_DSP"
+  "TARGET_DSP && TARGET_64BIT"
   "khmbt\t%0, %1, %2"
   [(set_attr "type" "imul")
    (set_attr "mode" "DI")])
@@ -6084,7 +6088,7 @@
 		(sign_extend:DI (match_operand:SI 2 "register_operand" "r")))
 	      (const_int 1))
 	  (const_int 1))))]
-  "TARGET_DSP"
+  "TARGET_DSP && !TARGET_64BIT"
   "ave\t%0, %1, %2"
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
