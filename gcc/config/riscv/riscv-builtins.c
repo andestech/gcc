@@ -2244,6 +2244,14 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 			    RISCV_VOID_FTYPE_VOID, CLROV),
   DIRECT_BUILTIN (rdovsi, rdovdi, rdov,
 		  RISCV_USI_FTYPE_VOID, RDOV),
+  DIRECT_DSP_BUILTIN (cmpeqv4hi, cmpeqv4hi, vec_scmpeq16,
+		      RISCV_ULONG_FTYPE_V4HI_V4HI, V_SCMPEQ16),
+  DIRECT_DSP_BUILTIN (cmpeqv4hi, cmpeqv4hi, vec_ucmpeq16,
+		      RISCV_ULONG_FTYPE_UV4HI_UV4HI, V_UCMPEQ16),
+  DIRECT_DSP_BUILTIN (cmpeqv8qi, cmpeqv8qi, vec_scmpeq8,
+		      RISCV_ULONG_FTYPE_V8QI_V8QI, V_SCMPEQ8),
+  DIRECT_DSP_BUILTIN (cmpeqv8qi, cmpeqv8qi, vec_ucmpeq8,
+		      RISCV_ULONG_FTYPE_UV8QI_UV8QI, V_UCMPEQ8),
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the

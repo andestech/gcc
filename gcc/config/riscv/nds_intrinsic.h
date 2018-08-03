@@ -1753,8 +1753,9 @@ enum riscv_order
   (__builtin_riscv_64_umulx16 ((a), (b)))
 #define __nds__umulx8(a, b) \
   (__builtin_riscv_64_umulx8 ((a), (b)))
+#define vec64_all_eq(type, size, vec1, vec2) \
+    (__builtin_riscv_vec_ ##type##cmpeq ##size (vec1, vec2) == 0xffffffffffffffffull)
 #endif
-
 
 static unsigned int __nds__rotr(unsigned int val, unsigned int ror) __attribute__((unused));
 static unsigned int __nds__wsbh(unsigned int a) __attribute__((unused));
