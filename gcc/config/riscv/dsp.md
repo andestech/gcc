@@ -1776,10 +1776,10 @@
 	       (parallel [(match_operand:SI 4 "imm_0_1_operand" " v00, v01, v01, v00")])))))]
   "TARGET_DSP"
 {
-  const char *pats[] = { "smbb\t%0, %1, %2",
-			 "smbt\t%0, %1, %2",
-			 "smtt\t%0, %1, %2",
-			 "smbt\t%0, %2, %1" };
+  const char *pats[] = { "smbb16\t%0, %1, %2",
+			 "smbt16\t%0, %1, %2",
+			 "smtt16\t%0, %1, %2",
+			 "smbt16\t%0, %2, %1" };
   return pats[which_alternative];
 }
   [(set_attr "type"   "imul")
