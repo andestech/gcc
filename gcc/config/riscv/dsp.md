@@ -5892,8 +5892,8 @@
 (define_insn "kdmbb64"
   [(set (match_operand:DI 0 "register_operand" "=r")
 	(sign_extend:DI
-	  (unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
-			(match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KDMBB)))]
+	  (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		      (match_operand:SI 2 "register_operand" "r")] UNSPEC_KDMBB)))]
   "TARGET_DSP && TARGET_64BIT"
   "kdmbb\t%0, %1, %2"
   [(set_attr "type" "imul")
@@ -5902,8 +5902,8 @@
 (define_insn "kdmbt64"
   [(set (match_operand:DI 0 "register_operand" "=r")
 	(sign_extend:DI
-	  (unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
-			(match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KDMBT)))]
+	  (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		      (match_operand:SI 2 "register_operand" "r")] UNSPEC_KDMBT)))]
   "TARGET_DSP && TARGET_64BIT"
   "kdmbt\t%0, %1, %2"
   [(set_attr "type" "imul")
@@ -5912,8 +5912,8 @@
 (define_insn "kdmtt64"
   [(set (match_operand:DI 0 "register_operand" "=r")
 	(sign_extend:DI
-	  (unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
-			(match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KDMTT)))]
+	  (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		      (match_operand:SI 2 "register_operand" "r")] UNSPEC_KDMTT)))]
   "TARGET_DSP && TARGET_64BIT"
   "kdmtt\t%0, %1, %2"
   [(set_attr "type" "imul")
