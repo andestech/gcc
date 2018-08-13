@@ -5245,7 +5245,7 @@
 	      (any_extend:DI
 		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
-  "<su>mar64\t%0, %1, %2"
+  "<su>mar64\t%0, %2, %3"
   [(set_attr "mode" "DI")])
 
 (define_insn "<su>mar64_2"
@@ -5317,7 +5317,7 @@
 	      (any_extend:DI
 		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
-  "<su>msr64\t%0, %1, %2"
+  "<su>msr64\t%0, %2, %3"
   [(set_attr "mode" "DI")])
 
 (define_insn "<su>msr64_2"
@@ -5378,7 +5378,7 @@
 	      (sign_extend:DI
 		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
-  "kmar64\t%0, %1, %2"
+  "kmar64\t%0, %2, %3"
   [(set_attr "mode" "DI")])
 
 (define_insn "kmsr64"
@@ -5413,7 +5413,7 @@
 	      (sign_extend:DI
 		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
-  "kmsr64\t%0, %1, %2"
+  "kmsr64\t%0, %2, %3"
   [(set_attr "mode" "DI")])
 
 (define_insn "ukmar64_1"
@@ -5448,7 +5448,7 @@
 	      (sign_extend:DI
 		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
-  "ukmar64\t%0, %1, %2"
+  "ukmar64\t%0, %2, %3"
   [(set_attr "mode" "DI")])
 
 (define_insn "ukmar64_2"
@@ -5496,7 +5496,7 @@
 	      (sign_extend:DI
 		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
-  "ukmsr64\t%0, %1, %2"
+  "ukmsr64\t%0, %2, %3"
   [(set_attr "mode" "DI")])
 
 (define_insn "bpick1<mode>"
