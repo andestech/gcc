@@ -6021,6 +6021,141 @@ void riscv_expand_float_hf(rtx to, rtx from, bool unsignedp)
 				      GET_MODE (to), from));
 }
 
+struct memory_access_info_t
+{
+  bool valid;
+  int offset;
+  unsigned size;
+};
+
+static memory_access_info_t memory_access_info[FIRST_PSEUDO_REGISTER];
+
+static void
+riscv_sched_init (FILE *file ATTRIBUTE_UNUSED,
+		  int verbose ATTRIBUTE_UNUSED,
+		  int max_ready ATTRIBUTE_UNUSED)
+{
+  if (!reload_completed)
+    return;
+  memset (&memory_access_info, 0, sizeof (memory_access_info));
+}
+
+struct addr_info_t {
+  rtx base_reg;
+  int offset;
+};
+
+static addr_info_t extract_addr_info(rtx x)
+{
+  // TODO: sign_extend/zero_extend load and PIC load/store not handled.
+  gcc_assert (MEM_P (x));
+  addr_info_t rv;
+  rtx addr = XEXP (x, 0);
+  if (GET_CODE (addr) == PLUS)
+    {
+      rv.base_reg = XEXP (addr, 0);
+      rv.offset = INTVAL (XEXP (addr, 1));
+    }
+  else if (REG_P (addr))
+    {
+      rv.base_reg = addr;
+      rv.offset = 0;
+    }
+  else if (GET_CODE (addr) == LO_SUM)
+    {
+      rv.base_reg = XEXP (addr, 0);
+      rv.offset = 0;
+    }
+  else
+    {
+      rv.base_reg = NULL_RTX;
+      rv.offset = 0;
+    }
+
+  return rv;
+}
+
+static int
+riscv_sched_adjust_priority (rtx_insn *insn, int priority)
+{
+  /* We only care RV32D.  */
+  if (TARGET_64BIT || !TARGET_DOUBLE_FLOAT)
+    return priority;
+
+  if (!reload_completed)
+    return priority;
+
+  if (!NONJUMP_INSN_P (insn))
+    return priority;
+
+  rtx pat = PATTERN (insn);
+
+  if (GET_CODE (pat) != SET)
+    return priority;
+
+  if (dump_file)
+    fprintf (dump_file, "Adjust cost for INSN %u\n", INSN_UID (insn));
+
+  rtx src = SET_SRC (pat);
+  rtx dst = SET_DEST (pat);
+
+  // Store.
+  if (MEM_P (dst) && REG_P (src))
+    {
+      // Record base and offset.
+      struct addr_info_t addr_info = extract_addr_info (dst);
+      if (addr_info.base_reg == NULL_RTX)
+	return priority;
+
+      unsigned base_regno = REGNO (addr_info.base_reg);
+
+      memory_access_info[base_regno].valid = true;
+      memory_access_info[base_regno].offset = addr_info.offset;
+      memory_access_info[base_regno].size = GET_MODE_SIZE (GET_MODE (src));
+      if (dump_file)
+	fprintf (dump_file, "--- base = r%u, offset= %d, size = %d\n",
+		 base_regno, addr_info.offset, GET_MODE_SIZE (GET_MODE (src)));
+    }
+
+  // Load.
+  if (REG_P (dst) && (MEM_P (src)))
+    {
+      struct addr_info_t addr_info = extract_addr_info (src);
+
+      if (addr_info.base_reg == NULL_RTX)
+	return priority;
+
+      unsigned base_regno = REGNO (addr_info.base_reg);
+      memory_access_info_t mai = memory_access_info[base_regno];
+      unsigned load_size = GET_MODE_SIZE (GET_MODE (dst));
+      if (dump_file && mai.valid)
+	fprintf (dump_file,
+		 "--- memory access info match,"
+		 " offset=%d size=%d vs offset=%d size=%d\n",
+		 mai.offset, mai.size, addr_info.offset, load_size);
+
+      /* We only care store/load pair with differnet size.  */
+      if (mai.valid
+	  && (mai.offset == addr_info.offset)
+	  && (mai.size > load_size))
+	{
+	  if (dump_file)
+	    fprintf (dump_file, "--- INSN %u priority + 1\n", INSN_UID (insn));
+
+	  return priority + 1;
+	}
+    }
+
+  /* Invalidate the memory access info if register is written.  */
+  if (REG_P (dst))
+    {
+      unsigned regno = REGNO (dst);
+      memory_access_info[regno].valid = false;
+    }
+
+  return priority;
+}
+
 /* Initialize the GCC target structure.  */
 #undef TARGET_ASM_ALIGNED_HI_OP
 #define TARGET_ASM_ALIGNED_HI_OP "\t.half\t"
@@ -6234,6 +6369,12 @@ riscv_libgcc_floating_mode_supported_p
 
 #undef TARGET_REGISTER_USAGE_LEVELING_P
 #define TARGET_REGISTER_USAGE_LEVELING_P hook_bool_void_true
+
+#undef TARGET_SCHED_INIT
+#define TARGET_SCHED_INIT riscv_sched_init
+
+#undef TARGET_SCHED_ADJUST_PRIORITY
+#define TARGET_SCHED_ADJUST_PRIORITY riscv_sched_adjust_priority
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
