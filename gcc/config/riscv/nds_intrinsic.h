@@ -1058,6 +1058,30 @@ enum riscv_order
   (__builtin_riscv_v_smmwt_u ((a), (b)))
 #define __nds64__v_smmwt_u(a, b) \
   (__builtin_riscv_v64_smmwt_u ((a), (b)))
+#define __nds__kmmwb2(a, b) \
+  (__builtin_riscv_kmmwb2 ((a), (b)))
+#define __nds__v_kmmwb2(a, b) \
+  (__builtin_riscv_v_kmmwb2 ((a), (b)))
+#define __nds64__v_kmmwb2(a, b) \
+  (__builtin_riscv_v64_kmmwb2 ((a), (b)))
+#define __nds__kmmwb2_u(a, b) \
+  (__builtin_riscv_kmmwb2_u ((a), (b)))
+#define __nds__v_kmmwb2_u(a, b) \
+  (__builtin_riscv_v_kmmwb2_u ((a), (b)))
+#define __nds64__v_kmmwb2_u(a, b) \
+  (__builtin_riscv_v64_kmmwb2_u ((a), (b)))
+#define __nds__kmmwt2(a, b) \
+  (__builtin_riscv_kmmwt2 ((a), (b)))
+#define __nds__v_kmmwt2(a, b) \
+  (__builtin_riscv_v_kmmwt2 ((a), (b)))
+#define __nds64__v_kmmwt2(a, b) \
+  (__builtin_riscv_v64_kmmwt2 ((a), (b)))
+#define __nds__kmmwt2_u(a, b) \
+  (__builtin_riscv_kmmwt2_u ((a), (b)))
+#define __nds__v_kmmwt2_u(a, b) \
+  (__builtin_riscv_v_kmmwt2_u ((a), (b)))
+#define __nds64__v_kmmwt2_u(a, b) \
+  (__builtin_riscv_v64_kmmwt2_u ((a), (b)))
 #define __nds__kmmawb(r, a, b) \
   (__builtin_riscv_kmmawb ((r), (a), (b)))
 #define __nds__v_kmmawb(r, a, b) \

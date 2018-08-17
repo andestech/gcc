@@ -112,6 +112,8 @@
   UNSPEC_UKSUBH
   UNSPEC_CLROV
   UNSPEC_RDOV
+  UNSPEC_KMMW
+  UNSPEC_KMMWU
 ])
 
 (define_c_enum "unspecv" [
