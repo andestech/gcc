@@ -7,7 +7,7 @@
 
 #ifdef __riscv_dsp
 static __attribute__ ((noinline))
-unsigned long ursubw (unsigned long ra,unsigned long rb)
+unsigned long ursubw (unsigned int ra,unsigned int rb)
 {
   return __nds__ursubw (ra, rb);
 }
