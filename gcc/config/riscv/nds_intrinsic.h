@@ -487,7 +487,7 @@ enum riscv_order
   (__builtin_riscv_ukadd16 ((a), (b)))
 #define __nds__v_ukadd16(a, b) \
   (__builtin_riscv_v_ukadd16 ((a), (b)))
-#define __nds__v64_ukadd16(a, b) \
+#define __nds64__v_ukadd16(a, b) \
   (__builtin_riscv_v64_ukadd16 ((a), (b)))
 #define __nds__sub16(a, b) \
   (__builtin_riscv_sub16 ((a), (b)))

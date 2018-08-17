@@ -1030,7 +1030,7 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		      RISCV_V2HI_FTYPE_V2HI_V2HI, V_KSUB16),
   DIRECT_DSP_BUILTIN (ksubv4hi3, ksubv4hi3, v64_ksub16,
 		      RISCV_V4HI_FTYPE_V4HI_V4HI, V64_KSUB16),
-  DIRECT_DSP_BUILTIN (uksubv2hi3, uksubv2hi3, uksub16,
+  DIRECT_DSP_BUILTIN (uksubv2hi3, uksubv4hi3, uksub16,
 		      RISCV_ULONG_FTYPE_ULONG_ULONG, UKSUB16),
   DIRECT_DSP_BUILTIN (uksubv2hi3, uksubv2hi3, v_uksub16,
 		      RISCV_UV2HI_FTYPE_UV2HI_UV2HI, V_UKSUB16),
