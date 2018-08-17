@@ -6214,6 +6214,19 @@ proc check_effective_target_riscv32 { } {
     }
 }
 
+# return true if the target is a 64-bit RISC-V target.
+
+proc check_effective_target_riscv64 { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages riscv64 object {
+	#if __riscv_xlen == 64
+	int dummy;
+	#else
+	#error not 64-bit RISC-V target
+	#endif
+	}]
+    }
+}
 # return true if the riscv target supports hard floating-point unit.
 
 proc check_effective_target_riscv_hard_fp { } {
