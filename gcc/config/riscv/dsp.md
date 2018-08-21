@@ -2484,9 +2484,9 @@
 		      (match_operand:SI 6 "imm2u_operand" " v02, v03, v03")])))))]
   "TARGET_DSP && TARGET_64BIT"
   "@
-   smbb\t%0, %1, %2
-   smbt\t%0, %1, %2
-   smtt\t%0, %1, %2"
+   smbb16\t%0, %1, %2
+   smbt16\t%0, %1, %2
+   smtt16\t%0, %1, %2"
   [(set_attr "type"   "imul")
    (set_attr "mode"   "DI")])
 
