@@ -17,7 +17,7 @@ main ()
 {
   signed long a = sclip32 (0x0000000100000100);
 
-  if (a != 0x100000002)
+  if (a != 0x10000001f)
     abort ();
   else
     exit (0);

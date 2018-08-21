@@ -26,7 +26,7 @@ main ()
   uint32x2_t v_sa = v_uksub32 ((uint32x2_t) {0xf777f111, 0xf777f111},
 			       (uint32x2_t) {0x10002000, 0x10002000});
 
-  if (a != 0)
+  if (a != 0xe0000000e000)
     abort ();
   else if (sa_p[0] != v_sa[0]
 	   || sa_p[1] != v_sa[1])

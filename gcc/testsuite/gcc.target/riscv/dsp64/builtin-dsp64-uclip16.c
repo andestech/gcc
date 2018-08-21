@@ -21,7 +21,7 @@ int16x4_t v_uclip16 (int16x4_t ra)
 int
 main ()
 {
-  int16x4_t v_sa_p = {0, -16, 15, 3};
+  int16x4_t v_sa_p = {0, 0, 15, 3};
   unsigned long a = uclip16 (0x1010101010101010);
   int16x4_t v_sa = v_uclip16 ((int16x4_t) {0, -20, 20, 3});
 
