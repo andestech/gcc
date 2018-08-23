@@ -6140,9 +6140,9 @@ riscv_sched_adjust_priority (rtx_insn *insn, int priority)
 	  && (mai.size > load_size))
 	{
 	  if (dump_file)
-	    fprintf (dump_file, "--- INSN %u priority + 1\n", INSN_UID (insn));
+	    fprintf (dump_file, "--- INSN %u priority + 6\n", INSN_UID (insn));
 
-	  return priority + 1;
+	  return priority + 6;
 	}
     }
 
