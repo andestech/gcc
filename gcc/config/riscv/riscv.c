@@ -5918,7 +5918,8 @@ riscv_vector_mode_supported_p (enum machine_mode mode)
     return TARGET_DSP && !TARGET_64BIT;
 
   if (mode == V8QImode
-      || mode == V4HImode)
+      || mode == V4HImode
+      || mode == V2SImode)
     return TARGET_DSP && TARGET_64BIT;
 
   return false;
@@ -5936,6 +5937,8 @@ riscv_vectorize_preferred_simd_mode (scalar_mode mode)
       return TARGET_64BIT ? V8QImode : V4QImode;
     case E_HImode:
       return TARGET_64BIT ? V4HImode : V2HImode;
+    case E_SImode:
+      return TARGET_64BIT ? V2SImode : word_mode;
     default:
       return word_mode;
     }
