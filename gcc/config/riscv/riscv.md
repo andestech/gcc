@@ -2726,7 +2726,7 @@
 ;;  ....................
 ;;
 
-;; BFO[SZ]: msb >= lsb: Extract sequence bits.
+;; BFO[SZ]: msb >= lsb: Extract sequence tail bits.
 (define_insn "*bfo_<sz>extra<mode>4"
   [(set (match_operand:GPR 0 "register_operand"                      "=r")
 	(any_extract:GPR (match_operand:GPR 1 "register_operand"     " r")
@@ -2740,7 +2740,17 @@
     return "bfo<sz>\t%0,%1,%2,%3";
   }
 )
-
+;; BFOZ: msb >= lsb: Mask sequence bits.
+(define_insn "*bfoz_and<mode>3"
+  [(set (match_operand:GPR 0 "register_operand"          "=r")
+	(and:GPR (match_operand:GPR 1 "register_operand" " r")
+		 (match_operand 2 "imm_extract_operand"  " Bext")))]
+  "TARGET_BFO"
+  {
+    operands[2] = GEN_INT (__builtin_popcount (INTVAL (operands[2])) - 1);
+    return "bfoz\t%0,%1,%2,0";
+  }
+)
 ;; BFOZ: msb >= lsb: Extract sequence bits.
 (define_insn "*zero_extend<GPR:mode>_lshr<SHORT:mode>"
   [(set (match_operand:GPR 0 "register_operand"                                    "=r")

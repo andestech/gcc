@@ -139,3 +139,8 @@
   "Constant value 8"
   (and (match_code "const_int")
        (match_test "ival == 8")))
+
+(define_constraint "Bext"
+  "Sequence bit extract."
+  (and (match_code "const_int")
+       (match_test "(ival & (ival + 1)) == 0")))

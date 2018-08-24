@@ -383,3 +383,6 @@
 		 (match_test "satisfies_constraint_v02 (op)"))
 	    (ior (match_test "satisfies_constraint_v04 (op)")
 		 (match_test "satisfies_constraint_v08 (op)")))))
+
+(define_predicate "imm_extract_operand"
+  (match_test "satisfies_constraint_Bext (op)"))
