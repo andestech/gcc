@@ -6156,6 +6156,16 @@ riscv_sched_adjust_priority (rtx_insn *insn, int priority)
   return priority;
 }
 
+/* Linux toolchain will use linux_libc_has_function.  */
+static bool riscv_libc_has_function (enum function_class) ATTRIBUTE_UNUSED;
+
+static bool
+riscv_libc_has_function (enum function_class fn_class ATTRIBUTE_UNUSED)
+{
+  /* newlib/mculib support all type of function_class.  */
+  return true;
+}
+
 /* Initialize the GCC target structure.  */
 #undef TARGET_ASM_ALIGNED_HI_OP
 #define TARGET_ASM_ALIGNED_HI_OP "\t.half\t"

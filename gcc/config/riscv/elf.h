@@ -56,3 +56,6 @@ BTB_FIXUP_SPEC
 #define ENDFILE_SPEC "crtend%O%s"
 
 #endif /* TARGET_MCULIB */
+
+#undef TARGET_LIBC_HAS_FUNCTION
+#define TARGET_LIBC_HAS_FUNCTION riscv_libc_has_function
