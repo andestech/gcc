@@ -1819,6 +1819,40 @@
 }
   [(set_attr "mode" "V2HI")])
 
+(define_insn "vec_extractv4qi0"
+  [(set (match_operand:QI 0 "register_operand"         "=r,r")
+	(vec_select:QI
+	  (match_operand:V4QI 1 "nonimmediate_operand" " r,m")
+	  (parallel [(const_int 0)])))]
+  "TARGET_DSP && !TARGET_64BIT"
+  "@
+   and\t%0,%1,0xff
+   lbu\t%0,%1"
+  [(set_attr "move_type" "andi,load")
+   (set_attr "mode" "QI")])
+
+(define_insn_and_split "vec_extractv4qi0_se"
+  [(set (match_operand:SI 0 "register_operand"         "=r,r")
+	(sign_extend:SI
+	  (vec_select:QI
+	    (match_operand:V4QI 1 "nonimmediate_operand" "r,m")
+	    (parallel [(const_int 0)]))))]
+  "TARGET_DSP && !TARGET_64BIT"
+  "@
+   bfos\t%0,%1,7,0
+   lb\t%0,%1"
+  "reload_completed && REG_P (operands[1]) && !TARGET_BFO"
+  [(set (match_dup 0) (ashift:SI (match_dup 1) (match_dup 2)))
+   (set (match_dup 0) (ashiftrt:SI (match_dup 0) (match_dup 2)))]
+{
+  operands[0] = gen_lowpart (SImode, operands[0]);
+  operands[1] = gen_lowpart (SImode, operands[1]);
+  operands[2] = GEN_INT (GET_MODE_BITSIZE (SImode)
+			 - GET_MODE_BITSIZE (QImode));
+}
+  [(set_attr "move_type" "shift_shift,load")
+   (set_attr "mode" "SI")])
+
 (define_insn "vec_extractv4qi3_se"
   [(set (match_operand:SI 0 "register_operand"       "=r")
 	(sign_extend:SI
@@ -1829,6 +1863,19 @@
   "srai\t%0, %1, 24"
   [(set_attr "mode" "V4QI")])
 
+(define_insn "vec_extractv4qi0_ze"
+  [(set (match_operand:SI 0 "register_operand"         "=r,r")
+	(zero_extend:SI
+	  (vec_select:QI
+	    (match_operand:V4QI 1 "nonimmediate_operand" "r,m")
+	    (parallel [(const_int 0)]))))]
+  "TARGET_DSP && !TARGET_64BIT"
+  "@
+   and\t%0,%1,0xff
+   lbu\t%0,%1"
+  [(set_attr "move_type" "andi,load")
+   (set_attr "mode" "QI")])
+
 (define_insn "vec_extractv4qi3_ze"
   [(set (match_operand:SI 0 "register_operand"       "=r")
 	(zero_extend:SI
@@ -1838,6 +1885,90 @@
   "TARGET_DSP && !TARGET_64BIT"
   "srli\t%0, %1, 24"
   [(set_attr "mode" "V4QI")])
+
+(define_insn_and_split "vec_extractv4qihi0"
+  [(set (match_operand:HI 0 "register_operand" "=r")
+	(sign_extend:HI
+	  (vec_select:QI
+	    (match_operand:V4QI 1 "register_operand" " r")
+	     (parallel [(const_int 0)]))))]
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
+  "#"
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
+  [(const_int 1)]
+{
+  rtx tmp = gen_reg_rtx (QImode);
+  emit_insn (gen_vec_extractv4qi0 (tmp, operands[1]));
+  emit_insn (gen_extendqihi2 (operands[0], tmp));
+  DONE;
+}
+  [(set_attr "mode"  "HI")])
+
+(define_insn_and_split "vec_extractv2hi0"
+  [(set (match_operand:HI 0 "register_operand"         "=r,r")
+	(vec_select:HI
+	  (match_operand:V2HI 1 "nonimmediate_operand" " r,m")
+	  (parallel [(const_int 0)])))]
+  "TARGET_DSP && !TARGET_64BIT"
+  "@
+   bfos\t%0,%1,15,0
+   lh\t%0,%1"
+  "reload_completed && REG_P (operands[1]) && !TARGET_BFO"
+  [(set (match_dup 0) (ashift:SI (match_dup 1) (match_dup 2)))
+   (set (match_dup 0) (ashiftrt:SI (match_dup 0) (match_dup 2)))]
+{
+  operands[0] = gen_lowpart (SImode, operands[0]);
+  operands[1] = gen_lowpart (SImode, operands[1]);
+  operands[2] = GEN_INT (GET_MODE_BITSIZE (SImode)
+			 - GET_MODE_BITSIZE (HImode));
+}
+  [(set_attr "move_type" "shift_shift,load")
+   (set_attr "mode" "HI")])
+
+(define_insn_and_split "vec_extractv2hi0_se"
+  [(set (match_operand:SI 0 "register_operand"         "=r, r")
+	(sign_extend:SI
+	  (vec_select:HI
+	    (match_operand:V2HI 1 "nonimmediate_operand" "r,m")
+	    (parallel [(const_int 0)]))))]
+  "TARGET_DSP && !TARGET_64BIT"
+  "@
+   bfos\t%0,%1,15,0
+   lh\t%0,%1"
+  "reload_completed && REG_P (operands[1]) && !TARGET_BFO"
+  [(set (match_dup 0) (ashift:SI (match_dup 1) (match_dup 2)))
+   (set (match_dup 0) (ashiftrt:SI (match_dup 0) (match_dup 2)))]
+{
+  operands[0] = gen_lowpart (SImode, operands[0]);
+  operands[1] = gen_lowpart (SImode, operands[1]);
+  operands[2] = GEN_INT (GET_MODE_BITSIZE (SImode)
+			 - GET_MODE_BITSIZE (HImode));
+}
+  [(set_attr "move_type" "shift_shift,load")
+   (set_attr "mode" "SI")])
+
+(define_insn_and_split "vec_extractv2hi0_ze"
+  [(set (match_operand:SI 0 "register_operand"         "=r, r")
+	(zero_extend:SI
+	  (vec_select:HI
+	    (match_operand:V2HI 1 "nonimmediate_operand" "r, m")
+	    (parallel [(const_int 0)]))))]
+  "TARGET_DSP && !TARGET_64BIT"
+  "@
+   bfoz\t%0,%1,15,0
+   lhu\t%0,%1"
+  "&& reload_completed && REG_P (operands[1]) && !TARGET_BFO"
+  [(set (match_dup 0)
+	(ashift:SI (match_dup 1) (match_dup 2)))
+   (set (match_dup 0)
+	(lshiftrt:SI (match_dup 0) (match_dup 2)))]
+  {
+    operands[1] = gen_lowpart (SImode, operands[1]);
+    operands[2] = GEN_INT(GET_MODE_BITSIZE(SImode) - 16);
+  }
+  [(set_attr "move_type" "shift_shift,load")
+   (set_attr "mode" "SI")])
+
 
 (define_insn "vec_extractv2hi1"
   [(set (match_operand:HI 0 "register_operand"     "=r")
@@ -5411,6 +5542,35 @@
   "TARGET_DSP"
   "<opcode><bits>\t%0, %1, %2"
 )
+
+(define_insn_and_split "<opcode>v2hi3_bbtt"
+  [(set (match_operand:V2HI 0 "register_operand"                         "=r")
+	(vec_merge:V2HI
+	  (vec_duplicate:V2HI
+	    (sumin_max:HI (vec_select:HI
+			    (match_operand:V2HI 1 "register_operand" " r")
+			    (parallel [(const_int 1)]))
+			  (vec_select:HI
+			    (match_operand:V2HI 2 "register_operand" " r")
+			    (parallel [(const_int 1)]))))
+	  (vec_duplicate:V2HI
+	    (sumin_max:HI (vec_select:HI
+			    (match_dup 1)
+			    (parallel [(const_int 0)]))
+			  (vec_select:HI
+			    (match_dup 2)
+			    (parallel [(const_int 0)]))))
+	  (const_int 2)))]
+  "TARGET_DSP && !TARGET_64BIT"
+  "#"
+  "TARGET_DSP && !TARGET_64BIT"
+  [(const_int 0)]
+{
+  emit_insn (gen_<opcode>v2hi3 (operands[0], operands[1], operands[2]));
+  DONE;
+}
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V2HI")])
 
 (define_expand "abs<mode>2"
   [(set (match_operand:VQIHI 0 "register_operand"               "=r")
