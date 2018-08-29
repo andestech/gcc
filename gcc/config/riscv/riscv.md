@@ -2747,7 +2747,7 @@
 		 (match_operand 2 "imm_extract_operand"  " Bext")))]
   "TARGET_BFO"
   {
-    operands[2] = GEN_INT (__builtin_popcount (INTVAL (operands[2])) - 1);
+    operands[2] = GEN_INT (__builtin_popcountll (INTVAL (operands[2])) - 1);
     return "bfoz\t%0,%1,%2,0";
   }
 )
