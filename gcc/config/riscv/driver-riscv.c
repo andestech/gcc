@@ -37,7 +37,9 @@ struct arch_options_t
   bool *val;
 };
 
-static bool nds_ext = true;
+static bool nds_ext = false;
+static bool dsp_ext = false;
+static bool _dsp_ext = false;
 static bool std_ext[26];
 static  bool rv64_p = false;
 
@@ -47,8 +49,9 @@ static arch_options_t arch_options[] = {
   {"f", NULL, &std_ext['f' - 'a']},
   {"d", NULL, &std_ext['d' - 'a']},
   {"c", "16-bit", &std_ext['c' - 'a']},
-  {"p", "ext-dsp", &std_ext['p' - 'a']},
   {"xv5", "nds", &nds_ext},
+  {"xdsp", "ext-dsp", &dsp_ext},
+  {"_xdsp", "ext-dsp", &_dsp_ext},
   {NULL, NULL, NULL},
 };
 
@@ -167,6 +170,17 @@ riscv_arch (int argc ATTRIBUTE_UNUSED, const char **argv ATTRIBUTE_UNUSED)
     str = "rv32e";
   else
     str = "rv32i";
+
+  if (dsp_ext)
+    {
+      if (nds_ext)
+	{
+	  dsp_ext = false;
+	  _dsp_ext = true;
+	}
+      else
+	_dsp_ext = false;
+    }
 
   for (;!std_ext_end_p (opt); ++opt)
     if (*opt->val && opt->short_option)

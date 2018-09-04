@@ -625,11 +625,6 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
   if (subset_list->lookup ("c"))
     *flags |= MASK_RVC;
 
-  *flags &= ~MASK_DSP;
-  if (subset_list->lookup ("p"))
-    if ((target_flags_explicit & MASK_DSP) == 0)
-      *flags |= MASK_DSP;
-
   if (subset_list->lookup ("x"))
     {
       if (strcmp (isa, "v5") == 0)
@@ -646,6 +641,15 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
 	    *flags |= MASK_LEA;
 	  if (TARGET_HARD_FLOAT && (target_flags_explicit & MASK_FP16) == 0)
 	    *flags |= MASK_FP16;
+
+	  if (subset_list->lookup ("p"))
+	    if ((target_flags_explicit & MASK_DSP) == 0)
+	      *flags |= MASK_DSP;
+	}
+      else if (strcmp (isa, "dsp") == 0)
+	{
+	  if ((target_flags_explicit & MASK_DSP) == 0)
+	    *flags |= MASK_DSP;
 	}
       else
 	error_at (loc, "-march=%s: unsupported NSE ISA substring", isa);
