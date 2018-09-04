@@ -2083,14 +2083,30 @@
   "pktb16\t%0, %1, %2"
   [(set_attr "mode" "V4HI")])
 
-(define_insn "<su>mul16<mode>"
-  [(set (match_operand:VSI 0 "register_operand"                                 "=r")
-	(mult:VSI (any_extend:VSI (match_operand:<VNARROW> 1 "register_operand" "%r"))
-		  (any_extend:VSI (match_operand:<VNARROW> 2 "register_operand" " r"))))]
-  "TARGET_DSP"
+(define_insn "<su>mul16v2si"
+  [(set (match_operand:V2SI 0 "register_operand"                             "=r")
+	(mult:V2SI (any_extend:V2SI (match_operand:V2HI 1 "register_operand" "%r"))
+		   (any_extend:V2SI (match_operand:V2HI 2 "register_operand" " r"))))]
+  "TARGET_DSP && !TARGET_64BIT"
   "<su>mul16\t%0, %1, %2"
   [(set_attr "type" "imul")
-   (set_attr "mode" "<MODE>")])
+   (set_attr "mode" "V2SI")])
+
+(define_insn "<su>mul16_64"
+  [(set (match_operand:V2SI 0 "register_operand"         "=r")
+	(vec_concat:V2SI
+	  (mult:SI
+	    (any_extend:SI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
+					  (parallel [(const_int 0)])))
+	    (any_extend:SI (vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
+					  (parallel [(const_int 0)]))))
+	  (mult:SI
+	    (any_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 1)])))
+	    (any_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 1)]))))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "<su>mul16\t%0, %1, %2"
+  [(set_attr "type" "imul")
+   (set_attr "mode" "V2SI")])
 
 (define_insn "smul8<mode>"
   [(set (match_operand:VMUL 0 "register_operand"                    "=r")
@@ -2142,28 +2158,20 @@
    (set_attr "mode" "V2SI")])
 
 (define_insn "<su>mulx16_64"
-  [(set (match_operand:V4SI 0 "register_operand"         "=r")
-	(vec_concat:V4SI
-	  (vec_concat:V2SI
-	    (mult:SI
-	      (any_extend:SI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
-					    (parallel [(const_int 0)])))
-	      (any_extend:SI (vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
-					    (parallel [(const_int 1)]))))
-	    (mult:SI
-	      (any_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 1)])))
-	      (any_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 0)])))))
-	  (vec_concat:V2SI
-	    (mult:SI
-	      (any_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 2)])))
-	      (any_extend:SI (vec_select:HI (match_dup 0) (parallel [(const_int 3)]))))
-	    (mult:SI
-	      (any_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 3)])))
-	      (any_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 2)])))))))]
+  [(set (match_operand:V2SI 0 "register_operand"         "=r")
+	(vec_concat:V2SI
+	  (mult:SI
+	    (any_extend:SI (vec_select:HI (match_operand:V4HI 1 "register_operand" " r")
+					  (parallel [(const_int 0)])))
+	    (any_extend:SI (vec_select:HI (match_operand:V4HI 2 "register_operand" " r")
+					  (parallel [(const_int 1)]))))
+	  (mult:SI
+	    (any_extend:SI (vec_select:HI (match_dup 1) (parallel [(const_int 1)])))
+	    (any_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 0)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "<su>mulx16\t%0, %1, %2"
   [(set_attr "type" "imul")
-   (set_attr "mode" "V4SI")])
+   (set_attr "mode" "V2SI")])
 
 (define_insn "smulx8<mode>"
   [(set (match_operand:VMUL 0 "register_operand"                    "=r")
