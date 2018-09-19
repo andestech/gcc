@@ -1756,6 +1756,19 @@ enum riscv_order
 #define __nds64__v_kdmatt(r, a, b) \
   (__builtin_riscv_v64_kdmatt ((r), (a), (b)))
 
+#define __nds64__kdmabb16(r, a, b) \
+  (__builtin_riscv_kdmabb16 ((r), (a), (b)))
+#define __nds64__v_kdmabb16(r, a, b) \
+  (__builtin_riscv_v64_kdmabb16 ((r), (a), (b)))
+#define __nds64__kdmabt16(r, a, b) \
+  (__builtin_riscv_kdmabt16 ((r), (a), (b)))
+#define __nds64__v_kdmabt16(r, a, b) \
+  (__builtin_riscv_v64_kdmabt16 ((r), (a), (b)))
+#define __nds64__kdmatt16(r, a, b) \
+  (__builtin_riscv_kdmatt16 ((r), (a), (b)))
+#define __nds64__v_kdmatt16(r, a, b) \
+  (__builtin_riscv_v64_kdmatt16 ((r), (a), (b)))
+
 #if __riscv_xlen == 32
 #define __nds__smul16(a, b) \
   (__builtin_riscv_smul16 ((a), (b)))

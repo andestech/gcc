@@ -6816,3 +6816,78 @@
    kdmabt\t%0, %2, %1"
   [(set_attr "type" "arith")
    (set_attr "mode" "DI")])
+
+(define_expand "kdmabb16"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V4HI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_vkdma_internal (operands[0], operands[2], operands[3],
+				 GEN_INT (0), GEN_INT (0), GEN_INT (2),
+				 GEN_INT (2), operands[1]));
+  DONE;
+})
+
+(define_expand "kdmabt16"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V4HI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_vkdma_internal (operands[0], operands[2], operands[3],
+				 GEN_INT (0), GEN_INT (1), GEN_INT (2),
+				 GEN_INT (3), operands[1]));
+  DONE;
+})
+
+(define_expand "kdmatt16"
+  [(match_operand:V2SI 0 "register_operand" "")
+   (match_operand:V2SI 1 "register_operand" "")
+   (match_operand:V4HI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_vkdma_internal (operands[0], operands[2], operands[3],
+				 GEN_INT (1), GEN_INT (1), GEN_INT (3),
+				 GEN_INT (3), operands[1]));
+  DONE;
+})
+
+(define_insn "vkdma_internal"
+  [(set (match_operand:V2SI 0 "register_operand"                      "=   r,   r,   r,   r")
+	(ss_plus:V2SI
+	  (vec_concat:V2SI
+	    (ashift:SI
+	      (mult:SI
+		(sign_extend:SI
+		  (vec_select:HI
+		    (match_operand:V4HI 1 "register_operand"          "   r,   r,   r,   r")
+		    (parallel [(match_operand:SI 3 "imm_0_1_operand"  " v00, v00, v01, v01")])))
+		(sign_extend:SI
+		  (vec_select:HI
+		    (match_operand:V4HI 2 "register_operand"          "   r,   r,   r,   r")
+		    (parallel [(match_operand:SI 4 "imm_0_1_operand"  " v00, v01, v01, v00")]))))
+	      (const_int 1))
+	    (ashift:SI
+	      (mult:SI
+		(sign_extend:SI
+		  (vec_select:HI
+		    (match_dup 1)
+		    (parallel [(match_operand:SI 5 "imm_2_3_operand"  " v02, v02, v03, v03")])))
+		(sign_extend:SI
+		  (vec_select:HI
+		    (match_dup 2)
+		    (parallel [(match_operand:SI 6 "imm_2_3_operand"  " v02, v03, v03, v02")]))))
+	      (const_int 1)))
+	  (match_operand:V2SI 7 "register_operand"                    "   0,   0,   0,   0")))]
+  "TARGET_DSP && TARGET_64BIT"
+  "@
+   kdmabb16\t%0, %1, %2
+   kdmabt16\t%0, %1, %2
+   kdmatt16\t%0, %1, %2
+   kdmabt16\t%0, %2, %1"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "V2SI")])
