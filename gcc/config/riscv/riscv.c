@@ -316,7 +316,7 @@ static const struct riscv_tune_info vicuna_tune_info = {
   {COSTS_N_INSNS (4), COSTS_N_INSNS (5)},	/* fp_add */
   {COSTS_N_INSNS (4), COSTS_N_INSNS (5)},	/* fp_mul */
   {COSTS_N_INSNS (20), COSTS_N_INSNS (20)},	/* fp_div */
-  {COSTS_N_INSNS (10), COSTS_N_INSNS (10)},	/* int_mul */
+  {COSTS_N_INSNS (2), COSTS_N_INSNS (2)},	/* int_mul */
   {COSTS_N_INSNS (24), COSTS_N_INSNS (24)},	/* int_div */
   1,						/* issue_rate */
   3,						/* branch_cost */
