@@ -621,6 +621,9 @@ enum riscv_builtins
   RISCV_BUILTIN_V64_SMALXDS,
   RISCV_BUILTIN_V64_SMSLDA,
   RISCV_BUILTIN_V64_SMSLXDA,
+  RISCV_BUILTIN_V64_KDMABB,
+  RISCV_BUILTIN_V64_KDMABT,
+  RISCV_BUILTIN_V64_KDMATT,
   RISCV_BUILTIN_ADD32,
   RISCV_BUILTIN_V_UADD32,
   RISCV_BUILTIN_V_SADD32,
@@ -741,6 +744,9 @@ enum riscv_builtins
   RISCV_BUILTIN_V_SMXDS32,
   RISCV_BUILTIN_RDOV,
   RISCV_BUILTIN_CLROV,
+  RISCV_BUILTIN_V_KDMABB,
+  RISCV_BUILTIN_V_KDMABT,
+  RISCV_BUILTIN_V_KDMATT,
   RISCV_BUILTIN_DSP_END
 };
 
@@ -2287,7 +2293,19 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (kmmwt2_round, kmmwt2_round, v_kmmwt2_u,
 		      RISCV_LONG_FTYPE_LONG_V2HI, V_KMMWT_U),
   DIRECT_DSP_BUILTIN (kmmwt64_round, kmmwt64_round, v64_kmmwt2_u,
-		      RISCV_LONG_FTYPE_LONG_V4HI, V64_KMMWT_U)
+		      RISCV_LONG_FTYPE_LONG_V4HI, V64_KMMWT_U),
+  DIRECT_DSP_BUILTIN (kdmatt, kdmatt, v_kdmatt,
+		      RISCV_LONG_FTYPE_LONG_V2HI_V2HI, V_KDMATT),
+  DIRECT_DSP_BUILTIN (kdmatt64, kdmatt64, v64_kdmatt,
+		      RISCV_LONG_FTYPE_LONG_V4HI_V4HI, V64_KDMATT),
+  DIRECT_DSP_BUILTIN (kdmabt, kdmabt, v_kdmabt,
+		      RISCV_LONG_FTYPE_LONG_V2HI_V2HI, V_KDMABT),
+  DIRECT_DSP_BUILTIN (kdmabt64, kdmabt64, v64_kdmabt,
+		      RISCV_LONG_FTYPE_LONG_V4HI_V4HI, V64_KDMABT),
+  DIRECT_DSP_BUILTIN (kdmabb, kdmabb, v_kdmabb,
+		      RISCV_LONG_FTYPE_LONG_V2HI_V2HI, V_KDMABB),
+  DIRECT_DSP_BUILTIN (kdmabb64, kdmabb64, v64_kdmabb,
+		      RISCV_LONG_FTYPE_LONG_V4HI_V4HI, V64_KDMABB),
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the

@@ -6694,3 +6694,125 @@
   "TARGET_DSP"
   "clrov"
   [(set_attr "mode" "<MODE>")])
+
+(define_expand "kdmabb"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP && !TARGET_64BIT"
+{
+  emit_insn (gen_kdma_internal (operands[0], operands[2], operands[3],
+				GEN_INT (0), GEN_INT (0), operands[1]));
+  DONE;
+})
+
+(define_expand "kdmabb64"
+  [(match_operand:DI 0 "register_operand" "")
+   (match_operand:DI 1 "register_operand" "")
+   (match_operand:V4HI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_kdma64_internal (operands[0], operands[2], operands[3],
+				  GEN_INT (0), GEN_INT (0), operands[1]));
+  DONE;
+})
+
+(define_expand "kdmabt"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP && !TARGET_64BIT"
+{
+  emit_insn (gen_kdma_internal (operands[0], operands[2], operands[3],
+				GEN_INT (0), GEN_INT (1), operands[1]));
+  DONE;
+})
+
+(define_expand "kdmabt64"
+  [(match_operand:DI 0 "register_operand" "")
+   (match_operand:DI 1 "register_operand" "")
+   (match_operand:V4HI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_kdma64_internal (operands[0], operands[2], operands[3],
+				  GEN_INT (0), GEN_INT (1), operands[1]));
+  DONE;
+})
+
+(define_expand "kdmatt"
+  [(match_operand:SI 0 "register_operand" "")
+   (match_operand:SI 1 "register_operand" "")
+   (match_operand:V2HI 2 "register_operand" "")
+   (match_operand:V2HI 3 "register_operand" "")]
+  "TARGET_DSP && !TARGET_64BIT"
+{
+  emit_insn (gen_kdma_internal (operands[0], operands[2], operands[3],
+				GEN_INT (1), GEN_INT (1), operands[1]));
+  DONE;
+})
+
+(define_expand "kdmatt64"
+  [(match_operand:DI 0 "register_operand" "")
+   (match_operand:DI 1 "register_operand" "")
+   (match_operand:V4HI 2 "register_operand" "")
+   (match_operand:V4HI 3 "register_operand" "")]
+  "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_kdma64_internal (operands[0], operands[2], operands[3],
+				  GEN_INT (1), GEN_INT (1), operands[1]));
+  DONE;
+})
+
+(define_insn "kdma_internal"
+  [(set (match_operand:SI 0 "register_operand"                      "=   r,   r,   r,   r")
+	(ss_plus:SI
+	  (ashift:SI
+	    (mult:SI
+	      (sign_extend:SI
+		(vec_select:HI
+		  (match_operand:V2HI 1 "register_operand"          "   r,   r,   r,   r")
+		  (parallel [(match_operand:SI 3 "imm_0_1_operand"  " v00, v00, v01, v01")])))
+	      (sign_extend:SI
+		(vec_select:HI
+		  (match_operand:V2HI 2 "register_operand"          "   r,   r,   r,   r")
+		  (parallel [(match_operand:SI 4 "imm_0_1_operand"  " v00, v01, v01, v00")]))))
+	    (const_int 1))
+	  (match_operand:SI 5 "register_operand"                    "   0,   0,   0,   0")))]
+  "TARGET_DSP && !TARGET_64BIT"
+  "@
+   kdmabb\t%0, %1, %2
+   kdmabt\t%0, %1, %2
+   kdmatt\t%0, %1, %2
+   kdmabt\t%0, %2, %1"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "kdma64_internal"
+  [(set (match_operand:DI 0 "register_operand"                        "=   r,   r,   r,   r")
+	(sign_extend:DI
+	  (ss_plus:SI
+	    (ashift:SI
+	      (mult:SI
+		(sign_extend:SI
+		  (vec_select:HI
+		    (match_operand:V4HI 1 "register_operand"          "   r,   r,   r,   r")
+		    (parallel [(match_operand:SI 3 "imm_0_1_operand"  " v00, v00, v01, v01")])))
+		(sign_extend:SI
+		  (vec_select:HI
+		    (match_operand:V4HI 2 "register_operand"          "   r,   r,   r,   r")
+		    (parallel [(match_operand:SI 4 "imm_0_1_operand"  " v00, v01, v01, v00")]))))
+	      (const_int 1))
+	    (truncate:SI
+	      (match_operand:DI 5 "register_operand"                  "   0,   0,   0,   0")))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "@
+   kdmabb\t%0, %1, %2
+   kdmabt\t%0, %1, %2
+   kdmatt\t%0, %1, %2
+   kdmabt\t%0, %2, %1"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
