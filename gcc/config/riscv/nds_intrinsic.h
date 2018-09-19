@@ -1769,6 +1769,25 @@ enum riscv_order
 #define __nds64__v_kdmatt16(r, a, b) \
   (__builtin_riscv_v64_kdmatt16 ((r), (a), (b)))
 
+#define __nds__smaqa(r, a, b) \
+  (__builtin_riscv_smaqa ((r), (a), (b)))
+#define __nds__v_smaqa(r, a, b) \
+  (__builtin_riscv_v_smaqa ((r), (a), (b)))
+#define __nds64__v_smaqa(r, a, b) \
+  (__builtin_riscv_v64_smaqa ((r), (a), (b)))
+#define __nds__umaqa(r, a, b) \
+  (__builtin_riscv_umaqa ((r), (a), (b)))
+#define __nds__v_umaqa(r, a, b) \
+  (__builtin_riscv_v_umaqa ((r), (a), (b)))
+#define __nds64__v_umaqa(r, a, b) \
+  (__builtin_riscv_v64_umaqa ((r), (a), (b)))
+#define __nds__smaqa_su(r, a, b) \
+  (__builtin_riscv_sumaqa ((r), (a), (b)))
+#define __nds__v_smaqa_su(r, a, b) \
+  (__builtin_riscv_v_sumaqa ((r), (a), (b)))
+#define __nds64__v_smaqa_su(r, a, b) \
+  (__builtin_riscv_v64_sumaqa ((r), (a), (b)))
+
 #if __riscv_xlen == 32
 #define __nds__smul16(a, b) \
   (__builtin_riscv_smul16 ((a), (b)))
