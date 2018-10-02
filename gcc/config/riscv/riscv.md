@@ -511,7 +511,10 @@
 			 (sign_extend "extend")
 			 (zero_extend "zero_extend")
 			 (eq "eq")
-			 (ne "ne")])
+			 (ne "ne")
+			 (clrsb "clrsb")
+			 (clz "clz")
+			 (popcount "popcount")])
 
 ;; <insn> expands to the name of the insn that implements a particular code.
 (define_code_attr insn [(ashift "sll")
@@ -525,7 +528,10 @@
 			(xor "xor")
 			(and "and")
 			(plus "add")
-			(minus "sub")])
+			(minus "sub")
+			(clrsb "clrs")
+			(clz "clz")
+			(popcount "clo")])
 
 ;; Ghost instructions produce no real code and introduce no hazards.
 ;; They exist purely to express an effect on dataflow.

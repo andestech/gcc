@@ -68,6 +68,8 @@
 
 (define_code_iterator sumin_max [smax umax smin umin])
 
+(define_code_iterator unop [clrsb clz popcount])
+
 (define_code_attr shift
   [(ashift "ashl") (ashiftrt "ashr") (lshiftrt "lshr") (rotatert "rotr")])
 
@@ -6575,22 +6577,6 @@
   [(set_attr "type" "arith,arith")
    (set_attr "mode" "<MODE>, <MODE>")])
 
-(define_insn "clo"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(unspec:SI [(match_operand:SI 1 "register_operand" "r")] UNSPEC_CLO))]
-  "TARGET_DSP"
-  "clo\t%0, %1"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "SI")])
-
-(define_insn "clzsi2"
-  [(set (match_operand:SI 0 "register_operand"         "=r")
-	(clz:SI (match_operand:SI 1 "register_operand" " r")))]
-  "TARGET_DSP"
-  "clz\t%0, %1"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "SI")])
-
 (define_insn "pbsad"
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
@@ -7134,3 +7120,19 @@
   "smaqa.su\t%0, %2, %3"
   [(set_attr "type" "arith")
    (set_attr "mode" "V2SI")])
+
+(define_insn "<optab><mode>2"
+  [(set (match_operand:VECI 0 "register_operand" "=r")
+        (unop:VECI (match_operand:VECI 1 "register_operand" "r")))]
+  "TARGET_DSP"
+  "<insn><bits>\t%0, %1"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")])
+
+(define_insn "<optab>si2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unop:SI (match_operand:SI 1 "register_operand" "r")))]
+  "TARGET_DSP && !TARGET_64BIT"
+  "<insn>32\t%0, %1"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])

@@ -1465,10 +1465,6 @@ enum riscv_order
 #define __nds64__v_kslra8_u(a, b) \
   (__builtin_riscv_v64_kslra8_u ((a), (b)))
 
-#define __nds__clz(a) \
-  (__builtin_riscv_clz ((a)))
-#define __nds__clo(a) \
-  (__builtin_riscv_clo ((a)))
 #define __nds__pbsad(a, b) \
   (__builtin_riscv_pbsad ((a), (b)))
 #define __nds__pbsada(acc, a, b) \
@@ -1787,6 +1783,61 @@ enum riscv_order
   (__builtin_riscv_v_sumaqa ((r), (a), (b)))
 #define __nds64__v_smaqa_su(r, a, b) \
   (__builtin_riscv_v64_sumaqa ((r), (a), (b)))
+
+#define __nds__clrs8(a) \
+  (__builtin_riscv_clrs8 ((a)))
+#define __nds__v_clrs8(a) \
+  (__builtin_riscv_v_clrs8 ((a)))
+#define __nds64__v_clrs8(a) \
+  (__builtin_riscv_v64_clrs8 ((a)))
+#define __nds__clrs16(a) \
+  (__builtin_riscv_clrs16 ((a)))
+#define __nds__v_clrs16(a) \
+  (__builtin_riscv_v_clrs16 ((a)))
+#define __nds64__v_clrs16(a) \
+  (__builtin_riscv_v64_clrs16 ((a)))
+#define __nds__clrs32(a) \
+  (__builtin_riscv_clrs32 ((a)))
+#define __nds__v_clrs32(a) \
+  (__builtin_riscv_v_clrs32 ((a)))
+#define __nds64__v_clrs32(a) \
+  (__builtin_riscv_v64_clrs32 ((a)))
+#define __nds__clo8(a) \
+  (__builtin_riscv_clo8 ((a)))
+#define __nds__v_clo8(a) \
+  (__builtin_riscv_v_clo8 ((a)))
+#define __nds64__v_clo8(a) \
+  (__builtin_riscv_v64_clo8 ((a)))
+#define __nds__clo16(a) \
+  (__builtin_riscv_clo16 ((a)))
+#define __nds__v_clo16(a) \
+  (__builtin_riscv_v_clo16 ((a)))
+#define __nds64__v_clo16(a) \
+  (__builtin_riscv_v64_clo16 ((a)))
+#define __nds__clo32(a) \
+  (__builtin_riscv_clo32 ((a)))
+#define __nds__v_clo32(a) \
+  (__builtin_riscv_v_clo32 ((a)))
+#define __nds64__v_clo32(a) \
+  (__builtin_riscv_v64_clo32 ((a)))
+#define __nds__clz8(a) \
+  (__builtin_riscv_clz8 ((a)))
+#define __nds__v_clz8(a) \
+  (__builtin_riscv_v_clz8 ((a)))
+#define __nds64__v_clz8(a) \
+  (__builtin_riscv_v64_clz8 ((a)))
+#define __nds__clz16(a) \
+  (__builtin_riscv_clz16 ((a)))
+#define __nds__v_clz16(a) \
+  (__builtin_riscv_v_clz16 ((a)))
+#define __nds64__v_clz16(a) \
+  (__builtin_riscv_v64_clz16 ((a)))
+#define __nds__clz32(a) \
+  (__builtin_riscv_clz32 ((a)))
+#define __nds__v_clz32(a) \
+  (__builtin_riscv_v_clz32 ((a)))
+#define __nds64__v_clz32(a) \
+  (__builtin_riscv_v64_clz32 ((a)))
 
 #if __riscv_xlen == 32
 #define __nds__smul16(a, b) \
