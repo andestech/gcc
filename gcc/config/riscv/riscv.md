@@ -37,6 +37,9 @@
   ;; High part of PC-relative address.
   UNSPEC_AUIPC
 
+  ;; Indirect call function.
+  UNSPEC_ICT
+
   ;; Floating-point unspecs.
   UNSPEC_FLT_QUIET
   UNSPEC_FLE_QUIET

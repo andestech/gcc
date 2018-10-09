@@ -236,6 +236,23 @@ Enum(riscv_align_data) String(xlen) Value(riscv_align_data_type_xlen)
 EnumValue
 Enum(riscv_align_data) String(natural) Value(riscv_align_data_type_natural)
 
+mict-model=
+Target Report RejectNegative Joined Enum(ict_model) Var(riscv_ict_model) Init(ICT_MODEL_DEFAULT)
+Specify the address generation strategy for ICT call's code model.
+
+Enum
+Name(ict_model) Type(enum riscv_ict_model_type)
+Known ict model types (for use with the -mict-model= option):
+
+EnumValue
+Enum(ict_model) String(tiny) Value(ICT_MODEL_TINY)
+
+EnumValue
+Enum(ict_model) String(small) Value(ICT_MODEL_SMALL)
+
+EnumValue
+Enum(ict_model) String(large) Value(ICT_MODEL_LARGE)
+
 ; ---------------------------------------------------------------
 ; The following options are designed for compatibility issue.
 ; Hopefully these obsolete options will be removed one day.

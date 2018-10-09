@@ -65,4 +65,15 @@ enum riscv_align_data {
   riscv_align_data_type_natural
 };
 
+/* The ict model defines the address generation strategy.  */
+enum riscv_ict_model_type
+{
+  ICT_MODEL_TINY,
+  ICT_MODEL_DEFAULT,
+  ICT_MODEL_SMALL,
+  ICT_MODEL_LARGE
+};
+
+extern enum riscv_ict_model_type riscv_ict_model;
+
 #endif /* ! GCC_RISCV_OPTS_H */

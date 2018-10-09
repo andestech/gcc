@@ -1052,4 +1052,6 @@ extern tree riscv_fp16_type_node;
 #define BTB_FIXUP_SPEC \
   " %{Os3|Os:--mno-avoid-btb-miss}"
 
+#define ICT_VERSION 1
+
 #endif /* ! GCC_RISCV_H */

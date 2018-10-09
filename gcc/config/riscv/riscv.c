@@ -656,6 +656,10 @@ static const struct attribute_spec riscv_attribute_table[] =
 
   { "no_prologue",  0,  0, true, false, false, false, NULL, NULL },
 
+  /* The attribute is used to tell this function to be ROM patch.  */
+  { "indirect_call", 0, 0, true, false, false, false,
+    riscv_handle_fndecl_attribute, NULL },
+
   /* The attribute telling no execit optimization for this function.  */
   { "no_execit",       0,  0, true, false, false, false, NULL, NULL},
   /* For backward compatibility.  */
@@ -680,6 +684,27 @@ riscv_insert_attributes (tree decl, tree *attributes)
   if (TREE_CODE (decl) == FUNCTION_DECL
       && lookup_attribute ("no_prologue", *attributes) != NULL)
     *attributes = tree_cons (get_identifier ("naked"), NULL, *attributes);
+
+  /* A "indirect_call" function attribute implies "noinline" and "noclone"
+     for elf toolchain to support ROM patch mechanism.  */
+  if (TREE_CODE (decl) == FUNCTION_DECL
+      && lookup_attribute ("indirect_call", *attributes) != NULL)
+    {
+      tree new_attrs = *attributes;
+
+      if (TARGET_LINUX_ABI)
+	error("cannot use indirect_call attribute under linux toolchain");
+
+      if (lookup_attribute ("noinline", new_attrs) == NULL)
+	new_attrs = tree_cons (get_identifier ("noinline"), NULL, new_attrs);
+      if (lookup_attribute ("noclone", new_attrs) == NULL)
+	new_attrs = tree_cons (get_identifier ("noclone"), NULL, new_attrs);
+
+      if (!TREE_PUBLIC (decl))
+	error("indirect_call attribute can't apply for static function");
+
+      *attributes = new_attrs;
+    }
 }
 
 /* A table describing all the processors GCC knows about.  */
@@ -893,6 +918,21 @@ riscv_symbol_binds_local_p (const_rtx x)
 	    : SYMBOL_REF_LOCAL_P (x));
   else
     return false;
+}
+
+/* Return true X is a indirect call symbol.  */
+bool
+riscv_indirect_call_referenced_p (const_rtx x)
+{
+  if (GET_CODE (x) == SYMBOL_REF)
+    {
+      tree decl = SYMBOL_REF_DECL (x);
+
+      return decl && (lookup_attribute ("indirect_call",
+					DECL_ATTRIBUTES(decl)) != NULL);
+    }
+
+  return false;
 }
 
 /* Return the method that should be used to access SYMBOL_REF or
@@ -1783,7 +1823,7 @@ riscv_move_integer (rtx temp, rtx dest, HOST_WIDE_INT value,
 static void
 riscv_legitimize_const_move (machine_mode mode, rtx dest, rtx src)
 {
-  rtx base, offset;
+  rtx base, offset, ict, tmp;
 
   /* Split moves of big integers into smaller pieces.  */
   if (splittable_const_int_operand (src, mode))
@@ -1819,11 +1859,23 @@ riscv_legitimize_const_move (machine_mode mode, rtx dest, rtx src)
       return;
     }
 
+  ict = src;
   src = force_const_mem (mode, src);
 
   /* When using explicit relocs, constant pool references are sometimes
      not legitimate addresses.  */
   riscv_split_symbol (dest, XEXP (src, 0), mode, &XEXP (src, 0), FALSE);
+
+  /* Load one more time for indirect call symbols.  */
+  if (riscv_indirect_call_referenced_p (ict))
+    {
+      if (riscv_cmodel == CM_LARGE && riscv_ict_model != ICT_MODEL_LARGE)
+	error ("ICT model must be large when the code model is large.");
+      tmp = gen_reg_rtx (mode);
+      riscv_emit_move (tmp, src);
+      src = gen_rtx_MEM (mode, tmp);
+    }
+
   riscv_emit_move (dest, src);
 }
 
@@ -3738,6 +3790,8 @@ riscv_print_operand_reloc (FILE *file, rtx op, bool hi_reloc)
 
   fprintf (file, "%s(", reloc);
   output_addr_const (file, riscv_strip_unspec_address (op));
+  if (riscv_indirect_call_referenced_p (op))
+    fprintf (file, "@ICT");
   fputc (')', file);
 }
 
@@ -3953,6 +4007,8 @@ riscv_print_operand (FILE *file, rtx op, int letter)
 	    output_operand_lossage ("invalid use of '%%%c'", letter);
 	  else
 	    output_addr_const (file, riscv_strip_unspec_address (op));
+	  if (riscv_indirect_call_referenced_p (op))
+	    fprintf (file, "@ICT");
 	  break;
 	}
     }
@@ -5185,6 +5241,15 @@ riscv_file_start (void)
 
   fprintf (asm_out_file, "\t.attribute stack_align, %d\n",
 	   riscv_stack_boundary / 8);
+
+  fprintf (asm_out_file, "\t.attribute ict_version, %d\n", ICT_VERSION);
+
+  if (riscv_ict_model == ICT_MODEL_TINY)
+    fprintf (asm_out_file, "\t.attribute ict_model, \"tiny\"\n");
+  else if (riscv_ict_model == ICT_MODEL_SMALL)
+    fprintf (asm_out_file, "\t.attribute ict_model, \"small\"\n");
+  else
+    fprintf (asm_out_file, "\t.attribute ict_model, \"large\"\n");
 }
 
 /* Implement TARGET_ASM_OUTPUT_MI_THUNK.  Generate rtl rather than asm text
@@ -5327,6 +5392,20 @@ riscv_option_override (void)
 
   /* Function to allocate machine-dependent function status.  */
   init_machine_status = &riscv_init_machine_status;
+
+  /* ICT model limitations.  */
+  if (riscv_ict_model == ICT_MODEL_LARGE && !TARGET_64BIT)
+    error ("ICT large model is only supported on 64-bit toolchain.");
+  else if (riscv_ict_model == ICT_MODEL_LARGE && riscv_cmodel != CM_LARGE)
+    error ("ICT large model requires -mcmodel=large.");
+  else if ((riscv_ict_model != ICT_MODEL_LARGE
+	    && riscv_ict_model != ICT_MODEL_DEFAULT)
+	   && riscv_cmodel == CM_LARGE)
+    error ("ICT model must be large when the code model is large.");
+
+  /* Set default ict model to small.  */
+  if (riscv_ict_model == ICT_MODEL_DEFAULT)
+    riscv_ict_model = ICT_MODEL_SMALL;
 
   /* Always prefer medlow than medany for RV32 since medlow can access
      full address space. */
@@ -6178,6 +6257,34 @@ riscv_libc_has_function (enum function_class fn_class ATTRIBUTE_UNUSED)
   return true;
 }
 
+static bool
+riscv_asm_output_addr_const_extra (FILE *file, rtx x)
+{
+  if (GET_CODE (x) == UNSPEC && XINT (x, 1) == UNSPEC_ICT)
+    {
+      rtx base, offset;
+      split_const (x, &base, &offset);
+      x = plus_constant (Pmode, UNSPEC_ADDRESS (base), INTVAL (offset));
+      output_addr_const (file, riscv_strip_unspec_address (x));
+      fputs ("@ICT", file);
+      return true;
+    }
+  return false;
+}
+
+static bool
+riscv_assemble_integer (rtx x, unsigned int size, int aligned_p)
+{
+  if (riscv_indirect_call_referenced_p (x))
+    {
+      enum riscv_symbol_type type
+	= (enum riscv_symbol_type) (UNSPEC_ICT - UNSPEC_ADDRESS_FIRST);
+      x = riscv_unspec_address (x, type);
+    }
+
+  return default_assemble_integer (x, size, aligned_p);
+}
+
 /* Initialize the GCC target structure.  */
 #undef TARGET_ASM_ALIGNED_HI_OP
 #define TARGET_ASM_ALIGNED_HI_OP "\t.half\t"
@@ -6397,6 +6504,12 @@ riscv_libgcc_floating_mode_supported_p
 
 #undef TARGET_SCHED_ADJUST_PRIORITY
 #define TARGET_SCHED_ADJUST_PRIORITY riscv_sched_adjust_priority
+
+#undef TARGET_ASM_OUTPUT_ADDR_CONST_EXTRA
+#define TARGET_ASM_OUTPUT_ADDR_CONST_EXTRA riscv_asm_output_addr_const_extra
+
+#undef TARGET_ASM_INTEGER
+#define TARGET_ASM_INTEGER riscv_assemble_integer
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
