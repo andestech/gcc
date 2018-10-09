@@ -114,7 +114,7 @@ EnumValue
 Enum(code_model) String(small) Value(CM_MEDLOW)
 
 EnumValue
-Enum(code_model) String(medium) Value(CM_LARGE)
+Enum(code_model) String(medium) Value(CM_MEDANY)
 
 EnumValue
 Enum(code_model) String(large) Value(CM_LARGE)
