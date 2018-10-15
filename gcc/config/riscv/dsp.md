@@ -68,7 +68,7 @@
 
 (define_code_iterator sumin_max [smax umax smin umin])
 
-(define_code_iterator unop [clrsb clz popcount])
+(define_code_iterator unop [clrsb clz])
 
 (define_code_attr shift
   [(ashift "ashl") (ashiftrt "ashr") (lshiftrt "lshr") (rotatert "rotr")])
@@ -7134,5 +7134,23 @@
         (unop:SI (match_operand:SI 1 "register_operand" "r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "<insn>32\t%0, %1"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "clo<mode>2"
+  [(set (match_operand:VECI 0 "register_operand"               "=r")
+	(unspec:VECI [(match_operand:VECI 1 "register_operand" " r")]
+		      UNSPEC_CLO))]
+  "TARGET_DSP"
+  "clo<bits>\t%0, %1"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")])
+
+(define_insn "closi2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec:SI [(match_operand:SI 1 "register_operand" "r")]
+		    UNSPEC_CLO))]
+  "TARGET_DSP && !TARGET_64BIT"
+  "clo32\t%0, %1"
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])

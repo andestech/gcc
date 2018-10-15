@@ -531,8 +531,7 @@
 			(plus "add")
 			(minus "sub")
 			(clrsb "clrs")
-			(clz "clz")
-			(popcount "clo")])
+			(clz "clz")])
 
 ;; Ghost instructions produce no real code and introduce no hazards.
 ;; They exist purely to express an effect on dataflow.
