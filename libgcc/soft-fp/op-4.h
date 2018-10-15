@@ -517,10 +517,15 @@
 	      R##_f[_FP_DIV_MEAT_4_udiv_i] = -1;			\
 	      if (!_FP_DIV_MEAT_4_udiv_i)				\
 		break;							\
-	      __FP_FRAC_SUB_4 (X##_f[3], X##_f[2], X##_f[1], X##_f[0],	\
-			       Y##_f[2], Y##_f[1], Y##_f[0], 0,		\
-			       X##_f[2], X##_f[1], X##_f[0],		\
-			       _FP_DIV_MEAT_4_udiv_n_f[_FP_DIV_MEAT_4_udiv_i]); \
+              UWtype __FP_FRAC_tmp;                                     \
+              __FP_FRAC_SUB_4 (X##_f[2], X##_f[1], X##_f[0], __FP_FRAC_tmp,     \
+                               Y##_f[2], Y##_f[1], Y##_f[0], 0,         \
+                               X##_f[2], X##_f[1], X##_f[0],            \
+                               _FP_DIV_MEAT_4_udiv_n_f[_FP_DIV_MEAT_4_udiv_i]); \
+              X##_f[3] = X##_f[2];                                      \
+              X##_f[2] = X##_f[1];                                      \
+              X##_f[1] = X##_f[0];                                      \
+              X##_f[0] = __FP_FRAC_tmp; 				\
 	      _FP_FRAC_SUB_4 (X, Y, X);					\
 	      if (X##_f[3] > Y##_f[3])					\
 		{							\
