@@ -15,7 +15,7 @@ long long smal (long long ra, unsigned long rb)
 static __attribute__ ((noinline))
 long long v_smal (long long ra, int16x4_t rb)
 {
-  return __nds64__v_smal (ra, rb);
+  return __nds__v_smal (ra, rb);
 }
 
 int

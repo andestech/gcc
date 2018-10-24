@@ -15,7 +15,7 @@ long smds (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 long v_smds (int16x4_t ra, int16x4_t rb)
 {
-  return __nds64__v_smds (ra, rb);
+  return __nds__v_smds (ra, rb);
 }
 
 int

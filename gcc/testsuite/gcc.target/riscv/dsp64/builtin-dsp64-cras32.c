@@ -15,13 +15,13 @@ unsigned long cras32 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 uint32x2_t v_ucras32 (uint32x2_t ra, uint32x2_t rb)
 {
-  return __nds64__v_ucras32 (ra, rb);
+  return __nds__v_ucras32 (ra, rb);
 }
 
 static __attribute__ ((noinline))
 int32x2_t v_scras32 (int32x2_t ra, int32x2_t rb)
 {
-  return __nds64__v_scras32 (ra, rb);
+  return __nds__v_scras32 (ra, rb);
 }
 
 int

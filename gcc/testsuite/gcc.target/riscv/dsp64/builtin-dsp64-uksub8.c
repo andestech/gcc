@@ -15,7 +15,7 @@ unsigned long uksub8 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 uint8x8_t v_uksub8 (uint8x8_t ra, uint8x8_t rb)
 {
-  return __nds64__v_uksub8 (ra, rb);
+  return __nds__v_uksub8 (ra, rb);
 }
 
 int

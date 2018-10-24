@@ -15,7 +15,7 @@ unsigned long rsub32 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 int32x2_t v_rsub32 (int32x2_t ra, int32x2_t rb)
 {
-  return __nds64__v_rsub32 (ra, rb);
+  return __nds__v_rsub32 (ra, rb);
 }
 
 int

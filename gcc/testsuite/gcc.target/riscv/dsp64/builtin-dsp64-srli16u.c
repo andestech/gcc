@@ -15,7 +15,7 @@ unsigned long srli16_u (unsigned long ra)
 static __attribute__ ((noinline))
 uint16x4_t v_srli16_u (uint16x4_t ra)
 {
-  return __nds64__v_srl16_u (ra, 4);
+  return __nds__v_srl16_u (ra, 4);
 }
 
 int

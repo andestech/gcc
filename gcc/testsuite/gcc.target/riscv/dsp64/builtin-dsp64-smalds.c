@@ -15,7 +15,7 @@ long long smalds (long long t, unsigned long a, unsigned long b)
 static __attribute__ ((noinline))
 long long v_smalds (long long t, int16x4_t a, int16x4_t b)
 {
-  return __nds64__v_smalds (t, a, b);
+  return __nds__v_smalds (t, a, b);
 }
 
 

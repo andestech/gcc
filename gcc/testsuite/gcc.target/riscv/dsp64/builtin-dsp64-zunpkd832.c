@@ -15,7 +15,7 @@ unsigned long zunpkd832 (unsigned long a)
 static __attribute__ ((noinline))
 uint16x4_t v_zunpkd832 (uint8x8_t a)
 {
-  return __nds64__v_zunpkd832 (a);
+  return __nds__v_zunpkd832 (a);
 }
 
 int

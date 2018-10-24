@@ -15,7 +15,7 @@ long kmabb32 (unsigned long rd, unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 long v_kmabb32 (unsigned long rd, int32x2_t ra, int32x2_t rb)
 {
-  return __nds64__v_kmabb32 (rd, ra, rb);
+  return __nds__v_kmabb32 (rd, ra, rb);
 }
 
 int

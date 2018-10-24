@@ -15,7 +15,7 @@ long long smalxda (long long t, unsigned long a, unsigned long b)
 static __attribute__ ((noinline))
 long long v_smalxda (long long t, int16x4_t a, int16x4_t b)
 {
-  return __nds64__v_smalxda (t, a, b);
+  return __nds__v_smalxda (t, a, b);
 }
 
 

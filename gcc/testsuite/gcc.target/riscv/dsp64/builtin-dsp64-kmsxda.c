@@ -15,7 +15,7 @@ long kmsxda (unsigned long rd, unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 long v_kmsxda (unsigned long rd, int16x4_t ra, int16x4_t rb)
 {
-  return __nds64__v_kmsxda (rd, ra, rb);
+  return __nds__v_kmsxda (rd, ra, rb);
 }
 
 int

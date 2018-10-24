@@ -15,13 +15,13 @@ unsigned long cras16 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 uint16x4_t v_ucras16 (uint16x4_t ra, uint16x4_t rb)
 {
-  return __nds64__v_ucras16 (ra, rb);
+  return __nds__v_ucras16 (ra, rb);
 }
 
 static __attribute__ ((noinline))
 int16x4_t v_scras16 (int16x4_t ra, int16x4_t rb)
 {
-  return __nds64__v_scras16 (ra, rb);
+  return __nds__v_scras16 (ra, rb);
 }
 
 int

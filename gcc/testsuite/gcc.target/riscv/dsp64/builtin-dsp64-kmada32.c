@@ -9,13 +9,13 @@
 static __attribute__ ((noinline))
 long kmada32 (unsigned long rd, unsigned long ra, unsigned long rb)
 {
-  return __nds64__kmada32 (rd, ra, rb);
+  return __nds__kmada32 (rd, ra, rb);
 }
 
 static __attribute__ ((noinline))
 long v_kmada32 (long rd, int32x2_t ra, int32x2_t rb)
 {
-  return __nds64__v_kmada32 (rd, ra, rb);
+  return __nds__v_kmada32 (rd, ra, rb);
 }
 
 int

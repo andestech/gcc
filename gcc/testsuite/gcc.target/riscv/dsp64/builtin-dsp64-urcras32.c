@@ -15,7 +15,7 @@ unsigned long urcras32 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 uint32x2_t v_urcras32 (uint32x2_t ra, uint32x2_t rb)
 {
-  return __nds64__v_urcras32 (ra, rb);
+  return __nds__v_urcras32 (ra, rb);
 }
 
 int

@@ -15,7 +15,7 @@ unsigned long cras16 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 int16x4_t v_kcras16 (int16x4_t ra, int16x4_t rb)
 {
-  return __nds64__v_kcras16 (ra, rb);
+  return __nds__v_kcras16 (ra, rb);
 }
 
 int

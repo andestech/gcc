@@ -15,7 +15,7 @@ long smmwbu (long ra, long rb)
 static __attribute__ ((noinline))
 long v_smmwbu (long ra, int16x4_t rb)
 {
-  return __nds64__v_smmwb_u (ra, rb);
+  return __nds__v_smmwb_u (ra, rb);
 }
 
 int

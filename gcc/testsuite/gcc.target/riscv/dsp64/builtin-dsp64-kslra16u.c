@@ -15,7 +15,7 @@ unsigned long kslra16u (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 int16x4_t v_kslra16u (int16x4_t ra, unsigned long rb)
 {
-  return __nds64__v_kslra16_u (ra, rb);
+  return __nds__v_kslra16_u (ra, rb);
 }
 
 int

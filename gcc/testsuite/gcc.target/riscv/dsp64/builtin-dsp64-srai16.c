@@ -15,7 +15,7 @@ unsigned long srai16 (unsigned long ra)
 static __attribute__ ((noinline))
 int16x4_t v_srai16 (int16x4_t ra)
 {
-  return __nds64__v_sra16 (ra, 4);
+  return __nds__v_sra16 (ra, 4);
 }
 
 int

@@ -15,7 +15,7 @@ long smmwt (long ra, long rb)
 static __attribute__ ((noinline))
 long v_smmwt (long ra, int16x4_t rb)
 {
-  return __nds64__v_smmwt (ra, rb);
+  return __nds__v_smmwt (ra, rb);
 }
 
 int

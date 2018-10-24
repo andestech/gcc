@@ -15,7 +15,7 @@ long smxds (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 long v_smxds (int16x4_t ra, int16x4_t rb)
 {
-  return __nds64__v_smxds (ra, rb);
+  return __nds__v_smxds (ra, rb);
 }
 
 int

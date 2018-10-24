@@ -15,7 +15,7 @@ long khmbt16 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 long v_khmbt16 (int16x4_t ra, int16x4_t rb)
 {
-  return __nds64__v_khmbt16 (ra, rb);
+  return __nds__v_khmbt16 (ra, rb);
 }
 
 int

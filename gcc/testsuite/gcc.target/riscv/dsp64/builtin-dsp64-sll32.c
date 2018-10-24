@@ -15,7 +15,7 @@ unsigned long sll32 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 uint32x2_t v_sll32 (uint32x2_t ra, unsigned long rb)
 {
-  return __nds64__v_sll32 (ra, rb);
+  return __nds__v_sll32 (ra, rb);
 }
 
 int

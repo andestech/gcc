@@ -15,7 +15,7 @@ unsigned long sunpkd831 (unsigned long a)
 static __attribute__ ((noinline))
 int16x4_t v_sunpkd831 (int8x8_t a)
 {
-  return __nds64__v_sunpkd831 (a);
+  return __nds__v_sunpkd831 (a);
 }
 
 int

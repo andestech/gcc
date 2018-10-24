@@ -15,7 +15,7 @@ unsigned long kabs8 (unsigned long ra)
 static __attribute__ ((noinline))
 int8x8_t v_kabs8 (int8x8_t ra)
 {
-  return __nds64__v_kabs8 (ra);
+  return __nds__v_kabs8 (ra);
 }
 
 int

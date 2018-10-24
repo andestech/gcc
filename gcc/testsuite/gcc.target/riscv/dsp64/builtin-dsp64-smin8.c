@@ -15,7 +15,7 @@ unsigned long smin8 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 int8x8_t v_smin8 (int8x8_t ra, int8x8_t rb)
 {
-  return __nds64__v_smin8 (ra, rb);
+  return __nds__v_smin8 (ra, rb);
 }
 
 int

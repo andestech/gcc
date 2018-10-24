@@ -15,7 +15,7 @@ unsigned long scmplt16 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 uint16x4_t v_scmplt16 (int16x4_t ra, int16x4_t rb)
 {
-  return __nds64__v_scmplt16 (ra, rb);
+  return __nds__v_scmplt16 (ra, rb);
 }
 
 int

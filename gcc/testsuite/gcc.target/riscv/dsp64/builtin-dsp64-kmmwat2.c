@@ -15,7 +15,7 @@ long kmmawt2 (long rd, long ra, long rb)
 static __attribute__ ((noinline))
 long v_kmmawt2 (long rd, long ra, int16x4_t rb)
 {
-  return __nds64__v_kmmawt2 (rd, ra, rb);
+  return __nds__v_kmmawt2 (rd, ra, rb);
 }
 
 int

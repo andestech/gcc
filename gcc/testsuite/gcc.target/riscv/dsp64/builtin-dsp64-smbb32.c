@@ -15,7 +15,7 @@ long smbb32 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 long v_smbb32 (int32x2_t ra, int32x2_t rb)
 {
-  return __nds64__v_smbb32 (ra, rb);
+  return __nds__v_smbb32 (ra, rb);
 }
 
 int

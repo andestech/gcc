@@ -9,13 +9,13 @@
 static __attribute__ ((noinline))
 long smds32 (unsigned long ra, unsigned long rb)
 {
-  return __nds64__smds32 (ra, rb);
+  return __nds__smds32 (ra, rb);
 }
 
 static __attribute__ ((noinline))
 long v_smds32 (int32x2_t ra, int32x2_t rb)
 {
-  return __nds64__v_smds32 (ra, rb);
+  return __nds__v_smds32 (ra, rb);
 }
 
 int

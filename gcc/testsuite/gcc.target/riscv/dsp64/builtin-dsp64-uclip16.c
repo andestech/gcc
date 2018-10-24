@@ -15,7 +15,7 @@ unsigned long uclip16 (signed long ra)
 static __attribute__ ((noinline))
 int16x4_t v_uclip16 (int16x4_t ra)
 {
-  return __nds64__v_uclip16 (ra, 4);
+  return __nds__v_uclip16 (ra, 4);
 }
 
 int

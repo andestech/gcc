@@ -15,7 +15,7 @@ unsigned long umax16 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 uint16x4_t v_umax16 (uint16x4_t ra, uint16x4_t rb)
 {
-  return __nds64__v_umax16 (ra, rb);
+  return __nds__v_umax16 (ra, rb);
 }
 
 int

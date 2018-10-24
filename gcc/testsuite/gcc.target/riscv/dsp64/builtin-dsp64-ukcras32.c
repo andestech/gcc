@@ -15,7 +15,7 @@ unsigned long ukcras32 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 uint32x2_t v_ukcras32 (uint32x2_t ra, uint32x2_t rb)
 {
-  return __nds64__v_ukcras32 (ra, rb);
+  return __nds__v_ukcras32 (ra, rb);
 }
 
 int

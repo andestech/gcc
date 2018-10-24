@@ -15,7 +15,7 @@ unsigned long kabs16 (unsigned long ra)
 static __attribute__ ((noinline))
 int16x4_t v_kabs16 (int16x4_t ra)
 {
-  return __nds64__v_kabs16 (ra);
+  return __nds__v_kabs16 (ra);
 }
 
 int

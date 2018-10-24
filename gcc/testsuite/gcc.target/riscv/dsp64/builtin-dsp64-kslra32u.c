@@ -15,7 +15,7 @@ unsigned long kslra32u (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 int32x2_t v_kslra32u (int32x2_t ra, unsigned long rb)
 {
-  return __nds64__v_kslra32_u (ra, rb);
+  return __nds__v_kslra32_u (ra, rb);
 }
 
 int

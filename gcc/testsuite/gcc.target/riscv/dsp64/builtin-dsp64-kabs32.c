@@ -15,7 +15,7 @@ unsigned long kabs32 (unsigned long ra)
 static __attribute__ ((noinline))
 int32x2_t v_kabs32 (int32x2_t ra)
 {
-  return __nds64__v_kabs32 (ra);
+  return __nds__v_kabs32 (ra);
 }
 
 int

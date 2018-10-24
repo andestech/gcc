@@ -15,7 +15,7 @@ unsigned long srai32u (unsigned long ra)
 static __attribute__ ((noinline))
 int32x2_t v_srai32u (int32x2_t ra)
 {
-  return __nds64__v_sra32_u (ra, 4);
+  return __nds__v_sra32_u (ra, 4);
 }
 
 int

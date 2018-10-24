@@ -15,7 +15,7 @@ unsigned long scmplt8 (unsigned long ra, unsigned long rb)
 static __attribute__ ((noinline))
 uint8x8_t v_scmplt8 (int8x8_t ra, int8x8_t rb)
 {
-  return __nds64__v_scmplt8 (ra, rb);
+  return __nds__v_scmplt8 (ra, rb);
 }
 
 int
