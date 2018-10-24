@@ -44,6 +44,7 @@
 #include "tree-ssa.h"
 #include "tree-cfg.h"
 #include "gimple-pretty-print.h"
+#include "tree-eh.h"
 
 /* The idea behind this analyzer is to generate set constraints from the
    program, then solve the resulting constraints in order to generate the
@@ -8798,6 +8799,11 @@ reduce_passed_addressof (void)
           /* TODO: maybe do more tuning if we study more! */
           if (gimple_call_num_args (call_stmt) != 1)
             continue;
+
+	  /* Do not optimize for the throw statement.  Because the statement has
+	     to be kept as the last statement in a basic block.  */
+	  if (lookup_stmt_eh_lp (call_stmt))
+	    continue;
 
           arg0 = gimple_call_arg (call_stmt, 0);
           if (TREE_CODE (arg0) != ADDR_EXPR)
