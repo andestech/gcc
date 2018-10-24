@@ -5412,6 +5412,9 @@ riscv_option_override (void)
   if (riscv_cmodel == CM_LARGE && !TARGET_64BIT)
     riscv_cmodel = CM_MEDLOW;
 
+  if (riscv_cmodel == CM_LARGE && TARGET_EXPLICIT_RELOCS)
+    sorry ("code model %qs with -mexplicit-relocs", "large");
+
   if (riscv_cmodel == CM_LARGE && flag_pic)
     sorry ("code model %qs with -f%s", "large",
 	   global_options.x_flag_pic > 1 ? "PIC" : "pic");
