@@ -9,13 +9,13 @@
 static __attribute__ ((noinline))
 long smbt (unsigned long ra, unsigned long rb)
 {
-  return __nds__smbt (ra, rb);
+  return __nds__smbt16 (ra, rb);
 }
 
 static __attribute__ ((noinline))
 long v_smbt (int16x4_t ra, int16x4_t rb)
 {
-  return __nds__v_smbt (ra, rb);
+  return __nds__v_smbt16 (ra, rb);
 }
 
 int

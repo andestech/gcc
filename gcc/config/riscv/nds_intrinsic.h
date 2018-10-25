@@ -690,11 +690,11 @@ enum riscv_order
   (__builtin_riscv_kmmawt2 ((r), (a), (b)))
 #define __nds__kmmawt2_u(r, a, b) \
   (__builtin_riscv_kmmawt2_u ((r), (a), (b)))
-#define __nds__smbb(a, b) \
+#define __nds__smbb16(a, b) \
   (__builtin_riscv_smbb ((a), (b)))
-#define __nds__smbt(a, b) \
+#define __nds__smbt16(a, b) \
   (__builtin_riscv_smbt ((a), (b)))
-#define __nds__smtt(a, b) \
+#define __nds__smtt16(a, b) \
   (__builtin_riscv_smtt ((a), (b)))
 #define __nds__kmda(a, b) \
   (__builtin_riscv_kmda ((a), (b)))
@@ -1288,11 +1288,11 @@ enum riscv_order
   (__builtin_riscv_v_kmmawt2 ((r), (a), (b)))
 #define __nds__v_kmmawt2_u(r, a, b) \
   (__builtin_riscv_v_kmmawt2_u ((r), (a), (b)))
-#define __nds__v_smbb(a, b) \
+#define __nds__v_smbb16(a, b) \
   (__builtin_riscv_v_smbb ((a), (b)))
-#define __nds__v_smbt(a, b) \
+#define __nds__v_smbt16(a, b) \
   (__builtin_riscv_v_smbt ((a), (b)))
-#define __nds__v_smtt(a, b) \
+#define __nds__v_smtt16(a, b) \
   (__builtin_riscv_v_smtt ((a), (b)))
 #define __nds__v_kmda(a, b) \
   (__builtin_riscv_v_kmda ((a), (b)))
@@ -1637,11 +1637,11 @@ enum riscv_order
   (__builtin_riscv_v64_kmmawt2 ((r), (a), (b)))
 #define __nds__v_kmmawt2_u(r, a, b) \
   (__builtin_riscv_v64_kmmawt2_u ((r), (a), (b)))
-#define __nds__v_smbb(a, b) \
+#define __nds__v_smbb16(a, b) \
   (__builtin_riscv_v64_smbb ((a), (b)))
-#define __nds__v_smbt(a, b) \
+#define __nds__v_smbt16(a, b) \
   (__builtin_riscv_v64_smbt ((a), (b)))
-#define __nds__v_smtt(a, b) \
+#define __nds__v_smtt16(a, b) \
   (__builtin_riscv_v64_smtt ((a), (b)))
 #define __nds__v_kmda(a, b) \
   (__builtin_riscv_v64_kmda ((a), (b)))

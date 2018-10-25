@@ -9,13 +9,13 @@
 static __attribute__ ((noinline))
 long smtt (unsigned long ra, unsigned long rb)
 {
-  return __nds__smtt (ra, rb);
+  return __nds__smtt16 (ra, rb);
 }
 
 static __attribute__ ((noinline))
 long v_smtt (int16x4_t ra, int16x4_t rb)
 {
-  return __nds__v_smtt (ra, rb);
+  return __nds__v_smtt16 (ra, rb);
 }
 
 int
