@@ -5242,14 +5242,17 @@ riscv_file_start (void)
   fprintf (asm_out_file, "\t.attribute stack_align, %d\n",
 	   riscv_stack_boundary / 8);
 
-  fprintf (asm_out_file, "\t.attribute ict_version, %d\n", ICT_VERSION);
+  if (!TARGET_LINUX_ABI)
+    {
+      fprintf (asm_out_file, "\t.attribute ict_version, %d\n", ICT_VERSION);
 
-  if (riscv_ict_model == ICT_MODEL_TINY)
-    fprintf (asm_out_file, "\t.attribute ict_model, \"tiny\"\n");
-  else if (riscv_ict_model == ICT_MODEL_SMALL)
-    fprintf (asm_out_file, "\t.attribute ict_model, \"small\"\n");
-  else
-    fprintf (asm_out_file, "\t.attribute ict_model, \"large\"\n");
+      if (riscv_ict_model == ICT_MODEL_TINY)
+	fprintf (asm_out_file, "\t.attribute ict_model, \"tiny\"\n");
+      else if (riscv_ict_model == ICT_MODEL_SMALL)
+	fprintf (asm_out_file, "\t.attribute ict_model, \"small\"\n");
+      else
+	fprintf (asm_out_file, "\t.attribute ict_model, \"large\"\n");
+    }
 }
 
 /* Implement TARGET_ASM_OUTPUT_MI_THUNK.  Generate rtl rather than asm text
