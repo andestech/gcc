@@ -9,7 +9,7 @@
 static __attribute__ ((noinline))
 int kslli (int ra)
 {
-  return __nds__ksll (ra, 8);
+  return __nds__ksllw (ra, 8);
 }
 
 int

@@ -622,8 +622,8 @@ enum riscv_order
 
 #define __nds__sra_u(a, b) \
   (__builtin_riscv_sra_u ((a), (b)))
-#define __nds__ksll(a, b) \
-  (__builtin_riscv_ksll ((a), (b)))
+#define __nds__ksllw(a, b) \
+  (__builtin_riscv_ksllw ((a), (b)))
 #define __nds__pkbb16(a, b) \
   (__builtin_riscv_pkbb16 ((a), (b)))
 #define __nds__pkbt16(a, b) \

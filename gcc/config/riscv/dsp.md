@@ -6028,8 +6028,8 @@
 		      (match_operand:SI 2 "rimm5u_operand"   " Iu05, r")))]
   "TARGET_DSP"
   "@
-   kslli\t%0, %1, %2
-   ksll\t%0, %1, %2"
+   kslliw\t%0, %1, %2
+   ksllw\t%0, %1, %2"
   [(set_attr "mode"   "SI")])
 
 (define_insn "kslraw_round"

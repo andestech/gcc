@@ -193,7 +193,7 @@
 #define __nds32__rsubw __nds__rsubw
 #define __nds32__ursubw __nds__ursubw
 #define __nds32__sra_u __nds__sra_u
-#define __nds32__ksll __nds__ksll
+#define __nds32__ksll __nds__ksllw
 #define __nds32__pkbb16 __nds__pkbb16
 #define __nds32__v_pkbb16 __nds__v_pkbb16
 #define __nds32__pkbt16 __nds__pkbt16
