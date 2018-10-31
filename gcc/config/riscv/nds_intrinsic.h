@@ -496,6 +496,26 @@ enum riscv_order
   (__builtin_riscv_kcrsa16 ((a), (b)))
 #define __nds__ukcrsa16(a, b) \
   (__builtin_riscv_ukcrsa16 ((a), (b)))
+#define __nds__stas16(a, b) \
+  (__builtin_riscv_stas16 ((a), (b)))
+#define __nds__rstas16(a, b) \
+  (__builtin_riscv_rstas16 ((a), (b)))
+#define __nds__urstas16(a, b) \
+  (__builtin_riscv_urstas16 ((a), (b)))
+#define __nds__kstas16(a, b) \
+  (__builtin_riscv_kstas16 ((a), (b)))
+#define __nds__ukstas16(a, b) \
+  (__builtin_riscv_ukstas16 ((a), (b)))
+#define __nds__stsa16(a, b) \
+  (__builtin_riscv_stsa16 ((a), (b)))
+#define __nds__rstsa16(a, b) \
+  (__builtin_riscv_rstsa16 ((a), (b)))
+#define __nds__urstsa16(a, b) \
+  (__builtin_riscv_urstsa16 ((a), (b)))
+#define __nds__kstsa16(a, b) \
+  (__builtin_riscv_kstsa16 ((a), (b)))
+#define __nds__ukstsa16(a, b) \
+  (__builtin_riscv_ukstsa16 ((a), (b)))
 #define __nds__add8(a, b) \
   (__builtin_riscv_add8 ((a), (b)))
 #define __nds__radd8(a, b) \
@@ -925,6 +945,26 @@ enum riscv_order
   (__builtin_riscv_ukcras32 ((a), (b)))
 #define __nds__ukcrsa32(a, b) \
   (__builtin_riscv_ukcrsa32 ((a), (b)))
+#define __nds__stas32(a, b) \
+  (__builtin_riscv_stas32 ((a), (b)))
+#define __nds__stsa32(a, b) \
+  (__builtin_riscv_stsa32 ((a), (b)))
+#define __nds__rstas32(a, b) \
+  (__builtin_riscv_rstas32 ((a), (b)))
+#define __nds__rstsa32(a, b) \
+  (__builtin_riscv_rstsa32 ((a), (b)))
+#define __nds__urstas32(a, b) \
+  (__builtin_riscv_urstas32 ((a), (b)))
+#define __nds__urstsa32(a, b) \
+  (__builtin_riscv_urstsa32 ((a), (b)))
+#define __nds__kstas32(a, b) \
+  (__builtin_riscv_kstas32 ((a), (b)))
+#define __nds__kstsa32(a, b) \
+  (__builtin_riscv_kstsa32 ((a), (b)))
+#define __nds__ukstas32(a, b) \
+  (__builtin_riscv_ukstas32 ((a), (b)))
+#define __nds__ukstsa32(a, b) \
+  (__builtin_riscv_ukstsa32 ((a), (b)))
 #define __nds__sra32(a, b) \
   (__builtin_riscv_sra32 ((a), (b)))
 #define __nds__sra32_u(a, b) \
@@ -1116,6 +1156,30 @@ enum riscv_order
   (__builtin_riscv_v_kcrsa16 ((a), (b)))
 #define __nds__v_ukcrsa16(a, b) \
   (__builtin_riscv_v_ukcrsa16 ((a), (b)))
+#define __nds__v_ustas16(a, b) \
+  (__builtin_riscv_v_ustas16 ((a), (b)))
+#define __nds__v_sstas16(a, b) \
+  (__builtin_riscv_v_sstas16 ((a), (b)))
+#define __nds__v_rstas16(a, b) \
+  (__builtin_riscv_v_rstas16 ((a), (b)))
+#define __nds__v_urstas16(a, b) \
+  (__builtin_riscv_v_urstas16 ((a), (b)))
+#define __nds__v_kstas16(a, b) \
+  (__builtin_riscv_v_kstas16 ((a), (b)))
+#define __nds__v_ukstas16(a, b) \
+  (__builtin_riscv_v_ukstas16 ((a), (b)))
+#define __nds__v_ustsa16(a, b) \
+  (__builtin_riscv_v_ustsa16 ((a), (b)))
+#define __nds__v_sstsa16(a, b) \
+  (__builtin_riscv_v_sstsa16 ((a), (b)))
+#define __nds__v_rstsa16(a, b) \
+  (__builtin_riscv_v_rstsa16 ((a), (b)))
+#define __nds__v_urstsa16(a, b) \
+  (__builtin_riscv_v_urstsa16 ((a), (b)))
+#define __nds__v_kstsa16(a, b) \
+  (__builtin_riscv_v_kstsa16 ((a), (b)))
+#define __nds__v_ukstsa16(a, b) \
+  (__builtin_riscv_v_ukstsa16 ((a), (b)))
 #define __nds__v_uadd8(a, b) \
   (__builtin_riscv_v_uadd8 ((a), (b)))
 #define __nds__v_sadd8(a, b) \
@@ -1465,6 +1529,30 @@ enum riscv_order
   (__builtin_riscv_v64_kcrsa16 ((a), (b)))
 #define __nds__v_ukcrsa16(a, b) \
   (__builtin_riscv_v64_ukcrsa16 ((a), (b)))
+#define __nds__v_ustas16(a, b) \
+  (__builtin_riscv_v64_ustas16 ((a), (b)))
+#define __nds__v_sstas16(a, b) \
+  (__builtin_riscv_v64_sstas16 ((a), (b)))
+#define __nds__v_rstas16(a, b) \
+  (__builtin_riscv_v64_rstas16 ((a), (b)))
+#define __nds__v_urstas16(a, b) \
+  (__builtin_riscv_v64_urstas16 ((a), (b)))
+#define __nds__v_kstas16(a, b) \
+  (__builtin_riscv_v64_kstas16 ((a), (b)))
+#define __nds__v_ukstas16(a, b) \
+  (__builtin_riscv_v64_ukstas16 ((a), (b)))
+#define __nds__v_ustsa16(a, b) \
+  (__builtin_riscv_v64_ustsa16 ((a), (b)))
+#define __nds__v_sstsa16(a, b) \
+  (__builtin_riscv_v64_sstsa16 ((a), (b)))
+#define __nds__v_rstsa16(a, b) \
+  (__builtin_riscv_v64_rstsa16 ((a), (b)))
+#define __nds__v_urstsa16(a, b) \
+  (__builtin_riscv_v64_urstsa16 ((a), (b)))
+#define __nds__v_kstsa16(a, b) \
+  (__builtin_riscv_v64_kstsa16 ((a), (b)))
+#define __nds__v_ukstsa16(a, b) \
+  (__builtin_riscv_v64_ukstsa16 ((a), (b)))
 #define __nds__v_uadd8(a, b) \
   (__builtin_riscv_v64_uadd8 ((a), (b)))
 #define __nds__v_sadd8(a, b) \
@@ -1763,6 +1851,30 @@ enum riscv_order
   (__builtin_riscv_v_ukcras32 ((a), (b)))
 #define __nds__v_ukcrsa32(a, b) \
   (__builtin_riscv_v_ukcrsa32 ((a), (b)))
+#define __nds__v_ustas32(a, b) \
+  (__builtin_riscv_v_ustas32 ((a), (b)))
+#define __nds__v_sstas32(a, b) \
+  (__builtin_riscv_v_sstas32 ((a), (b)))
+#define __nds__v_ustsa32(a, b) \
+  (__builtin_riscv_v_ustsa32 ((a), (b)))
+#define __nds__v_sstsa32(a, b) \
+  (__builtin_riscv_v_sstsa32 ((a), (b)))
+#define __nds__v_rstas32(a, b) \
+  (__builtin_riscv_v_rstas32 ((a), (b)))
+#define __nds__v_rstsa32(a, b) \
+  (__builtin_riscv_v_rstsa32 ((a), (b)))
+#define __nds__v_urstas32(a, b) \
+  (__builtin_riscv_v_urstas32 ((a), (b)))
+#define __nds__v_urstsa32(a, b) \
+  (__builtin_riscv_v_urstsa32 ((a), (b)))
+#define __nds__v_kstas32(a, b) \
+  (__builtin_riscv_v_kstas32 ((a), (b)))
+#define __nds__v_kstsa32(a, b) \
+  (__builtin_riscv_v_kstsa32 ((a), (b)))
+#define __nds__v_ukstas32(a, b) \
+  (__builtin_riscv_v_ukstas32 ((a), (b)))
+#define __nds__v_ukstsa32(a, b) \
+  (__builtin_riscv_v_ukstsa32 ((a), (b)))
 #define __nds__v_sra32(a, b) \
   (__builtin_riscv_v_sra32 ((a), (b)))
 #define __nds__v_sra32_u(a, b) \
