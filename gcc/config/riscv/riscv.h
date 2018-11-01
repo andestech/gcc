@@ -59,25 +59,28 @@ along with GCC; see the file COPYING3.  If not see
 #define CC1_SPEC \
   " %{Os1:-Os -mno-save-restore}" \
   " %{Os2:-Os -minnermost-loop}" \
-  " %{Os3:-Os}"
+  " %{Os3:-Os}" \
 
 extern const char *riscv_arch (int, const char **);
 #undef EXTRA_SPEC_FUNCTIONS
 #define EXTRA_SPEC_FUNCTIONS \
   { "riscv_arch", riscv_arch },			\
 
+#define MARCH_POST_PROC_SPEC \
+  "-march=%:riscv_arch(%{march=*} \
+		       %{mnds} \
+		       %{mno-nds} \
+		       %{matomic} \
+		       %{mno-atomic} \
+		       %{mno-16-bit} \
+		       %{mext-dsp} \
+		       %{mno-ext-dsp})"
+
 #undef ASM_SPEC
 #define ASM_SPEC "\
 %(subtarget_asm_debugging_spec) \
 %{" FPIE_OR_FPIC_SPEC ":-fpic} \
--march=%:riscv_arch(%{march=*} \
-		    %{mnds} \
-		    %{mno-nds} \
-		    %{matomic} \
-		    %{mno-atomic} \
-		    %{mno-16-bit} \
-		    %{mext-dsp} \
-		    %{mno-ext-dsp}) \
+%{march=*} \
 %{mabi=*} \
 %(subtarget_asm_spec)" \
 " %{O|O1|O2|O3|Ofast:-O1;:-Os}"
@@ -1014,7 +1017,8 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   " %{mno-nds:%{!mlea:-mno-lea}}" \
   " %{mno-nds:%{!mexecit:-mno-execit}}" \
   " %{mno-nds:%{!mgp-insn-relax:-mno-gp-insn-relax}}" \
-  " %{mno-nds:%{!mext-dsp:-mno-ext-dsp}}"
+  " %{mno-nds:%{!mext-dsp:-mno-ext-dsp}}" \
+  " %{march=*:" MARCH_POST_PROC_SPEC "}"
 
 #define CMODEL_SPEC \
   " %{mcmodel=small:-mcmodel=medlow}" \
