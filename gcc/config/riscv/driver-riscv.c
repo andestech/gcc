@@ -79,7 +79,7 @@ static void
 parsing_march (const char *march)
 {
   const char *p = march;
-  if (strncmp (p, "rv64i", 5) == 0)
+  if (strncmp (p, "rv64", 4) == 0)
     rv64_p = true;
   else if (strncmp (p, "rv32", 4) == 0)
     {
@@ -88,6 +88,15 @@ parsing_march (const char *march)
   else
     /* Wrong arch string.  */
     return;
+
+  if (p[4] == 'g')
+    {
+      set_std_ext ('m', 1);
+      set_std_ext ('a', 1);
+      set_std_ext ('f', 1);
+      set_std_ext ('d', 1);
+    }
+
   p += 5;
 
   arch_options_t *opt = &arch_options[0];
