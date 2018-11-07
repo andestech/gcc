@@ -105,4 +105,13 @@ extern void riscv_asm_output_pool_epilogue (FILE *, const char *,
 
 extern void riscv_expand_float_hf(rtx, rtx, bool);
 
+extern void riscv_split_ashiftdi3 (rtx, rtx, rtx);
+extern void riscv_split_ashiftrtdi3 (rtx, rtx, rtx);
+extern void riscv_split_lshiftrtdi3 (rtx, rtx, rtx);
+extern void riscv_split_shiftrtdi3 (rtx, rtx, rtx);
+
+/* Auxiliary functions for manipulation DI mode.  */
+extern rtx riscv_di_high_part_subreg(rtx);
+extern rtx riscv_di_low_part_subreg(rtx);
+
 #endif /* ! GCC_RISCV_PROTOS_H */

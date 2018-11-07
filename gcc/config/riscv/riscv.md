@@ -1857,7 +1857,17 @@
   [(set_attr "type" "shift")
    (set_attr "mode" "SI")])
 
-(define_insn "<optab>di3"
+(define_expand "<optab>di3"
+  [(set (match_operand:DI 0 "register_operand"     "")
+	(any_shift:DI
+	    (match_operand:DI 1 "register_operand" "")
+	    (match_operand:DI 2 "imm6u_operand"    "")))]
+  "TARGET_64BIT
+   || (!TARGET_64BIT && TARGET_DSP)"
+{
+})
+
+(define_insn "*<optab>di3"
   [(set (match_operand:DI 0 "register_operand"     "= r")
 	(any_shift:DI
 	    (match_operand:DI 1 "register_operand" "  r")

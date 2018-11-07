@@ -6299,6 +6299,112 @@ riscv_assemble_integer (rtx x, unsigned int size, int aligned_p)
   return default_assemble_integer (x, size, aligned_p);
 }
 
+/* Auxiliary functions for manipulation DI mode.  */
+rtx riscv_di_high_part_subreg(rtx reg)
+{
+  unsigned high_part_offset = subreg_highpart_offset (SImode, DImode);
+
+  return simplify_gen_subreg (
+	   SImode, reg,
+	   DImode, high_part_offset);
+}
+
+rtx riscv_di_low_part_subreg(rtx reg)
+{
+  unsigned low_part_offset = subreg_lowpart_offset (SImode, DImode);
+
+  return simplify_gen_subreg (
+	   SImode, reg,
+	   DImode, low_part_offset);
+}
+
+static void
+riscv_split_shiftrtdi3 (rtx dst, rtx src, rtx shiftamount, bool logic_shift_p)
+{
+  rtx src_high_part;
+  rtx dst_high_part, dst_low_part;
+
+  dst_high_part = riscv_di_high_part_subreg (dst);
+  src_high_part = riscv_di_high_part_subreg (src);
+  dst_low_part = riscv_di_low_part_subreg (dst);
+
+  if (INTVAL (shiftamount) < 32)
+    {
+      if (logic_shift_p)
+	{
+	  emit_insn (gen_uwext (dst_low_part, src,
+				shiftamount));
+	  emit_insn (gen_lshrsi3 (dst_high_part, src_high_part,
+				  shiftamount));
+	}
+      else
+	{
+	  emit_insn (gen_wext (dst_low_part, src,
+			       shiftamount));
+	  emit_insn (gen_ashrsi3 (dst_high_part, src_high_part,
+				  shiftamount));
+	}
+    }
+  else
+    {
+      rtx new_shift_amout = gen_int_mode(INTVAL (shiftamount) - 32, SImode);
+
+      if (logic_shift_p)
+	{
+	  emit_insn (gen_lshrsi3 (dst_low_part, src_high_part,
+				  new_shift_amout));
+	  emit_move_insn (dst_high_part, const0_rtx);
+	}
+      else
+	{
+	  emit_insn (gen_ashrsi3 (dst_low_part, src_high_part,
+				  new_shift_amout));
+	  emit_insn (gen_ashrsi3 (dst_high_part, src_high_part,
+				  GEN_INT (31)));
+	}
+    }
+}
+
+void
+riscv_split_ashiftdi3 (rtx dst, rtx src, rtx shiftamount)
+{
+  rtx src_low_part;
+  rtx dst_high_part, dst_low_part;
+
+  dst_high_part = riscv_di_high_part_subreg (dst);
+  dst_low_part = riscv_di_low_part_subreg (dst);
+
+  src_low_part = riscv_di_low_part_subreg (src);
+
+  /* We need to handle shift more than 32 bit!!!! */
+  if (INTVAL (shiftamount) < 32)
+    {
+      rtx ext_start;
+      ext_start = gen_int_mode(32 - INTVAL (shiftamount), SImode);
+      emit_insn (gen_wext (dst_high_part, src, ext_start));
+      emit_insn (gen_ashlsi3 (dst_low_part, src_low_part, shiftamount));
+    }
+  else
+    {
+      rtx new_shift_amout = gen_int_mode(INTVAL (shiftamount) - 32, SImode);
+      emit_insn (gen_ashlsi3 (dst_high_part, src_low_part,
+			      new_shift_amout));
+      emit_move_insn (dst_low_part, GEN_INT (0));
+    }
+}
+
+void
+riscv_split_ashiftrtdi3 (rtx dst, rtx src, rtx shiftamount)
+{
+  riscv_split_shiftrtdi3 (dst, src, shiftamount, false);
+}
+
+void
+riscv_split_lshiftrtdi3 (rtx dst, rtx src, rtx shiftamount)
+{
+  riscv_split_shiftrtdi3 (dst, src, shiftamount, true);
+}
+
 /* Initialize the GCC target structure.  */
 #undef TARGET_ASM_ALIGNED_HI_OP
 #define TARGET_ASM_ALIGNED_HI_OP "\t.half\t"

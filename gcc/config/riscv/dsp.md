@@ -6110,6 +6110,19 @@
    wexti\t%0, %1, %2"
   [(set_attr "mode" "DI")])
 
+(define_insn_and_split "wext_<shift>di3"
+  [(set (match_operand:DI 0 "register_operand" "")
+	(any_shift:DI (match_operand:DI 1 "register_operand" "")
+		      (match_operand:DI 2 "imm6u_operand" "")))]
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
+  "#"
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
+  [(const_int 0)]
+{
+  riscv_split_<code>di3 (operands[0], operands[1], operands[2]);
+  DONE;
+})
+
 ;; 32-bit add/sub instruction: raddw and rsubw.
 (define_insn "r<opcode>si3"
   [(set (match_operand:SI 0 "register_operand"                       "=r")
