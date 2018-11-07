@@ -6594,7 +6594,7 @@
   "pbsada\t%0, %2, %3"
   [(set_attr "mode" "SI")])
 
-(define_insn "*mulsidi3"
+(define_insn "dsp_mulsidi3"
   [(set (match_operand:DI 0 "register_operand"                          "=r")
 	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" " r"))
 		 (sign_extend:DI (match_operand:SI 2 "register_operand" " r"))))]
@@ -6603,7 +6603,7 @@
   [(set_attr "type"   "imul")
    (set_attr "mode"   "DI")])
 
-(define_insn "*umulsidi3"
+(define_insn "dsp_umulsidi3"
   [(set (match_operand:DI 0 "register_operand"                          "=r")
 	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
 		 (zero_extend:DI (match_operand:SI 2 "register_operand" " r"))))]

@@ -568,7 +568,17 @@
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
-(define_insn "adddi3"
+(define_expand "adddi3"
+  [(set (match_operand:DI          0 "register_operand" "")
+	(plus:DI (match_operand:DI 1 "register_operand" "")
+		 (match_operand:DI 2 "arith_operand"    "")))]
+  "TARGET_64BIT || TARGET_DSP"
+{
+  if (!TARGET_64BIT && !REG_P(operands[2]))
+    FAIL;
+})
+
+(define_insn "*adddi3"
   [(set (match_operand:DI          0 "register_operand" "=r,r")
 	(plus:DI (match_operand:DI 1 "register_operand" " r,r")
 		 (match_operand:DI 2 "arith_operand"    " r,I")))]
@@ -615,7 +625,17 @@
   [(set_attr "type" "fadd")
    (set_attr "mode" "<UNITMODE>")])
 
-(define_insn "subdi3"
+(define_expand "subdi3"
+  [(set (match_operand:DI           0 "register_operand" "")
+	(minus:DI (match_operand:DI 1 "reg_or_0_operand" "")
+		  (match_operand:DI 2 "register_operand" "")))]
+  "TARGET_64BIT || TARGET_DSP"
+{
+  if (!TARGET_64BIT && !REG_P(operands[1]))
+    FAIL;
+})
+
+(define_insn "*subdi3"
   [(set (match_operand:DI 0            "register_operand" "= r")
 	(minus:DI (match_operand:DI 1  "reg_or_0_operand" " rJ")
 		   (match_operand:DI 2 "register_operand" "  r")))]
@@ -824,11 +844,18 @@
 		   (match_operand:SI 2 "register_operand" " r"))))]
   "TARGET_MUL && !TARGET_64BIT"
 {
-  rtx temp = gen_reg_rtx (SImode);
-  emit_insn (gen_mulsi3 (temp, operands[1], operands[2]));
-  emit_insn (gen_<u>mulsi3_highpart (riscv_subword (operands[0], true),
-				     operands[1], operands[2]));
-  emit_insn (gen_movsi (riscv_subword (operands[0], false), temp));
+  if (TARGET_DSP)
+    {
+      emit_insn (gen_dsp_<u>mulsidi3 (operands[0], operands[1], operands[2]));
+    }
+  else
+    {
+      rtx temp = gen_reg_rtx (SImode);
+      emit_insn (gen_mulsi3 (temp, operands[1], operands[2]));
+      emit_insn (gen_<u>mulsi3_highpart (riscv_subword (operands[0], true),
+					 operands[1], operands[2]));
+      emit_insn (gen_movsi (riscv_subword (operands[0], false), temp));
+    }
   DONE;
 })
 
