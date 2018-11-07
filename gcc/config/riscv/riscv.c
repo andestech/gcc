@@ -952,7 +952,9 @@ riscv_classify_symbol (const_rtx x)
     case CM_MEDLOW:
       return SYMBOL_ABSOLUTE;
     case CM_LARGE:
-      return CONSTANT_POOL_ADDRESS_P (x) ? SYMBOL_PCREL : SYMBOL_FORCE_TO_MEM;
+      if (SYMBOL_REF_P (x))
+	return CONSTANT_POOL_ADDRESS_P (x) ? SYMBOL_PCREL : SYMBOL_FORCE_TO_MEM;
+      return SYMBOL_PCREL;
     default:
       return SYMBOL_PCREL;
     }
