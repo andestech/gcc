@@ -261,6 +261,9 @@ static int epilogue_cfa_sp_offset;
 /* Which tuning parameters to use.  */
 static const struct riscv_tune_info *tune_info;
 
+/* Used indirect call functions.  */
+static bool riscv_ict_used = false;
+
 /* Which automaton to use for tuning.  */
 enum riscv_microarchitecture_type riscv_microarchitecture = vicuna;
 
@@ -927,9 +930,12 @@ riscv_indirect_call_referenced_p (const_rtx x)
   if (GET_CODE (x) == SYMBOL_REF)
     {
       tree decl = SYMBOL_REF_DECL (x);
-
-      return decl && (lookup_attribute ("indirect_call",
-					DECL_ATTRIBUTES(decl)) != NULL);
+      if (decl
+	  && (lookup_attribute ("indirect_call",DECL_ATTRIBUTES(decl)) != NULL))
+	{
+	  riscv_ict_used = true;
+	  return true;
+	}
     }
 
   return false;
@@ -5243,8 +5249,12 @@ riscv_file_start (void)
 
   fprintf (asm_out_file, "\t.attribute stack_align, %d\n",
 	   riscv_stack_boundary / 8);
+}
 
-  if (!TARGET_LINUX_ABI)
+static void
+riscv_asm_file_end (void)
+{
+  if (riscv_ict_used)
     {
       fprintf (asm_out_file, "\t.attribute ict_version, %d\n", ICT_VERSION);
 
@@ -6327,6 +6337,8 @@ riscv_assemble_integer (rtx x, unsigned int size, int aligned_p)
 
 #undef TARGET_ASM_FILE_START
 #define TARGET_ASM_FILE_START riscv_file_start
+#undef TARGET_ASM_FILE_END
+#define TARGET_ASM_FILE_END riscv_asm_file_end
 #undef TARGET_ASM_FILE_START_FILE_DIRECTIVE
 #define TARGET_ASM_FILE_START_FILE_DIRECTIVE true
 
