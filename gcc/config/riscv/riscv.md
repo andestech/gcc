@@ -1861,10 +1861,17 @@
   [(set (match_operand:DI 0 "register_operand"     "")
 	(any_shift:DI
 	    (match_operand:DI 1 "register_operand" "")
-	    (match_operand:DI 2 "imm6u_operand"    "")))]
+	    (match_operand:DI 2 "arith_operand"    "")))]
   "TARGET_64BIT
    || (!TARGET_64BIT && TARGET_DSP)"
 {
+  if (!TARGET_64BIT && TARGET_DSP)
+    {
+      if (!CONST_INT_P (operands[2]))
+	FAIL;
+      if (!satisfies_constraint_u06 (operands[2]))
+	FAIL;
+    }
 })
 
 (define_insn "*<optab>di3"
