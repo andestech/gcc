@@ -698,6 +698,12 @@ riscv_insert_attributes (tree decl, tree *attributes)
       if (TARGET_LINUX_ABI)
 	error("cannot use indirect_call attribute under linux toolchain");
 
+      if (flag_pic)
+	error ("Attribute indirect_call does not support in PIC.");
+
+      if (riscv_cmodel == CM_LARGE && riscv_ict_model != ICT_MODEL_LARGE)
+	error ("ICT model must be large when the code model is large.");
+
       if (lookup_attribute ("noinline", new_attrs) == NULL)
 	new_attrs = tree_cons (get_identifier ("noinline"), NULL, new_attrs);
       if (lookup_attribute ("noclone", new_attrs) == NULL)
@@ -1877,8 +1883,6 @@ riscv_legitimize_const_move (machine_mode mode, rtx dest, rtx src)
   /* Load one more time for indirect call symbols.  */
   if (riscv_indirect_call_referenced_p (ict))
     {
-      if (riscv_cmodel == CM_LARGE && riscv_ict_model != ICT_MODEL_LARGE)
-	error ("ICT model must be large when the code model is large.");
       tmp = gen_reg_rtx (mode);
       riscv_emit_move (tmp, src);
       src = gen_rtx_MEM (mode, tmp);
@@ -5413,14 +5417,6 @@ riscv_option_override (void)
     error ("ICT large model is only supported on 64-bit toolchain.");
   else if (riscv_ict_model == ICT_MODEL_LARGE && riscv_cmodel != CM_LARGE)
     error ("ICT large model requires -mcmodel=large.");
-  else if ((riscv_ict_model != ICT_MODEL_LARGE
-	    && riscv_ict_model != ICT_MODEL_DEFAULT)
-	   && riscv_cmodel == CM_LARGE)
-    error ("ICT model must be large when the code model is large.");
-
-  /* Set default ict model to small.  */
-  if (riscv_ict_model == ICT_MODEL_DEFAULT)
-    riscv_ict_model = ICT_MODEL_SMALL;
 
   /* Always prefer medlow than medany for RV32 since medlow can access
      full address space. */

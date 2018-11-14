@@ -69,7 +69,6 @@ enum riscv_align_data {
 enum riscv_ict_model_type
 {
   ICT_MODEL_TINY,
-  ICT_MODEL_DEFAULT,
   ICT_MODEL_SMALL,
   ICT_MODEL_LARGE
 };

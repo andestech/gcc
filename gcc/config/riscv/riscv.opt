@@ -237,7 +237,7 @@ EnumValue
 Enum(riscv_align_data) String(natural) Value(riscv_align_data_type_natural)
 
 mict-model=
-Target Report RejectNegative Joined Enum(ict_model) Var(riscv_ict_model) Init(ICT_MODEL_DEFAULT)
+Target Report RejectNegative Joined Enum(ict_model) Var(riscv_ict_model) Init(ICT_MODEL_SMALL)
 Specify the address generation strategy for ICT call's code model.
 
 Enum
