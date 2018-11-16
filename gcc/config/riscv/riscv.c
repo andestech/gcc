@@ -4654,6 +4654,10 @@ riscv_adjust_libcall_cfi_prologue ()
   /* Debug info for adjust sp.  */
   adjust_sp_rtx = gen_add3_insn (stack_pointer_rtx,
 				 stack_pointer_rtx, GEN_INT (-saved_size));
+
+  if (INSN_P (adjust_sp_rtx))
+    adjust_sp_rtx = PATTERN (adjust_sp_rtx);
+
   dwarf = alloc_reg_note (REG_CFA_ADJUST_CFA, adjust_sp_rtx,
 			  dwarf);
   return dwarf;
@@ -4757,6 +4761,10 @@ riscv_adjust_libcall_cfi_epilogue ()
   /* Debug info for adjust sp.  */
   adjust_sp_rtx = gen_add3_insn (stack_pointer_rtx,
 				 stack_pointer_rtx, GEN_INT (saved_size));
+
+  if (INSN_P (adjust_sp_rtx))
+    adjust_sp_rtx = PATTERN (adjust_sp_rtx);
+
   dwarf = alloc_reg_note (REG_CFA_ADJUST_CFA, adjust_sp_rtx,
 			  dwarf);
 
