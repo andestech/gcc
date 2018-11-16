@@ -2697,11 +2697,11 @@ riscv_prepare_builtin_arg (struct expand_operand *op, tree exp, unsigned argno,
 	  int nunits = GET_MODE_NUNITS (mode);
 	  int i, shift = 0;
 	  rtvec v = rtvec_alloc (nunits);
-	  int val = INTVAL (arg);
+	  HOST_WIDE_INT val = INTVAL (arg);
 	  enum machine_mode val_mode = GET_MODE_INNER (mode);
 	  int shift_acc = GET_MODE_BITSIZE (val_mode);
-	  int mask = GET_MODE_MASK (val_mode);
-	  int tmp_val = val;
+	  unsigned HOST_WIDE_INT mask = GET_MODE_MASK (val_mode);
+	  HOST_WIDE_INT tmp_val = val;
 
 	  for (i = 0; i < nunits; i++)
 	    {
