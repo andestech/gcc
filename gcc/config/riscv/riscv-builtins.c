@@ -2032,7 +2032,7 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		      RISCV_LONG_FTYPE_LONG_LONG, MAX),
   DIRECT_DSP_BUILTIN (sminsi3, sminsi3, min,
 		      RISCV_LONG_FTYPE_LONG_LONG, MIN),
-  DIRECT_DSP_BUILTIN (unspec_ave, unspec_ave, ave,
+  DIRECT_DSP_BUILTIN (unspec_ave, unspec_avedi, ave,
 		      RISCV_LONG_FTYPE_LONG_LONG, AVE),
   /* DSP Extension: 8bit Shift.  */
   DIRECT_DSP_BUILTIN (ashrv4qi3, ashrv8qi3, sra8,

@@ -6469,7 +6469,7 @@
   [(match_operand:SI 0 "register_operand" "")
    (match_operand:SI 1 "register_operand" "")
    (match_operand:SI 2 "register_operand" "")]
- "TARGET_DSP"
+ "TARGET_DSP && !TARGET_64BIT"
 {
   emit_insn (gen_ave (operands[0], operands[1], operands[2]));
   DONE;
@@ -6489,6 +6489,31 @@
   "ave\t%0, %1, %2"
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
+
+(define_expand "unspec_avedi"
+  [(match_operand:DI 0 "register_operand" "")
+   (match_operand:DI 1 "register_operand" "")
+   (match_operand:DI 2 "register_operand" "")]
+ "TARGET_DSP && TARGET_64BIT"
+{
+  emit_insn (gen_avedi (operands[0], operands[1], operands[2]));
+  DONE;
+})
+
+(define_insn "avedi"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(truncate:DI
+	  (ashiftrt:TI
+	    (plus:TI
+	      (plus:TI
+		(sign_extend:TI (match_operand:DI 1 "register_operand" "r"))
+		(sign_extend:TI (match_operand:DI 2 "register_operand" "r")))
+	      (const_int 1))
+	  (const_int 1))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "ave\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
 
 (define_insn "smaxsi3"
   [(set (match_operand:SI 0 "register_operand"          "=r")
