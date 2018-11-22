@@ -6615,22 +6615,22 @@
   [(set_attr "type" "arith,arith")
    (set_attr "mode" "<MODE>, <MODE>")])
 
-(define_insn "pbsad"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
-		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_PBSAD))]
+(define_insn "pbsad<mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+	(unspec:GPR [(match_operand:GPR 1 "register_operand" "r")
+		     (match_operand:GPR 2 "register_operand" "r")] UNSPEC_PBSAD))]
   "TARGET_DSP"
   "pbsad\t%0, %1, %2"
-  [(set_attr "mode" "SI")])
+  [(set_attr "mode" "<MODE>")])
 
-(define_insn "pbsada"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(unspec:SI [(match_operand:SI 1 "register_operand" "0")
-		    (match_operand:SI 2 "register_operand" "r")
-		    (match_operand:SI 3 "register_operand" "r")] UNSPEC_PBSADA))]
+(define_insn "pbsada<mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+	(unspec:GPR [(match_operand:GPR 1 "register_operand" "0")
+		     (match_operand:GPR 2 "register_operand" "r")
+		     (match_operand:GPR 3 "register_operand" "r")] UNSPEC_PBSADA))]
   ""
   "pbsada\t%0, %2, %3"
-  [(set_attr "mode" "SI")])
+  [(set_attr "mode" "<MODE>")])
 
 (define_insn "dsp_mulsidi3"
   [(set (match_operand:DI 0 "register_operand"                          "=r")
@@ -6698,6 +6698,14 @@
   [(set_attr "type"  "arith")
    (set_attr "mode"  "V4QI")])
 
+(define_insn "unspec_bswap8_64"
+  [(set (match_operand:V8QI 0 "register_operand" "=r")
+	(unspec:V8QI [(match_operand:V8QI 1 "register_operand" "r")] UNSPEC_BSWAP))]
+  "TARGET_DSP"
+  "swap8\t%0, %1"
+  [(set_attr "type"  "arith")
+   (set_attr "mode"  "V8QI")])
+
 (define_insn "unspec_bswap16"
   [(set (match_operand:V2HI 0 "register_operand" "=r")
 	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")] UNSPEC_BSWAP))]
@@ -6705,6 +6713,14 @@
   "swap16\t%0, %1"
   [(set_attr "type"  "arith")
    (set_attr "mode"  "V2HI")])
+
+(define_insn "unspec_bswap16_64"
+  [(set (match_operand:V4HI 0 "register_operand" "=r")
+	(unspec:V4HI [(match_operand:V4HI 1 "register_operand" "r")] UNSPEC_BSWAP))]
+  "TARGET_DSP"
+  "swap16\t%0, %1"
+  [(set_attr "type"  "arith")
+   (set_attr "mode"  "V4HI")])
 
 (define_insn "riscv_rdov<mode>"
   [(set (match_operand:GPR 0 "register_operand" "=r")

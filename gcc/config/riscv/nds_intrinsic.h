@@ -1985,6 +1985,10 @@ enum riscv_order
   (__builtin_riscv_v64_clz16 ((a)))
 #define __nds__v_clz32(a) \
   (__builtin_riscv_v64_clz32 ((a)))
+#define __nds__v_swap8(a) \
+  (__builtin_riscv_v64_swap8 ((a)))
+#define __nds__v_swap16(a) \
+  (__builtin_riscv_v64_swap16 ((a)))
 #define vec64_all_eq(type, size, vec1, vec2) \
     (__builtin_riscv_vec_ ##type##cmpeq ##size (vec1, vec2) == 0xffffffffffffffffull)
 #endif
