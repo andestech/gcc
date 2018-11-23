@@ -652,6 +652,14 @@ enum riscv_order
   (__builtin_riscv_pktb16 ((a), (b)))
 #define __nds__pktt16(a, b) \
   (__builtin_riscv_pktt16 ((a), (b)))
+#define __nds__pkbb32(a, b) \
+  (__builtin_riscv_pkbb32 ((a), (b)))
+#define __nds__pkbt32(a, b) \
+  (__builtin_riscv_pkbt32 ((a), (b)))
+#define __nds__pktb32(a, b) \
+  (__builtin_riscv_pktb32 ((a), (b)))
+#define __nds__pktt32(a, b) \
+  (__builtin_riscv_pktt32 ((a), (b)))
 
 #define __nds__smmul(a, b) \
   (__builtin_riscv_smmul ((a), (b)))
@@ -1989,6 +1997,14 @@ enum riscv_order
   (__builtin_riscv_v64_swap8 ((a)))
 #define __nds__v_swap16(a) \
   (__builtin_riscv_v64_swap16 ((a)))
+#define __nds__v_pkbb32(a, b) \
+  (__builtin_riscv_v_pkbb32 ((a), (b)))
+#define __nds__v_pkbt32(a, b) \
+  (__builtin_riscv_v_pkbt32 ((a), (b)))
+#define __nds__v_pktb32(a, b) \
+  (__builtin_riscv_v_pktb32 ((a), (b)))
+#define __nds__v_pktt32(a, b) \
+  (__builtin_riscv_v_pktt32 ((a), (b)))
 #define vec64_all_eq(type, size, vec1, vec2) \
     (__builtin_riscv_vec_ ##type##cmpeq ##size (vec1, vec2) == 0xffffffffffffffffull)
 #endif

@@ -1570,44 +1570,42 @@
 }
   [(set_attr "mode"  "V8QI")])
 
-(define_expand "vec_setv2hi"
-  [(match_operand:V2HI 0 "register_operand" "")
-   (match_operand:HI 1 "register_operand" "")
+(define_expand "vec_set<mode>"
+  [(match_operand:VSHI 0 "register_operand" "")
+   (match_operand:<VNHALF> 1 "register_operand" "")
    (match_operand:SI 2 "immediate_operand" "")]
-  "TARGET_DSP && !TARGET_64BIT"
+  "TARGET_DSP"
 {
   HOST_WIDE_INT pos = INTVAL (operands[2]);
   if (pos > 2)
     gcc_unreachable ();
   HOST_WIDE_INT elem = (HOST_WIDE_INT) 1 << pos;
-  emit_insn (gen_vec_setv2hi_internal (operands[0], operands[1],
-				       operands[0], GEN_INT (elem)));
+  emit_insn (gen_vec_set<mode>_internal (operands[0], operands[1],
+					 operands[0], GEN_INT (elem)));
   DONE;
 })
 
-(define_insn "vec_setv2hi_internal"
-  [(set (match_operand:V2HI 0 "register_operand"   "=  r,   r")
-	(vec_merge:V2HI
-	  (vec_duplicate:V2HI
-	    (match_operand:HI 1 "register_operand" "   r,   r"))
-	  (match_operand:V2HI 2 "register_operand" "   r,   r")
+(define_insn "vec_set<mode>_internal"
+  [(set (match_operand:VSHI 0 "register_operand"   "=  r,   r")
+	(vec_merge:VSHI
+	  (vec_duplicate:VSHI
+	    (match_operand:<VNHALF> 1 "register_operand" "   r,   r"))
+	  (match_operand:VSHI 2 "register_operand" "   r,   r")
 	  (match_operand:SI 3 "imm_1_2_operand"    " v01, v02")))]
-  "TARGET_DSP && !TARGET_64BIT"
-{
-  const char *pats[] = { "pktb16\t%0, %2, %1",
-			 "pkbb16\t%0, %1, %2" };
-  return pats[which_alternative];
-}
-  [(set_attr "mode"  "V2HI")])
+  "TARGET_DSP"
+  "@
+   pktb<bits>\t%0, %2, %1
+   pkbb<bits>\t%0, %1, %2"
+  [(set_attr "mode"  "<MODE>")])
 
-(define_expand "pkbb"
-  [(match_operand:V2HI 0 "register_operand")
-   (match_operand:V2HI 1 "register_operand")
-   (match_operand:V2HI 2 "register_operand")]
-  "TARGET_DSP && !TARGET_64BIT"
+(define_expand "pkbb<mode>"
+  [(match_operand:VSHI 0 "register_operand")
+   (match_operand:VSHI 1 "register_operand")
+   (match_operand:VSHI 2 "register_operand")]
+  "TARGET_DSP"
 {
-  emit_insn (gen_vec_mergevv (operands[0], operands[1], operands[2],
-			      GEN_INT (2), GEN_INT (0), GEN_INT (0)));
+  emit_insn (gen_vec_merge<mode> (operands[0], operands[1], operands[2],
+				  GEN_INT (2), GEN_INT (0), GEN_INT (0)));
   DONE;
 })
 
@@ -1697,36 +1695,36 @@
   "pktt16\t%0, %1, %2"
   [(set_attr "mode"  "SI")])
 
-(define_expand "pkbt"
-  [(match_operand:V2HI 0 "register_operand")
-   (match_operand:V2HI 1 "register_operand")
-   (match_operand:V2HI 2 "register_operand")]
-  "TARGET_DSP && !TARGET_64BIT"
+(define_expand "pkbt<mode>"
+  [(match_operand:VSHI 0 "register_operand")
+   (match_operand:VSHI 1 "register_operand")
+   (match_operand:VSHI 2 "register_operand")]
+  "TARGET_DSP"
 {
-  emit_insn (gen_vec_mergevv (operands[0], operands[1], operands[2],
-			      GEN_INT (2), GEN_INT (0), GEN_INT (1)));
+  emit_insn (gen_vec_merge<mode> (operands[0], operands[1], operands[2],
+				  GEN_INT (2), GEN_INT (0), GEN_INT (1)));
   DONE;
 })
 
-(define_expand "pktt"
-  [(match_operand:V2HI 0 "register_operand")
-   (match_operand:V2HI 1 "register_operand")
-   (match_operand:V2HI 2 "register_operand")]
-  "TARGET_DSP && !TARGET_64BIT"
+(define_expand "pktt<mode>"
+  [(match_operand:VSHI 0 "register_operand")
+   (match_operand:VSHI 1 "register_operand")
+   (match_operand:VSHI 2 "register_operand")]
+  "TARGET_DSP"
 {
-  emit_insn (gen_vec_mergevv (operands[0], operands[1], operands[2],
-			      GEN_INT (2), GEN_INT (1), GEN_INT (1)));
+  emit_insn (gen_vec_merge<mode> (operands[0], operands[1], operands[2],
+				  GEN_INT (2), GEN_INT (1), GEN_INT (1)));
   DONE;
 })
 
-(define_expand "pktb"
-  [(match_operand:V2HI 0 "register_operand")
-   (match_operand:V2HI 1 "register_operand")
-   (match_operand:V2HI 2 "register_operand")]
-  "TARGET_DSP && !TARGET_64BIT"
+(define_expand "pktb<mode>"
+  [(match_operand:VSHI 0 "register_operand")
+   (match_operand:VSHI 1 "register_operand")
+   (match_operand:VSHI 2 "register_operand")]
+  "TARGET_DSP"
 {
-  emit_insn (gen_vec_mergevv (operands[0], operands[1], operands[2],
-			      GEN_INT (2), GEN_INT (1), GEN_INT (0)));
+  emit_insn (gen_vec_merge<mode> (operands[0], operands[1], operands[2],
+				  GEN_INT (2), GEN_INT (1), GEN_INT (0)));
   DONE;
 })
 
@@ -1795,31 +1793,29 @@
    pktb16\t%0, %1, %2"
   [(set_attr "mode" "V2HI")])
 
-(define_insn "vec_mergevv"
-  [(set (match_operand:V2HI 0 "register_operand"               "= r,   r,   r,   r,   r,   r,   r,   r")
-	(vec_merge:V2HI
-	  (vec_duplicate:V2HI
-	    (vec_select:HI
-	      (match_operand:V2HI 1 "register_operand"         "  r,   r,   r,   r,   r,   r,   r,   r")
+(define_insn "vec_merge<mode>"
+  [(set (match_operand:VSHI 0 "register_operand"               "= r,   r,   r,   r,   r,   r,   r,   r")
+	(vec_merge:VSHI
+	  (vec_duplicate:VSHI
+	    (vec_select:<VNHALF>
+	      (match_operand:VSHI 1 "register_operand"         "  r,   r,   r,   r,   r,   r,   r,   r")
 	      (parallel [(match_operand:SI 4 "imm_0_1_operand" "v00, v00, v01, v01, v00, v00, v01, v01")])))
-	  (vec_duplicate:V2HI
-	    (vec_select:HI
-	      (match_operand:V2HI 2 "register_operand"         "  r,   r,   r,   r,   r,   r,   r,   r")
+	  (vec_duplicate:VSHI
+	    (vec_select:<VNHALF>
+	      (match_operand:VSHI 2 "register_operand"         "  r,   r,   r,   r,   r,   r,   r,   r")
 	      (parallel [(match_operand:SI 5 "imm_0_1_operand" "v00, v01, v01, v00, v00, v01, v01, v00")])))
 	  (match_operand:SI 3 "imm_1_2_operand"                "v01, v01, v01, v01, v02, v02, v02, v02")))]
-  "TARGET_DSP && !TARGET_64BIT"
-{
-  const char *pats[] = { "pkbb16\t%0, %2, %1",
-			 "pktb16\t%0, %2, %1",
-			 "pktt16\t%0, %2, %1",
-			 "pkbt16\t%0, %2, %1",
-			 "pkbb16\t%0, %1, %2",
-			 "pkbt16\t%0, %1, %2",
-			 "pktt16\t%0, %1, %2",
-			 "pktb16\t%0, %1, %2" };
-  return pats[which_alternative];
-}
-  [(set_attr "mode" "V2HI")])
+  "TARGET_DSP"
+  "@
+   pkbb<bits>\t%0, %2, %1
+   pktb<bits>\t%0, %2, %1
+   pktt<bits>\t%0, %2, %1
+   pkbt<bits>\t%0, %2, %1
+   pkbb<bits>\t%0, %1, %2
+   pkbt<bits>\t%0, %1, %2
+   pktt<bits>\t%0, %1, %2
+   pktb<bits>\t%0, %1, %2"
+  [(set_attr "mode"  "<MODE>")])
 
 (define_insn "vec_extractv4qi0"
   [(set (match_operand:QI 0 "register_operand"         "=r,r")
