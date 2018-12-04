@@ -725,6 +725,7 @@ static const struct riscv_cpu_info riscv_cpu_info_table[] = {
   { "size", rocket, &optimize_size_tune_info },
   { "vicuna", vicuna, &vicuna_tune_info },
   { "vicuna2", vicuna2, &vicuna_tune_info },
+  { "n22", vicuna, &vicuna_tune_info },
   { "n25", vicuna, &vicuna_tune_info },
   { "nx25", vicuna, &vicuna_tune_info },
   { "n25f", vicuna, &vicuna_tune_info },
