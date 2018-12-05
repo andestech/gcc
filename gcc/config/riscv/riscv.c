@@ -6414,6 +6414,17 @@ riscv_split_lshiftrtdi3 (rtx dst, rtx src, rtx shiftamount)
   riscv_split_shiftrtdi3 (dst, src, shiftamount, true);
 }
 
+static bool
+riscv_binds_local_p (const_tree exp)
+{
+  /* If a function is set indirect_call, it can be a external patch function.
+     Return false here to avoid being inlined or dce.  */
+  if (TREE_CODE (exp) == FUNCTION_DECL
+      && lookup_attribute ("indirect_call",DECL_ATTRIBUTES(exp)) != NULL)
+    return false;
+  return default_binds_local_p_3 (exp, flag_shlib != 0, true, false, false);
+}
+
 /* Initialize the GCC target structure.  */
 #undef TARGET_ASM_ALIGNED_HI_OP
 #define TARGET_ASM_ALIGNED_HI_OP "\t.half\t"
@@ -6642,6 +6653,10 @@ riscv_libgcc_floating_mode_supported_p
 #undef TARGET_ASM_INTEGER
 #define TARGET_ASM_INTEGER riscv_assemble_integer
 
+#undef TARGET_BINDS_LOCAL_P
+#define TARGET_BINDS_LOCAL_P riscv_binds_local_p
+
 struct gcc_target targetm = TARGET_INITIALIZER;
+
 
 #include "gt-riscv.h"
