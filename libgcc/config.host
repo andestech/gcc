@@ -1285,6 +1285,13 @@ riscv*-*-*)
 	case "${with_arch}" in
 	*32E* | *32e* )
 		tmake_file="${tmake_file} riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}e"
+		case "${with_libc}" in
+		mculib)
+			tmake_file="${tmake_file} riscv/t-riscv-mculib-generic"
+			;;
+		*)
+			;;
+		esac
 		;;
 	*)
 		tmake_file="${tmake_file} riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}"
