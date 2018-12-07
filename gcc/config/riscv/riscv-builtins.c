@@ -104,6 +104,9 @@ enum riscv_builtins
   RISCV_BUILTIN_CSRRC,
   RISCV_BUILTIN_CSRS,
   RISCV_BUILTIN_CSRC,
+  RISCV_BUILTIN_FFB,
+  RISCV_BUILTIN_FFMISM,
+  RISCV_BUILTIN_FLMISM,
   RISCV_BUILTIN_DSP_BEGIN,
   RISCV_BUILTIN_RDOV,
   RISCV_BUILTIN_CLROV,
@@ -328,9 +331,6 @@ enum riscv_builtins
   RISCV_BUILTIN_MAX,
   RISCV_BUILTIN_MIN,
   RISCV_BUILTIN_KSLL,
-  RISCV_BUILTIN_FFB,
-  RISCV_BUILTIN_FFMISM,
-  RISCV_BUILTIN_FLMISM,
   RISCV_BUILTIN_PBSAD,
   RISCV_BUILTIN_PBSADA,
   RISCV_BUILTIN_SWAP16,
@@ -2969,6 +2969,14 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
 	}
       break;
 
+    case RISCV_BUILTIN_FFB:
+    case RISCV_BUILTIN_FFMISM:
+    case RISCV_BUILTIN_FLMISM:
+      if (!TARGET_V5)
+	{
+	  error ("this builtin function is only available "
+		 "on the nds V5 toolchain");
+	}
     default:
       break;
     }
