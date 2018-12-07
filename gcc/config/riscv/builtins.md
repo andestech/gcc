@@ -338,13 +338,11 @@
 ;; String Extension
 
 (define_insn "ffb"
-  [(set (match_operand:SI 0 "register_operand" "=r, r")
-	(unspec:SI [(match_operand:SI 1 "register_operand" "r, r")
-		    (match_operand:SI 2 "nonmemory_operand" "u08, r")] UNSPEC_FFB))]
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "nonmemory_operand" "r")] UNSPEC_FFB))]
   ""
-  "@
-  ffbi\t%0, %1, %2
-  ffb\t%0, %1, %2"
+  "ffb\t%0, %1, %2"
   [(set_attr "mode" "SI")])
 
 (define_insn "ffmism"
