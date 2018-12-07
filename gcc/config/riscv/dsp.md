@@ -6185,26 +6185,44 @@
 
 (define_insn "kaddw"
   [(set (match_operand:SI 0 "register_operand" "=r")
-	(ss_plus:SI (match_operand:SI 1 "register_operand" "r")
-		    (match_operand:SI 2 "register_operand" "r")))]
-  "TARGET_DSP"
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KADDW))]
+  "TARGET_DSP && !TARGET_64BIT"
   "kaddw\t%0, %1, %2"
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
+(define_insn "kaddw64"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(sign_extend:DI (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KADDW)))]
+  "TARGET_DSP && TARGET_64BIT"
+  "kaddw\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
 (define_insn "ksubw"
   [(set (match_operand:SI 0 "register_operand" "=r")
-	(ss_minus:SI (match_operand:SI 1 "register_operand" "r")
-		     (match_operand:SI 2 "register_operand" "r")))]
-  "TARGET_DSP"
+	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
+		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSUBW))]
+  "TARGET_DSP && !TARGET_64BIT"
   "ksubw\t%0, %1, %2"
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
+(define_insn "ksubw64"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(sign_extend:DI (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSUBW)))]
+  "TARGET_DSP && TARGET_64BIT"
+  "ksubw\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
 (define_insn "kaddh"
   [(set (match_operand:SI 0 "register_operand" "=r")
-	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
-		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KADDH))]
+	(sign_extend:SI (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KADDH)))]
   "TARGET_DSP"
   "kaddh\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -6212,8 +6230,8 @@
 
 (define_insn "ksubh"
   [(set (match_operand:SI 0 "register_operand" "=r")
-	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
-		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSUBH))]
+	(sign_extend:SI (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSUBH)))]
   "TARGET_DSP"
   "ksubh\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -6228,6 +6246,15 @@
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
+(define_insn "ukaddw64"
+  [(set (match_operand:DI 0 "register_operand"             "=r")
+	(zero_extend:DI (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKADDW64)))]
+  "TARGET_DSP"
+  "ukaddw\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
 (define_insn "uksubw"
   [(set (match_operand:SI 0 "register_operand"             "=r")
 	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
@@ -6237,10 +6264,19 @@
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
+(define_insn "uksubw64"
+  [(set (match_operand:DI 0 "register_operand"             "=r")
+	(zero_extend:DI (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKSUBW64)))]
+  "TARGET_DSP"
+  "uksubw\t%0, %1, %2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
 (define_insn "ukaddh"
   [(set (match_operand:SI 0 "register_operand"             "=r")
-	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
-		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKADDH))]
+	(zero_extend:SI (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKADDH)))]
   "TARGET_DSP"
   "ukaddh\t%0, %1, %2"
   [(set_attr "type" "arith")
@@ -6248,8 +6284,8 @@
 
 (define_insn "uksubh"
   [(set (match_operand:SI 0 "register_operand"             "=r")
-	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
-		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKSUBH))]
+	(zero_extend:SI (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKSUBH)))]
   "TARGET_DSP"
   "uksubh\t%0, %1, %2"
   [(set_attr "type" "arith")
