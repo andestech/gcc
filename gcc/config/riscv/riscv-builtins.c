@@ -2196,11 +2196,11 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (uclip8v8qi, uclip8v8qi, v64_uclip8,
 		      RISCV_UV8QI_FTYPE_UV8QI_USI, V64_UCLIP8),
   /* String */
-  DIRECT_DSP_BUILTIN (ffb, ffb, ffb,
+  DIRECT_DSP_BUILTIN (ffbsi, ffbdi, ffb,
 		      RISCV_LONG_FTYPE_ULONG_ULONG, FFB),
-  DIRECT_DSP_BUILTIN (ffmism, ffmism, ffmism,
+  DIRECT_DSP_BUILTIN (ffmismsi, ffmismdi, ffmism,
 		      RISCV_LONG_FTYPE_ULONG_ULONG, FFMISM),
-  DIRECT_DSP_BUILTIN (flmism, flmism, flmism,
+  DIRECT_DSP_BUILTIN (flmismsi, flmismdi, flmism,
 		      RISCV_LONG_FTYPE_ULONG_ULONG, FLMISM),
   /*  64bit only, SIMD 32bit add and subtract.  */
   DIRECT_DSP_BUILTIN (addv2si3, addv2si3, add32,

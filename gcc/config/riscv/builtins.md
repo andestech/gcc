@@ -337,26 +337,26 @@
 
 ;; String Extension
 
-(define_insn "ffb"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
-		    (match_operand:SI 2 "nonmemory_operand" "r")] UNSPEC_FFB))]
+(define_insn "ffb<mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+	(unspec:GPR [(match_operand:GPR 1 "register_operand" "r")
+		     (match_operand:GPR 2 "nonmemory_operand" "r")] UNSPEC_FFB))]
   ""
   "ffb\t%0, %1, %2"
-  [(set_attr "mode" "SI")])
+  [(set_attr "mode" "<MODE>")])
 
-(define_insn "ffmism"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
-		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_FFMISM))]
+(define_insn "ffmism<mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+	(unspec:GPR [(match_operand:GPR 1 "register_operand" "r")
+		     (match_operand:GPR 2 "register_operand" "r")] UNSPEC_FFMISM))]
   ""
   "ffmism\t%0, %1, %2"
-  [(set_attr "mode" "SI")])
+  [(set_attr "mode" "<MODE>")])
 
-(define_insn "flmism"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
-		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_FLMISM))]
+(define_insn "flmism<mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+	(unspec:GPR [(match_operand:GPR 1 "register_operand" "r")
+		     (match_operand:GPR 2 "register_operand" "r")] UNSPEC_FLMISM))]
   ""
   "flmism\t%0, %1, %2"
-  [(set_attr "mode" "SI")])
+  [(set_attr "mode" "<MODE>")])
