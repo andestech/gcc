@@ -19,6 +19,9 @@
 ;; along with GCC; see the file COPYING3.  If not see
 ;; <http://www.gnu.org/licenses/>.
 
+(define_predicate "movecc_comparison_operator"
+  (match_code "eq,ne,le,leu,ge,geu"))
+
 (define_predicate "const_arith_operand"
   (and (match_code "const_int")
        (match_test "SMALL_OPERAND (INTVAL (op))")))

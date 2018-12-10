@@ -3031,6 +3031,74 @@
 }
 )
 
+(define_expand "mov<mode>cc"
+  [(set (match_operand:ANY32 0 "register_operand" "")
+        (if_then_else:ANY32 (match_operand 1 "movecc_comparison_operator" "")
+			    (match_operand:ANY32 2 "register_operand" "")
+			    (match_operand:ANY32 3 "register_operand" "")))]
+  "TARGET_CMOV"
+{
+  enum riscv_expand_result_type result = riscv_expand_movcc (operands);
+  switch (result)
+    {
+    case EXPAND_DONE:
+      DONE;
+      break;
+    case EXPAND_FAIL:
+      FAIL;
+      break;
+    case EXPAND_CREATE_TEMPLATE:
+      break;
+    default:
+      gcc_unreachable ();
+    }
+})
+
+(define_insn "cmovz<mode>"
+  [(set (match_operand:ANY32 0 "register_operand"                      "=r, r, r, r")
+        (if_then_else:ANY32 (eq (match_operand:SI 1 "register_operand" " r, r, r, r")
+				(match_operand:SI 4 "reg_or_0_operand" " J, J, r, r"))
+			    (match_operand:ANY32 2 "register_operand"  " r, 0, r, 0")
+			    (match_operand:ANY32 3 "register_operand"  " 0, r, 0, r")))]
+  "TARGET_CMOV"
+  "@
+   bne %1, zero, 0f\n\tadd %0, %2, zero\n0:
+   beq %1, zero, 0f\n\tadd %0, %3, zero\n0:
+   bne %1, %4, 0f\n\tadd %0, %2, zero\n0:
+   beq %1, %4, 0f\n\tadd %0, %3, zero\n0:"
+  [(set_attr "type" "branch")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmovn<mode>"
+  [(set (match_operand:ANY32 0 "register_operand"                      "=r, r, r, r")
+        (if_then_else:ANY32 (ne (match_operand:SI 1 "register_operand" " r, r, r, r")
+				(match_operand:SI 4 "reg_or_0_operand" " J, J, r, r"))
+			    (match_operand:ANY32 2 "register_operand"  " r, 0, r, 0")
+			    (match_operand:ANY32 3 "register_operand"  " 0, r, 0, r")))]
+  "TARGET_CMOV"
+  "@
+   beq %1, zero, 0f\n\tadd %0, %2, zero\n0:
+   bne %1, zero, 0f\n\tadd %0, %3, zero\n0:
+   beq %1, %4, 0f\n\tadd %0, %2, zero\n0:
+   bne %1, %4, 0f\n\tadd %0, %3, zero\n0:"
+  [(set_attr "type" "branch")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+;; A hotfix to help RTL combiner to merge a cmovn insn and a zero_extend insn.
+;; It should be removed once after we change the expansion form of the cmovn.
+(define_insn "*cmovn_simplified_<mode>"
+  [(set (match_operand:ANY32 0 "register_operand" "=r")
+	(if_then_else:ANY32 (match_operand:SI 1 "register_operand" "r")
+		(match_operand:ANY32 2 "register_operand" "r")
+		(match_operand:ANY32 3 "register_operand" "0")))]
+  "TARGET_CMOV"
+  "beq %1, zero, 0f\n\tadd %0, %2, zero\n0:"
+  [(set_attr "type" "branch")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
 (include "sync.md")
 (include "peephole.md")
 (include "pic.md")

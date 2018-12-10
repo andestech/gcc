@@ -307,3 +307,6 @@ Generating fma instructions.
 mfp16
 Target Report Mask(FP16)
 Supporting __fp16 instructions.
+
+mcmov
+Target Mask(CMOV)

@@ -6425,6 +6425,87 @@ riscv_binds_local_p (const_tree exp)
   return default_binds_local_p_3 (exp, flag_shlib != 0, true, false, false);
 }
 
+static unsigned int
+riscv_max_noce_ifcvt_seq_cost (edge e)
+{
+  if (TARGET_CMOV)
+    return 80;
+  else
+    return default_max_noce_ifcvt_seq_cost (e);
+}
+
+enum riscv_expand_result_type
+riscv_expand_movcc (rtx *operands)
+{
+  enum rtx_code code = GET_CODE (operands[1]);
+  enum rtx_code new_code = code;
+  rtx cmp_op0 = XEXP (operands[1], 0);
+  rtx cmp_op1 = XEXP (operands[1], 1);
+  rtx tmp;
+
+  if ((GET_CODE (operands[1]) == EQ || GET_CODE (operands[1]) == NE)
+      && XEXP (operands[1], 1) == const0_rtx)
+    {
+      /* If the operands[1] rtx is already (eq X 0) or (ne X 0),
+	 we have gcc generate original template rtx.  */
+      return EXPAND_CREATE_TEMPLATE;
+    }
+  else
+    {
+      int reverse = 0;
+
+      switch (code)
+	{
+        case GE: case GEU: case LE: case LEU:
+	  new_code = reverse_condition (code);
+	  reverse = 1;
+	  break;
+	case EQ: case NE:
+	  /* no need to reverse condition */
+	  break;
+	default:
+	  return EXPAND_FAIL;
+	}
+
+      /* For '>' comparison operator, we swap operands
+	 so that we can have 'LT/LTU' operator.  */
+      if (new_code == GT || new_code == GTU)
+	{
+	  tmp     = cmp_op0;
+	  cmp_op0 = cmp_op1;
+	  cmp_op1 = tmp;
+
+	  new_code = swap_condition (new_code);
+	}
+
+      /* Use a temporary register to store slt/slts result.  */
+      tmp = gen_reg_rtx (SImode);
+
+      if (!REG_P (cmp_op0))
+	cmp_op0 = force_reg (SImode, cmp_op0);
+
+      if (new_code == EQ || new_code == NE)
+	{
+	  emit_insn (gen_xorsi3 (tmp, cmp_op0, cmp_op1));
+          /* tmp == 0 if cmp_op0 == cmp_op1.  */
+          operands[1] = gen_rtx_fmt_ee (new_code, VOIDmode, tmp, const0_rtx);
+	}
+      else
+	{
+	  if (!arith_operand (cmp_op1, Pmode))
+	    cmp_op1 = force_reg (SImode, cmp_op1);
+
+	  /* This emit_insn will create corresponding 'slt/slts' insturction.  */
+	  emit_insn (gen_rtx_SET (tmp, gen_rtx_fmt_ee (new_code, SImode,
+						       cmp_op0, cmp_op1)));
+
+	  operands[1] = gen_rtx_fmt_ee (reverse ? EQ : NE,
+					VOIDmode, tmp, const0_rtx);
+	}
+    }
+  return EXPAND_CREATE_TEMPLATE;
+}
+
 /* Initialize the GCC target structure.  */
 #undef TARGET_ASM_ALIGNED_HI_OP
 #define TARGET_ASM_ALIGNED_HI_OP "\t.half\t"
@@ -6655,6 +6736,9 @@ riscv_libgcc_floating_mode_supported_p
 
 #undef TARGET_BINDS_LOCAL_P
 #define TARGET_BINDS_LOCAL_P riscv_binds_local_p
+
+#undef TARGET_MAX_NOCE_IFCVT_SEQ_COST
+#define TARGET_MAX_NOCE_IFCVT_SEQ_COST riscv_max_noce_ifcvt_seq_cost
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 

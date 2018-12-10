@@ -36,6 +36,14 @@ enum riscv_symbol_type {
 };
 #define NUM_SYMBOL_TYPES (SYMBOL_TLS_GD + 1)
 
+/* Classifies expand result for expand helper function.  */
+enum riscv_expand_result_type
+{
+  EXPAND_DONE,
+  EXPAND_FAIL,
+  EXPAND_CREATE_TEMPLATE
+};
+
 /* Routines implemented in riscv.c.  */
 extern enum riscv_symbol_type riscv_classify_symbolic_expression (rtx);
 extern bool riscv_symbolic_constant_p (rtx, enum riscv_symbol_type *);
@@ -113,5 +121,7 @@ extern void riscv_split_shiftrtdi3 (rtx, rtx, rtx);
 /* Auxiliary functions for manipulation DI mode.  */
 extern rtx riscv_di_high_part_subreg(rtx);
 extern rtx riscv_di_low_part_subreg(rtx);
+
+extern enum riscv_expand_result_type riscv_expand_movcc (rtx *);
 
 #endif /* ! GCC_RISCV_PROTOS_H */
