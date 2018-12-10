@@ -1285,29 +1285,22 @@ riscv*-*-*)
 	case "${with_arch}" in
 	*32E* | *32e* )
 		tmake_file="${tmake_file} riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}e"
-		case "${with_libc}" in
-		mculib)
-			tmake_file="${tmake_file} riscv/t-riscv-mculib-generic"
-			;;
-		*)
-			;;
-		esac
 		;;
 	*)
 		tmake_file="${tmake_file} riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}"
-		# process --with-libc
-		case "${with_libc}" in
-		mculib)
-			if test "${host_address}" = 32; then
-				tmake_file="${tmake_file} riscv/t-riscv-mculib-generic"
-			fi
-			;;
-		*)
-			;;
-		esac
 		;;
 	esac
 
+	# process --with-libc
+	case "${with_libc}" in
+	mculib)
+		case "${with_arch}" in
+		*32EM* | *32em* | *32IM* | *32im* )
+		    tmake_file="${tmake_file} riscv/t-riscv-mculib-generic"
+		    ;;
+		esac
+		;;
+	esac
 	extra_parts="$extra_parts crtbegin.o crtend.o crti.o crtn.o"
 	;;
 rs6000-ibm-aix4.[3456789]* | powerpc-ibm-aix4.[3456789]*)
