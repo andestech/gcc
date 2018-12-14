@@ -341,6 +341,20 @@
     return true;
 })
 
+(define_predicate "reg_or_imm7u_operand"
+  (ior (match_operand 0 "register_operand")
+       (match_code "const_int"))
+{
+  if (CONST_INT_P (op))
+    {
+      if (op == CONST0_RTX(mode))
+	return true;
+      if (TARGET_BIMM)
+        return satisfies_constraint_Bz07 (op);
+    }
+  return true;
+})
+
 (define_predicate "imm2u_operand"
   (and (match_operand 0 "const_int_operand")
        (match_test "satisfies_constraint_u02 (op)")))
