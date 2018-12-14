@@ -618,7 +618,18 @@ static const char * const riscv_csr_register_names[] =
   "scctldata",
   "smisc_ctl",
   "ucctlbeginaddr",
-  "ucctlcommand"
+  "ucctlcommand",
+  "msavestatus",
+  "msaveepc1",
+  "msavecause1",
+  "msaveepc2",
+  "msavecause2",
+  "mcountinhibit",
+  "scountinhibit",
+  "shpmevent3",
+  "shpmevent4",
+  "shpmevent5",
+  "shpmevent6"
 };
 
 static const char * const riscv_fence_operations [] =
