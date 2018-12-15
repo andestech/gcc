@@ -484,6 +484,7 @@
 (define_code_iterator any_ge [ge geu])
 (define_code_iterator any_lt [lt ltu])
 (define_code_iterator any_le [le leu])
+(define_code_iterator inequal_op [gt gtu ge geu lt ltu le leu])
 
 ;; Equality operators.
 (define_code_iterator equality_op [eq ne])
@@ -520,6 +521,14 @@
 			 (zero_extend "zero_extend")
 			 (eq "eq")
 			 (ne "ne")
+			 (lt "lt")
+			 (le "le")
+			 (gt "gt")
+			 (ge "ge")
+			 (ltu "ltu")
+			 (leu "leu")
+			 (gtu "gtu")
+			 (geu "geu")
 			 (clrsb "clrsb")
 			 (clz "clz")
 			 (popcount "popcount")])
@@ -538,7 +547,28 @@
 			(plus "add")
 			(minus "sub")
 			(clrsb "clrs")
-			(clz "clz")])
+			(clz "clz")
+			(eq "eq")
+			(ne "ne")
+			(lt "lt")
+			(le "le")
+			(gt "gt")
+			(ge "ge")
+			(ltu "ltu")
+			(leu "leu")
+			(gtu "gtu")
+			(geu "geu")])
+
+(define_code_attr rev_cond [(eq "ne")
+			    (ne "eq")
+			    (lt "ge")
+			    (le "gt")
+			    (gt "le")
+			    (ge "lt")
+			    (ltu "geu")
+			    (leu "gtu")
+			    (gtu "leu")
+			    (geu "ltu")])
 
 ;; Ghost instructions produce no real code and introduce no hazards.
 ;; They exist purely to express an effect on dataflow.
@@ -3022,52 +3052,75 @@
 			    (match_operand:ANY32 3 "arith_operand" "")))]
   "TARGET_CMOV"
 {
+  enum rtx_code code = GET_CODE (operands[1]);
+  rtx cmp_op0 = XEXP (operands[1], 0);
+  rtx cmp_op1 = XEXP (operands[1], 1);
+
+  if ((CONST_INT_P (operands[2])
+      && CONST_INT_P (operands[3])))
+    FAIL;
+
+  if (operands[0] != operands[2]
+      && operands[0] != operands[3])
+    FAIL;
+
+  if (!reg_or_0_operand (cmp_op0, GET_MODE (cmp_op0)))
+    cmp_op0 = force_reg (SImode, cmp_op0);
+
+  if (!reg_or_0_operand (cmp_op1, GET_MODE (cmp_op1)))
+    {
+      if (!((code == EQ || code == NE)
+	    && TARGET_BIMM))
+	{
+	  cmp_op1 = force_reg (SImode, cmp_op1);
+	  operands[1] = gen_rtx_fmt_ee (code,
+					VOIDmode, cmp_op0, cmp_op1);
+	}
+    }
 })
 
-(define_insn "cmoveq<mode>"
-  [(set (match_operand:ANY32 0 "register_operand"                          "=r,    r,  r,    r")
-        (if_then_else:ANY32 (eq (match_operand:SI 1 "register_operand"     " r,    r,  r,    r")
-				(match_operand:SI 4 "reg_or_imm7u_operand" "rJ, Bz07, rJ, Bz07"))
-			    (match_operand:ANY32 2  "arith_operand"        "rI,   rI,  0,    0")
-			    (match_operand:ANY32 3  "arith_operand"        " 0,    0, rI,   rI")))]
+(define_insn "cmov<optab><mode>"
+  [(set (match_operand:ANY32 0 "register_operand"                                   "=r,    r,  r,    r")
+        (if_then_else:ANY32 (equality_op (match_operand:SI 1 "register_operand"     " r,    r,  r,    r")
+					 (match_operand:SI 4 "reg_or_imm7u_operand" "rJ, Bz07, rJ, Bz07"))
+			    (match_operand:ANY32 2           "arith_operand"        "rI,   rI,  0,    0")
+			    (match_operand:ANY32 3           "arith_operand"        " 0,    0, rI,   rI")))]
   "TARGET_CMOV"
   "@
-   bne  %1, %z4, 0f\n\tadd %0, %2, zero\n0:
-   bnec %1,  %4, 0f\n\tadd %0, %2, zero\n0:
-   beq  %1, %z4, 0f\n\tadd %0, %3, zero\n0:
-   beqc %1,  %4, 0f\n\tadd %0, %3, zero\n0:"
+   b<rev_cond> %1, %z4, 0f\n\tadd %0, zero, %2\n0:
+   b<rev_cond>c %1,  %4, 0f\n\tadd %0, zero, %2\n0:
+   b<insn> %1, %z4, 0f\n\tadd %0, zero, %3\n0:
+   b<insn>c %1,  %4, 0f\n\tadd %0, zero, %3\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmovne<mode>"
-  [(set (match_operand:ANY32 0 "register_operand"                          "=r,    r,  r,    r")
-        (if_then_else:ANY32 (ne (match_operand:SI 1 "register_operand"     " r,    r,  r,    r")
-				(match_operand:SI 4 "reg_or_imm7u_operand" "rJ, Bz07, rJ, Bz07"))
-			    (match_operand:ANY32 2  "arith_operand"        "rI,   rI,  0,    0")
-			    (match_operand:ANY32 3  "arith_operand"        " 0,    0, rI,   rI")))]
+(define_insn "cmov<optab><mode>"
+  [(set (match_operand:ANY32 0 "register_operand"                              "=r,   r")
+        (if_then_else:ANY32 (inequal_op (match_operand:SI 1 "register_operand" " r,   r")
+					(match_operand:SI 4 "reg_or_0_operand" "rJ,  rJ"))
+			    (match_operand:ANY32 2          "arith_operand"    "rI,   0")
+			    (match_operand:ANY32 3          "arith_operand"    " 0,  rI")))]
   "TARGET_CMOV"
   "@
-   beq  %1, %z4, 0f\n\tadd %0, %2, zero\n0:
-   beqc %1,  %4, 0f\n\tadd %0, %2, zero\n0:
-   bne  %1, %z4, 0f\n\tadd %0, %3, zero\n0:
-   bnec %1,  %4, 0f\n\tadd %0, %3, zero\n0:"
+   b<rev_cond> %1, %z4, 0f\n\tadd %0, zero, %2\n0:
+   b<insn> %1, %z4, 0f\n\tadd %0, zero, %3\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
 ;; A hotfix to help RTL combiner to merge a cmovn insn and a zero_extend insn.
 ;; It should be removed once after we change the expansion form of the cmovn.
-(define_insn "*cmovn_simplified_<mode>"
-  [(set (match_operand:ANY32 0 "register_operand" "=r")
-	(if_then_else:ANY32 (match_operand:SI 1 "register_operand" "r")
-		(match_operand:ANY32 2 "register_operand" "r")
-		(match_operand:ANY32 3 "register_operand" "0")))]
-  "TARGET_CMOV"
-  "beq %1, zero, 0f\n\tadd %0, %2, zero\n0:"
-  [(set_attr "type" "branch")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
+;(define_insn "*cmovn_simplified_<mode>"
+;  [(set (match_operand:ANY32 0 "register_operand" "=r")
+;	(if_then_else:ANY32 (match_operand:SI 1 "register_operand" "r")
+;		(match_operand:ANY32 2 "register_operand" "r")
+;		(match_operand:ANY32 3 "register_operand" "0")))]
+;  "TARGET_CMOV"
+;  "beq %1, zero, 0f\n\tadd %0, zero, %2\n0:"
+;  [(set_attr "type" "branch")
+;   (set_attr "mode" "<MODE>")
+;   (set (attr "length") (const_int 8))])
 
 (include "sync.md")
 (include "peephole.md")

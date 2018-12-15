@@ -342,7 +342,7 @@
 })
 
 (define_predicate "reg_or_imm7u_operand"
-  (ior (match_operand 0 "register_operand")
+  (ior (match_operand 0 "reg_or_0_operand")
        (match_code "const_int"))
 {
   if (CONST_INT_P (op))
