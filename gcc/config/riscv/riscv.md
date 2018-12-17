@@ -570,6 +570,12 @@
 			    (gtu "leu")
 			    (geu "ltu")])
 
+(define_code_attr bbcs [(eq "bbc")
+			(ne "bbs")])
+
+(define_code_attr rev_bbcs [(eq "bbs")
+			    (ne "bbc")])
+
 ;; Ghost instructions produce no real code and introduce no hazards.
 ;; They exist purely to express an effect on dataflow.
 (define_insn_reservation "ghost" 0
@@ -3105,6 +3111,23 @@
   "@
    b<rev_cond> %1, %z4, 0f\n\tadd %0, zero, %2\n0:
    b<insn> %1, %z4, 0f\n\tadd %0, zero, %3\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab><mode>"
+  [(set (match_operand:ANY32 0 "register_operand" "=r, r")
+        (if_then_else:ANY32 (equality_op
+			        (zero_extract:SI (match_operand:SI 4 "register_operand" "r, r")
+				(const_int 1)
+				(match_operand 1 "branch_bbcs_operand"))
+				(const_int 0))
+			    (match_operand:ANY32 2 "arith_operand" "rI, 0")
+			    (match_operand:ANY32 3 "arith_operand" " 0, rI")))]
+  "TARGET_CMOV && TARGET_BBCS"
+  "@
+   <rev_bbcs> %4, %1, 0f\n\tadd %0, zero, %2\n0:
+   <bbcs> %4, %1, 0f\n\tadd %0, zero, %3\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
