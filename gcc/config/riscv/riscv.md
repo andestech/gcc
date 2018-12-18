@@ -3088,47 +3088,55 @@
 })
 
 (define_insn "cmov<optab><mode>"
-  [(set (match_operand:ANY32 0 "register_operand"                                   "=r,    r,  r,    r")
-        (if_then_else:ANY32 (equality_op (match_operand:SI 1 "register_operand"     " r,    r,  r,    r")
-					 (match_operand:SI 4 "reg_or_imm7u_operand" "rJ, Bz07, rJ, Bz07"))
-			    (match_operand:ANY32 2           "arith_operand"        "rI,   rI,  0,    0")
-			    (match_operand:ANY32 3           "arith_operand"        " 0,    0, rI,   rI")))]
+  [(set (match_operand:ANY32 0 "register_operand"                                   "=r,  r,    r,    r,    r,  r,    r,    r")
+        (if_then_else:ANY32 (equality_op (match_operand:SI 1 "register_operand"     " r,  r,    r,    r,    r,  r,    r,    r")
+					 (match_operand:SI 4 "reg_or_imm7u_operand" "rJ, rJ, Bz07, Bz07,   rJ, rJ, Bz07, Bz07"))
+			    (match_operand:ANY32 2 "arith_operand"                  " r,  I,    r,    I,    0,  0,    0,    0")
+			    (match_operand:ANY32 3 "arith_operand"                  " 0,  0,    0,    0,    r,  I,    r,    I")))]
   "TARGET_CMOV"
   "@
+   b<rev_cond> %1, %z4, 0f\n\tadd %0, %2, zero\n0:
    b<rev_cond> %1, %z4, 0f\n\tadd %0, zero, %2\n0:
+   b<rev_cond>c %1,  %4, 0f\n\tadd %0, %2, zero\n0:
    b<rev_cond>c %1,  %4, 0f\n\tadd %0, zero, %2\n0:
+   b<insn> %1, %z4, 0f\n\tadd %0, %3, zero\n0:
    b<insn> %1, %z4, 0f\n\tadd %0, zero, %3\n0:
+   b<insn>c %1,  %4, 0f\n\tadd %0, %3, zero\n0:
    b<insn>c %1,  %4, 0f\n\tadd %0, zero, %3\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
 (define_insn "cmov<optab><mode>"
-  [(set (match_operand:ANY32 0 "register_operand"                              "=r,   r")
-        (if_then_else:ANY32 (inequal_op (match_operand:SI 1 "register_operand" " r,   r")
-					(match_operand:SI 4 "reg_or_0_operand" "rJ,  rJ"))
-			    (match_operand:ANY32 2          "arith_operand"    "rI,   0")
-			    (match_operand:ANY32 3          "arith_operand"    " 0,  rI")))]
+  [(set (match_operand:ANY32 0 "register_operand"                              "=r,  r,  r,  r")
+        (if_then_else:ANY32 (inequal_op (match_operand:SI 1 "register_operand" " r,  r,  r,  r")
+					(match_operand:SI 4 "reg_or_0_operand" "rJ, rJ, rJ, rJ"))
+			    (match_operand:ANY32 2 "arith_operand"             " r,  I,  0,  0")
+			    (match_operand:ANY32 3 "arith_operand"             " 0,  0,  r,  I")))]
   "TARGET_CMOV"
   "@
+   b<rev_cond> %1, %z4, 0f\n\tadd %0, %2, zero\n0:
    b<rev_cond> %1, %z4, 0f\n\tadd %0, zero, %2\n0:
+   b<insn> %1, %z4, 0f\n\tadd %0, %3, zero\n0:
    b<insn> %1, %z4, 0f\n\tadd %0, zero, %3\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
 (define_insn "cmov_bb<optab><mode>"
-  [(set (match_operand:ANY32 0 "register_operand" "=r, r")
+  [(set (match_operand:ANY32 0 "register_operand" "=r, r, r, r")
         (if_then_else:ANY32 (equality_op
-			        (zero_extract:SI (match_operand:SI 4 "register_operand" "r, r")
+			        (zero_extract:SI (match_operand:SI 4 "register_operand" "r, r, r, r")
 				(const_int 1)
 				(match_operand 1 "branch_bbcs_operand"))
 				(const_int 0))
-			    (match_operand:ANY32 2 "arith_operand" "rI, 0")
-			    (match_operand:ANY32 3 "arith_operand" " 0, rI")))]
+			    (match_operand:ANY32 2 "arith_operand" " r, I, 0, 0")
+			    (match_operand:ANY32 3 "arith_operand" " 0, 0, r, I")))]
   "TARGET_CMOV && TARGET_BBCS"
   "@
+   <rev_bbcs> %4, %1, 0f\n\tadd %0, %2, zero\n0:
    <rev_bbcs> %4, %1, 0f\n\tadd %0, zero, %2\n0:
+   <bbcs> %4, %1, 0f\n\tadd %0, %3, zero\n0:
    <bbcs> %4, %1, 0f\n\tadd %0, zero, %3\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
