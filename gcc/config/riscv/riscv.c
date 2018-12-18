@@ -58,6 +58,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "cfgloop.h"
 #include "cfgrtl.h"
 #include "opts.h"
+#include "ifcvt.h"
 
 /* True if X is an UNSPEC wrapper around a SYMBOL_REF or LABEL_REF.  */
 #define UNSPEC_ADDRESS_P(X)					\
@@ -6456,13 +6457,13 @@ riscv_binds_local_p (const_tree exp)
   return default_binds_local_p_3 (exp, flag_shlib != 0, true, false, false);
 }
 
-static unsigned int
-riscv_max_noce_ifcvt_seq_cost (edge e)
+static bool
+riscv_noce_conversion_profitable_p (rtx_insn *seq, struct noce_if_info *if_info)
 {
-  if (TARGET_CMOV)
-    return 80;
-  else
-    return default_max_noce_ifcvt_seq_cost (e);
+  if (TARGET_CMOV && if_info->speed_p)
+    return true;
+
+  return default_noce_conversion_profitable_p (seq, if_info);
 }
 
 enum riscv_expand_result_type
@@ -6768,8 +6769,8 @@ riscv_libgcc_floating_mode_supported_p
 #undef TARGET_BINDS_LOCAL_P
 #define TARGET_BINDS_LOCAL_P riscv_binds_local_p
 
-#undef TARGET_MAX_NOCE_IFCVT_SEQ_COST
-#define TARGET_MAX_NOCE_IFCVT_SEQ_COST riscv_max_noce_ifcvt_seq_cost
+#undef TARGET_NOCE_CONVERSION_PROFITABLE_P
+#define TARGET_NOCE_CONVERSION_PROFITABLE_P riscv_noce_conversion_profitable_p
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
