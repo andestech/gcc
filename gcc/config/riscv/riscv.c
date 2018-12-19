@@ -3917,6 +3917,13 @@ riscv_print_operand (FILE *file, rtx op, int letter)
       riscv_print_operand_reloc (file, op, true);
       break;
 
+    case 's':
+      {
+	HOST_WIDE_INT op_value = (INTVAL (op) & (GET_MODE_BITSIZE (mode) - 1));
+	fprintf (file, HOST_WIDE_INT_PRINT_DEC, op_value);
+	break;
+      }
+
     case 'R':
       riscv_print_operand_reloc (file, op, false);
       break;
