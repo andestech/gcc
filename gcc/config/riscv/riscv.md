@@ -3817,6 +3817,284 @@
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
+;;bbcs + bfos
+(define_insn "cmov_bb<optab>_<mode>sextra"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:GPR (match_operand:GPR 4 "register_operand" "r")
+				       (const_int 1)
+				       (match_operand 1 "branch_bbcs_operand"))
+				       (const_int 0))
+			  (sign_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					    (match_operand 5 "extract_size_imm_<mode>" "n")
+					    (match_operand 6 "extract_loc_imm_<mode>" "n"))
+			  (match_operand:GPR 3 "register_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+    return "<rev_bbcs> %4, %1, 0f\n\tbfos %0, %2, %5, %6\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab>_<mode>sextra_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:GPR (match_operand:SI 4 "register_operand" "r")
+				       (const_int 1)
+				       (match_operand 1 "branch_bbcs_operand"))
+				       (const_int 0))
+			  (match_operand:GPR 3 "register_operand" "0")
+			  (sign_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					    (match_operand 5 "extract_size_imm_<mode>" "n")
+					    (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+    return "<bbcs> %4, %1, 0f\n\tbfos %0, %2, %5, %6\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+;;bbcs + bfoz
+(define_insn "cmov_bb<optab>_<mode>zextra"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:GPR (match_operand:GPR 4 "register_operand" "r")
+				       (const_int 1)
+				       (match_operand 1 "branch_bbcs_operand"))
+				       (const_int 0))
+			  (zero_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					    (match_operand 5 "extract_size_imm_<mode>" "n")
+					    (match_operand 6 "extract_loc_imm_<mode>" "n"))
+			  (match_operand:GPR 3 "register_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+    return "<rev_bbcs> %4, %1, 0f\n\tbfoz %0, %2, %5, %6\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab>_<mode>zextra_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:GPR (match_operand:GPR 4 "register_operand" "r")
+				       (const_int 1)
+				       (match_operand 1 "branch_bbcs_operand"))
+				       (const_int 0))
+			  (match_operand:GPR 3 "register_operand" "0")
+			  (zero_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					    (match_operand 5 "extract_size_imm_<mode>" "n")
+					    (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+    return "<bbcs> %4, %1, 0f\n\tbfoz %0, %2, %5, %6\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+;;blt + bfos
+(define_insn "cmov<optab><mode>_sextra"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:GPR 1 "register_operand" " r")
+				      (match_operand:GPR 4 "reg_or_0_operand" "rJ"))
+			  (sign_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					    (match_operand 5 "extract_size_imm_<mode>" "n")
+					    (match_operand 6 "extract_loc_imm_<mode>" "n"))
+			  (match_operand:GPR 3 "register_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+    return "<rev_br_insn> %1, %z4, 0f\n\bfos %0, %2, %5, %6\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><mode>_sextra_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:GPR 1 "register_operand" " r")
+				      (match_operand:GPR 4 "reg_or_0_operand" "rJ"))
+			  (match_operand:GPR 3 "register_operand" "0")
+			  (sign_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					    (match_operand 5 "extract_size_imm_<mode>" "n")
+					    (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+    return "<br_insn> %1, %z4, 0f\n\bfos %0, %2, %5, %6\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+;;blt + bfoz
+(define_insn "cmov<optab><mode>_zextra"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:GPR 1 "register_operand" " r")
+				      (match_operand:GPR 4 "reg_or_0_operand" "rJ"))
+			  (zero_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					    (match_operand 5 "extract_size_imm_<mode>" "n")
+					    (match_operand 6 "extract_loc_imm_<mode>" "n"))
+			  (match_operand:GPR 3 "register_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+    return "<rev_br_insn> %1, %z4, 0f\n\bfoz %0, %2, %5, %6\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><mode>_zextra_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:GPR 1 "register_operand" " r")
+				      (match_operand:GPR 4 "reg_or_0_operand" "rJ"))
+			  (match_operand:GPR 3 "register_operand" "0")
+			  (zero_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					    (match_operand 5 "extract_size_imm_<mode>" "n")
+					    (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+    return "<br_insn> %1, %z4, 0f\n\bfoz %0, %2, %5, %6\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+;;beq + bfos
+(define_insn "cmov<optab><mode>_sextra"
+  [(set (match_operand:GPR 0 "register_operand"                                        "=r,    r")
+        (if_then_else:GPR (equality_op (match_operand:GPR 1 "register_operand"         " r,    r")
+				       (match_operand:GPR 4 "reg_or_imm7u_operand"     "rJ, Bz07"))
+			  (sign_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
+					    (match_operand 5 "extract_size_imm_<mode>" " n,    n")
+					    (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))
+			  (match_operand:GPR 3 "register_operand"                      " 0,    0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+
+    switch (which_alternative)
+      {
+      case 0:
+	return "<rev_br_insn> %1, %z4, 0f\n\tbfos %0, %2, %5, %6\n0";
+      case 1:
+	return "<rev_br_insn>c %1, %4, 0f\n\tbfos %0, %2, %5, %6\n0:";
+      default:
+	gcc_unreachable ();
+    }
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><mode>_sextra_rev"
+  [(set (match_operand:GPR 0 "register_operand"                                        "=r,    r")
+        (if_then_else:GPR (equality_op (match_operand:GPR 1 "register_operand"         " r,    r")
+				       (match_operand:GPR 4 "reg_or_imm7u_operand"     "rJ, Bz07"))
+			  (match_operand:GPR 3 "register_operand"                      " 0,    0")
+			  (sign_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
+					    (match_operand 5 "extract_size_imm_<mode>" " n,    n")
+					    (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+
+    switch (which_alternative)
+      {
+      case 0:
+	return "<br_insn> %1, %z4, 0f\n\tbfos %0, %2, %5, %6\n0";
+      case 1:
+	return "<br_insn>c %1, %4, 0f\n\tbfos %0, %2, %5, %6\n0:";
+      default:
+	gcc_unreachable ();
+    }
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+;;beq + bfoz
+(define_insn "cmov<optab><mode>_zextra"
+  [(set (match_operand:GPR 0 "register_operand"                                        "=r,    r")
+        (if_then_else:GPR (equality_op (match_operand:GPR 1 "register_operand"         " r,    r")
+				       (match_operand:GPR 4 "reg_or_imm7u_operand"     "rJ, Bz07"))
+			  (zero_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
+					    (match_operand 5 "extract_size_imm_<mode>" " n,    n")
+					    (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))
+			  (match_operand:GPR 3 "register_operand"                      " 0,    0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+
+    switch (which_alternative)
+      {
+      case 0:
+	return "<rev_br_insn> %1, %z4, 0f\n\tbfoz %0, %2, %5, %6\n0";
+      case 1:
+	return "<rev_br_insn>c %1, %4, 0f\n\tbfoz %0, %2, %5, %6\n0:";
+      default:
+	gcc_unreachable ();
+    }
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><mode>_zextra_rev"
+  [(set (match_operand:GPR 0 "register_operand"                                        "=r,    r")
+        (if_then_else:GPR (equality_op (match_operand:GPR 1 "register_operand"         " r,    r")
+				       (match_operand:GPR 4 "reg_or_imm7u_operand"     "rJ, Bz07"))
+			  (match_operand:GPR 3 "register_operand"                      " 0,    0")
+			  (zero_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
+					    (match_operand 5 "extract_size_imm_<mode>" " n,    n")
+					    (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+
+    switch (which_alternative)
+      {
+      case 0:
+	return "<br_insn> %1, %z4, 0f\n\tbfoz %0, %2, %5, %6\n0";
+      case 1:
+	return "<br_insn>c %1, %4, 0f\n\tbfoz %0, %2, %5, %6\n0:";
+      default:
+	gcc_unreachable ();
+    }
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
 (include "sync.md")
 (include "peephole.md")
 (include "pic.md")
