@@ -384,6 +384,9 @@
 ;; Iterator for hardware-supported integer modes.
 (define_mode_iterator ANYI [QI HI SI (DI "TARGET_64BIT")])
 
+(define_mode_iterator ANYC [(QI "!TARGET_64BIT") (HI "!TARGET_64BIT")
+			    (SI "!TARGET_64BIT") (DI "TARGET_64BIT")])
+
 ;; Iterator for hardware-supported integer modes.
 (define_mode_iterator ANY32 [QI HI SI])
 
@@ -3076,23 +3079,45 @@
     FAIL;
 
   if (!reg_or_0_operand (cmp_op0, GET_MODE (cmp_op0)))
-    cmp_op0 = force_reg (SImode, cmp_op0);
+    cmp_op0 = force_reg (word_mode, cmp_op0);
 
   if (!reg_or_0_operand (cmp_op1, GET_MODE (cmp_op1)))
     {
-      if (!((code == EQ || code == NE)
-	    && TARGET_BIMM))
+      if (!((code == EQ || code == NE) && TARGET_BIMM))
+	cmp_op1 = force_reg (word_mode, cmp_op1);
+    }
+
+  if (TARGET_64BIT)
+    {
+      if (GET_MODE_SIZE (word_mode) > GET_MODE_SIZE (GET_MODE (cmp_op0))
+	  && !register_operand (cmp_op0, word_mode))
 	{
-	  cmp_op1 = force_reg (SImode, cmp_op1);
-	  operands[1] = gen_rtx_fmt_ee (code,
-					VOIDmode, cmp_op0, cmp_op1);
+	  if (unsigned_condition (code) == code)
+	    cmp_op0 = gen_rtx_ZERO_EXTEND (word_mode, cmp_op0);
+	  else
+	    cmp_op0 = gen_rtx_SIGN_EXTEND (word_mode, cmp_op0);
+
+	  cmp_op0 = force_reg (word_mode, cmp_op0);
+	}
+
+      if (GET_MODE_SIZE (word_mode) > GET_MODE_SIZE (GET_MODE (cmp_op1))
+	  && !reg_or_0_operand (cmp_op1, word_mode))
+	{
+	  if (unsigned_condition (code) == code)
+	    cmp_op1 = gen_rtx_ZERO_EXTEND (word_mode, cmp_op1);
+	  else
+	    cmp_op1 = gen_rtx_SIGN_EXTEND (word_mode, cmp_op1);
+
+	  cmp_op1 = force_reg (word_mode, cmp_op1);
 	}
     }
+
+  operands[1] = gen_rtx_fmt_ee (code, VOIDmode, cmp_op0, cmp_op1);
 })
 
 (define_insn "cmov<optab><ANYI:mode><X:mode>"
   [(set (match_operand:ANYI 0 "register_operand"                                  "=r,  r,    r,    r,  r,  r,    r,    r")
-        (if_then_else:ANYI (equality_op (match_operand:X 1 "register_operand"     " r,  r,    r,    r,  r,  r,    r,    r")
+        (if_then_else:ANYI (equality_op (match_operand:X 1 "register_operand"     " r,  r,    r,    r,  r,  0,    r,    r")
 					(match_operand:X 4 "reg_or_imm7u_operand" "rJ, rJ, Bz07, Bz07, rJ, rJ, Bz07, Bz07"))
 			   (match_operand:ANYI 2 "arith_operand"                  " r,  I,    r,    I,  0,  0,    0,    0")
 			   (match_operand:ANYI 3 "arith_operand"                  " 0,  0,    0,    0,  r,  I,    r,    I")))]
@@ -3107,7 +3132,7 @@
    <br_insn>c %1,  %4, 0f\n\tadd %0, %3, zero\n0:
    <br_insn>c %1,  %4, 0f\n\tadd %0, zero, %3\n0:"
   [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
+   (set_attr "mode" "<X:MODE>")
    (set (attr "length") (const_int 8))])
 
 (define_insn "cmov<optab><ANYI:mode><X:mode>"
@@ -3115,7 +3140,7 @@
         (if_then_else:ANYI (inequal_op (match_operand:X 1 "register_operand" " r,  r,  r,  r")
 				       (match_operand:X 4 "reg_or_0_operand" "rJ, rJ, rJ, rJ"))
 			   (match_operand:ANYI 2 "arith_operand"             " r,  I,  0,  0")
-			   (match_operand:ANYI 3 "arith_operand"               " 0,  0,  r,  I")))]
+			   (match_operand:ANYI 3 "arith_operand"             " 0,  0,  r,  I")))]
   "TARGET_CMOV"
   "@
    <rev_br_insn> %1, %z4, 0f\n\tadd %0, %2, zero\n0:
@@ -3123,7 +3148,7 @@
    <br_insn> %1, %z4, 0f\n\tadd %0, %3, zero\n0:
    <br_insn> %1, %z4, 0f\n\tadd %0, zero, %3\n0:"
   [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
+   (set_attr "mode" "<X:MODE>")
    (set (attr "length") (const_int 8))])
 
 (define_insn "cmov_bb<optab><ANYI:mode><X:mode>"
@@ -3142,7 +3167,7 @@
    <bbcs> %4, %1, 0f\n\tadd %0, %3, zero\n0:
    <bbcs> %4, %1, 0f\n\tadd %0, zero, %3\n0:"
   [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
+   (set_attr "mode" "<ANYI:MODE>")
    (set (attr "length") (const_int 8))])
 
 ;;Combine for conditional alu instructions.
