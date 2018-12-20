@@ -3544,6 +3544,205 @@
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
+;;branch + sign_extend
+(define_insn "cmov<optab><X:mode>_extend<SHORT:mode><SUPERQI:mode>2"
+  [(set (match_operand:SUPERQI 0 "register_operand"                                           "=r,    r")
+        (if_then_else:SUPERQI (equality_op (match_operand:X 1 "register_operand"              " r,    r")
+					   (match_operand:X 2 "reg_or_imm7u_operand"          "rJ, Bz07"))
+			      (sign_extend:SUPERQI (match_operand:SHORT 4 "register_operand"  " r,    r"))
+			      (match_operand:SUPERQI 3 "arith_operand"                        " 0,    0")))]
+  "TARGET_CMOV && TARGET_BFO"
+  "@
+   <rev_br_insn> %1, %z2, 0f\n\tbfos %0, %4, <SHORT:sh_limit>, 0\n0:
+   <rev_br_insn>c %1, %2, 0f\n\tbfos %0, %4, <SHORT:sh_limit>, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><X:mode>_extend<SHORT:mode><SUPERQI:mode>2_rev"
+  [(set (match_operand:SUPERQI 0 "register_operand"                                     "=r,    r")
+        (if_then_else:SUPERQI (equality_op (match_operand:X 1 "register_operand"        " r,    r")
+					   (match_operand:X 2 "reg_or_imm7u_operand"    "rJ, Bz07"))
+			(match_operand:SUPERQI 3  "arith_operand"                       " 0,    0")
+			(sign_extend:SUPERQI (match_operand:SHORT 4 "register_operand"  " r,    r"))))]
+  "TARGET_CMOV && TARGET_BFO"
+  "@
+   <br_insn> %1, %z2, 0f\n\tbfos %0, %4, <SHORT:sh_limit>, 0\n0:
+   <br_insn>c %1, %2, 0f\n\tbfos %0, %4, <SHORT:sh_limit>, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><X:mode>_extend<SHORT:mode><SUPERQI:mode>2"
+  [(set (match_operand:SUPERQI 0 "register_operand" "=r")
+        (if_then_else:SUPERQI (inequal_op (match_operand:X 1 "register_operand" " r")
+					  (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			      (zero_extend:SUPERQI (match_operand:SHORT 4 "register_operand"  "r"))
+			      (match_operand:SUPERQI 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BFO"
+  "<rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, <SHORT:sh_limit>, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><X:mode>_extend<SHORT:mode><SUPERQI:mode>2_rev"
+  [(set (match_operand:SUPERQI 0 "register_operand" "=r")
+        (if_then_else:SUPERQI (inequal_op (match_operand:X 1 "register_operand" " r")
+					  (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			      (match_operand:SUPERQI 3 "arith_operand" "0")
+			      (zero_extend:SUPERQI (match_operand:SHORT 4 "register_operand" "r"))))]
+  "TARGET_CMOV && TARGET_BFO"
+  "<br_insn> %1, %z2, 0f\n\tbfoz %0, %4, <SHORT:sh_limit>, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab><X:mode>_extend<SHORT:mode><SUPERQI:mode>2"
+  [(set (match_operand:SUPERQI 0 "register_operand" "=r")
+        (if_then_else:SUPERQI (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+					   (const_int 1)
+					   (match_operand 1 "branch_bbcs_operand"))
+					   (const_int 0))
+			      (zero_extend:SUPERQI (match_operand:SHORT 2 "register_operand" "r"))
+			      (match_operand:SUPERQI 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
+  "<rev_bbcs> %4, %1, 0f\n\tbfoz %0, %2, <SHORT:sh_limit>, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab><X:mode>_extend<SHORT:mode><SUPERQI:mode>2_rev"
+  [(set (match_operand:SUPERQI 0 "register_operand" "=r")
+        (if_then_else:SUPERQI (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+					   (const_int 1)
+					   (match_operand 1 "branch_bbcs_operand"))
+					   (const_int 0))
+			      (match_operand:SUPERQI 3 "arith_operand" "0")
+			      (zero_extend:SUPERQI (match_operand:SHORT 2 "register_operand" "r"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
+  "<bbcs> %4, %1, 0f\n\tbfoz %0, %2, <SHORT:sh_limit>, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")
+   (set (attr "length") (const_int 8))])
+
+;;branch + mask
+(define_insn "cmov<optab>_mask<GPR:mode><X:mode>"
+  [(set (match_operand:GPR 0 "register_operand"                                   "=  r,      r")
+        (if_then_else:GPR (equality_op (match_operand:X 1 "register_operand"      "   r,      r")
+				       (match_operand:X 2 "reg_or_imm7u_operand"  "  rJ,   Bz07"))
+			  (and:GPR (match_operand:GPR 4 "register_operand"        "   r,      r")
+				   (match_operand:GPR 5 "imm_extract_operand"     "Bext,   Bext"))
+			  (match_operand:GPR 3 "arith_operand"                    "   0,      0")))]
+  "TARGET_CMOV && TARGET_BFO"
+  {
+    operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
+
+    switch (which_alternative)
+      {
+      case 0:
+	return "<rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, %5, 0\n0:";
+      case 1:
+	return "<rev_br_insn>c %1, %2, 0f\n\tbfoz %0, %4, %5, 0\n0:";
+      default:
+	gcc_unreachable ();
+    }
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab>_mask<GPR:mode><X:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand"                                  "=  r,    r")
+        (if_then_else:GPR (equality_op (match_operand:X 1 "register_operand"     "   r,    r")
+				       (match_operand:X 2 "reg_or_imm7u_operand" "  rJ, Bz07"))
+			(match_operand:GPR 3  "arith_operand"                    "   0,    0")
+			(and:GPR (match_operand:GPR 4 "register_operand"         "   r,    r")
+				 (match_operand:GPR 5 "imm_extract_operand"      "Bext, Bext"))))]
+  "TARGET_CMOV && TARGET_BFO"
+  {
+
+    switch (which_alternative)
+      {
+      case 0:
+	return "<br_insn> %1, %z2, 0f\n\tbfoz %0, %4, %5, 0\n0:";
+      case 1:
+	return "<br_insn>c %1, %2, 0f\n\tbfoz %0, %4, %5, 0\n0:";
+      default:
+	gcc_unreachable ();
+    }
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab>_mask<GPR:mode><X:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:X 1 "register_operand" " r")
+				      (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			  (and:GPR (match_operand:GPR 4 "register_operand"  "r")
+				   (match_operand:GPR 5 "imm_extract_operand" "Bext"))
+			  (match_operand:GPR 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BFO"
+  {
+    operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
+    return "<rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab>_mask<GPR:mode><X:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:X 1 "register_operand" " r")
+				      (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			  (match_operand:GPR 3 "arith_operand" "0")
+			  (and:GPR (match_operand:GPR 4 "register_operand" "r")
+				   (match_operand:GPR 5 "imm_extract_operand" "Bext"))))]
+  "TARGET_CMOV && TARGET_BFO"
+  {
+    operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
+    return "<br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab>_mask<GPR:mode><X:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				       (const_int 1)
+				       (match_operand 1 "branch_bbcs_operand"))
+				       (const_int 0))
+			  (and:GPR (match_operand:GPR 2 "register_operand" "r")
+				   (match_operand:GPR 5 "imm_extract_operand" "Bext"))
+			  (match_operand:GPR 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
+  {
+    operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
+    return "<rev_bbcs> %4, %1, 0f\n\tbfoz %0, %2, 15, 0\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab>_mask<GPR:mode><X:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				       (const_int 1)
+				       (match_operand 1 "branch_bbcs_operand"))
+				       (const_int 0))
+			(match_operand:GPR 3 "arith_operand" "0")
+			(and:GPR (match_operand:GPR 2 "register_operand" "r")
+				 (match_operand:GPR 5 "imm_extract_operand" "Bext"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
+  {
+    operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
+    return "<bbcs> %4, %1, 0f\n\tbfoz %0, %2, 15, 0\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
 (include "sync.md")
 (include "peephole.md")
 (include "pic.md")
