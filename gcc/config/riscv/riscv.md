@@ -3090,10 +3090,10 @@
     }
 })
 
-(define_insn "cmov<optab><mode>"
+(define_insn "cmov<optab><ANYI:mode><X:mode>"
   [(set (match_operand:ANYI 0 "register_operand"                                  "=r,  r,    r,    r,  r,  r,    r,    r")
-        (if_then_else:ANYI (equality_op (match_operand:SI 1 "register_operand"     " r,  r,    r,    r,  r,  r,    r,    r")
-					(match_operand:SI 4 "reg_or_imm7u_operand" "rJ, rJ, Bz07, Bz07, rJ, rJ, Bz07, Bz07"))
+        (if_then_else:ANYI (equality_op (match_operand:X 1 "register_operand"     " r,  r,    r,    r,  r,  r,    r,    r")
+					(match_operand:X 4 "reg_or_imm7u_operand" "rJ, rJ, Bz07, Bz07, rJ, rJ, Bz07, Bz07"))
 			   (match_operand:ANYI 2 "arith_operand"                  " r,  I,    r,    I,  0,  0,    0,    0")
 			   (match_operand:ANYI 3 "arith_operand"                  " 0,  0,    0,    0,  r,  I,    r,    I")))]
   "TARGET_CMOV"
@@ -3110,12 +3110,12 @@
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov<optab><mode>"
+(define_insn "cmov<optab><ANYI:mode><X:mode>"
   [(set (match_operand:ANYI 0 "register_operand"                             "=r,  r,  r,  r")
-        (if_then_else:ANYI (inequal_op (match_operand:SI 1 "register_operand" " r,  r,  r,  r")
-				       (match_operand:SI 4 "reg_or_0_operand" "rJ, rJ, rJ, rJ"))
+        (if_then_else:ANYI (inequal_op (match_operand:X 1 "register_operand" " r,  r,  r,  r")
+				       (match_operand:X 4 "reg_or_0_operand" "rJ, rJ, rJ, rJ"))
 			   (match_operand:ANYI 2 "arith_operand"             " r,  I,  0,  0")
-			   (match_operand:ANYI 3 "arith_operand"             " 0,  0,  r,  I")))]
+			   (match_operand:ANYI 3 "arith_operand"               " 0,  0,  r,  I")))]
   "TARGET_CMOV"
   "@
    <rev_br_insn> %1, %z4, 0f\n\tadd %0, %2, zero\n0:
@@ -3126,10 +3126,10 @@
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov_bb<optab><mode>"
+(define_insn "cmov_bb<optab><ANYI:mode><X:mode>"
   [(set (match_operand:ANYI 0 "register_operand" "=r, r, r, r")
         (if_then_else:ANYI (equality_op
-			     (zero_extract:SI (match_operand:SI 4 "register_operand" "r, r, r, r")
+			     (zero_extract:X (match_operand:X 4 "register_operand" "r, r, r, r")
 			     (const_int 1)
 			     (match_operand 1 "branch_bbcs_operand"))
 			     (const_int 0))
@@ -3146,850 +3146,275 @@
    (set (attr "length") (const_int 8))])
 
 ;;Combine for conditional alu instructions.
-(define_insn "cmoveq<mode><optab>"
-  [(set (match_operand:X 0 "register_operand"                                    "=r,    r")
-        (if_then_else:X (eq (match_operand:X 1 "register_operand"                " r,    r")
-			    (match_operand:X 2 "reg_or_imm7u_operand"            "rJ, Bz07"))
-			    (cond_alu:X (match_operand:X 4 "register_operand"    " r,    r")
-					(match_operand:X 5 "const_arith_operand" " I,    I"))
-			    (match_operand:X 3 "arith_operand"                   " 0,    0")))]
+
+;;branch + alu
+(define_insn "cmov<optab><mode>_<cond_alu:optab>"
+  [(set (match_operand:X 0 "register_operand"                                  "=r,    r")
+        (if_then_else:X (equality_op (match_operand:X 1 "register_operand"     " r,    r")
+				     (match_operand:X 2 "reg_or_imm7u_operand" "rJ, Bz07"))
+			(cond_alu:X (match_operand:X 4 "register_operand"      " r,    r")
+				    (match_operand:X 5 "const_arith_operand"   " I,    I"))
+			(match_operand:X 3 "arith_operand"                     " 0,    0")))]
   "TARGET_CMOV"
   "@
-   bne  %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:
-   bnec %1, %2, 0f\n\t<insn> %0, %4, %5\n0:"
+   <rev_br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:
+   <rev_br_insn>c %1, %2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmoveq<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand"                                "=r,    r")
-        (if_then_else:X (eq (match_operand:X 1 "register_operand"            " r,    r")
-			    (match_operand:X 2 "reg_or_imm7u_operand"        "rJ, Bz07"))
-			(match_operand:X 3  "arith_operand"                  " 0,    0")
-			(cond_alu:X (match_operand:X 4 "register_operand"    " r,    r")
-				    (match_operand:X 5 "const_arith_operand" " I,    I"))))]
+(define_insn "cmoveq<optab><mode>_<cond_alu:optab>_rev"
+  [(set (match_operand:X 0 "register_operand"                                  "=r,    r")
+        (if_then_else:X (equality_op (match_operand:X 1 "register_operand"     " r,    r")
+				     (match_operand:X 2 "reg_or_imm7u_operand" "rJ, Bz07"))
+			(match_operand:X 3  "arith_operand"                    " 0,    0")
+			(cond_alu:X (match_operand:X 4 "register_operand"      " r,    r")
+				    (match_operand:X 5 "const_arith_operand"   " I,    I"))))]
   "TARGET_CMOV"
   "@
-   beq  %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:
-   beqc %1, %2, 0f\n\t<insn> %0, %4, %5\n0:"
+   <br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:
+   <br_insn>c %1, %2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmovne<mode><optab>"
-  [(set (match_operand:X 0 "register_operand"                                "=r,    r")
-        (if_then_else:X (ne (match_operand:X 1 "register_operand"            " r,    r")
-			    (match_operand:X 2 "reg_or_imm7u_operand"        "rJ, Bz07"))
-			(cond_alu:X (match_operand:X 4 "register_operand"    " r,    r")
-				    (match_operand:X 5 "const_arith_operand" " I,    I"))
-			(match_operand:X 3 "arith_operand"                   " 0,    0")))]
-  "TARGET_CMOV"
-  "@
-   beq  %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:
-   beqc %1, %2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovne<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand"                                "=r,    r")
-        (if_then_else:X (ne (match_operand:X 1 "register_operand"            " r,    r")
-			    (match_operand:X 2 "reg_or_imm7u_operand"        "rJ, Bz07"))
-			(match_operand:X 3  "arith_operand"                  " 0,    0")
-			(cond_alu:X (match_operand:X 4 "register_operand"    " r,    r")
-				    (match_operand:X 5 "const_arith_operand" " I,    I"))))]
-  "TARGET_CMOV"
-  "@
-   bne  %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:
-   bnec %1, %2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovlt<mode><optab>"
+(define_insn "cmov<optab><mode>_<cond_alu:optab>"
   [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (lt (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
+        (if_then_else:X (inequal_op (match_operand:X 1 "register_operand" " r")
+				    (match_operand:X 2 "reg_or_0_operand" "rJ"))
 			(cond_alu:X (match_operand:X 4 "register_operand" "r")
 				    (match_operand:X 5 "const_arith_operand" "I"))
 			(match_operand:X 3 "arith_operand" "0")))]
   "TARGET_CMOV"
-  "bge %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
+  "<rev_br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmovlt<mode><optab>_rev"
+(define_insn "cmov<optab><mode>_<cond_alu:optab>_rev"
   [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (lt (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
+        (if_then_else:X (inequal_op (match_operand:X 1 "register_operand" " r")
+				    (match_operand:X 2 "reg_or_0_operand" "rJ"))
 			(match_operand:X 3 "arith_operand" "0")
 			(cond_alu:X (match_operand:X 4 "register_operand" "r")
 				    (match_operand:X 5 "const_arith_operand" "I"))))]
   "TARGET_CMOV"
-  "blt %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
+  "<br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmovle<mode><optab>"
+;; bbc|s + alu
+(define_insn "cmov_bb<optab><mode>_<cond_alu:optab>"
   [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (le (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(cond_alu:X (match_operand:X 4 "register_operand" "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV"
-  "bgt %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovle<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (le (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" "0")
-			(cond_alu:X (match_operand:X 4 "register_operand" "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "ble %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovgt<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (gt (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(cond_alu:X (match_operand:X 4 "register_operand" "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV"
-  "ble %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovgt<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (gt (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" "0")
-			(cond_alu:X (match_operand:X 4 "register_operand" "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "bgt %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovge<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (ge (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(cond_alu:X (match_operand:X 4 "register_operand" "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV"
-  "blt %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovge<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (ge (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" " 0")
-			(cond_alu:X (match_operand:X 4 "register_operand" "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "bge %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovltu<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (ltu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(cond_alu:X (match_operand:X 4 "register_operand" "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV"
-  "bgeu %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovltu<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (ltu (match_operand:SI 1 "register_operand" " r")
-			     (match_operand:SI 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" " 0")
-			(cond_alu:X (match_operand:X 4 "register_operand" "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "bltu %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovleu<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (leu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(cond_alu:X (match_operand:X 4 "register_operand" "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV"
-  "bgtu %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovleu<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (leu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" "0")
-			(cond_alu:X (match_operand:X 4 "register_operand" "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "bleu %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovgtu<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (gtu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(cond_alu:X (match_operand:X 4 "register_operand" "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV"
-  "bleu %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovgtu<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (gtu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" "0")
-			(cond_alu:X (match_operand:X 4 "register_operand" "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "bgtu %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovgeu<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (geu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			    (cond_alu:X (match_operand:X 4 "register_operand" "r")
-					    (match_operand:X 5 "const_arith_operand" "I"))
-			    (match_operand:X 3 "arith_operand" " 0")))]
-  "TARGET_CMOV"
-  "bltu %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovgeu<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (geu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" "0")
-			(cond_alu:X (match_operand:X 4 "register_operand" "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "bgeu %1, %z2, 0f\n\t<insn> %0, %4, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmov_bbeq<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (eq (zero_extract:X (match_operand:X 4 "register_operand" "r")
-			    (const_int 1)
-			    (match_operand 1 "branch_bbcs_operand"))
-			    (const_int 0))
+        (if_then_else:X (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				     (const_int 1)
+				     (match_operand 1 "branch_bbcs_operand"))
+				     (const_int 0))
 			(cond_alu:X (match_operand:X 2 "register_operand"    "r")
 				    (match_operand:X 5 "const_arith_operand" "I"))
 			(match_operand:X 3 "arith_operand" "0")))]
   "TARGET_CMOV && TARGET_BBCS"
-  "bbs %4, %1, 0f\n\t<insn> %0, %2, %5\n0:"
+  "<rev_bbcs> %4, %1, 0f\n\t<cond_alu:insn> %0, %2, %5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov_bbeq<mode><optab>_rev"
+(define_insn "cmov_bb<optab><mode>_<cond_alu:optab>_rev"
   [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (eq (zero_extract:X (match_operand:X 4 "register_operand" "r")
-			    (const_int 1)
-			    (match_operand 1 "branch_bbcs_operand"))
-			    (const_int 0))
+        (if_then_else:X (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				     (const_int 1)
+				     (match_operand 1 "branch_bbcs_operand"))
+				     (const_int 0))
 			(match_operand:X 3 "arith_operand" "0")
 			(cond_alu:X (match_operand:X 2 "register_operand"    "r")
 				    (match_operand:X 5 "const_arith_operand" "I"))))]
   "TARGET_CMOV && TARGET_BBCS"
-  "bbc %4, %1, 0f\n\t<insn> %0, %2, %5\n0:"
+  "<bbcs> %4, %1, 0f\n\t<cond_alu:insn> %0, %2, %5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
-
-(define_insn "cmov_bbne<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (ne (zero_extract:X (match_operand:X 4 "register_operand" "r")
-			    (const_int 1)
-			    (match_operand 1 "branch_bbcs_operand"))
-			    (const_int 0))
-			(cond_alu:X (match_operand:X 2 "register_operand"    "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV && TARGET_BBCS"
-  "bbc %4, %1, 0f\n\t<insn> %0, %2, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmov_bbne<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (ne (zero_extract:X (match_operand:X 4 "register_operand" "r")
-			    (const_int 1)
-			    (match_operand 1 "branch_bbcs_operand"))
-			    (const_int 0))
-			(match_operand:X 3 "arith_operand" "0")
-			(cond_alu:X (match_operand:X 2 "register_operand"    "r")
-				    (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV && TARGET_BBCS"
-  "bbs %4, %1, 0f\n\t<insn> %0, %2, %5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-
-;; A hotfix to help RTL combiner to merge a cmovn insn and a zero_extend insn.
-;; It should be removed once after we change the expansion form of the cmovn.
-;(define_insn "*cmovn_simplified_<mode>"
-;  [(set (match_operand:ANY32 0 "register_operand" "=r")
-;	(if_then_else:ANY32 (match_operand:SI 1 "register_operand" "r")
-;		(match_operand:ANY32 2 "register_operand" "r")
-;		(match_operand:ANY32 3 "register_operand" "0")))]
-;  "TARGET_CMOV"
-;  "beq %1, zero, 0f\n\tadd %0, zero, %2\n0:"
-;  [(set_attr "type" "branch")
-;   (set_attr "mode" "<MODE>")
-;   (set (attr "length") (const_int 8))])
 
 ;;Combine for conditional any shift instructions.
-(define_insn "cmoveq<mode><optab>"
-  [(set (match_operand:X 0 "register_operand"                                 "=r,    r")
-        (if_then_else:X (eq (match_operand:X 1 "register_operand"             " r,    r")
-			    (match_operand:X 2 "reg_or_imm7u_operand"         "rJ, Bz07"))
-			(any_shift:X (match_operand:X 4 "register_operand"    " r,    r")
-				     (match_operand:X 5 "const_arith_operand" " I,    I"))
-			(match_operand:X 3 "arith_operand"                    " 0,    0")))]
+
+;;branch + shift
+(define_insn "cmov<equality_op:optab><mode>_<any_shift:optab>"
+  [(set (match_operand:X 0 "register_operand"                                  "=r,    r")
+        (if_then_else:X (equality_op (match_operand:X 1 "register_operand"     " r,    r")
+				     (match_operand:X 2 "reg_or_imm7u_operand" "rJ, Bz07"))
+			(any_shift:X (match_operand:X 4 "register_operand"     " r,    r")
+				     (match_operand:X 5 "const_arith_operand"  " I,    I"))
+			(match_operand:X 3 "arith_operand"                     " 0,    0")))]
   "TARGET_CMOV"
   "@
-   bne  %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:
-   bnec %1, %2, 0f\n\t<insn> %0, %4, %s5\n0:"
+   <rev_br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:
+   <rev_br_insn>c %1, %2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmoveq<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand"                                 "=r,    r")
-        (if_then_else:X (eq (match_operand:X 1 "register_operand"             " r,    r")
-			    (match_operand:X 2 "reg_or_imm7u_operand"         "rJ, Bz07"))
-			(match_operand:X 3  "arith_operand"                   " 0,    0")
-			(any_shift:X (match_operand:X 4 "register_operand"    " r,    r")
-				     (match_operand:X 5 "const_arith_operand" " I,    I"))))]
+(define_insn "cmov<equality_op:optab><mode>_<any_shift:optab>_rev"
+  [(set (match_operand:X 0 "register_operand"                                  "=r,    r")
+        (if_then_else:X (equality_op (match_operand:X 1 "register_operand"     " r,    r")
+				     (match_operand:X 2 "reg_or_imm7u_operand" "rJ, Bz07"))
+			(match_operand:X 3  "arith_operand"                    " 0,    0")
+			(any_shift:X (match_operand:X 4 "register_operand"     " r,    r")
+				     (match_operand:X 5 "const_arith_operand"  " I,    I"))))]
   "TARGET_CMOV"
   "@
-   beq  %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:
-   beqc %1, %2, 0f\n\t<insn> %0, %4, %s5\n0:"
+   <br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:
+   <br_insn>c %1, %2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmovne<mode><optab>"
-  [(set (match_operand:X 0 "register_operand"                                 "=r,    r")
-        (if_then_else:X (ne (match_operand:X 1 "register_operand"             " r,    r")
-			    (match_operand:X 2 "reg_or_imm7u_operand"         "rJ, Bz07"))
-			(any_shift:X (match_operand:X 4 "register_operand"    " r,    r")
-				     (match_operand:X 5 "const_arith_operand" " I,    I"))
-			(match_operand:X 3 "arith_operand"                    " 0,    0")))]
-  "TARGET_CMOV"
-  "@
-   beq  %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:
-   beqc %1, %2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovne<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand"                                 "=r,    r")
-        (if_then_else:X (ne (match_operand:X 1 "register_operand"             " r,    r")
-			    (match_operand:X 2 "reg_or_imm7u_operand"         "rJ, Bz07"))
-			(match_operand:X 3  "arith_operand"                   " 0,    0")
-			(any_shift:X (match_operand:X 4 "register_operand"    " r,    r")
-				     (match_operand:X 5 "const_arith_operand" " I,    I"))))]
-  "TARGET_CMOV"
-  "@
-   bne  %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:
-   bnec %1, %2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovlt<mode><optab>"
+(define_insn "cmov<inequal_op:optab><mode>_<any_shift:optab>"
   [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (lt (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
+        (if_then_else:X (inequal_op (match_operand:X 1 "register_operand" " r")
+				    (match_operand:X 2 "reg_or_0_operand" "rJ"))
 			(any_shift:X (match_operand:X 4 "register_operand" "r")
 				     (match_operand:X 5 "const_arith_operand" "I"))
 			(match_operand:X 3 "arith_operand" "0")))]
   "TARGET_CMOV"
-  "bge %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
+  "<rev_br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmovlt<mode><optab>_rev"
+(define_insn "cmovlt<inequal_op:optab><mode><any_shift:optab>_rev"
   [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (lt (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
+        (if_then_else:X (inequal_op (match_operand:X 1 "register_operand" " r")
+				    (match_operand:X 2 "reg_or_0_operand" "rJ"))
 			(match_operand:X 3 "arith_operand" "0")
 			(any_shift:X (match_operand:X 4 "register_operand" "r")
 				     (match_operand:X 5 "const_arith_operand" "I"))))]
   "TARGET_CMOV"
-  "blt %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
+  "<br_insn> %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmovle<mode><optab>"
+;;bbc|s + shift
+(define_insn "cmov_bb<equality_op:optab><mode>_<any_shift:optab>"
   [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (le (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV"
-  "bgt %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovle<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (le (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" "0")
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "ble %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovgt<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (gt (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV"
-  "ble %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovgt<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (gt (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" "0")
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "bgt %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovge<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (ge (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV"
-  "blt %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovge<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (ge (match_operand:X 1 "register_operand" " r")
-			    (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" "0")
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "bge %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovltu<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (ltu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV"
-  "bgeu %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovltu<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (ltu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" "0")
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "bltu %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovleu<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (leu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV"
-  "bgtu %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovleu<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (leu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" "0")
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "bleu %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovgtu<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (gtu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV"
-  "bleu %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovgtu<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (gtu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" "0")
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "bgtu %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovgeu<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (geu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV"
-  "bltu %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmovgeu<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (geu (match_operand:X 1 "register_operand" " r")
-			     (match_operand:X 2 "reg_or_0_operand" "rJ"))
-			(match_operand:X 3 "arith_operand" "0")
-			(any_shift:X (match_operand:X 4 "register_operand" "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV"
-  "bgeu %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmov_bbeq<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (eq (zero_extract:X (match_operand:X 4 "register_operand" "r")
-			    (const_int 1)
-			    (match_operand 1 "branch_bbcs_operand"))
-			    (const_int 0))
+        (if_then_else:X (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				     (const_int 1)
+				     (match_operand 1 "branch_bbcs_operand"))
+				     (const_int 0))
 			(any_shift:X (match_operand:X 2 "register_operand"    "r")
 				     (match_operand:X 5 "const_arith_operand" "I"))
 			(match_operand:X 3 "arith_operand" "0")))]
   "TARGET_CMOV && TARGET_BBCS"
-  "bbs %4, %1, 0f\n\t<insn> %0, %2, %s5\n0:"
+  "<rev_bbcs> %4, %1, 0f\n\t<any_shift:insn> %0, %2, %s5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov_bbeq<mode><optab>_rev"
+(define_insn "cmov_bb<equality_op:optab><mode>_<any_shift:optab>_rev"
   [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (eq (zero_extract:X (match_operand:X 4 "register_operand" "r")
-			    (const_int 1)
-			    (match_operand 1 "branch_bbcs_operand"))
-			    (const_int 0))
+        (if_then_else:X (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				     (const_int 1)
+				     (match_operand 1 "branch_bbcs_operand"))
+				     (const_int 0))
 			(match_operand:X 3 "arith_operand" "0")
 			(any_shift:X (match_operand:X 2 "register_operand"    "r")
 				     (match_operand:X 5 "const_arith_operand" "I"))))]
   "TARGET_CMOV && TARGET_BBCS"
-  "bbc %4, %1, 0f\n\t<insn> %0, %2, %s5\n0:"
+  "<bbcs> %4, %1, 0f\n\t<any_shift:insn> %0, %2, %s5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov_bbne<mode><optab>"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (ne (zero_extract:X (match_operand:X 4 "register_operand" "r")
-			    (const_int 1)
-			    (match_operand 1 "branch_bbcs_operand"))
-			    (const_int 0))
-			(any_shift:X (match_operand:X 2 "register_operand"    "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))
-			(match_operand:X 3 "arith_operand" "0")))]
-  "TARGET_CMOV && TARGET_BBCS"
-  "bbc %4, %1, 0f\n\t<insn> %0, %2, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmov_bbne<mode><optab>_rev"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (if_then_else:X (ne (zero_extract:X (match_operand:X 4 "register_operand" "r")
-			    (const_int 1)
-			    (match_operand 1 "branch_bbcs_operand"))
-			    (const_int 0))
-			(match_operand:X 3 "arith_operand" "0")
-			(any_shift:X (match_operand:X 2 "register_operand"    "r")
-				     (match_operand:X 5 "const_arith_operand" "I"))))]
-  "TARGET_CMOV && TARGET_BBCS"
-  "bbs %4, %1, 0f\n\t<insn> %0, %2, %s5\n0:"
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-;;bbcs + bfos
-(define_insn "cmov_bb<optab>_<mode>sextra"
+;;bbcs + bfoz|s
+(define_insn "cmov_bb<optab><mode>_<any_extract:sz>extra"
   [(set (match_operand:GPR 0 "register_operand" "=r")
         (if_then_else:GPR (equality_op (zero_extract:GPR (match_operand:GPR 4 "register_operand" "r")
 				       (const_int 1)
 				       (match_operand 1 "branch_bbcs_operand"))
 				       (const_int 0))
-			  (sign_extract:GPR (match_operand:GPR 2 "register_operand" "r")
-					    (match_operand 5 "extract_size_imm_<mode>" "n")
-					    (match_operand 6 "extract_loc_imm_<mode>" "n"))
+			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					   (match_operand 5 "extract_size_imm_<mode>" "n")
+					   (match_operand 6 "extract_loc_imm_<mode>" "n"))
 			  (match_operand:GPR 3 "register_operand" "0")))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
    && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
 		1, GET_MODE_BITSIZE (<MODE>mode))"
   {
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
-    return "<rev_bbcs> %4, %1, 0f\n\tbfos %0, %2, %5, %6\n0:";
+    return "<rev_bbcs> %4, %1, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
   }
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov_bb<optab>_<mode>sextra_rev"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
-        (if_then_else:GPR (equality_op (zero_extract:GPR (match_operand:SI 4 "register_operand" "r")
-				       (const_int 1)
-				       (match_operand 1 "branch_bbcs_operand"))
-				       (const_int 0))
-			  (match_operand:GPR 3 "register_operand" "0")
-			  (sign_extract:GPR (match_operand:GPR 2 "register_operand" "r")
-					    (match_operand 5 "extract_size_imm_<mode>" "n")
-					    (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
-  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
-   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
-		1, GET_MODE_BITSIZE (<MODE>mode))"
-  {
-    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
-    return "<bbcs> %4, %1, 0f\n\tbfos %0, %2, %5, %6\n0:";
-  }
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-;;bbcs + bfoz
-(define_insn "cmov_bb<optab>_<mode>zextra"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
-        (if_then_else:GPR (equality_op (zero_extract:GPR (match_operand:GPR 4 "register_operand" "r")
-				       (const_int 1)
-				       (match_operand 1 "branch_bbcs_operand"))
-				       (const_int 0))
-			  (zero_extract:GPR (match_operand:GPR 2 "register_operand" "r")
-					    (match_operand 5 "extract_size_imm_<mode>" "n")
-					    (match_operand 6 "extract_loc_imm_<mode>" "n"))
-			  (match_operand:GPR 3 "register_operand" "0")))]
-  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
-   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
-		1, GET_MODE_BITSIZE (<MODE>mode))"
-  {
-    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
-    return "<rev_bbcs> %4, %1, 0f\n\tbfoz %0, %2, %5, %6\n0:";
-  }
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmov_bb<optab>_<mode>zextra_rev"
+(define_insn "cmov_bb<optab><mode>_<any_extract:sz>extra_rev"
   [(set (match_operand:GPR 0 "register_operand" "=r")
         (if_then_else:GPR (equality_op (zero_extract:GPR (match_operand:GPR 4 "register_operand" "r")
 				       (const_int 1)
 				       (match_operand 1 "branch_bbcs_operand"))
 				       (const_int 0))
 			  (match_operand:GPR 3 "register_operand" "0")
-			  (zero_extract:GPR (match_operand:GPR 2 "register_operand" "r")
-					    (match_operand 5 "extract_size_imm_<mode>" "n")
-					    (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
+			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					   (match_operand 5 "extract_size_imm_<mode>" "n")
+					   (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
    && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
 		1, GET_MODE_BITSIZE (<MODE>mode))"
   {
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
-    return "<bbcs> %4, %1, 0f\n\tbfoz %0, %2, %5, %6\n0:";
+    return "<bbcs> %4, %1, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
   }
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-;;blt + bfos
-(define_insn "cmov<optab><mode>_sextra"
+;;brach + bfoz|s
+(define_insn "cmov<optab><mode>_<any_extract:sz>extra"
   [(set (match_operand:GPR 0 "register_operand" "=r")
         (if_then_else:GPR (inequal_op (match_operand:GPR 1 "register_operand" " r")
 				      (match_operand:GPR 4 "reg_or_0_operand" "rJ"))
-			  (sign_extract:GPR (match_operand:GPR 2 "register_operand" "r")
-					    (match_operand 5 "extract_size_imm_<mode>" "n")
-					    (match_operand 6 "extract_loc_imm_<mode>" "n"))
+			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					   (match_operand 5 "extract_size_imm_<mode>" "n")
+					   (match_operand 6 "extract_loc_imm_<mode>" "n"))
 			  (match_operand:GPR 3 "register_operand" "0")))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
    && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
 		1, GET_MODE_BITSIZE (<MODE>mode))"
   {
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
-    return "<rev_br_insn> %1, %z4, 0f\n\bfos %0, %2, %5, %6\n0:";
+    return "<rev_br_insn> %1, %z4, 0f\n\bfo<any_extract:sz> %0, %2, %5, %6\n0:";
   }
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov<optab><mode>_sextra_rev"
+(define_insn "cmov<optab><mode>_<any_extract:sz>extra_rev"
   [(set (match_operand:GPR 0 "register_operand" "=r")
         (if_then_else:GPR (inequal_op (match_operand:GPR 1 "register_operand" " r")
 				      (match_operand:GPR 4 "reg_or_0_operand" "rJ"))
 			  (match_operand:GPR 3 "register_operand" "0")
-			  (sign_extract:GPR (match_operand:GPR 2 "register_operand" "r")
-					    (match_operand 5 "extract_size_imm_<mode>" "n")
-					    (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
+			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					   (match_operand 5 "extract_size_imm_<mode>" "n")
+					   (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
    && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
 		1, GET_MODE_BITSIZE (<MODE>mode))"
   {
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
-    return "<br_insn> %1, %z4, 0f\n\bfos %0, %2, %5, %6\n0:";
+    return "<br_insn> %1, %z4, 0f\n\bfo<any_extract:sz> %0, %2, %5, %6\n0:";
   }
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-;;blt + bfoz
-(define_insn "cmov<optab><mode>_zextra"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
-        (if_then_else:GPR (inequal_op (match_operand:GPR 1 "register_operand" " r")
-				      (match_operand:GPR 4 "reg_or_0_operand" "rJ"))
-			  (zero_extract:GPR (match_operand:GPR 2 "register_operand" "r")
-					    (match_operand 5 "extract_size_imm_<mode>" "n")
-					    (match_operand 6 "extract_loc_imm_<mode>" "n"))
-			  (match_operand:GPR 3 "register_operand" "0")))]
-  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
-   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
-		1, GET_MODE_BITSIZE (<MODE>mode))"
-  {
-    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
-    return "<rev_br_insn> %1, %z4, 0f\n\bfoz %0, %2, %5, %6\n0:";
-  }
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmov<optab><mode>_zextra_rev"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
-        (if_then_else:GPR (inequal_op (match_operand:GPR 1 "register_operand" " r")
-				      (match_operand:GPR 4 "reg_or_0_operand" "rJ"))
-			  (match_operand:GPR 3 "register_operand" "0")
-			  (zero_extract:GPR (match_operand:GPR 2 "register_operand" "r")
-					    (match_operand 5 "extract_size_imm_<mode>" "n")
-					    (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
-  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
-   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
-		1, GET_MODE_BITSIZE (<MODE>mode))"
-  {
-    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
-    return "<br_insn> %1, %z4, 0f\n\bfoz %0, %2, %5, %6\n0:";
-  }
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-;;beq + bfos
-(define_insn "cmov<optab><mode>_sextra"
-  [(set (match_operand:GPR 0 "register_operand"                                        "=r,    r")
-        (if_then_else:GPR (equality_op (match_operand:GPR 1 "register_operand"         " r,    r")
-				       (match_operand:GPR 4 "reg_or_imm7u_operand"     "rJ, Bz07"))
-			  (sign_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
-					    (match_operand 5 "extract_size_imm_<mode>" " n,    n")
-					    (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))
-			  (match_operand:GPR 3 "register_operand"                      " 0,    0")))]
+(define_insn "cmov<optab><mode>_<any_extract:sz>extra"
+  [(set (match_operand:GPR 0 "register_operand"                                       "=r,    r")
+        (if_then_else:GPR (equality_op (match_operand:GPR 1 "register_operand"        " r,    r")
+				       (match_operand:GPR 4 "reg_or_imm7u_operand"    "rJ, Bz07"))
+			  (any_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
+					   (match_operand 5 "extract_size_imm_<mode>" " n,    n")
+					   (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))
+			  (match_operand:GPR 3 "register_operand"                     " 0,    0")))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
    && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
 		1, GET_MODE_BITSIZE (<MODE>mode))"
@@ -3999,9 +3424,9 @@
     switch (which_alternative)
       {
       case 0:
-	return "<rev_br_insn> %1, %z4, 0f\n\tbfos %0, %2, %5, %6\n0";
+	return "<rev_br_insn> %1, %z4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0";
       case 1:
-	return "<rev_br_insn>c %1, %4, 0f\n\tbfos %0, %2, %5, %6\n0:";
+	return "<rev_br_insn>c %1, %4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
       default:
 	gcc_unreachable ();
     }
@@ -4010,14 +3435,14 @@
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov<optab><mode>_sextra_rev"
-  [(set (match_operand:GPR 0 "register_operand"                                        "=r,    r")
-        (if_then_else:GPR (equality_op (match_operand:GPR 1 "register_operand"         " r,    r")
-				       (match_operand:GPR 4 "reg_or_imm7u_operand"     "rJ, Bz07"))
-			  (match_operand:GPR 3 "register_operand"                      " 0,    0")
-			  (sign_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
-					    (match_operand 5 "extract_size_imm_<mode>" " n,    n")
-					    (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))))]
+(define_insn "cmov<optab><mode>_<any_extract:sz>extra_rev"
+  [(set (match_operand:GPR 0 "register_operand"                                       "=r,    r")
+        (if_then_else:GPR (equality_op (match_operand:GPR 1 "register_operand"        " r,    r")
+				       (match_operand:GPR 4 "reg_or_imm7u_operand"    "rJ, Bz07"))
+			  (match_operand:GPR 3 "register_operand"                     " 0,    0")
+			  (any_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
+					   (match_operand 5 "extract_size_imm_<mode>" " n,    n")
+					   (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
    && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
 		1, GET_MODE_BITSIZE (<MODE>mode))"
@@ -4027,66 +3452,9 @@
     switch (which_alternative)
       {
       case 0:
-	return "<br_insn> %1, %z4, 0f\n\tbfos %0, %2, %5, %6\n0";
+	return "<br_insn> %1, %z4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0";
       case 1:
-	return "<br_insn>c %1, %4, 0f\n\tbfos %0, %2, %5, %6\n0:";
-      default:
-	gcc_unreachable ();
-    }
-  }
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-;;beq + bfoz
-(define_insn "cmov<optab><mode>_zextra"
-  [(set (match_operand:GPR 0 "register_operand"                                        "=r,    r")
-        (if_then_else:GPR (equality_op (match_operand:GPR 1 "register_operand"         " r,    r")
-				       (match_operand:GPR 4 "reg_or_imm7u_operand"     "rJ, Bz07"))
-			  (zero_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
-					    (match_operand 5 "extract_size_imm_<mode>" " n,    n")
-					    (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))
-			  (match_operand:GPR 3 "register_operand"                      " 0,    0")))]
-  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
-   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
-		1, GET_MODE_BITSIZE (<MODE>mode))"
-  {
-    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
-
-    switch (which_alternative)
-      {
-      case 0:
-	return "<rev_br_insn> %1, %z4, 0f\n\tbfoz %0, %2, %5, %6\n0";
-      case 1:
-	return "<rev_br_insn>c %1, %4, 0f\n\tbfoz %0, %2, %5, %6\n0:";
-      default:
-	gcc_unreachable ();
-    }
-  }
-  [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
-   (set (attr "length") (const_int 8))])
-
-(define_insn "cmov<optab><mode>_zextra_rev"
-  [(set (match_operand:GPR 0 "register_operand"                                        "=r,    r")
-        (if_then_else:GPR (equality_op (match_operand:GPR 1 "register_operand"         " r,    r")
-				       (match_operand:GPR 4 "reg_or_imm7u_operand"     "rJ, Bz07"))
-			  (match_operand:GPR 3 "register_operand"                      " 0,    0")
-			  (zero_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
-					    (match_operand 5 "extract_size_imm_<mode>" " n,    n")
-					    (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))))]
-  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
-   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
-		1, GET_MODE_BITSIZE (<MODE>mode))"
-  {
-    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
-
-    switch (which_alternative)
-      {
-      case 0:
-	return "<br_insn> %1, %z4, 0f\n\tbfoz %0, %2, %5, %6\n0";
-      case 1:
-	return "<br_insn>c %1, %4, 0f\n\tbfoz %0, %2, %5, %6\n0:";
+	return "<br_insn>c %1, %4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
       default:
 	gcc_unreachable ();
     }
