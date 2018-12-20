@@ -3281,7 +3281,7 @@
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmovlt<inequal_op:optab><mode><any_shift:optab>_rev"
+(define_insn "cmov<inequal_op:optab><mode><any_shift:optab>_rev"
   [(set (match_operand:X 0 "register_operand" "=r")
         (if_then_else:X (inequal_op (match_operand:X 1 "register_operand" " r")
 				    (match_operand:X 2 "reg_or_0_operand" "rJ"))
@@ -3326,9 +3326,9 @@
    (set (attr "length") (const_int 8))])
 
 ;;bbcs + bfoz|s
-(define_insn "cmov_bb<optab><mode>_<any_extract:sz>extra"
+(define_insn "cmov_bb<optab><X:mode>_<any_extract:sz>extra<GPR:mode>"
   [(set (match_operand:GPR 0 "register_operand" "=r")
-        (if_then_else:GPR (equality_op (zero_extract:GPR (match_operand:GPR 4 "register_operand" "r")
+        (if_then_else:GPR (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
 				       (const_int 1)
 				       (match_operand 1 "branch_bbcs_operand"))
 				       (const_int 0))
@@ -3344,12 +3344,12 @@
     return "<rev_bbcs> %4, %1, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
   }
   [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
+   (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov_bb<optab><mode>_<any_extract:sz>extra_rev"
+(define_insn "cmov_bb<optab><X:mode>_<any_extract:sz>extra<GPR:mode>_rev"
   [(set (match_operand:GPR 0 "register_operand" "=r")
-        (if_then_else:GPR (equality_op (zero_extract:GPR (match_operand:GPR 4 "register_operand" "r")
+        (if_then_else:GPR (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
 				       (const_int 1)
 				       (match_operand 1 "branch_bbcs_operand"))
 				       (const_int 0))
@@ -3365,14 +3365,14 @@
     return "<bbcs> %4, %1, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
   }
   [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
+   (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
 ;;brach + bfoz|s
-(define_insn "cmov<optab><mode>_<any_extract:sz>extra"
+(define_insn "cmov<optab><X:mode>_<any_extract:sz>extra<GPR:mode>"
   [(set (match_operand:GPR 0 "register_operand" "=r")
-        (if_then_else:GPR (inequal_op (match_operand:GPR 1 "register_operand" " r")
-				      (match_operand:GPR 4 "reg_or_0_operand" "rJ"))
+        (if_then_else:GPR (inequal_op (match_operand:X 1 "register_operand" " r")
+				      (match_operand:X 4 "reg_or_0_operand" "rJ"))
 			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
 					   (match_operand 5 "extract_size_imm_<mode>" "n")
 					   (match_operand 6 "extract_loc_imm_<mode>" "n"))
@@ -3385,13 +3385,13 @@
     return "<rev_br_insn> %1, %z4, 0f\n\bfo<any_extract:sz> %0, %2, %5, %6\n0:";
   }
   [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
+   (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov<optab><mode>_<any_extract:sz>extra_rev"
+(define_insn "cmov<optab><X:mode>_<any_extract:sz>extra<GPR:mode>_rev"
   [(set (match_operand:GPR 0 "register_operand" "=r")
-        (if_then_else:GPR (inequal_op (match_operand:GPR 1 "register_operand" " r")
-				      (match_operand:GPR 4 "reg_or_0_operand" "rJ"))
+        (if_then_else:GPR (inequal_op (match_operand:X 1 "register_operand" " r")
+				      (match_operand:X 4 "reg_or_0_operand" "rJ"))
 			  (match_operand:GPR 3 "register_operand" "0")
 			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
 					   (match_operand 5 "extract_size_imm_<mode>" "n")
@@ -3404,13 +3404,13 @@
     return "<br_insn> %1, %z4, 0f\n\bfo<any_extract:sz> %0, %2, %5, %6\n0:";
   }
   [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
+   (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov<optab><mode>_<any_extract:sz>extra"
+(define_insn "cmov<optab><X:mode>_<any_extract:sz>extra<GPR:mode>"
   [(set (match_operand:GPR 0 "register_operand"                                       "=r,    r")
-        (if_then_else:GPR (equality_op (match_operand:GPR 1 "register_operand"        " r,    r")
-				       (match_operand:GPR 4 "reg_or_imm7u_operand"    "rJ, Bz07"))
+        (if_then_else:GPR (equality_op (match_operand:X 1 "register_operand"          " r,    r")
+				       (match_operand:X 4 "reg_or_imm7u_operand"      "rJ, Bz07"))
 			  (any_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
 					   (match_operand 5 "extract_size_imm_<mode>" " n,    n")
 					   (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))
@@ -3432,13 +3432,13 @@
     }
   }
   [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
+   (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov<optab><mode>_<any_extract:sz>extra_rev"
+(define_insn "cmov<optab><X:mode>_<any_extract:sz>extra<GPR:mode>_rev"
   [(set (match_operand:GPR 0 "register_operand"                                       "=r,    r")
-        (if_then_else:GPR (equality_op (match_operand:GPR 1 "register_operand"        " r,    r")
-				       (match_operand:GPR 4 "reg_or_imm7u_operand"    "rJ, Bz07"))
+        (if_then_else:GPR (equality_op (match_operand:X 1 "register_operand"          " r,    r")
+				       (match_operand:X 4 "reg_or_imm7u_operand"      "rJ, Bz07"))
 			  (match_operand:GPR 3 "register_operand"                     " 0,    0")
 			  (any_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
 					   (match_operand 5 "extract_size_imm_<mode>" " n,    n")
@@ -3460,7 +3460,88 @@
     }
   }
   [(set_attr "type" "arith")
-   (set_attr "mode" "<MODE>")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+;;branch + zero_extend
+(define_insn "cmov<optab>_zext<GPR:mode><X:mode>"
+  [(set (match_operand:GPR 0 "register_operand"                                   "=r,    r")
+        (if_then_else:GPR (equality_op (match_operand:X 1 "register_operand"      " r,    r")
+				       (match_operand:X 2 "reg_or_imm7u_operand"  "rJ, Bz07"))
+			  (zero_extend:GPR (match_operand:HI 4 "register_operand" " r,    r"))
+			  (match_operand:GPR 3 "arith_operand"                    " 0,    0")))]
+  "TARGET_CMOV && TARGET_BFO"
+  "@
+   <rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n0:
+   <rev_br_insn>c %1, %2, 0f\n\tbfoz %0, %4, 15, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab>_zext<GPR:mode><X:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand"                                  "=r,    r")
+        (if_then_else:GPR (equality_op (match_operand:X 1 "register_operand"     " r,    r")
+				       (match_operand:X 2 "reg_or_imm7u_operand" "rJ, Bz07"))
+			(match_operand:GPR 3  "arith_operand"                    " 0,    0")
+			(zero_extend:GPR (match_operand:HI 4 "register_operand"  " r,    r"))))]
+  "TARGET_CMOV && TARGET_BFO"
+  "@
+   <br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n0:
+   <br_insn>c %1, %2, 0f\n\tbfoz %0, %4, 15, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab>_zext<GPR:mode><X:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:X 1 "register_operand" " r")
+				      (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			  (zero_extend:GPR (match_operand:HI 4 "register_operand"  "r"))
+			  (match_operand:GPR 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BFO"
+  "<rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab>_zext<GPR:mode><X:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:X 1 "register_operand" " r")
+				      (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			  (match_operand:GPR 3 "arith_operand" "0")
+			  (zero_extend:GPR (match_operand:HI 4 "register_operand" "r"))))]
+  "TARGET_CMOV && TARGET_BFO"
+  "<br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab>_zext<GPR:mode><X:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				       (const_int 1)
+				       (match_operand 1 "branch_bbcs_operand"))
+				       (const_int 0))
+			  (zero_extend:GPR (match_operand:HI 2 "register_operand" "r"))
+			  (match_operand:GPR 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
+  "<rev_bbcs> %4, %1, 0f\n\tbfoz %0, %2, 15, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab>_zext<GPR:mode><X:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				     (const_int 1)
+				     (match_operand 1 "branch_bbcs_operand"))
+				     (const_int 0))
+			(match_operand:GPR 3 "arith_operand" "0")
+			(zero_extend:GPR (match_operand:HI 2 "register_operand" "r"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
+  "<bbcs> %4, %1, 0f\n\tbfoz %0, %2, 15, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
 (include "sync.md")
