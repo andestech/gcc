@@ -629,7 +629,19 @@ static const char * const riscv_csr_register_names[] =
   "shpmevent3",
   "shpmevent4",
   "shpmevent5",
-  "shpmevent6"
+  "shpmevent6",
+  "utval",
+  "udcause",
+  "wfe",
+  "sleepvalue",
+  "txevt",
+  "mtvt",
+  "mnxti",
+  "mintstatus",
+  "mscratchcsw",
+  "mscratchcswl",
+  "itrigger",
+  "etrigger"
 };
 
 static const char * const riscv_fence_operations [] =
