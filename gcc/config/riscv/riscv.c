@@ -641,7 +641,9 @@ static const char * const riscv_csr_register_names[] =
   "mscratchcsw",
   "mscratchcswl",
   "itrigger",
-  "etrigger"
+  "etrigger",
+  "msavedcause1",
+  "msavedcause2"
 };
 
 static const char * const riscv_fence_operations [] =
