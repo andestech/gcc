@@ -17,7 +17,7 @@ main ()
 {
   unsigned long a = uraddw (0x80000000, 0x80000000);
 
-  if (a != 0x80000000)
+  if (a != 0xffffffff80000000)
     abort ();
   else
     exit (0);

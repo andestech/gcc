@@ -21,11 +21,11 @@ int32x2_t v_kslra32u (int32x2_t ra, unsigned long rb)
 int
 main ()
 {
-  int32x2_t va_p = {0xf8000000, 0xf8000000};
+  int32x2_t va_p = {0x7fffffff, 0x7fffffff};
   unsigned long a = kslra32u (0x0f00f0000f00f000, 12);
   int32x2_t va = v_kslra32u ((int32x2_t) {0x7fff8000, 0x7fff8000}, 12);
 
-  if (a != 0xf0000000f000000)
+  if (a != 0x7fffffff7fffffff)
     abort ();
   else if (va[0] != va_p[0]
 	   || va[1] != va_p[1])

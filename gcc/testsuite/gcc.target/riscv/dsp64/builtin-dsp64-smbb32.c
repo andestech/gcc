@@ -21,12 +21,12 @@ long v_smbb32 (int32x2_t ra, int32x2_t rb)
 int
 main ()
 {
-  long va_p = 0xfffffffffffd0002;
+  long va_p = 0x00000000fffd0002;
   long a = smbb32 (0x8000000280000002, 0x8000000180000001);
   long va = v_smbb32 ((int32x2_t) {0xffff0002, 0xffff0002},
 		      (int32x2_t) {0xffff0001, 0xffff0001});
 
-  if (a != 0xffffffff80000002)
+  if (a != 0x3ffffffe80000002)
     abort ();
   else if (va != va_p)
     abort ();

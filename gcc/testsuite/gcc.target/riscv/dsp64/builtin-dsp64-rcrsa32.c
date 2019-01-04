@@ -21,12 +21,12 @@ int32x2_t v_rcrsa32 (int32x2_t ra, int32x2_t rb)
 int
 main ()
 {
-  int32x2_t sa_p = {0xf3bbe888, 0x3bc0888};
+  int32x2_t sa_p = {0x3bc0888, 0xf3bbe888};
   unsigned long a = rcrsa32 (0x0001f0000001f000, 0x0001100000011000);
   int32x2_t v_sa = v_rcrsa32 ((int32x2_t) {0xf777f111, 0xf777f111},
 			      (int32x2_t) {0x10002000, 0x10002000});
 
-  if (a != 0x1800000007000)
+  if (a != 0x0000700000018000)
     abort ();
   else if (sa_p[0] != v_sa[0]
 	   || sa_p[1] != v_sa[1])

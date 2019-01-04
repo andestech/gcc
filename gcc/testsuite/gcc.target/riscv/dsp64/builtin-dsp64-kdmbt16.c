@@ -24,9 +24,9 @@ main ()
   long a = kdmbt16 (0x0001f0000001f000, 0x0001100000011000);
   long v_sa = v_kdmbt16 ((int16x4_t) {0xf777, 0xf111, 0xf777, 0xf111},
 			 (int16x4_t) {0x1000, 0x2000, 0x1000, 0x2000});
-  if (a != 0xfffff001fffff001)
+  if (a != 0xffffe000ffffe000)
     abort ();
-  else if (v_sa != 0x177700001777)
+  else if (v_sa != 0xfdddc000fdddc000)
     abort ();
   else
     exit (0);

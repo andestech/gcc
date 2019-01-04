@@ -24,9 +24,9 @@ main ()
   long long a = smal (0xffff0000ffff0000ll, 0x0001ffff0001ffffll);
   long long va = v_smal (0xffffff00ffffff00ll,
 			 (int16x4_t) {0x0002, 0xffff, 0x0002, 0xffff});
-  if (a != 0x1ffff0001fffd)
+  if (a != 0xffff0000fffefffe)
     abort ();
-  else if (va != 0xffff0002fffefffe)
+  else if (va != 0xffffff00fffffefc)
     abort ();
   else
     exit (0);

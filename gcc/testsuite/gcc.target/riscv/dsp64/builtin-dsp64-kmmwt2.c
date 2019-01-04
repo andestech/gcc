@@ -25,9 +25,9 @@ main ()
   long v_sa = v_kmmwt2 (0x8000000080000000,
 			(int16x4_t) {0x1, 0x8000, 0x1, 0x8000});
 
-  if (a != 0x8000000080000000)
+  if (a != 0x7fffffff7fffffff)
     abort ();
-  else if (v_sa != 0x8000000080000000)
+  else if (v_sa != 0x7fffffff7fffffff)
     abort ();
   else
     exit (0);

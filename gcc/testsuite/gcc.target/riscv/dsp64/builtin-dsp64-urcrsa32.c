@@ -21,12 +21,12 @@ uint32x2_t v_urcrsa32 (uint32x2_t ra, uint32x2_t rb)
 int
 main ()
 {
-  uint32x2_t sa_p = {0x73bbe888, 0x83bc0888};
+  uint32x2_t sa_p = {0x83bc0888, 0x73bbe888};
   unsigned long a = urcrsa32 (0x0001f0000001f000, 0x0001100000011000);
   uint32x2_t v_sa = v_urcrsa32 ((uint32x2_t) {0xf777f111, 0xf777f111},
 				(uint32x2_t) {0x10002000, 0x10002000});
 
-  if (a != 0x1800000007000)
+  if (a != 0x0000700000018000)
     abort ();
   else if (sa_p[0] != v_sa[0]
 	   || sa_p[1] != v_sa[1])

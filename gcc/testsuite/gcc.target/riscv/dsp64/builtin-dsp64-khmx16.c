@@ -21,7 +21,7 @@ int16x4_t v_khmx16 (int16x4_t ra, int16x4_t rb)
 int
 main ()
 {
-  int16x4_t v_sa_p = {0xc000, 0x7fff, 0xc000, 0x7fff};
+  int16x4_t v_sa_p = {0x7fff, 0xc000, 0x7fff, 0xc000};
   unsigned long a = khmx16 (0x7fff7fff7fff7fff, 0x7fff7fff7fff7fff);
   int16x4_t va = v_khmx16 ((int16x4_t) {0x8000, 0x4000, 0x8000, 0x4000},
 			   (int16x4_t) {0x8000, 0x8000, 0x8000, 0x8000});

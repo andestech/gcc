@@ -21,7 +21,7 @@ uint32x2_t v_uksub32 (uint32x2_t ra, uint32x2_t rb)
 int
 main ()
 {
-  uint32x2_t sa_p = {0, 0};
+  uint32x2_t sa_p = {0xe777d111, 0xe777d111};
   unsigned long a = uksub32 (0x0001f0000001f000, 0x0001100000011000);
   uint32x2_t v_sa = v_uksub32 ((uint32x2_t) {0xf777f111, 0xf777f111},
 			       (uint32x2_t) {0x10002000, 0x10002000});
