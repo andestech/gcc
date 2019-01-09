@@ -5,7 +5,7 @@
 #include <nds_intrinsic.h>
 #include <stdlib.h>
 
-#ifdef __riscv_dsp
+#if defined(__riscv_dsp) && !defined(__riscv_32e)
 static __attribute__ ((noinline))
 long long smalxda (long long t, unsigned long a, unsigned long b)
 {

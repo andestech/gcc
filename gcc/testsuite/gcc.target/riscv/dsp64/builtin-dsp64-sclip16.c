@@ -5,7 +5,7 @@
 #include <nds_intrinsic.h>
 #include <stdlib.h>
 
-#ifdef __riscv_dsp
+#if defined(__riscv_dsp) && !defined(__riscv_32e)
 static __attribute__ ((noinline))
 signed long sclip16 (signed long ra)
 {

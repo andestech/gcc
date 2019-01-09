@@ -5,7 +5,7 @@
 #include <nds_intrinsic.h>
 #include <stdlib.h>
 
-#ifdef __riscv_dsp
+#if defined(__riscv_dsp) && !defined(__riscv_32e)
 static __attribute__ ((noinline))
 unsigned long zunpkd810 (unsigned long a)
 {
