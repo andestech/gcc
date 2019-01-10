@@ -575,8 +575,7 @@ __udivmoddi4:
 	lw	x5, 4(x9)
 	sltu	tp, x5, x6
 	beqz	tp, .L10                # 	beqz	$ta, .L10
-	lw	x5, 8(x9)               # 	move	$r0, $r8
-	mv	x10, x5
+	lw	x10, 8(x9)              # 	move	$r0, $r8
 	call	__clzsi2                # 	bal	__clzsi2
 	sw	x10, 0(sp)              # 	swi	$r0, [$sp + #0]
 	beqz	x10, .LZskipnorm1       # 	beqz	$r0, .LZskipnorm1
@@ -597,12 +596,9 @@ __udivmoddi4:
 	sll	x5, x5, x10
 	sw	x5, 0(x9)
 .LZskipnorm1:
-	lw	x5, 0(x9)               # 	movd44	$r0, $r6
-	mv	x10, x5
-	lw	x5, 4(x9)
-	mv	x11, x5
-	lw	x5, 8(x9)               # 	move	$r2, $r8
-	mv	x12, x5
+	lw	x10, 0(x9)              # 	movd44	$r0, $r6
+	lw	x11, 4(x9)
+	lw	x12, 8(x9)              # 	move	$r2, $r8
 	call	fudiv_qrnnd             # 	bal	fudiv_qrnnd
 	sw	x11, 4(sp)              # 	swi	$r1, [$sp + #4]
 	mv	x5, x10                 # 	move	$r6, $r0
@@ -612,8 +608,7 @@ __udivmoddi4:
 	tail	.L19                    # 	b	.L19
 .L10:
 	beqz	x12, .LZdivzero         # 	beqz	$r2, .LZdivzero
-	lw	x5, 8(x9)               # 	move	$r0, $r8
-	mv	x10, x5
+	lw	x10, 8(x9)              # 	move	$r0, $r8
 	call	__clzsi2                # 	bal	__clzsi2
 	sw	x10, 0(sp)              # 	swi	$r0, [$sp + #0]
 	bnez	x10, .LZnorm1           # 	bnez	$r0, .LZnorm1
@@ -648,12 +643,9 @@ __udivmoddi4:
 	mv	x5, x10                 # 	move	$r7, $r0
 	sw	x5, 4(x9)
 .L29:
-	lw	x5, 0(x9)               # 	movd44	$r0, $r6
-	mv	x10, x5
-	lw	x5, 4(x9)
-	mv	x11, x5
-	lw	x5, 8(x9)               # 	move	$r2, $r8
-	mv	x12, x5
+	lw	x10, 0(x9)              # 	movd44	$r0, $r6
+	lw	x11, 4(x9)
+	lw	x12, 8(x9)              # 	move	$r2, $r8
 	call	fudiv_qrnnd             # 	bal	fudiv_qrnnd
 	sw	x11, 4(sp)              # 	swi	$r1, [$sp + #4]
 	mv	x5, x10                 # 	move	$r6, $r0
@@ -690,8 +682,7 @@ __udivmoddi4:
 	lw	x5, 4(x9)
 	sltu	tp, x5, x6
 	bnez	tp, .LZqzero            # 	bnez	$ta, .LZqzero
-	lw	x5, 12(x9)              # 	move	$r0, $r9
-	mv	x10, x5
+	lw	x10, 12(x9)             # 	move	$r0, $r9
 	call	__clzsi2                # 	bal	__clzsi2
 	sw	x10, 0(sp)              # 	swi	$r0, [$sp + #0]
 	beqz	x10, .LZskipnorm2       # 	beqz	$r0, .LZskipnorm2
@@ -930,10 +921,8 @@ __adddf3:
 	sw	x5, 12(x9)
 	mv	x10, x12                # 	movd44	$r0, $r2
 	mv	x11, x13
-	lw	x5, 8(x9)               # 	movd44	$r2, $r8
-	mv	x12, x5
-	lw	x5, 12(x9)
-	mv	x13, x5
+	lw	x12, 8(x9)              # 	movd44	$r2, $r8
+	lw	x13, 12(x9)
 	slli	x14, x11, 1             # 	slli	$r4, $r1, #1
 	slli	x5, x13, 1              # 	slli	$r6, $r3, #1
 	sw	x5, 0(x9)
@@ -1326,8 +1315,7 @@ __mulsf3:
 	li	x6, 255
 	beq	x5, x6, .LFnan
 .LFzero:
-	lw	x5, 8(x9)               # 	move	$r0, $r8
-	mv	x10, x5
+	lw	x10, 8(x9)              # 	move	$r0, $r8
 	tail	.LFret                  # 	b	.LFret
 .LFloopA:
 	lw	x5, 0(x9)               # 	addi	$r6, $r6, #-1
@@ -1576,15 +1564,13 @@ __muldf3:
 	lw	x5, 4(x9)               # 	bnez	$r7, .LFAcont
 	bnez	x5, .LFAcont
 	lw	x5, 0(x9)               # 	move	$r7, $r6
-	mv	x5, x5
 	sw	x5, 4(x9)
 	li	x5, 0                   # 	move	$r6, #0
 	sw	x5, 0(x9)
 	addi	x14, x14, -32           # 	addi	$r4, $r4, #-32
 .LFAcont:
 	li	x10, 0                  # 	move	$r0, #0
-	lw	x5, 4(x9)               # 	move	$r1, $r7
-	mv	x11, x5
+	lw	x11, 4(x9)              # 	move	$r1, $r7
 	tail	.LFAloop2               # 	b	.LFAloop2
 .LFAloop:
 	add	x11, x11, x11           # 	add	$r1, $r1, $r1
@@ -1611,8 +1597,7 @@ __muldf3:
 .LFAzero:
 	beq	x13, x15, .LFnan        # 	beq	$r3, $r5, .LFnan
 .LFsetsign:
-	lw	x5, 16(x9)              # 	move	$r1, $r10
-	mv	x11, x5
+	lw	x11, 16(x9)             # 	move	$r1, $r10
 	addi	sp, sp, 16              # 	addi	$sp, $sp, #16
 	lw	x8, 0(sp)               # 	pop.s	$r6, $r10, {$fp $gp $lp}
 	lw	gp, 4(sp)
@@ -1679,15 +1664,13 @@ __muldf3:
 	lw	x5, 12(x9)              # 	bnez	$r9, .LFBcont
 	bnez	x5, .LFBcont
 	lw	x5, 8(x9)               # 	move	$r9, $r8
-	mv	x5, x5
 	sw	x5, 12(x9)
 	li	x5, 0                   # 	move	$r8, #0
 	sw	x5, 8(x9)
 	addi	x15, x15, -32           # 	addi	$r5, $r5, #-32
 .LFBcont:
 	li	x10, 0                  # 	move	$r0, #0
-	lw	x5, 12(x9)              # 	move	$r1, $r9
-	mv	x11, x5
+	lw	x11, 12(x9)             # 	move	$r1, $r9
 	tail	.LFBloop2               # 	b	.LFBloop2
 .LFBloop:
 	add	x11, x11, x11           # 	add	$r1, $r1, $r1
@@ -1889,8 +1872,7 @@ __divsf3:
 	sltu	tp, x15, x11            # 	slt	$ta, $r5, $r1
 	bnez	tp, .LGnan              # 	bnez	$ta, .LGnan
 .LGzero:
-	lw	x5, 8(x9)               # 	move	$r0, $r8
-	mv	x10, x5
+	lw	x10, 8(x9)              # 	move	$r0, $r8
 	tail	.LGret                  # 	b	.LGret
 .LGinfnanA:
 	bne	x12, x14, .LGnan        # 	bne	$r2, $r4, .LGnan
@@ -2090,8 +2072,7 @@ __divdf3:
 	mul	x10, x13, x7
 	sub	x5, zero, x10           # 	subri	$r6, $r0, #0
 	sw	x5, 0(x9)
-	lw	x5, 4(x9)               # 	move	$r0, $r7
-	mv	x10, x5
+	lw	x10, 4(x9)              # 	move	$r0, $r7
 	lw	x5, 4(x9)               # 	sub	$r7, $r7, $r1
 	sub	x5, x5, x11
 	sw	x5, 4(x9)
@@ -2099,8 +2080,7 @@ __divdf3:
 	sltu	tp, x10, x6
 	lw	x5, 0(x9)               # 	beqz	$r6, .LGmain5
 	beqz	x5, .LGmain5
-	lw	x5, 4(x9)               # 	move	$r0, $r7
-	mv	x10, x5
+	lw	x10, 4(x9)              # 	move	$r0, $r7
 	lw	x5, 4(x9)               # 	addi	$r7, $r7, #-1
 	addi	x5, x5, -1
 	sw	x5, 4(x9)
@@ -2138,10 +2118,8 @@ __divdf3:
 	lw	x6, 12(x9)              # 	bne	$r7, $r9, .Li25
 	lw	x5, 4(x9)
 	bne	x5, x6, .Li25
-	lw	x5, 8(x9)               # 	move	$r1, $r8
-	mv	x11, x5
+	lw	x11, 8(x9)              # 	move	$r1, $r8
 	lw	x5, 0(x9)               # 	move	$r7, $r6
-	mv	x5, x5
 	sw	x5, 4(x9)
 	li	x12, 0                  # 	move	$r2, #0
 	li	x10, 0                  # 	move	$r0, #0
@@ -2226,8 +2204,7 @@ __divdf3:
 .LGmain7:
 	sub	x5, zero, x10           # 	subri	$r6, $r0, #0
 	sw	x5, 0(x9)
-	lw	x5, 4(x9)               # 	move	$r0, $r7
-	mv	x10, x5
+	lw	x10, 4(x9)              # 	move	$r0, $r7
 	lw	x5, 4(x9)               # 	sub	$r7, $r7, $r1
 	sub	x5, x5, x11
 	sw	x5, 4(x9)
@@ -2235,8 +2212,7 @@ __divdf3:
 	sltu	tp, x10, x6
 	lw	x5, 0(x9)               # 	beqz	$r6, .LGmain8
 	beqz	x5, .LGmain8
-	lw	x5, 4(x9)               # 	move	$r0, $r7
-	mv	x10, x5
+	lw	x10, 4(x9)              # 	move	$r0, $r7
 	lw	x5, 4(x9)               # 	addi	$r7, $r7, #-1
 	addi	x5, x5, -1
 	sw	x5, 4(x9)
@@ -2343,15 +2319,13 @@ __divdf3:
 	lw	x5, 4(x9)               # 	bnez	$r7, .LGAcont
 	bnez	x5, .LGAcont
 	lw	x5, 0(x9)               # 	move	$r7, $r6
-	mv	x5, x5
 	sw	x5, 4(x9)
 	li	x5, 0                   # 	move	$r6, #0
 	sw	x5, 0(x9)
 	addi	x14, x14, -32           # 	addi	$r4, $r4, #-32
 .LGAcont:
 	li	x10, 0                  # 	move	$r0, #0
-	lw	x5, 4(x9)               # 	move	$r1, $r7
-	mv	x11, x5
+	lw	x11, 4(x9)              # 	move	$r1, $r7
 	tail	.LGAloop2               # 	b	.LGAloop2
 .LGAloop:
 	add	x11, x11, x11           # 	add	$r1, $r1, $r1
@@ -2383,8 +2357,7 @@ __divdf3:
 	or	tp, x5, x6
 	beqz	tp, .LGnan              # 	beqz	$ta, .LGnan
 .LGsetsign:
-	lw	x5, 16(x9)              # 	move	$r1, $r10
-	mv	x11, x5
+	lw	x11, 16(x9)             # 	move	$r1, $r10
 	addi	sp, sp, 16              # 	addi	$sp, $sp, #16
 	lw	x8, 0(sp)               # 	pop.s	$r6, $r10, {$fp $gp $lp}
 	lw	gp, 4(sp)
@@ -2462,15 +2435,13 @@ __divdf3:
 	lw	x5, 12(x9)              # 	bnez	$r9, .LGBcont
 	bnez	x5, .LGBcont
 	lw	x5, 8(x9)               # 	move	$r9, $r8
-	mv	x5, x5
 	sw	x5, 12(x9)
 	li	x5, 0                   # 	move	$r8, #0
 	sw	x5, 8(x9)
 	addi	x15, x15, -32           # 	addi	$r5, $r5, #-32
 .LGBcont:
 	li	x10, 0                  # 	move	$r0, #0
-	lw	x5, 12(x9)              # 	move	$r1, $r9
-	mv	x11, x5
+	lw	x11, 12(x9)             # 	move	$r1, $r9
 	tail	.LGBloop2               # 	b	.LGBloop2
 .LGBloop:
 	add	x11, x11, x11           # 	add	$r1, $r1, $r1
@@ -3498,8 +3469,7 @@ __floatdidf:
 	or	x5, x5, x6
 	sw	x5, 0(x9)
 	mv	x10, x15                # 	move	$r0, $r5
-	lw	x5, 0(x9)               # 	move	$r1, $r6
-	mv	x11, x5
+	lw	x11, 0(x9)              # 	move	$r1, $r6
 .LA999:
 	lw	ra, 0(sp)               # 	pop.s	$r6, $r8, {$lp}
 	addi	sp, sp, 4
@@ -3789,8 +3759,7 @@ __floatundidf:
 	or	x5, x5, x6
 	sw	x5, 0(x9)
 	mv	x10, x15                # 	move	$r0, $r5
-	lw	x5, 0(x9)               # 	move	$r1, $r6
-	mv	x11, x5
+	lw	x11, 0(x9)              # 	move	$r1, $r6
 .LB999:
 	lw	ra, 0(sp)               # 	pop.s	$r6, $r7, {$lp}
 	addi	sp, sp, 4
