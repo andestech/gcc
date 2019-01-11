@@ -648,7 +648,8 @@ static const char * const riscv_csr_register_names[] =
   "mintsel_jal",
   "pushmcause",
   "pushmepc",
-  "ucode"
+  "ucode",
+  "pushmxstatus"
 };
 
 static const char * const riscv_fence_operations [] =

@@ -324,7 +324,8 @@ enum riscv_csrs
   NDS_MINTSEL_JAL,
   NDS_PUSHMCAUSE,
   NDS_PUSHMEPC,
-  NDS_UCODE
+  NDS_UCODE,
+  NDS_PUSHMXSTATUS
 };
 
 enum riscv_fence
