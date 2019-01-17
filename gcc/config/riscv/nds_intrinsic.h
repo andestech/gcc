@@ -1090,6 +1090,12 @@ enum riscv_order
   (__builtin_riscv_kdmabt16 ((r), (a), (b)))
 #define __nds__kdmatt16(r, a, b) \
   (__builtin_riscv_kdmatt16 ((r), (a), (b)))
+#define __nds__kdmabb(r, a, b) \
+  (__builtin_riscv_kdmabb ((r), (a), (b)))
+#define __nds__kdmabt(r, a, b) \
+  (__builtin_riscv_kdmabt ((r), (a), (b)))
+#define __nds__kdmatt(r, a, b) \
+  (__builtin_riscv_kdmatt ((r), (a), (b)))
 
 #define __nds__smaqa(r, a, b) \
   (__builtin_riscv_smaqa ((r), (a), (b)))
