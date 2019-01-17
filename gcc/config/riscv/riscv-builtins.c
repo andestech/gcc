@@ -2445,7 +2445,7 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_NO_TARGET_BUILTIN (clrovsi, clrovdi, clrov,
 			    RISCV_VOID_FTYPE_VOID, CLROV),
   DIRECT_BUILTIN (rdovsi, rdovdi, rdov,
-		  RISCV_USI_FTYPE_VOID, RDOV),
+		  RISCV_ULONG_FTYPE_VOID, RDOV),
   DIRECT_DSP_BUILTIN (cmpeqv4hi, cmpeqv4hi, vec_scmpeq16,
 		      RISCV_ULONG_FTYPE_V4HI_V4HI, V64_SCMPEQ16),
   DIRECT_DSP_BUILTIN (cmpeqv4hi, cmpeqv4hi, vec_ucmpeq16,

@@ -6758,13 +6758,13 @@
   [(set (match_operand:GPR 0 "register_operand" "=r")
 	(unspec_volatile:GPR [(const_int 0)] UNSPEC_RDOV))]
   "TARGET_DSP"
-  "rdov\t%0"
+  "csrrs\t%0, ucode, zero"
   [(set_attr "mode" "<MODE>")])
 
 (define_insn "riscv_clrov<mode>"
   [(unspec_volatile:GPR [(const_int 0)] UNSPEC_CLROV)]
   "TARGET_DSP"
-  "clrov"
+  "csrrci zero, ucode, 1"
   [(set_attr "mode" "<MODE>")])
 
 (define_expand "kdmabb"
