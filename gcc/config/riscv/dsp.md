@@ -3780,7 +3780,7 @@
 	      (sign_extend:DI
 		(vec_select:HI
 		  (match_operand:V2HI 2 "register_operand"           "    r,    r")
-		  (parallel [(match_operand:SI 3 "imm_0_1_operand"   " Iv00, Iv01")]))))]
+		  (parallel [(match_operand:SI 3 "imm_0_1_operand"   "  v00,  v01")]))))]
 	    UNSPEC_KMMW)
 	    (const_int 15))))]
   "TARGET_DSP && !TARGET_64BIT"
@@ -3821,7 +3821,7 @@
 		 (sign_extend:DI
 		   (vec_select:HI
 		     (match_operand:V2HI 2 "register_operand"           "    r,    r")
-		     (parallel [(match_operand:SI 3 "imm_0_1_operand"   " Iv00, Iv01")]))))]
+		     (parallel [(match_operand:SI 3 "imm_0_1_operand"   "  v00,  v01")]))))]
 	      UNSPEC_KMMWU)
 	    (const_int 15))))]
   "TARGET_DSP && !TARGET_64BIT"
