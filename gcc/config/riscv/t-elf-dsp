@@ -1,1 +1,2 @@
 MULTILIB_OPTIONS += mext-dsp
+MULTILIB_EXCEPTIONS += *mext-dsp/mno-nds* *mno-nds/mext-dsp*
