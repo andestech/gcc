@@ -367,6 +367,8 @@
 #define __nds32__ffb __nds__ffb
 #define __nds32__ffmism __nds__ffmism
 #define __nds32__flmism __nds__flmism
+#define __nds32__rdov __nds__rdov
+#define __nds32__clrov __nds__clrov
 #endif
 
 #endif
