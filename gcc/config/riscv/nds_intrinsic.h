@@ -944,6 +944,8 @@ enum riscv_order
 #define __nds__flmism(a, b) \
   (__builtin_riscv_flmism ((a), (b)))
 
+#define __nds__sraw_u(a, b) \
+  (__builtin_riscv_sraw_u ((a), (b)))
 #define __nds__add32(a, b) \
   (__builtin_riscv_add32 ((a), (b)))
 #define __nds__radd32(a, b) \

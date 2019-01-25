@@ -6018,6 +6018,15 @@
    sra.u\t%0, %1, %2"
   [(set_attr "mode"   "DI")])
 
+(define_insn "sraiw_u"
+  [(set (match_operand:DI 0 "register_operand"             "=  r")
+	(unspec:DI [(match_operand:SI 1 "register_operand" "   r")
+		    (match_operand:SI 2 "imm5u_operand"    " u05")]
+		    UNSPEC_ROUND64))]
+  "TARGET_DSP && TARGET_64BIT"
+  "sraiw.u\t%0, %1, %2"
+  [(set_attr "mode"   "DI")])
+
 (define_insn "kssl"
   [(set (match_operand:SI 0 "register_operand"               "=   r, r")
 	(ss_ashift:SI (match_operand:SI 1 "register_operand" "    r, r")

@@ -861,6 +861,7 @@ enum riscv_builtins
   RISCV_BUILTIN_V_UKSTAS32,
   RISCV_BUILTIN_V64_SWAP8,
   RISCV_BUILTIN_V64_SWAP16,
+  RISCV_BUILTIN_SRAW_U,
   RISCV_BUILTIN_DSP64_END
 };
 
@@ -1648,6 +1649,8 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   /* DSP Extension: 32bit Shift.  */
   DIRECT_DSP_BUILTIN (sraiu, sraiu64, sra_u,
 		      RISCV_LONG_FTYPE_LONG_ULONG, SRA_U),
+  DIRECT_DSP_BUILTIN (sraiw_u, sraiw_u, sraw_u,
+		      RISCV_LONG_FTYPE_SI_USI, SRAW_U),
   DIRECT_DSP_BUILTIN (kssl, kssl, ksllw,
 		      RISCV_LONG_FTYPE_LONG_ULONG, KSLL),
   /* DSP Extension: 16bit Packing.  */
