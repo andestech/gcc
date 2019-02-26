@@ -510,6 +510,8 @@ enum reg_class
   64, 65								\
 }
 
+#define ADJUST_REG_ALLOC_ORDER riscv_adjust_reg_alloc_order()
+
 /* True if VALUE is a signed 12-bit number.  */
 
 #define SMALL_OPERAND(VALUE) \

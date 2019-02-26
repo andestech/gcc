@@ -6482,6 +6482,28 @@ riscv_noce_conversion_profitable_p (rtx_insn *seq, struct noce_if_info *if_info)
   return default_noce_conversion_profitable_p (seq, if_info);
 }
 
+/* Adjust register allocation order.  */
+
+static const int riscv_reg_alloc_order_for_O0[] =
+{
+  /* Call-clobbered GPRs.  */
+  15, 14, 13, 12, 11, 10, 16, 17, 6, 28, 29, 30, 31, 5, 7,
+  /* Call-saved GPRs.  */
+  8, 9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 1,
+  /* GPRs that can never be exposed to the register allocator.  */
+  0, 2, 3, 4
+};
+
+void
+riscv_adjust_reg_alloc_order (void)
+{
+  const int riscv_reg_alloc_order[] = REG_ALLOC_ORDER;
+  memcpy(reg_alloc_order, riscv_reg_alloc_order, sizeof (reg_alloc_order));
+  if (optimize == 0)
+    memcpy (reg_alloc_order, riscv_reg_alloc_order_for_O0,
+            sizeof (riscv_reg_alloc_order_for_O0));
+}
+
 /* Initialize the GCC target structure.  */
 #undef TARGET_ASM_ALIGNED_HI_OP
 #define TARGET_ASM_ALIGNED_HI_OP "\t.half\t"

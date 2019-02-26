@@ -114,4 +114,6 @@ extern void riscv_split_shiftrtdi3 (rtx, rtx, rtx);
 extern rtx riscv_di_high_part_subreg(rtx);
 extern rtx riscv_di_low_part_subreg(rtx);
 
+extern void riscv_adjust_reg_alloc_order (void);
+
 #endif /* ! GCC_RISCV_PROTOS_H */
