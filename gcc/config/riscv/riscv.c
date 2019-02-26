@@ -650,7 +650,16 @@ static const char * const riscv_csr_register_names[] =
   "pushmcause",
   "pushmepc",
   "ucode",
-  "pushmxstatus"
+  "pushmxstatus",
+  "mppib",
+  "mfiob",
+  "textra32",
+  "textra64",
+  "tinfo",
+  "tcontrol",
+  "mcontext",
+  "scontext",
+  "scountermask_m"
 };
 
 static const char * const riscv_fence_operations [] =
