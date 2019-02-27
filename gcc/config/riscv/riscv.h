@@ -1020,6 +1020,7 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   " %{mno-nds:%{!mexecit:-mno-execit}}" \
   " %{mno-nds:%{!mgp-insn-relax:-mno-gp-insn-relax}}" \
   " %{mno-nds:%{!mext-dsp:-mno-ext-dsp}}" \
+  " %{mno-nds:%{!mfp16:-mno-fp16}}" \
   " %{march=*:" MARCH_POST_PROC_SPEC "}"
 
 #define CMODEL_SPEC \
