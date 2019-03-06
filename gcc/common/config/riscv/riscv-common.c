@@ -639,8 +639,6 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
 	    *flags |= MASK_BIMM;
 	  if ((target_flags_explicit & MASK_LEA) == 0)
 	    *flags |= MASK_LEA;
-	  if (TARGET_HARD_FLOAT && (target_flags_explicit & MASK_FP16) == 0)
-	    *flags |= MASK_FP16;
 
 	  if (subset_list->lookup ("p"))
 	    if ((target_flags_explicit & MASK_DSP) == 0)
