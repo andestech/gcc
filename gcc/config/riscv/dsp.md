@@ -133,7 +133,7 @@
 		       (match_operand:VECI 2 "register_operand" " r")))]
   "TARGET_DSP"
   "<uk>add<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "dsp_<uk>adddi3"
@@ -142,7 +142,7 @@
 		     (match_operand:DI 2 "register_operand" " r")))]
   "TARGET_DSP"
   "<uk>add64 %0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu64")
    (set_attr "mode" "DI")])
 
 (define_insn "radd<mode>3"
@@ -154,7 +154,7 @@
 	    (const_int 1))))]
   "TARGET_DSP"
   "radd<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "uradd<mode>3"
@@ -166,7 +166,7 @@
 	    (const_int 1))))]
   "TARGET_DSP"
   "uradd<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "radddi3"
@@ -178,7 +178,7 @@
 	  (const_int 1))))]
   "TARGET_DSP"
   "radd64\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu64")
    (set_attr "mode" "DI")])
 
 (define_insn "uradddi3"
@@ -190,7 +190,7 @@
 	  (const_int 1))))]
   "TARGET_DSP"
   "uradd64\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu64")
    (set_attr "mode" "DI")])
 
 (define_insn "<uk>sub<mode>3"
@@ -199,7 +199,7 @@
 			(match_operand:VECI 2 "register_operand" " r")))]
   "TARGET_DSP"
   "<uk>sub<bits> %0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "dsp_<uk>subdi3"
@@ -208,7 +208,7 @@
 		      (match_operand:DI 2 "register_operand" " r")))]
   "TARGET_DSP"
   "<uk>sub64 %0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu64")
    (set_attr "mode" "DI")])
 
 (define_insn "rsub<mode>3"
@@ -220,7 +220,7 @@
 	    (const_int 1))))]
   "TARGET_DSP"
   "rsub<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "ursub<mode>3"
@@ -232,7 +232,7 @@
 	    (const_int 1))))]
   "TARGET_DSP"
   "ursub<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "rsubdi3"
@@ -244,7 +244,7 @@
 	  (const_int 1))))]
   "TARGET_DSP"
   "rsub64\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu64")
    (set_attr "mode" "DI")])
 
 (define_insn "ursubdi3"
@@ -256,7 +256,7 @@
 	  (const_int 1))))]
   "TARGET_DSP"
   "ursub64\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu64")
    (set_attr "mode" "DI")])
 
 (define_expand "cras<mode>"
@@ -291,7 +291,7 @@
 	  (const_int 1)))]
   "TARGET_DSP"
   "cras<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "kcras<mode>"
@@ -326,7 +326,7 @@
 	  (const_int 1)))]
   "TARGET_DSP"
   "kcras<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "ukcras<mode>"
@@ -361,7 +361,7 @@
 	  (const_int 1)))]
   "TARGET_DSP"
   "ukcras<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "crsa<mode>"
@@ -396,7 +396,7 @@
 	  (const_int 2)))]
   "TARGET_DSP"
   "crsa<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "kcrsa<mode>"
@@ -431,7 +431,7 @@
 	  (const_int 2)))]
   "TARGET_DSP"
   "kcrsa<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "ukcrsa<mode>"
@@ -466,7 +466,7 @@
 	  (const_int 2)))]
   "TARGET_DSP"
   "ukcrsa<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "rcras<mode>"
@@ -511,7 +511,7 @@
 	  (const_int 1)))]
   "TARGET_DSP"
   "rcras<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "urcras<mode>"
@@ -556,7 +556,7 @@
 	  (const_int 1)))]
   "TARGET_DSP"
   "urcras<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "rcrsa<mode>"
@@ -601,7 +601,7 @@
 	  (const_int 2)))]
   "TARGET_DSP"
   "rcrsa<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "urcrsa<mode>"
@@ -646,7 +646,7 @@
 	  (const_int 2)))]
   "TARGET_DSP"
   "urcrsa<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "cras16_64"
@@ -676,7 +676,7 @@
 		      (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "cras16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "kcras16_64"
@@ -706,7 +706,7 @@
 			 (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kcras16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "ukcras16_64"
@@ -736,7 +736,7 @@
 			 (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "ukcras16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "crsa16_64"
@@ -766,7 +766,7 @@
 		       (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "crsa16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "kcrsa16_64"
@@ -796,7 +796,7 @@
 			  (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kcrsa16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "ukcrsa16_64"
@@ -826,7 +826,7 @@
 			  (vec_select:HI (match_dup 2) (parallel [(const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "ukcrsa16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "rcras16_64"
@@ -872,7 +872,7 @@
 		(const_int 1))))))]
   "TARGET_DSP && TARGET_64BIT"
   "rcras16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "urcras16_64"
@@ -918,7 +918,7 @@
 		(const_int 1))))))]
   "TARGET_DSP && TARGET_64BIT"
   "urcras16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "rcrsa16_64"
@@ -964,7 +964,7 @@
 		(const_int 1))))))]
   "TARGET_DSP && TARGET_64BIT"
   "rcrsa16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "urcrsa16_64"
@@ -1010,7 +1010,7 @@
 		(const_int 1))))))]
   "TARGET_DSP && TARGET_64BIT"
   "urcrsa16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "<shift><mode>3"
@@ -1034,7 +1034,7 @@
   "@
    slli16\t%0, %1, %2
    sll16\t%0, %1, %2"
-  [(set_attr "type" "arith,  arith")
+  [(set_attr "type" "dalu, dalu")
    (set_attr "mode" "<MODE>, <MODE>")])
 
 (define_insn "kslli16<mode>"
@@ -1045,7 +1045,7 @@
   "@
    kslli16\t%0, %1, %2
    ksll16\t%0, %1, %2"
-  [(set_attr "type" "arith,  arith")
+  [(set_attr "type" "dalu, dalu")
    (set_attr "mode" "<MODE>, <MODE>")])
 
 (define_insn "ksll32"
@@ -1056,7 +1056,7 @@
   "@
    kslli32\t%0, %1, %2
    ksll32\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V2SI")])
 
 (define_insn "*ashr<mode>3"
@@ -1067,7 +1067,7 @@
   "@
    srai16\t%0, %1, %2
    sra16\t%0, %1, %2"
-  [(set_attr "type" "arith,  arith")
+  [(set_attr "type" "dalu, dalu")
    (set_attr "mode" "<MODE>, <MODE>")])
 
 (define_insn "sra16_round<mode>"
@@ -1079,7 +1079,7 @@
   "@
    srai16.u\t%0, %1, %2
    sra16.u\t%0, %1, %2"
-  [(set_attr "type" "arith,  arith")
+  [(set_attr "type" "daluround, daluround")
    (set_attr "mode" "<MODE>, <MODE>")])
 
 (define_insn "sra32_round"
@@ -1091,7 +1091,7 @@
   "@
    srai32.u\t%0, %1, %2
    sra32.u\t%0, %1, %2"
-  [(set_attr "type" "arith, arith")
+  [(set_attr "type" "daluround, daluround")
    (set_attr "mode" "V2SI,  V2SI")])
 
 (define_insn "*lshr<mode>3"
@@ -1102,7 +1102,7 @@
   "@
    srli16\t%0, %1, %2
    srl16\t%0, %1, %2"
-  [(set_attr "type" "arith,  arith")
+  [(set_attr "type" "dalu, dalu")
    (set_attr "mode" "<MODE>, <MODE>")])
 
 (define_insn "srl16_round<mode>"
@@ -1114,7 +1114,7 @@
   "@
    srli16.u\t%0, %1, %2
    srl16.u\t%0, %1, %2"
-  [(set_attr "type" "arith,  arith")
+  [(set_attr "type" "daluround, daluround")
    (set_attr "mode" "<MODE>, <MODE>")])
 
 (define_insn "srl32_round"
@@ -1126,7 +1126,7 @@
   "@
    srli32.u\t%0, %1, %2
    srl32.u\t%0, %1, %2"
-  [(set_attr "type" "arith, arith")
+  [(set_attr "type" "daluround, daluround")
    (set_attr "mode" "V2SI,  V2SI")])
 
 (define_insn "kslra<mode>"
@@ -1140,7 +1140,7 @@
 		       (match_dup 2))))]
   "TARGET_DSP"
   "kslra<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "kslra<mode>_round"
@@ -1155,7 +1155,7 @@
 		       (match_dup 2))))]
   "TARGET_DSP"
   "kslra<bits>.u\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "daluround")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "<optab>v2si3"
@@ -1166,7 +1166,7 @@
   "@
    <insn>i32\t%0, %1, %2
    <insn>32\t%0, %1, %2"
-  [(set_attr "type" "arith, arith")
+  [(set_attr "type" "dalu, dalu")
    (set_attr "mode" "V2SI,  V2SI")])
 
 (define_insn "cmpeq<mode>"
@@ -1176,7 +1176,8 @@
 		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
   "cmpeq<bits>\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "type" "dcmp")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "scmplt<mode>"
   [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
@@ -1185,7 +1186,8 @@
 		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
   "scmplt<bits>\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "type" "dcmp")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "scmple<mode>"
   [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
@@ -1194,7 +1196,8 @@
 		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
   "scmple<bits>\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "type" "dcmp")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "ucmplt<mode>"
   [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
@@ -1203,7 +1206,8 @@
 		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
   "ucmplt<bits>\t%0, %1, %2"
-  [(set_attr "mode" "SI")])
+  [(set_attr "type" "dcmp")
+   (set_attr "mode" "SI")])
 
 (define_insn "ucmple<mode>"
   [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
@@ -1212,7 +1216,8 @@
 		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
   "ucmple<bits>\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "type" "dcmp")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "sclip8<mode>"
   [(set (match_operand:VQI 0 "register_operand"              "=  r")
@@ -1221,7 +1226,8 @@
 		     UNSPEC_CLIPS))]
   "TARGET_DSP"
   "sclip8\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "type" "dclip")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "uclip8<mode>"
   [(set (match_operand:VQI 0 "register_operand"               "=  r")
@@ -1230,7 +1236,8 @@
 		     UNSPEC_CLIP))]
   "TARGET_DSP"
   "uclip8\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "type" "dclip")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "sclip16<mode>"
   [(set (match_operand:VHI 0 "register_operand"              "=   r")
@@ -1239,7 +1246,8 @@
 		     UNSPEC_CLIPS))]
   "TARGET_DSP"
   "sclip16\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "type" "dclip")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "uclip16<mode>"
   [(set (match_operand:VHI 0 "register_operand"               "=   r")
@@ -1248,7 +1256,8 @@
 		     UNSPEC_CLIP))]
   "TARGET_DSP"
   "uclip16\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "type" "dclip")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "khm16<mode>"
   [(set (match_operand:VHI 0 "register_operand"              "=r")
@@ -1257,7 +1266,7 @@
 		     UNSPEC_KHM))]
   "TARGET_DSP"
   "khm16\t%0, %1, %2"
-  [(set_attr "type"   "imul")
+  [(set_attr "type"   "dmul")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "khmx16<mode>"
@@ -1267,7 +1276,7 @@
 		     UNSPEC_KHMX))]
   "TARGET_DSP"
   "khmx16\t%0, %1, %2"
-  [(set_attr "type"   "imul")
+  [(set_attr "type"   "dmul")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "khm8<mode>"
@@ -1277,7 +1286,7 @@
 		     UNSPEC_KHM))]
   "TARGET_DSP"
   "khm8\t%0, %1, %2"
-  [(set_attr "type"   "imul")
+  [(set_attr "type"   "dmul")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "khmx8<mode>"
@@ -1287,7 +1296,7 @@
 		     UNSPEC_KHMX))]
   "TARGET_DSP"
   "khmx8\t%0, %1, %2"
-  [(set_attr "type"   "imul")
+  [(set_attr "type"   "dmul")
    (set_attr "mode" "<MODE>")])
 
 (define_expand "vec_setv4qi"
@@ -1345,7 +1354,8 @@
 	(match_operand:SI 2                  "register_operand"    "r"))]
   "TARGET_DSP && !TARGET_64BIT"
   "insb\t%0, %2, %v1"
-  [(set_attr "mode"  "SI")])
+  [(set_attr "type"  "dinsb")
+   (set_attr "mode"  "SI")])
 
 (define_insn "insvsiqi_internal"
   [(set (zero_extract:SI (match_operand:SI 0 "register_operand"   "+r")
@@ -1354,7 +1364,8 @@
 	(zero_extend:SI (match_operand:QI 2 "register_operand"    "r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "insb\t%0, %2, %v1"
-  [(set_attr "mode"  "SI")])
+  [(set_attr "type"  "dinsb")
+   (set_attr "mode"  "SI")])
 
 ;; v0 = (v1 & 0xff00ffff) | ((v2 << 16) | 0xff0000)
 (define_insn_and_split "insbsi2"
@@ -1389,7 +1400,8 @@
    insb\t%0, %1, 1
    insb\t%0, %1, 2
    insb\t%0, %1, 3"
-  [(set_attr "mode"  "V4QI")])
+  [(set_attr "type"  "dinsb")
+   (set_attr "mode"  "V4QI")])
 
 (define_insn "vec_setv4qi_internal_vec"
   [(set (match_operand:V4QI 0 "register_operand"       "=  r,   r,   r,   r")
@@ -1406,7 +1418,8 @@
    insb\t%0, %1, 1
    insb\t%0, %1, 2
    insb\t%0, %1, 3"
-  [(set_attr "mode"  "V4QI")])
+  [(set_attr "type"  "dinsb")
+   (set_attr "mode"  "V4QI")])
 
 (define_insn "vec_mergev4qi_and_cv0_1"
   [(set (match_operand:V4QI 0 "register_operand"       "=r")
@@ -1523,7 +1536,8 @@
   operands[3] = GEN_INT (exact_log2 (INTVAL (operands[3])));
   return "insb\t%0, %1, %3";
 }
-  [(set_attr "mode"  "V8QI")])
+  [(set_attr "type"  "dinsb")
+   (set_attr "mode"  "V8QI")])
 
 (define_expand "insvdi"
   [(set (zero_extract:DI (match_operand:DI 0 "register_operand" "")
@@ -1543,7 +1557,8 @@
 	(match_operand:DI 2                  "register_operand"    "r"))]
   "TARGET_DSP && TARGET_64BIT"
   "insb\t%0, %2, %v1"
-  [(set_attr "mode"  "DI")])
+  [(set_attr "type"  "dinsb")
+   (set_attr "mode"  "DI")])
 
 (define_insn "insvdiqi_internal"
   [(set (zero_extract:DI (match_operand:DI 0 "register_operand"   "+r")
@@ -1552,7 +1567,8 @@
 	(zero_extend:DI (match_operand:QI 2 "register_operand"    "r")))]
   "TARGET_DSP && TARGET_64BIT"
   "insb\t%0, %2, %v1"
-  [(set_attr "mode"  "DI")])
+  [(set_attr "type"  "dinsb")
+   (set_attr "mode"  "DI")])
 
 (define_insn "vec_setv8qi_internal_vec"
   [(set (match_operand:V8QI 0 "register_operand"       "=r")
@@ -1568,7 +1584,8 @@
   operands[3] = GEN_INT (exact_log2 (INTVAL (operands[3])));
   return "insb\t%0, %1, %3";
 }
-  [(set_attr "mode"  "V8QI")])
+  [(set_attr "type"  "dinsb")
+   (set_attr "mode"  "V8QI")])
 
 (define_expand "vec_set<mode>"
   [(match_operand:VSHI 0 "register_operand" "")
@@ -1596,7 +1613,8 @@
   "@
    pktb<bits>\t%0, %2, %1
    pkbb<bits>\t%0, %1, %2"
-  [(set_attr "mode"  "<MODE>")])
+  [(set_attr "type"  "dpack")
+   (set_attr "mode"  "<MODE>")])
 
 (define_expand "pkbb<mode>"
   [(match_operand:VSHI 0 "register_operand")
@@ -1617,7 +1635,8 @@
 			   (const_int 16))))]
   "TARGET_DSP && !TARGET_64BIT"
   "pkbb16\t%0, %2, %1"
-  [(set_attr "mode"  "SI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "SI")])
 
 (define_insn "pkbbsi_2"
   [(set (match_operand:SI 0 "register_operand" "=r")
@@ -1627,7 +1646,8 @@
 			(const_int 65535))))]
   "TARGET_DSP && !TARGET_64BIT"
   "pkbb16\t%0, %2, %1"
-  [(set_attr "mode"  "SI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "SI")])
 
 (define_insn "pkbbsi_3"
   [(set (match_operand:SI 0 "register_operand" "=r")
@@ -1636,7 +1656,8 @@
 			   (const_int 16))))]
   "TARGET_DSP && !TARGET_64BIT"
   "pkbb16\t%0, %2, %1"
-  [(set_attr "mode"  "SI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "SI")])
 
 (define_insn "pkbbsi_4"
   [(set (match_operand:SI 0 "register_operand" "=r")
@@ -1645,7 +1666,8 @@
 		(zero_extend:SI (match_operand:HI 1 "register_operand" "r"))))]
   "TARGET_DSP && !TARGET_64BIT"
   "pkbb16\t%0, %2, %1"
-  [(set_attr "mode"  "SI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "SI")])
 
 ;; v0 = (v1 & 0xffff0000) | (v2 & 0xffff)
 (define_insn "pktbsi_1"
@@ -1655,7 +1677,8 @@
 		(zero_extend:SI (match_operand:HI 2 "register_operand" "r"))))]
   "TARGET_DSP && !TARGET_64BIT"
   "pktb16\t%0, %1, %2"
-  [(set_attr "mode"  "SI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "SI")])
 
 (define_insn "pktbsi_2"
   [(set (match_operand:SI 0 "register_operand" "=r")
@@ -1665,7 +1688,8 @@
 			(const_int 65535))))]
   "TARGET_DSP && !TARGET_64BIT"
   "pktb16\t%0, %1, %2"
-  [(set_attr "mode"  "SI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "SI")])
 
 (define_insn "pktbsi_3"
   [(set (zero_extract:SI (match_operand:SI 0 "register_operand" "+r")
@@ -1674,7 +1698,8 @@
 	(match_operand:SI 1 "register_operand"                  " r"))]
   "TARGET_DSP && !TARGET_64BIT"
   "pktb16\t%0, %0, %1"
-  [(set_attr "mode"  "SI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "SI")])
 
 (define_insn "pktbsi_4"
   [(set (zero_extract:SI (match_operand:SI 0 "register_operand" "+r")
@@ -1683,7 +1708,8 @@
 	(zero_extend:SI (match_operand:HI 1 "register_operand"  " r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "pktb16\t%0, %0, %1"
-  [(set_attr "mode"  "SI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "SI")])
 
 (define_insn "pkttsi"
   [(set (match_operand:SI 0 "register_operand"                      "=r")
@@ -1693,7 +1719,8 @@
 			     (const_int 16))))]
   "TARGET_DSP && !TARGET_64BIT"
   "pktt16\t%0, %1, %2"
-  [(set_attr "mode"  "SI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "SI")])
 
 (define_expand "pkbt<mode>"
   [(match_operand:VSHI 0 "register_operand")
@@ -1740,7 +1767,8 @@
   "@
    pkbb16\t%0, %2, %1
    pkbb16\t%0, %1, %2"
-  [(set_attr "mode" "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode" "V2HI")])
 
 
 (define_insn "vec_merge"
@@ -1755,7 +1783,8 @@
 			 "pktb16\t%0, %1, %2" };
   return pats[which_alternative];
 }
-  [(set_attr "mode" "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode" "V2HI")])
 
 (define_insn "vec_mergerv"
   [(set (match_operand:V2HI 0 "register_operand"               "=   r,    r,    r,    r")
@@ -1773,7 +1802,8 @@
    pktb16\t%0, %2, %1
    pkbb16\t%0, %1, %2
    pkbt16\t%0, %1, %2"
-  [(set_attr "mode" "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode" "V2HI")])
 
 (define_insn "vec_mergevr"
   [(set (match_operand:V2HI 0 "register_operand"                "=  r,   r,   r,   r")
@@ -1791,7 +1821,8 @@
    pkbt16\t%0, %2, %1
    pkbb16\t%0, %1, %2
    pktb16\t%0, %1, %2"
-  [(set_attr "mode" "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode" "V2HI")])
 
 (define_insn "vec_merge<mode>"
   [(set (match_operand:VSHI 0 "register_operand"               "= r,   r,   r,   r,   r,   r,   r,   r")
@@ -1815,7 +1846,8 @@
    pkbt<bits>\t%0, %1, %2
    pktt<bits>\t%0, %1, %2
    pktb<bits>\t%0, %1, %2"
-  [(set_attr "mode"  "<MODE>")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "<MODE>")])
 
 (define_insn "vec_extractv4qi0"
   [(set (match_operand:QI 0 "register_operand"         "=r,r")
@@ -2016,7 +2048,8 @@
 		    (const_int 2) (const_int 6)])))]
   "TARGET_DSP && TARGET_64BIT"
   "pkbb16\t%0, %1, %2"
-  [(set_attr "mode" "V4HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode" "V4HI")])
 
 (define_expand "pkbt64"
   [(match_operand:V4HI 0 "register_operand")
@@ -2037,7 +2070,8 @@
 		    (const_int 2) (const_int 7)])))]
   "TARGET_DSP && TARGET_64BIT"
   "pkbt16\t%0, %1, %2"
-  [(set_attr "mode" "V4HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode" "V4HI")])
 
 (define_expand "pktt64"
   [(match_operand:V4HI 0 "register_operand")
@@ -2058,7 +2092,8 @@
 		    (const_int 3) (const_int 7)])))]
   "TARGET_DSP && TARGET_64BIT"
   "pktt16\t%0, %1, %2"
-  [(set_attr "mode" "V4HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode" "V4HI")])
 
 (define_expand "pktb64"
   [(match_operand:V4HI 0 "register_operand")
@@ -2079,7 +2114,8 @@
 		    (const_int 3) (const_int 6)])))]
   "TARGET_DSP && TARGET_64BIT"
   "pktb16\t%0, %1, %2"
-  [(set_attr "mode" "V4HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode" "V4HI")])
 
 (define_insn "<su>mul16v2si"
   [(set (match_operand:V2SI 0 "register_operand"                             "=r")
@@ -2087,7 +2123,7 @@
 		   (any_extend:V2SI (match_operand:V2HI 2 "register_operand" " r"))))]
   "TARGET_DSP && !TARGET_64BIT"
   "<su>mul16\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V2SI")])
 
 (define_insn "<su>mul16_64"
@@ -2103,7 +2139,7 @@
 	    (any_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 1)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "<su>mul16\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V2SI")])
 
 (define_insn "smul8<mode>"
@@ -2113,7 +2149,7 @@
 		      UNSPEC_SMUL8))]
   "TARGET_DSP"
   "smul8\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "umul8<mode>"
@@ -2123,7 +2159,7 @@
 		      UNSPEC_UMUL8))]
   "TARGET_DSP"
   "umul8\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "<su>mulx16"
@@ -2152,7 +2188,7 @@
 	  (const_int 1)))]
   "TARGET_DSP && !TARGET_64BIT"
   "<su>mulx16\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V2SI")])
 
 (define_insn "<su>mulx16_64"
@@ -2168,7 +2204,7 @@
 	    (any_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 0)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "<su>mulx16\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V2SI")])
 
 (define_insn "smulx8<mode>"
@@ -2178,7 +2214,7 @@
 		      UNSPEC_SMULX8))]
   "TARGET_DSP"
   "smulx8\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "umulx8<mode>"
@@ -2188,7 +2224,7 @@
 		      UNSPEC_UMULX8))]
   "TARGET_DSP"
   "umulx8\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "v4qi_dup_10"
@@ -2198,7 +2234,8 @@
 	   (parallel [(const_int 0) (const_int 1) (const_int 0) (const_int 1)])))]
   "TARGET_DSP && !TARGET_64BIT"
   "pkbb\t%0, %1, %1"
-  [(set_attr "mode"  "V4QI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V4QI")])
 
 (define_insn "v4qi_dup_32"
   [(set (match_operand:V4QI 0 "register_operand"    "=r")
@@ -2207,7 +2244,8 @@
 	   (parallel [(const_int 2) (const_int 3) (const_int 2) (const_int 3)])))]
   "TARGET_DSP && !TARGET_64BIT"
   "pktt\t%0, %1, %1"
-  [(set_attr "mode"  "V4QI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V4QI")])
 
 (define_expand "vec_unpacks_lo_v4qi"
   [(match_operand:V2HI 0 "register_operand" "=r")
@@ -2243,7 +2281,8 @@
 	  (const_int 2)))]
   "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd810\t%0, %1"
-  [(set_attr "mode"  "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V2HI")])
 
 (define_insn "<zs>unpkd810_imp_inv"
   [(set (match_operand:V2HI 0 "register_operand"                     "=r")
@@ -2261,7 +2300,8 @@
 	  (const_int 1)))]
   "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd810\t%0, %1"
-  [(set_attr "mode"  "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V2HI")])
 
 (define_expand "sunpkd820"
   [(match_operand:V2HI 0 "register_operand")
@@ -2288,7 +2328,8 @@
 	  (const_int 2)))]
   "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd820\t%0, %1"
-  [(set_attr "mode"  "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V2HI")])
 
 (define_insn "<zs>unpkd820_imp_inv"
   [(set (match_operand:V2HI 0 "register_operand"                     "=r")
@@ -2306,7 +2347,8 @@
 	  (const_int 1)))]
   "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd820\t%0, %1"
-  [(set_attr "mode"  "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V2HI")])
 
 (define_expand "sunpkd830"
   [(match_operand:V2HI 0 "register_operand")
@@ -2333,7 +2375,8 @@
 	  (const_int 2)))]
   "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd830\t%0, %1"
-  [(set_attr "mode"  "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V2HI")])
 
 (define_insn "<zs>unpkd830_imp_inv"
   [(set (match_operand:V2HI 0 "register_operand"                     "=r")
@@ -2351,7 +2394,8 @@
 	  (const_int 1)))]
   "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd830\t%0, %1"
-  [(set_attr "mode"  "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V2HI")])
 
 (define_expand "sunpkd831"
   [(match_operand:V2HI 0 "register_operand")
@@ -2378,7 +2422,8 @@
 	  (const_int 2)))]
   "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd831\t%0, %1"
-  [(set_attr "mode"  "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V2HI")])
 
 (define_insn "<zs>unpkd831_imp_inv"
   [(set (match_operand:V2HI 0 "register_operand"                     "=r")
@@ -2396,7 +2441,8 @@
 	  (const_int 1)))]
   "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd831\t%0, %1"
-  [(set_attr "mode"  "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V2HI")])
 
 (define_expand "sunpkd832"
   [(match_operand:V2HI 0 "register_operand")
@@ -2423,7 +2469,8 @@
 	  (const_int 2)))]
   "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd832\t%0, %1"
-  [(set_attr "mode"  "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V2HI")])
 
 (define_insn "<zs>unpkd832_imp_inv"
   [(set (match_operand:V2HI 0 "register_operand"                     "=r")
@@ -2441,7 +2488,8 @@
 	  (const_int 1)))]
   "TARGET_DSP && !TARGET_64BIT"
   "<zs>unpkd832\t%0, %1"
-  [(set_attr "mode"  "V2HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V2HI")])
 
 (define_expand "zunpkd810"
   [(match_operand:V2HI 0 "register_operand")
@@ -2496,7 +2544,8 @@
 		     (const_int 4) (const_int 5)])))]
   "TARGET_DSP && TARGET_64BIT"
   "<zs>unpkd810\t%0, %1"
-  [(set_attr "mode"  "V4HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V4HI")])
 
 (define_insn "<zs>unpkd820_64"
   [(set (match_operand:V4HI 0 "register_operand"                    "=r")
@@ -2506,7 +2555,8 @@
 		     (const_int 4) (const_int 6)])))]
   "TARGET_DSP && TARGET_64BIT"
   "<zs>unpkd820\t%0, %1"
-  [(set_attr "mode"  "V4HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V4HI")])
 
 (define_insn "<zs>unpkd830_64"
   [(set (match_operand:V4HI 0 "register_operand"                    "=r")
@@ -2516,7 +2566,8 @@
 		     (const_int 4) (const_int 7)])))]
   "TARGET_DSP && TARGET_64BIT"
   "<zs>unpkd830\t%0, %1"
-  [(set_attr "mode"  "V4HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V4HI")])
 
 (define_insn "<zs>unpkd831_64"
   [(set (match_operand:V4HI 0 "register_operand"                    "=r")
@@ -2526,7 +2577,8 @@
 		     (const_int 5) (const_int 7)])))]
   "TARGET_DSP && TARGET_64BIT"
   "<zs>unpkd831\t%0, %1"
-  [(set_attr "mode"  "V4HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V4HI")])
 
 (define_insn "<zs>unpkd832_64"
   [(set (match_operand:V4HI 0 "register_operand"                    "=r")
@@ -2536,7 +2588,8 @@
 		     (const_int 6) (const_int 7)])))]
   "TARGET_DSP && TARGET_64BIT"
   "<zs>unpkd832\t%0, %1"
-  [(set_attr "mode"  "V4HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode"  "V4HI")])
 
 (define_expand "smbb"
   [(match_operand:SI 0 "register_operand" "")
@@ -2589,7 +2642,7 @@
 			 "smbt16\t%0, %2, %1" };
   return pats[which_alternative];
 }
-  [(set_attr "type"   "imul")
+  [(set_attr "type"   "dmul")
    (set_attr "mode"   "SI")])
 
 (define_expand "smbb64"
@@ -2643,7 +2696,7 @@
    smbb16\t%0, %1, %2
    smbt16\t%0, %1, %2
    smtt16\t%0, %1, %2"
-  [(set_attr "type"   "imul")
+  [(set_attr "type"   "dmul")
    (set_attr "mode"   "DI")])
 
 (define_expand "smbb32"
@@ -2697,7 +2750,7 @@
 			 "smbt32\t%0, %2, %1" };
   return pats[which_alternative];
 }
-  [(set_attr "type"   "imul")
+  [(set_attr "type"   "dmul")
    (set_attr "mode"   "DI")])
 
 (define_expand "kmabb"
@@ -2760,7 +2813,8 @@
 			 "kmabt\t%0, %2, %1" };
   return pats[which_alternative];
 }
-  [(set_attr "mode" "SI")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "SI")])
 
 (define_expand "kmabb64"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -2822,7 +2876,8 @@
   kmabt\t%0, %1, %2
   kmatt\t%0, %1, %2
   kmabt\t%0, %2, %1"
-  [(set_attr "mode" "V2SI")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "V2SI")])
 
 (define_expand "kmabb32"
   [(match_operand:DI 0 "register_operand" "")
@@ -2882,7 +2937,8 @@
   kmabt32\t%0, %1, %2
   kmatt32\t%0, %1, %2
   kmabt32\t%0, %2, %1"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "DI")])
 
 (define_expand "smds"
   [(match_operand:SI 0 "register_operand" "")
@@ -2934,7 +2990,7 @@
 			      (parallel [(const_int 0)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smds32\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "smds64"
   [(set (match_operand:V2SI 0 "register_operand"                      "=r")
@@ -2955,7 +3011,7 @@
 				(parallel [(const_int 0) (const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smds\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_expand "smdrs"
   [(match_operand:SI 0 "register_operand" "")
@@ -3007,7 +3063,7 @@
 			      (parallel [(const_int 1)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smdrs32\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "smdrs64"
   [(set (match_operand:V2SI 0 "register_operand"                      "=r")
@@ -3028,7 +3084,7 @@
 				(parallel [(const_int 1) (const_int 3)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smdrs\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_expand "smxdsv"
   [(match_operand:SI 0 "register_operand" "")
@@ -3081,7 +3137,7 @@
 			      (parallel [(const_int 1)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smxds32\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "smxds64"
   [(set (match_operand:V2SI 0 "register_operand"                      "=r")
@@ -3102,7 +3158,7 @@
 				(parallel [(const_int 1) (const_int 3)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smxds\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "smal1"
   [(set (match_operand:DI 0 "register_operand"             "=r")
@@ -3119,7 +3175,8 @@
 		  (parallel [(const_int 1)])))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "smal2"
   [(set (match_operand:DI 0 "register_operand"           "=r")
@@ -3135,7 +3192,8 @@
 		(parallel [(const_int 1)]))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "smal3"
   [(set (match_operand:DI 0 "register_operand"             "=r")
@@ -3152,7 +3210,8 @@
 		  (parallel [(const_int 0)])))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "smal4"
   [(set (match_operand:DI 0 "register_operand"           "=r")
@@ -3168,7 +3227,8 @@
 		(parallel [(const_int 0)]))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "smal5"
   [(set (match_operand:DI 0 "register_operand"             "=r")
@@ -3186,7 +3246,8 @@
 	  (match_operand:DI 1 "register_operand"           " r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "smal6"
   [(set (match_operand:DI 0 "register_operand"           "=r")
@@ -3203,7 +3264,8 @@
 	  (match_operand:DI 1 "register_operand"         " r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "smal7"
   [(set (match_operand:DI 0 "register_operand"             "=r")
@@ -3221,7 +3283,8 @@
 	  (match_operand:DI 1 "register_operand"           " r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "smal8"
   [(set (match_operand:DI 0 "register_operand"           "=r")
@@ -3238,7 +3301,8 @@
 	  (match_operand:DI 1 "register_operand"         " r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "smal1_64"
   [(set (match_operand:DI 0 "register_operand"             "=r")
@@ -3260,14 +3324,16 @@
 		  (vec_select:HI (match_dup 2) (parallel [(const_int 3)]))))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smal\t%0, %1, %2"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "dsp_extendqihi2"
   [(set (match_operand:HI 0 "register_operand"                 "=r")
 	(sign_extend:HI (match_operand:QI 1 "register_operand" " r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "sunpkd820\t%0, %1"
-  [(set_attr "mode" "HI")])
+  [(set_attr "type" "dpack")
+   (set_attr "mode" "HI")])
 
 (define_insn "smulsi3_highpart"
   [(set (match_operand:SI 0 "register_operand"                       "=r")
@@ -3279,7 +3345,7 @@
 	    (const_int 32))))]
   "TARGET_DSP && TARGET_64BIT"
   "smmul\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "HI")])
 
 (define_insn "smmul_round"
@@ -3293,7 +3359,7 @@
 	    (const_int 32))))]
   "TARGET_DSP && !TARGET_64BIT"
   "smmul.u\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "HI")])
 
 (define_insn "smulv2si3_highpart"
@@ -3305,7 +3371,7 @@
 	    (const_int 32))))]
   "TARGET_DSP && TARGET_64BIT"
   "smmul\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V2SI")])
 
 (define_insn "smmulv2si3_round"
@@ -3319,7 +3385,7 @@
 	    (const_int 32))))]
   "TARGET_DSP  && TARGET_64BIT"
   "smmul.u\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "DI")])
 
 (define_insn "kmmac"
@@ -3333,7 +3399,7 @@
 	      (const_int 32)))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmmac\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmmac_64"
   [(set (match_operand:V2SI 0 "register_operand"                         "=r")
@@ -3346,7 +3412,7 @@
 	      (const_int 32)))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmmac\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmmac_round"
   [(set (match_operand:SI 0 "register_operand"                                     "=r")
@@ -3360,7 +3426,7 @@
 	      (const_int 32)))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmmac.u\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmmac64_round"
   [(set (match_operand:V2SI 0 "register_operand"                                     "=r")
@@ -3374,7 +3440,7 @@
 	      (const_int 32)))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmmac.u\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmmsb"
   [(set (match_operand:SI 0 "register_operand"                         "=r")
@@ -3387,7 +3453,7 @@
 	      (const_int 32)))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmmsb\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmmsb_64"
   [(set (match_operand:V2SI 0 "register_operand"                         "=r")
@@ -3400,7 +3466,7 @@
 	      (const_int 32)))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmmsb\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmmsb_round"
   [(set (match_operand:SI 0 "register_operand"                                     "=r")
@@ -3414,7 +3480,7 @@
 	      (const_int 32)))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmmsb.u\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmmsb64_round"
   [(set (match_operand:V2SI 0 "register_operand"                                     "=r")
@@ -3428,7 +3494,7 @@
 	      (const_int 32)))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmmsb.u\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kwmmul"
   [(set (match_operand:SI 0 "register_operand"                       "=r")
@@ -3440,7 +3506,7 @@
 	    (const_int 32))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kwmmul\t%0, %1, %2"
-)
+  [(set_attr "type" "dmul")])
 
 (define_insn "kwmmul_64"
   [(set (match_operand:V2SI 0 "register_operand"                       "=r")
@@ -3452,7 +3518,7 @@
 	    (const_int 32))))]
   "TARGET_DSP && TARGET_64BIT"
   "kwmmul\t%0, %1, %2"
-)
+  [(set_attr "type" "dmul")])
 
 (define_insn "kwmmul_round"
   [(set (match_operand:SI 0 "register_operand"                       "=r")
@@ -3466,7 +3532,7 @@
 	    (const_int 32))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kwmmul.u\t%0, %1, %2"
-)
+  [(set_attr "type" "dmul")])
 
 (define_insn "kwmmul64_round"
   [(set (match_operand:V2SI 0 "register_operand"                       "=r")
@@ -3480,7 +3546,7 @@
 	    (const_int 32))))]
   "TARGET_DSP && TARGET_64BIT"
   "kwmmul.u\t%0, %1, %2"
-)
+  [(set_attr "type" "dmul")])
 
 (define_expand "smmwb"
   [(match_operand:SI 0 "register_operand" "")
@@ -3518,7 +3584,8 @@
   const char *pats[] = { "smmwb\t%0, %1, %2",
 			 "smmwt\t%0, %1, %2" };
   return pats[which_alternative];
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_insn "smulhisi3_highpart_2"
   [(set (match_operand:SI 0 "register_operand"                       "= r,   r")
@@ -3534,9 +3601,10 @@
   "TARGET_DSP && !TARGET_64BIT"
 {
   const char *pats[] = { "smmwb\t%0, %1, %2",
-			     "smmwt\t%0, %1, %2" };
+			 "smmwt\t%0, %1, %2" };
   return pats[which_alternative];
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "smmwb64"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -3592,7 +3660,8 @@
   const char *pats[] = { "smmwb\t%0, %1, %2",
 			 "smmwt\t%0, %1, %2" };
   return pats[which_alternative];
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "kmmwb64"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -3649,7 +3718,7 @@
   "@
    kmmwb2\t%0, %1, %2
    kmmwt2\t%0, %1, %2"
-)
+[(set_attr "type" "dmul")])
 
 (define_expand "smmwb_round"
   [(match_operand:SI 0 "register_operand" "")
@@ -3689,7 +3758,8 @@
   const char *pats[] = { "smmwb.u\t%0, %1, %2",
 			 "smmwt.u\t%0, %1, %2" };
   return pats[which_alternative];
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "smmwb64_round"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -3749,7 +3819,8 @@
   const char *pats[] = { "smmwb.u\t%0, %1, %2",
 			 "smmwt.u\t%0, %1, %2" };
   return pats[which_alternative];
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "kmmwb2"
   [(match_operand:SI 0 "register_operand" "")
@@ -3787,7 +3858,7 @@
   "@
    kmmwb2\t%0, %1, %2
    kmmwt2\t%0, %1, %2"
-)
+  [(set_attr "type" "dmul")])
 
 (define_expand "kmmwb2_round"
   [(match_operand:SI 0 "register_operand" "")
@@ -3828,7 +3899,7 @@
   "@
    kmmwb2.u\t%0, %1, %2
    kmmwt2.u\t%0, %1, %2"
-)
+  [(set_attr "type" "dmul")])
 
 (define_expand "kmmwb64_round"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -3887,7 +3958,7 @@
   "@
    kmmwb2.u\t%0, %1, %2
    kmmwt2.u\t%0, %1, %2"
-)
+  [(set_attr "type" "dmul")])
 
 (define_expand "kmmawb"
   [(match_operand:SI 0 "register_operand" "")
@@ -3956,7 +4027,7 @@
   kmmawt\t%0, %1, %2
   kmmawb2\t%0, %1, %2
   kmmawt2\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_expand "kmmawb64"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -4045,7 +4116,7 @@
   kmmawt\t%0, %1, %2
   kmmawb2\t%0, %1, %2
   kmmawt2\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_expand "kmmawb_round"
   [(match_operand:SI 0 "register_operand" "")
@@ -4116,7 +4187,7 @@
   kmmawt.u\t%0, %1, %2
   kmmawb2.u\t%0, %1, %2
   kmmawt2.u\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_expand "kmmawb64_round"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -4209,7 +4280,7 @@
   kmmawt.u\t%0, %1, %2
   kmmawb2.u\t%0, %1, %2
   kmmawt2.u\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_expand "smalbb"
   [(match_operand:DI 0 "register_operand" "")
@@ -4270,7 +4341,8 @@
 			   "smaltt\t%0, %1, %2",
 			   "smalbt\t%0, %2, %1" };
     return pats[which_alternative];
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "smaddhidi2"
   [(set (match_operand:DI 0 "register_operand"                   "=  r,   r,   r,   r")
@@ -4292,7 +4364,8 @@
 			   "smaltt\t%0, %1, %2",
 			   "smalbt\t%0, %2, %1" };
     return pats[which_alternative];
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "smalbb64"
   [(match_operand:DI 0 "register_operand" "")
@@ -4365,7 +4438,7 @@
    smalbt\t%0, %1, %2
    smaltt\t%0, %1, %2
    smalbt\t%0, %2, %1"
-)
+  [(set_attr "type" "dmac")])
 
 (define_expand "smalda1"
   [(match_operand:DI 0 "register_operand" "")
@@ -4411,7 +4484,7 @@
 				  (parallel [(const_int 0)]))))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "smalda\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "smalda64"
   [(set (match_operand:DI 0 "register_operand"                             "=r")
@@ -4440,7 +4513,7 @@
 		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 3)])))))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smalda\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "smalds1_le"
   [(set (match_operand:DI 0 "register_operand"                             "=r")
@@ -4464,7 +4537,7 @@
 				  (parallel [(const_int 0)]))))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "smalds\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "smalds64"
   [(set (match_operand:DI 0 "register_operand"                             "=r")
@@ -4493,7 +4566,7 @@
 		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 2)])))))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smalds\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_expand "smaldrs3"
   [(match_operand:DI 0 "register_operand" "")
@@ -4528,7 +4601,7 @@
 				  (parallel [(const_int 1)]))))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "smaldrs\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "smaldrs64"
   [(set (match_operand:DI 0 "register_operand"                             "=r")
@@ -4557,7 +4630,7 @@
 		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 3)])))))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smaldrs\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_expand "smalxda1"
   [(match_operand:DI 0 "register_operand" "")
@@ -4603,7 +4676,7 @@
 				  (parallel [(const_int 1)]))))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "smalxd<add_sub>\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "smalxd<add_sub>64"
   [(set (match_operand:DI 0 "register_operand"                             "=r")
@@ -4632,7 +4705,7 @@
 		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 3)])))))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smalxd<add_sub>\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "smslda1"
   [(set (match_operand:DI 0 "register_operand"                             "=r")
@@ -4657,7 +4730,7 @@
 				(parallel [(const_int 0)])))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "smslda\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "smslda64"
   [(set (match_operand:DI 0 "register_operand"                             "=r")
@@ -4686,7 +4759,7 @@
 		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 3)])))))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smslda\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "smslxda1"
   [(set (match_operand:DI 0 "register_operand"                               "=r")
@@ -4711,7 +4784,7 @@
 				(parallel [(const_int 1)])))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "smslxda\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "smslxda64"
   [(set (match_operand:DI 0 "register_operand"                             "=r")
@@ -4740,7 +4813,7 @@
 		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 2)])))))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smslxda\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 ;; mada for synthetize smalda
 (define_insn_and_split "mada1"
@@ -4906,7 +4979,7 @@
 			      (parallel [(const_int 0)]))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmda\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmda32"
   [(set (match_operand:DI 0 "register_operand"                         "=r")
@@ -4927,7 +5000,7 @@
 			      (parallel [(const_int 0)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmda32\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmda64"
   [(set (match_operand:V2SI 0 "register_operand"                      "=r")
@@ -4948,7 +5021,7 @@
 				(parallel [(const_int 0) (const_int 2)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmda\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmxda"
   [(set (match_operand:SI 0 "register_operand"                        "=r")
@@ -4969,7 +5042,7 @@
 			      (parallel [(const_int 1)]))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmxda\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmxda32"
   [(set (match_operand:DI 0 "register_operand"                        "=r")
@@ -4990,7 +5063,7 @@
 			      (parallel [(const_int 1)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmxda32\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmxda64"
   [(set (match_operand:V2SI 0 "register_operand"                      "=r")
@@ -5011,7 +5084,7 @@
 				(parallel [(const_int 1) (const_int 3)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmxda\t%0, %1, %2"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmada"
   [(set (match_operand:SI 0 "register_operand"                           "=r")
@@ -5034,7 +5107,7 @@
 				(parallel [(const_int 0)])))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmada\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmada32"
   [(set (match_operand:DI 0 "register_operand"                           "=r")
@@ -5057,7 +5130,7 @@
 				(parallel [(const_int 0)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmada32\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmada64"
   [(set (match_operand:V2SI 0 "register_operand"                         "=r")
@@ -5080,7 +5153,7 @@
 				(parallel [(const_int 0) (const_int 2)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmada\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmada2"
   [(set (match_operand:SI 0 "register_operand"                           "=r")
@@ -5103,7 +5176,7 @@
 				(parallel [(const_int 1)])))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmada\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmaxda"
   [(set (match_operand:SI 0 "register_operand"                           "=r")
@@ -5126,7 +5199,7 @@
 				(parallel [(const_int 1)])))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmaxda\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmaxda32"
   [(set (match_operand:DI 0 "register_operand"                           "=r")
@@ -5149,7 +5222,7 @@
 				(parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmaxda32\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmaxda64"
   [(set (match_operand:V2SI 0 "register_operand"                         "=r")
@@ -5172,7 +5245,7 @@
 				(parallel [(const_int 1) (const_int 3)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmaxda\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmads"
   [(set (match_operand:SI 0 "register_operand"                           "=r")
@@ -5195,7 +5268,7 @@
 				(parallel [(const_int 0)])))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmads\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmads32"
   [(set (match_operand:DI 0 "register_operand"                           "=r")
@@ -5218,7 +5291,7 @@
 				(parallel [(const_int 0)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmads32\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmads64"
   [(set (match_operand:V2SI 0 "register_operand"                         "=r")
@@ -5241,7 +5314,7 @@
 				(parallel [(const_int 0) (const_int 2)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmads\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmadrs"
   [(set (match_operand:SI 0 "register_operand"                           "=r")
@@ -5264,7 +5337,7 @@
 				(parallel [(const_int 1)])))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmadrs\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmadrs32"
   [(set (match_operand:DI 0 "register_operand"                           "=r")
@@ -5287,7 +5360,7 @@
 				(parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmadrs32\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmadrs64"
   [(set (match_operand:V2SI 0 "register_operand"                         "=r")
@@ -5310,7 +5383,7 @@
 				(parallel [(const_int 1) (const_int 3)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmadrs\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmaxds"
   [(set (match_operand:SI 0 "register_operand"                           "=r")
@@ -5333,7 +5406,7 @@
 				(parallel [(const_int 1)])))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmaxds\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmaxds32"
   [(set (match_operand:DI 0 "register_operand"                           "=r")
@@ -5356,7 +5429,7 @@
 				(parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmaxds32\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmaxds64"
   [(set (match_operand:V2SI 0 "register_operand"                         "=r")
@@ -5379,7 +5452,7 @@
 				(parallel [(const_int 1) (const_int 3)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmaxds\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmsda"
   [(set (match_operand:SI 0 "register_operand"                           "=r")
@@ -5402,7 +5475,7 @@
 				(parallel [(const_int 0)])))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmsda\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmsda32"
   [(set (match_operand:DI 0 "register_operand"                           "=r")
@@ -5425,7 +5498,7 @@
 				(parallel [(const_int 0)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmsda32\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmsda64"
   [(set (match_operand:V2SI 0 "register_operand"                         "=r")
@@ -5448,7 +5521,7 @@
 				(parallel [(const_int 0) (const_int 2)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmsda\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmsxda"
   [(set (match_operand:SI 0 "register_operand"                           "=r")
@@ -5471,7 +5544,7 @@
 				(parallel [(const_int 1)])))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmsxda\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmsxda32"
   [(set (match_operand:DI 0 "register_operand"                           "=r")
@@ -5494,7 +5567,7 @@
 				(parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmsxda32\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 (define_insn "kmsxda64"
   [(set (match_operand:V2SI 0 "register_operand"                         "=r")
@@ -5517,7 +5590,7 @@
 				(parallel [(const_int 1) (const_int 3)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmsxda\t%0, %2, %3"
-)
+  [(set_attr "type" "dmac")])
 
 ;; smax[8|16] and umax[8|16]
 (define_insn "<opcode><mode>3"
@@ -5526,7 +5599,7 @@
 		    (match_operand:VECI 2 "register_operand" " r")))]
   "TARGET_DSP"
   "<opcode><bits>\t%0, %1, %2"
-)
+  [(set_attr "type" "dalu")])
 
 ;; smin[8|16] and umin[8|16]
 (define_insn "<opcode><mode>3"
@@ -5535,7 +5608,7 @@
 		    (match_operand:VECI 2 "register_operand" " r")))]
   "TARGET_DSP"
   "<opcode><bits>\t%0, %1, %2"
-)
+  [(set_attr "type" "dalu")])
 
 (define_insn "<opcode><mode>3_bb"
   [(set (match_operand:<VELT> 0 "register_operand"                    "=r")
@@ -5547,7 +5620,7 @@
 			    (parallel [(const_int 0)]))))]
   "TARGET_DSP"
   "<opcode><bits>\t%0, %1, %2"
-)
+  [(set_attr "type" "dalu")])
 
 (define_insn_and_split "<opcode>v2hi3_bbtt"
   [(set (match_operand:V2HI 0 "register_operand"                         "=r")
@@ -5575,7 +5648,7 @@
   emit_insn (gen_<opcode>v2hi3 (operands[0], operands[1], operands[2]));
   DONE;
 }
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V2HI")])
 
 (define_expand "abs<mode>2"
@@ -5590,7 +5663,7 @@
 	(ss_abs:VECI (match_operand:VECI 1 "register_operand" " r")))]
   "TARGET_DSP"
   "kabs<bits>\t%0, %1"
-  [(set_attr "type"   "arith")
+  [(set_attr "type"   "dalu")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "<su>mar64_1"
@@ -5604,7 +5677,8 @@
 	      (match_operand:SI 3 "register_operand" " r")))))]
   "TARGET_DSP && !TARGET_64BIT"
   "<su>mar64\t%0, %2, %3"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode"   "DI")])
 
 (define_insn "v<su>mar64_1"
   [(set (match_operand:DI 0 "register_operand"             "=r")
@@ -5626,7 +5700,8 @@
 		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "<su>mar64\t%0, %2, %3"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "<su>mar64_2"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -5639,7 +5714,8 @@
 	  (match_operand:DI 1 "register_operand"     " 0")))]
   "TARGET_DSP && !TARGET_64BIT"
   "<su>mar64\t%0, %2, %3"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode"   "DI")])
 
 (define_insn "<su>mar64_3"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -5651,7 +5727,8 @@
 	      (match_operand:SI 3 "register_operand" " r")))))]
   "TARGET_DSP && !TARGET_64BIT"
   "<su>mar64\t%0, %2, %3"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode"   "DI")])
 
 (define_insn "<su>mar64_4"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -5663,7 +5740,8 @@
 	  (match_operand:DI 1 "register_operand"     " 0")))]
   "TARGET_DSP && !TARGET_64BIT"
   "<su>mar64\t%0, %2, %3"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode"   "DI")])
 
 (define_insn "<su>msr64"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -5676,7 +5754,8 @@
 	      (match_operand:SI 3 "register_operand" " r")))))]
   "TARGET_DSP && !TARGET_64BIT"
   "<su>msr64\t%0, %2, %3"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode"   "DI")])
 
 (define_insn "v<su>msr64"
   [(set (match_operand:DI 0 "register_operand"             "=r")
@@ -5698,7 +5777,8 @@
 		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "<su>msr64\t%0, %2, %3"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "<su>msr64_2"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -5710,7 +5790,8 @@
 	      (match_operand:SI 3 "register_operand" " r")))))]
   "TARGET_DSP && !TARGET_64BIT"
   "<su>msr64\t%0, %2, %3"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode"   "DI")])
 
 ;; kmar64, kmsr64, ukmar64 and ukmsr64
 (define_insn "kmar64_1"
@@ -5724,7 +5805,8 @@
 	      (match_operand:SI 3 "register_operand" " r")))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmar64\t%0, %2, %3"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode"   "DI")])
 
 (define_insn "kmar64_2"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -5737,7 +5819,8 @@
 	  (match_operand:DI 1 "register_operand"     " 0")))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmar64\t%0, %2, %3"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode"   "DI")])
 
 (define_insn "vkmar64"
   [(set (match_operand:DI 0 "register_operand"             "=r")
@@ -5759,7 +5842,8 @@
 		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmar64\t%0, %2, %3"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "kmsr64"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -5772,7 +5856,8 @@
 	      (match_operand:SI 3 "register_operand" " r")))))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmsr64\t%0, %2, %3"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode"   "DI")])
 
 (define_insn "vkmsr64"
   [(set (match_operand:DI 0 "register_operand"             "=r")
@@ -5794,7 +5879,8 @@
 		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmsr64\t%0, %2, %3"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "ukmar64_1"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -5807,7 +5893,8 @@
 	      (match_operand:SI 3 "register_operand" " r")))))]
   "TARGET_DSP && !TARGET_64BIT"
   "ukmar64\t%0, %2, %3"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode"   "DI")])
 
 (define_insn "vukmar64"
   [(set (match_operand:DI 0 "register_operand"             "=r")
@@ -5829,7 +5916,8 @@
 		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "ukmar64\t%0, %2, %3"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "ukmar64_2"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -5842,7 +5930,8 @@
 	  (match_operand:DI 1 "register_operand"     " 0")))]
   "TARGET_DSP && !TARGET_64BIT"
   "ukmar64\t%0, %2, %3"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode"   "DI")])
 
 (define_insn "ukmsr64"
   [(set (match_operand:DI 0 "register_operand"       "=r")
@@ -5855,7 +5944,8 @@
 	      (match_operand:SI 3 "register_operand" " r")))))]
   "TARGET_DSP && !TARGET_64BIT"
   "ukmsr64\t%0, %2, %3"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode"   "DI")])
 
 (define_insn "vukmsr64"
   [(set (match_operand:DI 0 "register_operand"             "=r")
@@ -5877,7 +5967,8 @@
 		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
   "TARGET_DSP && TARGET_64BIT"
   "ukmsr64\t%0, %2, %3"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type"   "dmac")
+   (set_attr "mode" "DI")])
 
 (define_insn "bpick1<mode>"
   [(set (match_operand:GPR 0 "register_operand"       "=r")
@@ -5890,7 +5981,8 @@
 	      (not:GPR (match_dup 3)))))]
   "TARGET_DSP"
   "bpick\t%0, %1, %2, %3"
-  [(set_attr "mode"   "<MODE>")])
+  [(set_attr "type"   "dbpick")
+   (set_attr "mode"   "<MODE>")])
 
 (define_insn "bpick2<mode>"
   [(set (match_operand:GPR 0 "register_operand"       "=r")
@@ -5903,7 +5995,8 @@
 	      (match_operand:GPR 3 "register_operand" " r"))))]
   "TARGET_DSP"
   "bpick\t%0, %1, %3, %2"
-  [(set_attr "mode"   "<MODE>")])
+  [(set_attr "type"   "dbpick")
+   (set_attr "mode"   "<MODE>")])
 
 (define_insn "bpick3<mode>"
   [(set (match_operand:GPR 0 "register_operand"       "=r")
@@ -5916,7 +6009,8 @@
 	      (not:GPR (match_dup 1)))))]
   "TARGET_DSP"
   "bpick\t%0, %2, %3, %1"
-  [(set_attr "mode"   "<MODE>")])
+  [(set_attr "type"   "dbpick")
+   (set_attr "mode"   "<MODE>")])
 
 (define_insn "bpick4<mode>"
   [(set (match_operand:GPR 0 "register_operand"       "=r")
@@ -5929,7 +6023,8 @@
 	      (match_operand:GPR 3 "register_operand" " r"))))]
   "TARGET_DSP"
   "bpick\t%0, %2, %3, %1"
-  [(set_attr "mode"   "<MODE>")])
+  [(set_attr "type"   "dbpick")
+   (set_attr "mode"   "<MODE>")])
 
 (define_insn "bpick5<mode>"
   [(set (match_operand:GPR 0 "register_operand"               "=r")
@@ -5942,7 +6037,8 @@
 	      (match_dup 2))))]
   "TARGET_DSP"
   "bpick\t%0, %3, %1, %2"
-  [(set_attr "mode"   "<MODE>")])
+  [(set_attr "type"   "dbpick")
+   (set_attr "mode"   "<MODE>")])
 
 (define_insn "bpick6<mode>"
   [(set (match_operand:GPR 0 "register_operand"               "=r")
@@ -5955,7 +6051,8 @@
 	      (match_dup 1))))]
   "TARGET_DSP"
   "bpick\t%0, %3, %2, %1"
-  [(set_attr "mode"   "<MODE>")])
+  [(set_attr "type"   "dbpick")
+   (set_attr "mode"   "<MODE>")])
 
 (define_insn "bpick7<mode>"
   [(set (match_operand:GPR 0 "register_operand"               "=r")
@@ -5968,7 +6065,8 @@
 	      (match_operand:GPR 3 "register_operand"         " r"))))]
   "TARGET_DSP"
   "bpick\t%0, %3, %1, %2"
-  [(set_attr "mode"   "<MODE>")])
+  [(set_attr "type"   "dbpick")
+   (set_attr "mode"   "<MODE>")])
 
 (define_insn "bpick8<mode>"
   [(set (match_operand:GPR 0 "register_operand"               "=r")
@@ -5981,7 +6079,8 @@
 	      (match_operand:GPR 3 "register_operand"         " r"))))]
   "TARGET_DSP"
   "bpick\t%0, %3, %2, %1"
-  [(set_attr "mode"   "<MODE>")])
+  [(set_attr "type"   "dbpick")
+   (set_attr "mode"   "<MODE>")])
 
 (define_insn "bpick8"
   [(set (match_operand:SI 0 "register_operand"               "=r")
@@ -5994,7 +6093,8 @@
 	      (match_operand:SI 3 "register_operand"         " r"))))]
   "TARGET_DSP && !TARGET_64BIT"
   "bpick\t%0, %3, %2, %1"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "type"   "dbpick")
+   (set_attr "mode"   "SI")])
 
 (define_insn "sraiu"
   [(set (match_operand:SI 0 "register_operand"                          "=  r, r")
@@ -6005,7 +6105,8 @@
   "@
    srai.u\t%0, %1, %2
    sra.u\t%0, %1, %2"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "type"   "daluround")
+   (set_attr "mode"   "SI")])
 
 (define_insn "sraiu64"
   [(set (match_operand:DI 0 "register_operand"                          "=  r, r")
@@ -6016,7 +6117,8 @@
   "@
    srai.u\t%0, %1, %2
    sra.u\t%0, %1, %2"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "daluround")
+   (set_attr "mode"   "DI")])
 
 (define_insn "sraiw_u"
   [(set (match_operand:DI 0 "register_operand"             "=  r")
@@ -6025,7 +6127,8 @@
 		    UNSPEC_ROUND64))]
   "TARGET_DSP && TARGET_64BIT"
   "sraiw.u\t%0, %1, %2"
-  [(set_attr "mode"   "DI")])
+  [(set_attr "type"   "daluround")
+   (set_attr "mode"   "DI")])
 
 (define_insn "kssl"
   [(set (match_operand:SI 0 "register_operand"               "=   r, r")
@@ -6035,7 +6138,8 @@
   "@
    kslliw\t%0, %1, %2
    ksllw\t%0, %1, %2"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "type"   "dalu")
+   (set_attr "mode"   "SI")])
 
 (define_insn "kslraw_round"
   [(set (match_operand:SI 0 "register_operand"                  "=r")
@@ -6049,7 +6153,8 @@
 			(match_dup 2))))]
   "TARGET_DSP"
   "kslraw.u\t%0, %1, %2"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "type"   "daluround")
+   (set_attr "mode"   "SI")])
 
 (define_insn "sclip32<mode>"
   [(set (match_operand:VD_SI 0 "register_operand" "=r")
@@ -6057,7 +6162,8 @@
 		       (match_operand:SI 2 "immediate_operand" "i")] UNSPEC_CLIPS_OV))]
   "TARGET_DSP"
   "sclip32\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "type"   "dclip")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "uclip32<mode>"
   [(set (match_operand:VD_SI 0 "register_operand" "=r")
@@ -6065,7 +6171,8 @@
 		       (match_operand:SI 2 "immediate_operand" "i")] UNSPEC_CLIP_OV))]
   "TARGET_DSP"
   "uclip32\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "type"   "dclip")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "bitrev"
   [(set (match_operand:SI 0 "register_operand"             "=r,   r")
@@ -6076,7 +6183,8 @@
   "@
    bitrev\t%0, %1, %2
    bitrevi\t%0, %1, %2"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "type"   "dalu")
+   (set_attr "mode"   "SI")])
 
 (define_insn "bitrev64"
   [(set (match_operand:DI 0 "register_operand"             "=r,   r")
@@ -6087,7 +6195,8 @@
   "@
    bitrev\t%0, %1, %2
    bitrevi\t%0, %1, %2"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "type"   "dalu")
+   (set_attr "mode"   "SI")])
 
 ;; wext, wexti
 (define_insn "<su>wext"
@@ -6100,7 +6209,8 @@
   "@
    wext\t%0, %1, %2
    wexti\t%0, %1, %2"
-  [(set_attr "mode"   "SI")])
+  [(set_attr "type"   "dwext")
+   (set_attr "mode"   "SI")])
 
 (define_insn "wext64"
   [(set (match_operand:DI 0 "register_operand"     "=r,  r")
@@ -6113,7 +6223,8 @@
   "@
    wext\t%0, %1, %2
    wexti\t%0, %1, %2"
-  [(set_attr "mode" "DI")])
+  [(set_attr "type" "dwext")
+   (set_attr "mode" "DI")])
 
 (define_insn_and_split "wext_<shift>di3"
   [(set (match_operand:DI 0 "register_operand" "")
@@ -6139,7 +6250,7 @@
 	    (const_int 1))))]
   "TARGET_DSP && !TARGET_64BIT"
   "r<opcode>w\t%0, %1, %2"
-)
+  [(set_attr "type" "dalu")])
 
 ;; 64-bit add/sub instruction: raddw and rsubw.
 (define_insn "r<opcode>disi3"
@@ -6153,7 +6264,7 @@
 	      (const_int 1)))))]
   "TARGET_DSP && TARGET_64BIT"
   "r<opcode>w\t%0, %1, %2"
-)
+  [(set_attr "type" "dalu")])
 
 ;; 32-bit add/sub instruction: uraddw and ursubw.
 (define_insn "ur<opcode>si3"
@@ -6166,7 +6277,7 @@
 	    (const_int 1))))]
   "TARGET_DSP && !TARGET_64BIT"
   "ur<opcode>w\t%0, %1, %2"
-)
+  [(set_attr "type" "dalu")])
 
 ;; 64-bit add/sub instruction: uraddw and ursubw.
 (define_insn "ur<opcode>disi3"
@@ -6180,7 +6291,7 @@
 	      (const_int 1)))))]
   "TARGET_DSP && TARGET_64BIT"
   "ur<opcode>w\t%0, %1, %2"
-)
+  [(set_attr "type" "dalu")])
 
 ;; SATURATION
 
@@ -6189,7 +6300,7 @@
 	(unspec:SI [(match_operand:SI 1 "register_operand" "r")] UNSPEC_KABS))]
   "TARGET_DSP"
   "kabsw\t%0, %1"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_insn "kaddw"
@@ -6198,7 +6309,7 @@
 		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KADDW))]
   "TARGET_DSP && !TARGET_64BIT"
   "kaddw\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_insn "kaddw64"
@@ -6207,7 +6318,7 @@
 				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KADDW)))]
   "TARGET_DSP && TARGET_64BIT"
   "kaddw\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "DI")])
 
 (define_insn "ksubw"
@@ -6216,7 +6327,7 @@
 		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSUBW))]
   "TARGET_DSP && !TARGET_64BIT"
   "ksubw\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_insn "ksubw64"
@@ -6225,7 +6336,7 @@
 				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSUBW)))]
   "TARGET_DSP && TARGET_64BIT"
   "ksubw\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "DI")])
 
 (define_insn "kaddh"
@@ -6234,7 +6345,7 @@
 				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KADDH)))]
   "TARGET_DSP"
   "kaddh\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_insn "ksubh"
@@ -6243,7 +6354,7 @@
 				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSUBH)))]
   "TARGET_DSP"
   "ksubh\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_insn "ukaddw"
@@ -6252,7 +6363,7 @@
 		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKADDW))]
   "TARGET_DSP && !TARGET_64BIT"
   "ukaddw\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_insn "ukaddw64"
@@ -6261,7 +6372,7 @@
 				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKADDW64)))]
   "TARGET_DSP && TARGET_64BIT"
   "ukaddw\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "DI")])
 
 (define_insn "uksubw"
@@ -6270,7 +6381,7 @@
 		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKSUBW))]
   "TARGET_DSP && !TARGET_64BIT"
   "uksubw\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_insn "uksubw64"
@@ -6279,7 +6390,7 @@
 				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKSUBW64)))]
   "TARGET_DSP && TARGET_64BIT"
   "uksubw\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "DI")])
 
 (define_insn "ukaddh"
@@ -6288,7 +6399,7 @@
 				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKADDH)))]
   "TARGET_DSP && !TARGET_64BIT"
   "ukaddh\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_insn "ukaddh64"
@@ -6297,7 +6408,7 @@
 				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKADDH)))]
   "TARGET_DSP && TARGET_64BIT"
   "ukaddh\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "DI")])
 
 (define_insn "uksubh"
@@ -6306,7 +6417,7 @@
 				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKSUBH)))]
   "TARGET_DSP && !TARGET_64BIT"
   "uksubh\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_insn "uksubh64"
@@ -6315,7 +6426,7 @@
 				    (match_operand:SI 2 "register_operand" "r")] UNSPEC_UKSUBH)))]
   "TARGET_DSP && TARGET_64BIT"
   "uksubh\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "DI")])
 
 (define_insn "kdmbb"
@@ -6324,7 +6435,7 @@
 		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KDMBB))]
   "TARGET_DSP && !TARGET_64BIT"
   "kdmbb\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V2HI")])
 
 (define_insn "kdmbt"
@@ -6333,7 +6444,7 @@
 		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KDMBT))]
   "TARGET_DSP && !TARGET_64BIT"
   "kdmbt\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V2HI")])
 
 (define_insn "kdmtt"
@@ -6342,7 +6453,7 @@
 		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KDMTT))]
   "TARGET_DSP && !TARGET_64BIT"
   "kdmtt\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V2HI")])
 
 (define_insn "kdmbb64"
@@ -6352,7 +6463,7 @@
 		      (match_operand:SI 2 "register_operand" "r")] UNSPEC_KDMBB)))]
   "TARGET_DSP && TARGET_64BIT"
   "kdmbb\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "DI")])
 
 (define_insn "kdmbt64"
@@ -6362,7 +6473,7 @@
 		      (match_operand:SI 2 "register_operand" "r")] UNSPEC_KDMBT)))]
   "TARGET_DSP && TARGET_64BIT"
   "kdmbt\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "DI")])
 
 (define_insn "kdmtt64"
@@ -6372,7 +6483,7 @@
 		      (match_operand:SI 2 "register_operand" "r")] UNSPEC_KDMTT)))]
   "TARGET_DSP && TARGET_64BIT"
   "kdmtt\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "DI")])
 
 (define_insn "kdmbb16"
@@ -6381,7 +6492,7 @@
 		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KDMBB))]
   "TARGET_DSP && TARGET_64BIT"
   "kdmbb16\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V4HI")])
 
 (define_insn "kdmbt16"
@@ -6390,7 +6501,7 @@
 		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KDMBT))]
   "TARGET_DSP && TARGET_64BIT"
   "kdmbt16\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V4HI")])
 
 (define_insn "kdmtt16"
@@ -6399,7 +6510,7 @@
 		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KDMTT))]
   "TARGET_DSP && TARGET_64BIT"
   "kdmtt16\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V4HI")])
 
 (define_insn "khmbb"
@@ -6408,7 +6519,7 @@
 		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KHMBB))]
   "TARGET_DSP && !TARGET_64BIT"
   "khmbb\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V2HI")])
 
 (define_insn "khmbt"
@@ -6417,7 +6528,7 @@
 		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KHMBT))]
   "TARGET_DSP && !TARGET_64BIT"
   "khmbt\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V2HI")])
 
 (define_insn "khmtt"
@@ -6426,7 +6537,7 @@
 		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KHMTT))]
   "TARGET_DSP && !TARGET_64BIT"
   "khmtt\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V2HI")])
 
 (define_insn "khmbb64"
@@ -6436,7 +6547,7 @@
 		      (match_operand:SI 2 "register_operand" "r")] UNSPEC_KHMBB)))]
   "TARGET_DSP && TARGET_64BIT"
   "khmbb\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "DI")])
 
 (define_insn "khmbt64"
@@ -6446,7 +6557,7 @@
 		      (match_operand:SI 2 "register_operand" "r")] UNSPEC_KHMBT)))]
   "TARGET_DSP && TARGET_64BIT"
   "khmbt\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "DI")])
 
 (define_insn "khmtt64"
@@ -6456,7 +6567,7 @@
 		      (match_operand:SI 2 "register_operand" "r")] UNSPEC_KHMTT)))]
   "TARGET_DSP && TARGET_64BIT"
   "khmtt\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "DI")])
 
 (define_insn "khmbb16"
@@ -6465,7 +6576,7 @@
 		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KHMBB))]
   "TARGET_DSP && TARGET_64BIT"
   "khmbb16\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V4HI")])
 
 (define_insn "khmbt16"
@@ -6474,7 +6585,7 @@
 		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KHMBT))]
   "TARGET_DSP && TARGET_64BIT"
   "khmbt16\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V4HI")])
 
 (define_insn "khmtt16"
@@ -6483,7 +6594,7 @@
 		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KHMTT))]
   "TARGET_DSP && TARGET_64BIT"
   "khmtt16\t%0, %1, %2"
-  [(set_attr "type" "imul")
+  [(set_attr "type" "dmul")
    (set_attr "mode" "V4HI")])
 
 (define_insn "kslraw"
@@ -6492,7 +6603,7 @@
 		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSLRAW))]
   "TARGET_DSP && !TARGET_64BIT"
   "kslraw\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_insn "kslraw64"
@@ -6502,7 +6613,7 @@
 		      (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSLRAW)))]
   "TARGET_DSP && TARGET_64BIT"
   "kslraw\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "DI")])
 
 (define_insn "unspec_kslrawu"
@@ -6511,7 +6622,7 @@
 		    (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSLRAWU))]
   "TARGET_DSP && !TARGET_64BIT"
   "kslraw.u\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "daluround")
    (set_attr "mode" "SI")])
 
 (define_insn "unspec_kslrawu64"
@@ -6521,7 +6632,7 @@
 		      (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSLRAWU)))]
   "TARGET_DSP && TARGET_64BIT"
   "kslraw.u\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "daluround")
    (set_attr "mode" "DI")])
 
 (define_expand "unspec_ave"
@@ -6546,7 +6657,7 @@
 	  (const_int 1))))]
   "TARGET_DSP && !TARGET_64BIT"
   "ave\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_expand "unspec_avedi"
@@ -6571,7 +6682,7 @@
 	  (const_int 1))))]
   "TARGET_DSP && TARGET_64BIT"
   "ave\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "DI")])
 
 (define_insn "smaxsi3"
@@ -6580,7 +6691,7 @@
 		 (match_operand:SI 2 "register_operand" " r")))]
   "TARGET_DSP"
   "maxw\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_insn "sminsi3"
@@ -6589,7 +6700,7 @@
 		 (match_operand:SI 2 "register_operand" " r")))]
   "TARGET_DSP"
   "minw\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 
@@ -6614,7 +6725,7 @@
   "@
    slli8\t%0, %1, %2
    sll8\t%0, %1, %2"
-  [(set_attr "type" "arith,  arith")
+  [(set_attr "type" "dalu, dalu")
    (set_attr "mode" "<MODE>, <MODE>")])
 
 (define_insn "kslli8<mode>"
@@ -6625,7 +6736,7 @@
   "@
    kslli8\t%0, %1, %2
    ksll8\t%0, %1, %2"
-  [(set_attr "type" "arith,arith")
+  [(set_attr "type" "dalu, dalu")
    (set_attr "mode" "<MODE>, <MODE>")])
 
 (define_insn "*ashr<mode>3"
@@ -6636,7 +6747,7 @@
   "@
    srai8\t%0, %1, %2
    sra8\t%0, %1, %2"
-  [(set_attr "type" "arith,arith")
+  [(set_attr "type" "dalu, dalu")
    (set_attr "mode" "<MODE>, <MODE>")])
 
 (define_insn "sra8_round<mode>"
@@ -6648,7 +6759,7 @@
   "@
    srai8.u\t%0, %1, %2
    sra8.u\t%0, %1, %2"
-  [(set_attr "type" "arith,arith")
+  [(set_attr "type" "daluround, daluround")
    (set_attr "mode" "<MODE>, <MODE>")])
 
 (define_insn "*lshr<mode>3"
@@ -6659,7 +6770,7 @@
   "@
    srli8\t%0, %1, %2
    srl8\t%0, %1, %2"
-  [(set_attr "type" "arith,arith")
+  [(set_attr "type" "dalu, dalu")
    (set_attr "mode" "<MODE>, <MODE>")])
 
 (define_insn "srl8_round<mode>"
@@ -6671,7 +6782,7 @@
   "@
    srli8.u\t%0, %1, %2
    srl8.u\t%0, %1, %2"
-  [(set_attr "type" "arith,arith")
+  [(set_attr "type" "daluround, daluround")
    (set_attr "mode" "<MODE>, <MODE>")])
 
 (define_insn "pbsad<mode>"
@@ -6680,7 +6791,8 @@
 		     (match_operand:GPR 2 "register_operand" "r")] UNSPEC_PBSAD))]
   "TARGET_DSP"
   "pbsad\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "pbsada<mode>"
   [(set (match_operand:GPR 0 "register_operand" "=r")
@@ -6689,7 +6801,8 @@
 		     (match_operand:GPR 3 "register_operand" "r")] UNSPEC_PBSADA))]
   ""
   "pbsada\t%0, %2, %3"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "dsp_mulsidi3"
   [(set (match_operand:DI 0 "register_operand"                          "=r")
@@ -6697,7 +6810,7 @@
 		 (sign_extend:DI (match_operand:SI 2 "register_operand" " r"))))]
   "TARGET_DSP"
   "mulsr64\t%0, %1, %2"
-  [(set_attr "type"   "imul")
+  [(set_attr "type"   "dmul")
    (set_attr "mode"   "DI")])
 
 (define_insn "dsp_umulsidi3"
@@ -6706,7 +6819,7 @@
 		 (zero_extend:DI (match_operand:SI 2 "register_operand" " r"))))]
   "TARGET_DSP"
   "mulr64\t%0, %1, %2"
-  [(set_attr "type"   "imul")
+  [(set_attr "type"   "dmul")
    (set_attr "mode"   "DI")])
 
 ;; Multiply-accumulate instructions.
@@ -6718,7 +6831,7 @@
 			  (match_operand:SI 2 "register_operand" " r"))))]
   "TARGET_DSP"
   "maddr32\t%0, %1, %2"
-  [(set_attr "type"   "imul")
+  [(set_attr "type"   "dmac")
    (set_attr "mode"   "SI")])
 
 (define_insn "*maddr32_1"
@@ -6728,7 +6841,7 @@
 		 (match_operand:SI 3 "register_operand"          " 0")))]
   "TARGET_DSP"
   "maddr32\t%0, %1, %2"
-  [(set_attr "type"   "imul")
+  [(set_attr "type"   "dmac")
    (set_attr "mode"   "SI")])
 
 (define_insn "*msubr32"
@@ -6738,7 +6851,7 @@
 			   (match_operand:SI 2 "register_operand" " r"))))]
   "TARGET_DSP"
   "msubr32\t%0, %1, %2"
-  [(set_attr "type"   "imul")
+  [(set_attr "type"   "dmac")
    (set_attr "mode"   "SI")])
 
 (define_insn "bswaphi2"
@@ -6746,7 +6859,7 @@
 	(bswap:HI (match_operand:HI 1 "register_operand" "r")))]
   "TARGET_DSP"
   "swap8\t%0, %1"
-  [(set_attr "type"  "arith")
+  [(set_attr "type"  "dalu")
    (set_attr "mode"  "HI")])
 
 (define_insn "unspec_bswap8"
@@ -6754,7 +6867,7 @@
 	(unspec:V4QI [(match_operand:V4QI 1 "register_operand" "r")] UNSPEC_BSWAP))]
   "TARGET_DSP"
   "swap8\t%0, %1"
-  [(set_attr "type"  "arith")
+  [(set_attr "type"  "dalu")
    (set_attr "mode"  "V4QI")])
 
 (define_insn "unspec_bswap8_64"
@@ -6762,7 +6875,7 @@
 	(unspec:V8QI [(match_operand:V8QI 1 "register_operand" "r")] UNSPEC_BSWAP))]
   "TARGET_DSP"
   "swap8\t%0, %1"
-  [(set_attr "type"  "arith")
+  [(set_attr "type"  "dalu")
    (set_attr "mode"  "V8QI")])
 
 (define_insn "unspec_bswap16"
@@ -6770,7 +6883,7 @@
 	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")] UNSPEC_BSWAP))]
   "TARGET_DSP"
   "swap16\t%0, %1"
-  [(set_attr "type"  "arith")
+  [(set_attr "type"  "dalu")
    (set_attr "mode"  "V2HI")])
 
 (define_insn "unspec_bswap16_64"
@@ -6778,7 +6891,7 @@
 	(unspec:V4HI [(match_operand:V4HI 1 "register_operand" "r")] UNSPEC_BSWAP))]
   "TARGET_DSP"
   "swap16\t%0, %1"
-  [(set_attr "type"  "arith")
+  [(set_attr "type"  "dalu")
    (set_attr "mode"  "V4HI")])
 
 (define_insn "riscv_rdov<mode>"
@@ -6887,7 +7000,7 @@
    kdmabt\t%0, %1, %2
    kdmatt\t%0, %1, %2
    kdmabt\t%0, %2, %1"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dmac")
    (set_attr "mode" "SI")])
 
 (define_insn "kdma64_internal"
@@ -6913,7 +7026,7 @@
    kdmabt\t%0, %1, %2
    kdmatt\t%0, %1, %2
    kdmabt\t%0, %2, %1"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dmac")
    (set_attr "mode" "DI")])
 
 (define_expand "kdmabb16"
@@ -6988,7 +7101,7 @@
    kdmabt16\t%0, %1, %2
    kdmatt16\t%0, %1, %2
    kdmabt16\t%0, %2, %1"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dmac")
    (set_attr "mode" "V2SI")])
 
 (define_expand "smaqa"
@@ -7044,7 +7157,7 @@
 		(any_extend:HI (vec_select:QI (match_dup 3) (parallel [(const_int 3)])))))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "<su>maqa\t%0, %2, %3"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dmac")
    (set_attr "mode" "DI")])
 
 (define_expand "smaqa64"
@@ -7121,7 +7234,7 @@
 		    (any_extend:HI (vec_select:QI (match_dup 3) (parallel [(const_int 7)]))))))))))]
   "TARGET_DSP && TARGET_64BIT"
   "<su>maqa\t%0, %2, %3"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dmac")
    (set_attr "mode" "V2SI")])
 
 (define_expand "sumaqa"
@@ -7166,7 +7279,7 @@
 		(zero_extend:HI (vec_select:QI (match_dup 3) (parallel [(const_int 3)])))))))))]
   "TARGET_DSP && !TARGET_64BIT"
   "smaqa.su\t%0, %2, %3"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dmac")
    (set_attr "mode" "SI")])
 
 (define_expand "sumaqa64"
@@ -7231,7 +7344,7 @@
 		    (zero_extend:HI (vec_select:QI (match_dup 3) (parallel [(const_int 7)]))))))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smaqa.su\t%0, %2, %3"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dmac")
    (set_attr "mode" "V2SI")])
 
 (define_insn "<optab><mode>2"
@@ -7239,7 +7352,7 @@
         (unop:VECI (match_operand:VECI 1 "register_operand" "r")))]
   "TARGET_DSP"
   "<insn><bits>\t%0, %1"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "<optab>si2"
@@ -7247,7 +7360,7 @@
         (unop:SI (match_operand:SI 1 "register_operand" "r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "<insn>32\t%0, %1"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_insn "clo<mode>2"
@@ -7256,7 +7369,7 @@
 		      UNSPEC_CLO))]
   "TARGET_DSP"
   "clo<bits>\t%0, %1"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "closi2"
@@ -7265,7 +7378,7 @@
 		    UNSPEC_CLO))]
   "TARGET_DSP && !TARGET_64BIT"
   "clo32\t%0, %1"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
 (define_expand "stas<mode>"
@@ -7300,7 +7413,7 @@
 	  (const_int 1)))]
   "TARGET_DSP"
   "stas<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "kstas<mode>"
@@ -7335,7 +7448,7 @@
 	  (const_int 1)))]
   "TARGET_DSP"
   "kstas<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "ukstas<mode>"
@@ -7370,7 +7483,7 @@
 	  (const_int 1)))]
   "TARGET_DSP"
   "ukstas<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "stsa<mode>"
@@ -7405,7 +7518,7 @@
 	  (const_int 2)))]
   "TARGET_DSP"
   "stsa<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "kstsa<mode>"
@@ -7440,7 +7553,7 @@
 	  (const_int 2)))]
   "TARGET_DSP"
   "kstsa<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "ukstsa<mode>"
@@ -7475,7 +7588,7 @@
 	  (const_int 2)))]
   "TARGET_DSP"
   "ukstsa<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "rstas<mode>"
@@ -7520,7 +7633,7 @@
 	  (const_int 1)))]
   "TARGET_DSP"
   "rstas<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "urstas<mode>"
@@ -7565,7 +7678,7 @@
 	  (const_int 1)))]
   "TARGET_DSP"
   "urstas<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "rstsa<mode>"
@@ -7610,7 +7723,7 @@
 	  (const_int 2)))]
   "TARGET_DSP"
   "rstsa<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "urstsa<mode>"
@@ -7655,7 +7768,7 @@
 	  (const_int 2)))]
   "TARGET_DSP"
   "urstsa<bits>\t%0, %1, %2"
-  [(set_attr "type" "arith")]
+  [(set_attr "type" "dalu")]
 )
 
 (define_expand "stas16_64"
@@ -7685,7 +7798,7 @@
 		      (vec_select:HI (match_dup 2) (parallel [(const_int 3)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "stas16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "kstas16_64"
@@ -7715,7 +7828,7 @@
 			 (vec_select:HI (match_dup 2) (parallel [(const_int 3)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kstas16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "ukstas16_64"
@@ -7745,7 +7858,7 @@
 			 (vec_select:HI (match_dup 2) (parallel [(const_int 3)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "ukstas16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "stsa16_64"
@@ -7775,7 +7888,7 @@
 		       (vec_select:HI (match_dup 2) (parallel [(const_int 3)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "stsa16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "kstsa16_64"
@@ -7805,7 +7918,7 @@
 			  (vec_select:HI (match_dup 2) (parallel [(const_int 3)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kstsa16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "ukstsa16_64"
@@ -7835,7 +7948,7 @@
 			  (vec_select:HI (match_dup 2) (parallel [(const_int 3)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "ukstsa16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "rstas16_64"
@@ -7881,7 +7994,7 @@
 		(const_int 1))))))]
   "TARGET_DSP && TARGET_64BIT"
   "rstas16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "urstas16_64"
@@ -7927,7 +8040,7 @@
 		(const_int 1))))))]
   "TARGET_DSP && TARGET_64BIT"
   "urstas16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "rstsa16_64"
@@ -7973,7 +8086,7 @@
 		(const_int 1))))))]
   "TARGET_DSP && TARGET_64BIT"
   "rstsa16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
 
 (define_expand "urstsa16_64"
@@ -8019,5 +8132,5 @@
 		(const_int 1))))))]
   "TARGET_DSP && TARGET_64BIT"
   "urstsa16\t%0, %1, %2"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "dalu")
    (set_attr "mode" "V4HI")])
