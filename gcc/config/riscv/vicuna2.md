@@ -73,3 +73,57 @@
        (eq_attr "type" "mfc,mtc"))
   "vicuna2_ii,vicuna2_ex+vicuna2_alu,vicuna2_mm,vicuna2_wb")
 
+(define_insn_reservation "vicuna2_dsp_alu" 1
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "dalu"))
+  "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
+
+(define_insn_reservation "vicuna2_dsp_alu64" 1
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "dalu64"))
+  "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
+
+(define_insn_reservation "vicuna2_dsp_alu_round" 1
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "daluround"))
+  "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
+
+(define_insn_reservation "vicuna2_dsp_cmp" 1
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "dcmp"))
+  "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
+
+(define_insn_reservation "vicuna2_dsp_clip" 1
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "dclip"))
+  "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
+
+(define_insn_reservation "vicuna2_dsp_mul" 1
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "dmul"))
+  "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
+
+(define_insn_reservation "vicuna2_dsp_mac" 1
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "dmac"))
+  "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
+
+(define_insn_reservation "vicuna2_dsp_insb" 1
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "dinsb"))
+  "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
+
+(define_insn_reservation "vicuna2_dsp_pack" 1
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "dpack"))
+  "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
+
+(define_insn_reservation "vicuna2_dsp_bpick" 1
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "dbpick"))
+  "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
+
+(define_insn_reservation "vicuna2_dsp_wext" 1
+  (and (eq_attr "tune" "vicuna2")
+       (eq_attr "type" "dwext"))
+  "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
