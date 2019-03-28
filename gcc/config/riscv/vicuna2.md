@@ -103,7 +103,7 @@
        (eq_attr "type" "dmul"))
   "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
 
-(define_insn_reservation "vicuna2_dsp_mac" 1
+(define_insn_reservation "vicuna2_dsp_mac" 2
   (and (eq_attr "tune" "vicuna2")
        (eq_attr "type" "dmac"))
   "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
@@ -127,3 +127,15 @@
   (and (eq_attr "tune" "vicuna2")
        (eq_attr "type" "dwext"))
   "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
+
+(define_bypass 2
+ "vicuna2_dsp_mul"
+ "vicuna2_dsp_alu, vicuna2_dsp_alu64, vicuna2_dsp_alu_round,\
+  vicuna2_dsp_cmp, vicuna2_dsp_clip, vicuna2_dsp_insb, vicuna2_dsp_pack,\
+  vicuna2_dsp_bpick, vicuna2_dsp_wext, vicuna2_dsp_mul, vicuna2_dsp_mac")
+
+(define_bypass 3
+ "vicuna2_dsp_mac"
+ "vicuna2_dsp_alu, vicuna2_dsp_alu64, vicuna2_dsp_alu_round,\
+  vicuna2_dsp_cmp, vicuna2_dsp_clip, vicuna2_dsp_insb, vicuna2_dsp_pack,\
+  vicuna2_dsp_bpick, vicuna2_dsp_wext, vicuna2_dsp_mul, vicuna2_dsp_mac")
