@@ -3410,7 +3410,7 @@
 		1, GET_MODE_BITSIZE (<X:MODE>mode))"
   {
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
-    return "<rev_br_insn> %1, %z4, 0f\n\bfo<any_extract:sz> %0, %2, %5, %6\n0:";
+    return "<rev_br_insn> %1, %z4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
   }
   [(set_attr "type" "arith")
    (set_attr "mode" "<GPR:MODE>")
@@ -3429,7 +3429,7 @@
 		1, GET_MODE_BITSIZE (<X:MODE>mode))"
   {
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
-    return "<br_insn> %1, %z4, 0f\n\bfo<any_extract:sz> %0, %2, %5, %6\n0:";
+    return "<br_insn> %1, %z4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
   }
   [(set_attr "type" "arith")
    (set_attr "mode" "<GPR:MODE>")
