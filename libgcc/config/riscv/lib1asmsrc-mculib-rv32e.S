@@ -18,8 +18,8 @@ __addsf3:
 	slli	x13, x11, 1             # 	slli	$r3, $r1, #1
 	li	x5, 2147483648          # 	move	$r7, #2147483648
 	sw	x5, 4(x9)
-	sltu	tp, x12, x13            # 	slt	$ta, $r2, $r3
-	beqz	tp, .LEcont             # 	beqz	$ta, .LEcont
+	sltu	t2, x12, x13            # 	slt	$ta, $r2, $r3
+	beqz	t2, .LEcont             # 	beqz	$ta, .LEcont
 	mv	x15, x10                # 	move	$r5, $r0
 	mv	x10, x11                # 	move	$r0, $r1
 	mv	x11, x15                # 	move	$r1, $r5
@@ -42,10 +42,10 @@ __addsf3:
 	beqz	x13, .LEretA            # 	beqz	$r3, .LEretA
 	lw	x6, 8(x9)               # 	sub	$r5, $r4, $r8
 	sub	x15, x14, x6
-	sltiu	tp, x14, 2              # 	slti	$ta, $r4, #2
-	bnez	tp, .LElab2             # 	bnez	$ta, .LElab2
-	slti	tp, x15, 32             # 	sltsi	$ta, $r5, #32
-	beqz	tp, .LEretA             # 	beqz	$ta, .LEretA
+	sltiu	t2, x14, 2              # 	slti	$ta, $r4, #2
+	bnez	t2, .LElab2             # 	bnez	$ta, .LElab2
+	slti	t2, x15, 32             # 	sltsi	$ta, $r5, #32
+	beqz	t2, .LEretA             # 	beqz	$ta, .LEretA
 	lw	x6, 4(x9)               # 	or	$r6, $r6, $r7
 	lw	x5, 0(x9)
 	or	x5, x5, x6
@@ -57,10 +57,10 @@ __addsf3:
 	or	x5, x5, x6
 	sw	x5, 12(x9)
 .LElab1:
-	addi	tp, x15, -1             # 	addi	$ta, $r5, #-1
+	addi	t2, x15, -1             # 	addi	$ta, $r5, #-1
 	lw	x6, 8(x9)               # 	cmovz	$r5, $ta, $r8
 	bne	x6, zero, .Ltmp0
-	addi	x15, tp, 0
+	addi	x15, t2, 0
 .Ltmp0:
 	lw	x4, 12(x9)              # 	move	$ta, $r9
 	mv	x5, x4                  # 	srl	$r9, $r9, $r5
@@ -68,7 +68,7 @@ __addsf3:
 	sw	x5, 12(x9)
 					# 	sll	$r5, $r9, $r5
 	sll	x15, x5, x15
-	beq	x15, tp, .LElab2        # 	beq	$r5, $ta, .LElab2
+	beq	x15, t2, .LElab2        # 	beq	$r5, $ta, .LElab2
 	lw	x5, 12(x9)              # 	ori	$r9, $r9, #2
 	ori	x5, x5, 2
 	sw	x5, 12(x9)
@@ -79,15 +79,15 @@ __addsf3:
 	add	x5, x5, x6
 	sw	x5, 0(x9)
 	lw	x6, 12(x9)              # 	slt	$ta, $r6, $r9
-	sltu	tp, x5, x6
-	beqz	tp, .LEaddnoover        # 	beqz	$ta, .LEaddnoover
+	sltu	t2, x5, x6
+	beqz	t2, .LEaddnoover        # 	beqz	$ta, .LEaddnoover
 	li	x6, 254                 # 	beqc	$r4, #254, .LEinf
 	beq	x14, x6, .LEinf
 	lw	x5, 0(x9)               # 	andi	$ta, $r6, #1
-	andi	tp, x5, 1
+	andi	t2, x5, 1
 	lw	x5, 0(x9)               # 	ori	$r5, $r6, #2
 	ori	x15, x5, 2
-	beq	tp, zero, .Ltmp1        # 	cmovn	$r6, $r5, $ta
+	beq	t2, zero, .Ltmp1        # 	cmovn	$r6, $r5, $ta
 	addi	x5, x15, 0
 .Ltmp1:
 	sw	x5, 0(x9)
@@ -107,8 +107,8 @@ __addsf3:
 	beq	x12, x13, .LEzero       # 	beq	$r2, $r3, .LEzero
 	lw	x6, 12(x9)              # 	slt	$ta, $r6, $r9
 	lw	x5, 0(x9)
-	sltu	tp, x5, x6
-	beqz	tp, .LEsub2             # 	beqz	$ta, .LEsub2
+	sltu	t2, x5, x6
+	beqz	t2, .LEsub2             # 	beqz	$ta, .LEsub2
 	lw	x5, 12(x9)              # 	srli	$r9, $r9, #1
 	srli	x5, x5, 1
 	sw	x5, 12(x9)
@@ -118,8 +118,8 @@ __addsf3:
 	lw	x5, 0(x9)
 	sub	x5, x5, x6
 	sw	x5, 0(x9)
-	sltiu	tp, x14, 2              # 	slti	$ta, $r4, #2
-	bnez	tp, .LEdenorm           # 	bnez	$ta, .LEdenorm
+	sltiu	t2, x14, 2              # 	slti	$ta, $r4, #2
+	bnez	t2, .LEdenorm           # 	bnez	$ta, .LEdenorm
 	tail	.LEloopC2               # 	b	.LEloopC2
 .LEloopC:
 	addi	x14, x14, -1            # 	addi	$r4, $r4, #-1
@@ -131,15 +131,15 @@ __addsf3:
 .LEloopC2:
 	lw	x6, 4(x9)               # 	slt	$ta, $r6, $r7
 	lw	x5, 0(x9)
-	sltu	tp, x5, x6
-	bnez	tp, .LEloopC            # 	bnez	$ta, .LEloopC
+	sltu	t2, x5, x6
+	bnez	t2, .LEloopC            # 	bnez	$ta, .LEloopC
 .LEround:
 	lw	x5, 0(x9)               # 	addi	$r6, $r6, #128
 	addi	x5, x5, 128
 	sw	x5, 0(x9)
 					# 	slti	$ta, $r6, #128
-	sltiu	tp, x5, 128
-	add	x14, x14, tp            # 	add	$r4, $r4, $ta
+	sltiu	t2, x5, 128
+	add	x14, x14, t2            # 	add	$r4, $r4, $ta
 	lw	x5, 0(x9)               # 	srli	$r5, $r6, #8
 	srli	x15, x5, 8
 	andi	x15, x15, 1             # 	andi	$r5, $r5, #1
@@ -215,14 +215,14 @@ __divsi3:
 	beqz	x11, .L1                # 	beqz	$r1, .L1
 	li	x14, 1                  # 	movi	$r4, #1
 .L6:
-	sltu	tp, x11, x10            # 	slt	$ta, $r1, $r0
-	beqz	tp, .L5                 # 	beqz	$ta, .L5
+	sltu	t2, x11, x10            # 	slt	$ta, $r1, $r0
+	beqz	t2, .L5                 # 	beqz	$ta, .L5
 	slli	x11, x11, 1             # 	slli	$r1, $r1, #1
 	slli	x14, x14, 1             # 	slli	$r4, $r4, #1
 	tail	.L6                     # 	b	.L6
 .L5:
-	sltu	tp, x10, x11            # 	slt	$ta, $r0, $r1
-	bnez	tp, .L9                 # 	bnez	$ta, .L9
+	sltu	t2, x10, x11            # 	slt	$ta, $r0, $r1
+	bnez	t2, .L9                 # 	bnez	$ta, .L9
 	sub	x10, x10, x11           # 	sub	$r0, $r0, $r1
 	or	x12, x12, x14           # 	or	$r2, $r2, $r4
 .L9:
@@ -309,16 +309,16 @@ __modsi3:
 	beqz	x11, .L1                # 	beqz	$r1, .L1
 	li	x14, 1                  # 	movi	$r4, #1
 .L6:
-	sltu	tp, x11, x10            # 	slt	$ta, $r1, $r0
-	beqz	tp, .L5                 # 	beqz	$ta, .L5
+	sltu	t2, x11, x10            # 	slt	$ta, $r1, $r0
+	beqz	t2, .L5                 # 	beqz	$ta, .L5
 	slli	x11, x11, 1             # 	slli	$r1, $r1, #1
 	slli	x14, x14, 1             # 	slli	$r4, $r4, #1
 	tail	.L6                     # 	b	.L6
 .L5:
 	sub	x12, x10, x11           # 	sub	$r2, $r0, $r1
-	sltu	tp, x10, x11            # 	slt	$ta, $r0, $r1
+	sltu	t2, x10, x11            # 	slt	$ta, $r0, $r1
 	srli	x14, x14, 1             # 	srli	$r4, $r4, #1
-	bne	tp, zero, .Ltmp1        # 	cmovz	$r0, $r2, $ta
+	bne	t2, zero, .Ltmp1        # 	cmovz	$r0, $r2, $ta
 	addi	x10, x12, 0
 .Ltmp1:
 	srli	x11, x11, 1             # 	srli	$r1, $r1, #1
@@ -424,15 +424,15 @@ __udivsi3:
 	beqz	x11, .L1                # 	beqz	$r1, .L1
 	li	x14, 1                  # 	movi	$r4, #1
 .L6:
-	sltu	tp, x11, x10            # 	slt	$ta, $r1, $r0
-	beqz	tp, .L5                 # 	beqz	$ta, .L5
+	sltu	t2, x11, x10            # 	slt	$ta, $r1, $r0
+	beqz	t2, .L5                 # 	beqz	$ta, .L5
 	bltz	x11, .L5                # 	bltz	$r1, .L5
 	slli	x11, x11, 1             # 	slli	$r1, $r1, #1
 	slli	x14, x14, 1             # 	slli	$r4, $r4, #1
 	tail	.L6                     # 	b	.L6
 .L5:
-	sltu	tp, x10, x11            # 	slt	$ta, $r0, $r1
-	bnez	tp, .L9                 # 	bnez	$ta, .L9
+	sltu	t2, x10, x11            # 	slt	$ta, $r0, $r1
+	bnez	t2, .L9                 # 	bnez	$ta, .L9
 	sub	x10, x10, x11           # 	sub	$r0, $r0, $r1
 	or	x12, x12, x14           # 	or	$r2, $r2, $r4
 .L9:
@@ -478,16 +478,16 @@ umul_ppmm:
 	mul	x12, x12, x10           # 	mul	$r2, $r2, $r0
 	mul	x10, x13, x10           # 	mul	$r0, $r3, $r0
 	add	x15, x15, x10           # 	add	$r5, $r5, $r0
-	sltu	tp, x15, x10            # 	slt	$ta, $r5, $r0
-	slli	tp, tp, 16              # 	slli	$ta, $ta, #16
+	sltu	t2, x15, x10            # 	slt	$ta, $r5, $r0
+	slli	t2, t2, 16              # 	slli	$ta, $ta, #16
 	mul	x6, x13, x11            # 	maddr32	$ta, $r3, $r1
-	add	tp, tp, x6
+	add	t2, t2, x6
 	srli	x11, x15, 16            # 	srli	$r1, $r5, #16
-	add	x11, x11, tp            # 	add	$r1, $r1, $ta
+	add	x11, x11, t2            # 	add	$r1, $r1, $ta
 	slli	x10, x15, 16            # 	slli	$r0, $r5, #16
 	add	x10, x10, x12           # 	add	$r0, $r0, $r2
-	sltu	tp, x10, x12            # 	slt	$ta, $r0, $r2
-	add	x11, x11, tp            # 	add	$r1, $r1, $ta
+	sltu	t2, x10, x12            # 	slt	$ta, $r0, $r2
+	add	x11, x11, t2            # 	add	$r1, $r1, $ta
 	ret                             # 	ret	$lp
 .Ltmp0:
 	.size	umul_ppmm, .Ltmp0-umul_ppmm
@@ -513,14 +513,14 @@ fudiv_qrnnd:
 	slli	x11, x11, 16            # 	slli	$r1, $r1, #16
 	or	x11, x11, x10           # 	or	$r1, $r1, $r0
 	mul	x10, x14, x13           # 	mul	$r0, $r4, $r3
-	sltu	tp, x11, x10            # 	slt	$ta, $r1, $r0
-	beqz	tp, .L2                 # 	beqz	$ta, .L2
+	sltu	t2, x11, x10            # 	slt	$ta, $r1, $r0
+	beqz	t2, .L2                 # 	beqz	$ta, .L2
 	addi	x14, x14, -1            # 	addi	$r4, $r4, #-1
 	add	x11, x11, x12           # 	add	$r1, $r1, $r2
-	sltu	tp, x11, x12            # 	slt	$ta, $r1, $r2
-	bnez	tp, .L2                 # 	bnez	$ta, .L2
-	sltu	tp, x11, x10            # 	slt	$ta, $r1, $r0
-	beqz	tp, .L2                 # 	beqz	$ta, .L2
+	sltu	t2, x11, x12            # 	slt	$ta, $r1, $r2
+	bnez	t2, .L2                 # 	bnez	$ta, .L2
+	sltu	t2, x11, x10            # 	slt	$ta, $r1, $r0
+	beqz	t2, .L2                 # 	beqz	$ta, .L2
 	addi	x14, x14, -1            # 	addi	$r4, $r4, #-1
 	add	x11, x11, x12           # 	add	$r1, $r1, $r2
 .L2:
@@ -531,14 +531,14 @@ fudiv_qrnnd:
 	slli	x10, x10, 16            # 	slli	$r0, $r0, #16
 	or	x10, x10, x15           # 	or	$r0, $r0, $r5
 	mul	x13, x13, x11           # 	mul	$r3, $r3, $r1
-	sltu	tp, x10, x13            # 	slt	$ta, $r0, $r3
-	beqz	tp, .L5                 # 	beqz	$ta, .L5
+	sltu	t2, x10, x13            # 	slt	$ta, $r0, $r3
+	beqz	t2, .L5                 # 	beqz	$ta, .L5
 	add	x10, x10, x12           # 	add	$r0, $r0, $r2
 	addi	x11, x11, -1            # 	addi	$r1, $r1, #-1
-	sltu	tp, x10, x12            # 	slt	$ta, $r0, $r2
-	bnez	tp, .L5                 # 	bnez	$ta, .L5
-	sltu	tp, x10, x13            # 	slt	$ta, $r0, $r3
-	beqz	tp, .L5                 # 	beqz	$ta, .L5
+	sltu	t2, x10, x12            # 	slt	$ta, $r0, $r2
+	bnez	t2, .L5                 # 	bnez	$ta, .L5
+	sltu	t2, x10, x13            # 	slt	$ta, $r0, $r3
+	beqz	t2, .L5                 # 	beqz	$ta, .L5
 	add	x10, x10, x12           # 	add	$r0, $r0, $r2
 	addi	x11, x11, -1            # 	addi	$r1, $r1, #-1
 .L5:
@@ -567,8 +567,8 @@ __udivmoddi4:
 	bnez	x13, .L9                # 	bnez	$r3, .L9
 	lw	x6, 8(x9)               # 	slt	$ta, $r7, $r8
 	lw	x5, 4(x9)
-	sltu	tp, x5, x6
-	beqz	tp, .L10                # 	beqz	$ta, .L10
+	sltu	t2, x5, x6
+	beqz	t2, .L10                # 	beqz	$ta, .L10
 	lw	x10, 8(x9)              # 	move	$r0, $r8
 	call	__clzsi2                # 	bal	__clzsi2
 	sw	x10, 0(sp)              # 	swi	$r0, [$sp + #0]
@@ -615,14 +615,14 @@ __udivmoddi4:
 	.p2align	2
 .LZnorm1:
 	li	x6, 32                  # 	subri	$ta, $r0, #32
-	sub	tp, x6, x10
+	sub	t2, x6, x10
 	lw	x5, 8(x9)               # 	sll	$r8, $r8, $r0
 	sll	x5, x5, x10
 	sw	x5, 8(x9)
 					# 	move	$r2, $r8
 	mv	x12, x5
 	lw	x5, 0(x9)               # 	srl	$r4, $r6, $ta
-	srl	x14, x5, tp
+	srl	x14, x5, t2
 	lw	x5, 4(x9)               # 	sll	$r5, $r7, $r0
 	sll	x15, x5, x10
 	lw	x5, 0(x9)               # 	sll	$r6, $r6, $r0
@@ -630,7 +630,7 @@ __udivmoddi4:
 	sw	x5, 0(x9)
 	or	x10, x15, x14           # 	or	$r0, $r5, $r4
 	lw	x5, 4(x9)               # 	srl	$r1, $r7, $ta
-	srl	x11, x5, tp
+	srl	x11, x5, t2
 	call	fudiv_qrnnd             # 	bal	fudiv_qrnnd
 	sw	x11, 8(sp)              # 	swi	$r1, [$sp + #8]
 	sw	x10, 4(x9)              # 	move	$r7, $r0
@@ -671,8 +671,8 @@ __udivmoddi4:
 .L9:
 	lw	x6, 12(x9)              # 	slt	$ta, $r7, $r9
 	lw	x5, 4(x9)
-	sltu	tp, x5, x6
-	bnez	tp, .LZqzero            # 	bnez	$ta, .LZqzero
+	sltu	t2, x5, x6
+	bnez	t2, .LZqzero            # 	bnez	$ta, .LZqzero
 	lw	x10, 12(x9)             # 	move	$r0, $r9
 	call	__clzsi2                # 	bal	__clzsi2
 	sw	x10, 0(sp)              # 	swi	$r0, [$sp + #0]
@@ -705,13 +705,13 @@ __udivmoddi4:
 	mul	x10, x11, x7
 	mulhu	x11, x11, x7
 	lw	x5, 4(x9)               # 	slt	$ta, $r7, $r1
-	sltu	tp, x5, x11
-	bnez	tp, .L46                # 	bnez	$ta, .L46
+	sltu	t2, x5, x11
+	bnez	t2, .L46                # 	bnez	$ta, .L46
 	lw	x6, 4(x9)               # 	bne	$r1, $r7, .L45
 	bne	x11, x6, .L45
 	lw	x5, 0(x9)               # 	slt	$ta, $r6, $r0
-	sltu	tp, x5, x10
-	beqz	tp, .L45                # 	beqz	$ta, .L45
+	sltu	t2, x5, x10
+	beqz	t2, .L45                # 	beqz	$ta, .L45
 .L46:
 	lw	x13, 4(sp)              # 	lwi	$r3, [$sp + #4]
 	lw	x6, 12(x9)              # 	sub	$r1, $r1, $r9
@@ -720,8 +720,8 @@ __udivmoddi4:
 	sw	x13, 4(sp)              # 	swi	$r3, [$sp + #4]
 	lw	x6, 8(x9)               # 	sub	$r3, $r0, $r8
 	sub	x13, x10, x6
-	sltu	tp, x10, x13            # 	slt	$ta, $r0, $r3
-	sub	x11, x11, tp            # 	sub	$r1, $r1, $ta
+	sltu	t2, x10, x13            # 	slt	$ta, $r0, $r3
+	sub	x11, x11, t2            # 	sub	$r1, $r1, $ta
 	mv	x10, x13                # 	move	$r0, $r3
 .L45:
 	li	x13, 0                  # 	movi	$r3, #0
@@ -732,8 +732,8 @@ __udivmoddi4:
 	lw	x5, 4(x9)               # 	sub	$r1, $r7, $r1
 	sub	x11, x5, x11
 	lw	x5, 0(x9)               # 	slt	$ta, $r6, $r0
-	sltu	tp, x5, x10
-	sub	x11, x11, tp            # 	sub	$r1, $r1, $ta
+	sltu	t2, x5, x10
+	sub	x11, x11, t2            # 	sub	$r1, $r1, $ta
 	lw	x13, 0(sp)              # 	lwi	$r3, [$sp + #0]
 	li	x6, 32                  # 	subri	$r4, $r3, #32
 	sub	x14, x6, x13
@@ -767,12 +767,12 @@ __udivmoddi4:
 	li	x13, 0                  # 	move	$r3, #0
 	lw	x6, 4(x9)               # 	slt	$ta, $r9, $r7
 	lw	x5, 12(x9)
-	sltu	tp, x5, x6
-	bnez	tp, .L52                # 	bnez	$ta, .L52
+	sltu	t2, x5, x6
+	bnez	t2, .L52                # 	bnez	$ta, .L52
 	lw	x6, 8(x9)               # 	slt	$ta, $r6, $r8
 	lw	x5, 0(x9)
-	sltu	tp, x5, x6
-	bnez	tp, .L51                # 	bnez	$ta, .L51
+	sltu	t2, x5, x6
+	bnez	t2, .L51                # 	bnez	$ta, .L51
 .L52:
 	li	x15, 1                  # 	move	$r5, #1
 	sw	x15, 4(sp)              # 	swi	$r5, [$sp + #4]
@@ -784,9 +784,9 @@ __udivmoddi4:
 	sub	x5, x5, x6
 	sw	x5, 4(x9)
 	lw	x5, 0(x9)               # 	slt	$ta, $r6, $r4
-	sltu	tp, x5, x14
+	sltu	t2, x5, x14
 	lw	x5, 4(x9)               # 	sub	$r7, $r7, $ta
-	sub	x5, x5, tp
+	sub	x5, x5, t2
 	sw	x5, 4(x9)
 	sw	x14, 0(x9)              # 	move	$r6, $r4
 	tail	.L54                    # 	b	.L54
@@ -811,17 +811,17 @@ __umodsi3:
 	beqz	x11, .L1                # 	beqz	$r1, .L1
 	li	x14, 1                  # 	movi	$r4, #1
 .L6:
-	sltu	tp, x11, x10            # 	slt	$ta, $r1, $r0
-	beqz	tp, .L5                 # 	beqz	$ta, .L5
+	sltu	t2, x11, x10            # 	slt	$ta, $r1, $r0
+	beqz	t2, .L5                 # 	beqz	$ta, .L5
 	bltz	x11, .L5                # 	bltz	$r1, .L5
 	slli	x11, x11, 1             # 	slli	$r1, $r1, #1
 	slli	x14, x14, 1             # 	slli	$r4, $r4, #1
 	tail	.L6                     # 	b	.L6
 .L5:
 	sub	x12, x10, x11           # 	sub	$r2, $r0, $r1
-	sltu	tp, x10, x11            # 	slt	$ta, $r0, $r1
+	sltu	t2, x10, x11            # 	slt	$ta, $r0, $r1
 	srli	x14, x14, 1             # 	srli	$r4, $r4, #1
-	bne	tp, zero, .Ltmp0        # 	cmovz	$r0, $r2, $ta
+	bne	t2, zero, .Ltmp0        # 	cmovz	$r0, $r2, $ta
 	addi	x10, x12, 0
 .Ltmp0:
 	srli	x11, x11, 1             # 	srli	$r1, $r1, #1
@@ -895,12 +895,12 @@ __adddf3:
 	sw	x5, 0(x9)
 	li	ra, 2147483648          # 	move	$lp, #2147483648
 	lw	x6, 0(x9)               # 	slt	$ta, $r4, $r6
-	sltu	tp, x14, x6
-	bnez	tp, .LEswap             # 	bnez	$ta, .LEswap
+	sltu	t2, x14, x6
+	bnez	t2, .LEswap             # 	bnez	$ta, .LEswap
 	lw	x6, 0(x9)               # 	bne	$r4, $r6, .LEmain
 	bne	x14, x6, .LEmain
-	sltu	tp, x10, x12            # 	slt	$ta, $r0, $r2
-	beqz	tp, .LEmain             # 	beqz	$ta, .LEmain
+	sltu	t2, x10, x12            # 	slt	$ta, $r0, $r2
+	beqz	t2, .LEmain             # 	beqz	$ta, .LEmain
 .LEswap:
 	sw	x10, 8(x9)              # 	movd44	$r8, $r0
 	sw	x11, 12(x9)
@@ -927,18 +927,18 @@ __adddf3:
 	li	x15, 2047               # 	move	$r5, #2047
 	lw	x6, 4(x9)               # 	beq	$r5, $r7, .LEinfnan
 	beq	x15, x6, .LEinfnan
-	or	tp, x14, x10            # 	or	$ta, $r4, $r0
-	beqz	tp, .LEzeroP            # 	beqz	$ta, .LEzeroP
+	or	t2, x14, x10            # 	or	$ta, $r4, $r0
+	beqz	t2, .LEzeroP            # 	beqz	$ta, .LEzeroP
 	lw	x5, 0(x9)               # 	or	$ta, $r6, $r2
-	or	tp, x5, x12
-	beqz	tp, .LEretA             # 	beqz	$ta, .LEretA
+	or	t2, x5, x12
+	beqz	t2, .LEretA             # 	beqz	$ta, .LEretA
 	lw	x6, 16(x9)              # 	sub	$r6, $r7, $r10
 	lw	x5, 4(x9)
 	sub	x5, x5, x6
 	sw	x5, 0(x9)
 					# 	slti	$ta, $r6, #64
-	sltiu	tp, x5, 64
-	beqz	tp, .LEretA             # 	beqz	$ta, .LEretA
+	sltiu	t2, x5, 64
+	beqz	t2, .LEretA             # 	beqz	$ta, .LEretA
 	srli	x15, x10, 21            # 	srli	$r5, $r0, #21
 	lw	x5, 12(x9)              # 	or	$r9, $r9, $r5
 	or	x5, x5, x15
@@ -950,8 +950,8 @@ __adddf3:
 	sw	x5, 8(x9)
 	slli	x12, x12, 11            # 	slli	$r2, $r2, #11
 	lw	x5, 4(x9)               # 	slti	$ta, $r7, #2
-	sltiu	tp, x5, 2
-	bnez	tp, .LEmain4            # 	bnez	$ta, .LEmain4
+	sltiu	t2, x5, 2
+	bnez	t2, .LEmain4            # 	bnez	$ta, .LEmain4
 	lw	x5, 12(x9)              # 	or	$r9, $r9, $lp
 	or	x5, x5, ra
 	sw	x5, 12(x9)
@@ -1017,13 +1017,13 @@ __adddf3:
 .LEsub1:
 	lw	x6, 8(x9)               # 	slt	$ta, $r9, $r8
 	lw	x5, 12(x9)
-	sltu	tp, x5, x6
-	bnez	tp, .LEsub2             # 	bnez	$ta, .LEsub2
+	sltu	t2, x5, x6
+	bnez	t2, .LEsub2             # 	bnez	$ta, .LEsub2
 	lw	x6, 8(x9)               # 	bne	$r9, $r8, .LEsub3
 	lw	x5, 12(x9)
 	bne	x5, x6, .LEsub3
-	sltu	tp, x10, x12            # 	slt	$ta, $r0, $r2
-	beqz	tp, .LEsub3             # 	beqz	$ta, .LEsub3
+	sltu	t2, x10, x12            # 	slt	$ta, $r0, $r2
+	beqz	t2, .LEsub3             # 	beqz	$ta, .LEsub3
 .LEsub2:
 	lw	x5, 4(x9)               # 	addi	$r7, $r7, #-1
 	addi	x5, x5, -1
@@ -1038,21 +1038,21 @@ __adddf3:
 .LEsub3:
 	mv	x14, x10                # 	move	$r4, $r0
 	sub	x10, x10, x12           # 	sub	$r0, $r0, $r2
-	sltu	tp, x14, x10            # 	slt	$ta, $r4, $r0
+	sltu	t2, x14, x10            # 	slt	$ta, $r4, $r0
 	lw	x5, 12(x9)              # 	sub	$r9, $r9, $ta
-	sub	x5, x5, tp
+	sub	x5, x5, t2
 	sw	x5, 12(x9)
 	lw	x6, 8(x9)               # 	sub	$r9, $r9, $r8
 	sub	x5, x5, x6
 	sw	x5, 12(x9)
 	lw	x5, 4(x9)               # 	slti	$ta, $r7, #2
-	sltiu	tp, x5, 2
-	bnez	tp, .LEdenorm           # 	bnez	$ta, .LEdenorm
+	sltiu	t2, x5, 2
+	bnez	t2, .LEdenorm           # 	bnez	$ta, .LEdenorm
 	lw	x5, 12(x9)              # 	bnez	$r9, .LEsub4
 	bnez	x5, .LEsub4
 	lw	x5, 4(x9)               # 	slti	$ta, $r7, #32
-	sltiu	tp, x5, 32
-	bnez	tp, .LEsub4             # 	bnez	$ta, .LEsub4
+	sltiu	t2, x5, 32
+	bnez	t2, .LEsub4             # 	bnez	$ta, .LEsub4
 	sw	x10, 12(x9)             # 	move	$r9, $r0
 	li	x10, 0                  # 	move	$r0, #0
 	lw	x5, 4(x9)               # 	addi	$r7, $r7, #-32
@@ -1077,27 +1077,27 @@ __adddf3:
 	sw	x5, 12(x9)
 .LEsub4:
 	lw	x5, 12(x9)              # 	slt	$ta, $r9, $lp
-	sltu	tp, x5, ra
-	bnez	tp, .LEloop             # 	bnez	$ta, .LEloop
+	sltu	t2, x5, ra
+	bnez	t2, .LEloop             # 	bnez	$ta, .LEloop
 .LEround:
 	addi	x10, x10, 1024          # 	addi	$r0, $r0, #1024
-	sltiu	tp, x10, 1024           # 	slti	$ta, $r0, #1024
+	sltiu	t2, x10, 1024           # 	slti	$ta, $r0, #1024
 	lw	x5, 12(x9)              # 	add	$r9, $r9, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 12(x9)
 					# 	slt	$ta, $r9, $ta
-	sltu	tp, x5, tp
+	sltu	t2, x5, t2
 	lw	x5, 4(x9)               # 	add	$r7, $r7, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 4(x9)
 	srli	x15, x10, 11            # 	srli	$r5, $r0, #11
 	andi	x15, x15, 1             # 	andi	$r5, $r5, #1
 	sw	x10, 0(x9)              # 	move	$r6, $r0
 	sub	x10, x10, x15           # 	sub	$r0, $r0, $r5
 	lw	x5, 0(x9)               # 	slt	$ta, $r6, $r0
-	sltu	tp, x5, x10
+	sltu	t2, x5, x10
 	lw	x5, 12(x9)              # 	sub	$r9, $r9, $ta
-	sub	x5, x5, tp
+	sub	x5, x5, t2
 	sw	x5, 12(x9)
 					# 	slli	$r9, $r9, #1
 	slli	x5, x5, 1
@@ -1127,21 +1127,21 @@ __adddf3:
 	ret                             # 	ret5	$lp
 .LEadd:
 	add	x10, x10, x12           # 	add	$r0, $r0, $r2
-	sltu	tp, x10, x12            # 	slt	$ta, $r0, $r2
+	sltu	t2, x10, x12            # 	slt	$ta, $r0, $r2
 	lw	x5, 12(x9)              # 	add	$r9, $r9, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 12(x9)
 					# 	slt	$ta, $r9, $ta
-	sltu	tp, x5, tp
+	sltu	t2, x5, t2
 	lw	x6, 8(x9)               # 	add	$r9, $r9, $r8
 	lw	x5, 12(x9)
 	add	x5, x5, x6
 	sw	x5, 12(x9)
-	bnez	tp, .LEaddover          # 	bnez	$ta, .LEaddover
+	bnez	t2, .LEaddover          # 	bnez	$ta, .LEaddover
 	lw	x6, 8(x9)               # 	slt	$ta, $r9, $r8
 	lw	x5, 12(x9)
-	sltu	tp, x5, x6
-	bnez	tp, .LEaddover          # 	bnez	$ta, .LEaddover
+	sltu	t2, x5, x6
+	bnez	t2, .LEaddover          # 	bnez	$ta, .LEaddover
 	lw	x5, 4(x9)               # 	bnez	$r7, .LEround
 	bnez	x5, .LEround
 .LEdenorm:
@@ -1158,9 +1158,9 @@ __adddf3:
 	li	x6, 2046
 	sub	x15, x6, x5
 	beqz	x15, .LEinf             # 	beqz	$r5, .LEinf
-	andi	tp, x10, 1              # 	andi	$ta, $r0, #1
+	andi	t2, x10, 1              # 	andi	$ta, $r0, #1
 	ori	x15, x10, 2             # 	ori	$r5, $r0, #2
-	beq	tp, zero, .Ltmp2        # 	cmovn	$r0, $r5, $ta
+	beq	t2, zero, .Ltmp2        # 	cmovn	$r0, $r5, $ta
 	addi	x10, x15, 0
 .Ltmp2:
 	lw	x5, 12(x9)              # 	slli	$r4, $r9, #31
@@ -1251,8 +1251,8 @@ __mulsf3:
 	bne	x10, zero, .Ltmp0       # 	cmovz	$r2, $r1, $r0
 	addi	x12, x11, 0
 .Ltmp0:
-	slti	tp, x12, 0              # 	sltsi	$ta, $r2, #0
-	bnez	tp, .Li18               # 	bnezs8	.Li18
+	slti	t2, x12, 0              # 	sltsi	$ta, $r2, #0
+	bnez	t2, .Li18               # 	bnezs8	.Li18
 	slli	x12, x12, 1             # 	slli	$r2, $r2, #1
 	lw	x5, 0(x9)               # 	addi	$r6, $r6, #-1
 	addi	x5, x5, -1
@@ -1266,13 +1266,13 @@ __mulsf3:
 					# 	blez	$r6, .LFunder
 	blez	x5, .LFunder
 	lw	x5, 0(x9)               # 	slti	$ta, $r6, #255
-	sltiu	tp, x5, 255
-	beqz	tp, .LFinf              # 	beqz	$ta, .LFinf
+	sltiu	t2, x5, 255
+	beqz	t2, .LFinf              # 	beqz	$ta, .LFinf
 .LFround:
 	addi	x12, x12, 128           # 	addi	$r2, $r2, #128
-	sltiu	tp, x12, 128            # 	slti	$ta, $r2, #128
+	sltiu	t2, x12, 128            # 	slti	$ta, $r2, #128
 	lw	x5, 0(x9)               # 	add	$r6, $r6, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 0(x9)
 	srli	x15, x12, 8             # 	srli	$r5, $r2, #8
 	andi	x15, x15, 1             # 	andi	$r5, $r5, #1
@@ -1305,8 +1305,8 @@ __mulsf3:
 	sw	x5, 0(x9)
 .LFloopA2:
 	add	x12, x12, x12           # 	add	$r2, $r2, $r2
-	sltu	tp, x12, x14            # 	slt	$ta, $r2, $r4
-	bnez	tp, .LFloopA            # 	bnez	$ta, .LFloopA
+	sltu	t2, x12, x14            # 	slt	$ta, $r2, $r4
+	bnez	t2, .LFloopA            # 	bnez	$ta, .LFloopA
 	tail	.LFlab1                 # 	b	.LFlab1
 .LFinfnanA:
 	bne	x12, x14, .LFnan        # 	bne	$r2, $r4, .LFnan
@@ -1328,8 +1328,8 @@ __mulsf3:
 	sw	x5, 4(x9)
 .LFloopB2:
 	add	x10, x10, x10           # 	add	$r0, $r0, $r0
-	sltu	tp, x10, x14            # 	slt	$ta, $r0, $r4
-	bnez	tp, .LFloopB            # 	bnez	$ta, .LFloopB
+	sltu	t2, x10, x14            # 	slt	$ta, $r0, $r4
+	bnez	t2, .LFloopB            # 	bnez	$ta, .LFloopB
 	tail	.LFlab2                 # 	b	.LFlab2
 .LFnan:
 	li	x10, 4290772992         # 	move	$r0, #4290772992
@@ -1338,8 +1338,8 @@ __mulsf3:
 	lw	x5, 0(x9)               # 	subri	$r1, $r6, #1
 	li	x6, 1
 	sub	x11, x6, x5
-	sltiu	tp, x11, 32             # 	slti	$ta, $r1, #32
-	beqz	tp, .LFzero             # 	beqzs8	.LFzero
+	sltiu	t2, x11, 32             # 	slti	$ta, $r1, #32
+	beqz	t2, .LFzero             # 	beqzs8	.LFzero
 	li	x6, 32                  # 	subri	$r5, $r1, #32
 	sub	x15, x6, x11
 	sll	x5, x12, x15            # 	sll	$r6, $r2, $r5
@@ -1429,8 +1429,8 @@ __muldf3:
 	add	x5, x12, x11            # 	add	$r9, $r2, $r1
 	sw	x5, 12(x9)
 					# 	slt	$ta, $r9, $r1
-	sltu	tp, x5, x11
-	add	x5, x13, tp             # 	add	$r10, $r3, $ta
+	sltu	t2, x5, x11
+	add	x5, x13, t2             # 	add	$r10, $r3, $ta
 	sw	x5, 16(x9)
 	lw	x7, 8(x9)               # 	mulr64	$r2, $r7, $r8
 	lw	x6, 4(x9)
@@ -1439,22 +1439,22 @@ __muldf3:
 	add	x5, x12, x10            # 	add	$r7, $r2, $r0
 	sw	x5, 4(x9)
 					# 	slt	$ta, $r7, $r0
-	sltu	tp, x5, x10
+	sltu	t2, x5, x10
 	lw	x5, 12(x9)              # 	add	$r9, $r9, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 12(x9)
 					# 	slt	$ta, $r9, $ta
-	sltu	tp, x5, tp
+	sltu	t2, x5, t2
 	lw	x5, 16(x9)              # 	add	$r10, $r10, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 16(x9)
 	lw	x5, 12(x9)              # 	add	$r9, $r9, $r3
 	add	x5, x5, x13
 	sw	x5, 12(x9)
 					# 	slt	$ta, $r9, $r3
-	sltu	tp, x5, x13
+	sltu	t2, x5, x13
 	lw	x5, 16(x9)              # 	add	$r10, $r10, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 16(x9)
 	lw	x7, 8(x9)               # 	mulr64	$r0, $r6, $r8
 	lw	x6, 0(x9)
@@ -1464,14 +1464,14 @@ __muldf3:
 	add	x5, x5, x11
 	sw	x5, 4(x9)
 					# 	slt	$ta, $r7, $r1
-	sltu	tp, x5, x11
+	sltu	t2, x5, x11
 	lw	x5, 12(x9)              # 	add	$r9, $r9, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 12(x9)
 					# 	slt	$ta, $r9, $ta
-	sltu	tp, x5, tp
+	sltu	t2, x5, t2
 	lw	x5, 16(x9)              # 	add	$r1, $r10, $ta
-	add	x11, x5, tp
+	add	x11, x5, t2
 	lw	x5, 4(x9)               # 	or	$r7, $r7, $r0
 	or	x5, x5, x10
 	sw	x5, 4(x9)
@@ -1482,13 +1482,13 @@ __muldf3:
 	bne	x6, zero, .Ltmp0
 	addi	x10, x5, 0
 .Ltmp0:
-	slti	tp, x11, 0              # 	sltsi	$ta, $r1, #0
-	bnez	tp, .LFmain3            # 	bnez	$ta, .LFmain3
-	mv	tp, x10                 # 	move	$ta, $r0
+	slti	t2, x11, 0              # 	sltsi	$ta, $r1, #0
+	bnez	t2, .LFmain3            # 	bnez	$ta, .LFmain3
+	mv	t2, x10                 # 	move	$ta, $r0
 	add	x10, x10, x10           # 	add	$r0, $r0, $r0
-	sltu	tp, x10, tp             # 	slt	$ta, $r0, $ta
+	sltu	t2, x10, t2             # 	slt	$ta, $r0, $ta
 	add	x11, x11, x11           # 	add	$r1, $r1, $r1
-	add	x11, x11, tp            # 	add	$r1, $r1, $ta
+	add	x11, x11, t2            # 	add	$r1, $r1, $ta
 	addi	x14, x14, -1            # 	addi	$r4, $r4, #-1
 .LFmain3:
 	lw	x5, 12(sp)              # 	lwi	$r10, [$sp + #12]
@@ -1498,11 +1498,11 @@ __muldf3:
 	sub	x15, x6, x14
 	blez	x15, .LFinf             # 	blez	$r5, .LFinf
 	addi	x10, x10, 1024          # 	addi	$r0, $r0, #1024
-	sltiu	tp, x10, 1024           # 	slti	$ta, $r0, #1024
-	beqz	tp, .LFround            # 	beqz	$ta, .LFround
-	add	x11, x11, tp            # 	add	$r1, $r1, $ta
-	sltu	tp, x11, tp             # 	slt	$ta, $r1, $ta
-	add	x14, x14, tp            # 	add	$r4, $r4, $ta
+	sltiu	t2, x10, 1024           # 	slti	$ta, $r0, #1024
+	beqz	t2, .LFround            # 	beqz	$ta, .LFround
+	add	x11, x11, t2            # 	add	$r1, $r1, $ta
+	sltu	t2, x11, t2             # 	slt	$ta, $r1, $ta
+	add	x14, x14, t2            # 	add	$r4, $r4, $ta
 .LFround:
 	srli	x12, x10, 11            # 	srli	$r2, $r0, #11
 	andi	x12, x12, 1             # 	andi	$r2, $r2, #1
@@ -1528,16 +1528,16 @@ __muldf3:
 .LFAexpzero:
 	lw	x6, 0(x9)               # 	or	$ta, $r7, $r6
 	lw	x5, 4(x9)
-	or	tp, x5, x6
-	beqz	tp, .LFAzero            # 	beqz	$ta, .LFAzero
+	or	t2, x5, x6
+	beqz	t2, .LFAzero            # 	beqz	$ta, .LFAzero
 	lw	x5, 0(x9)               # 	srli	$ta, $r6, #31
-	srli	tp, x5, 31
+	srli	t2, x5, 31
 	lw	x6, 4(x9)               # 	add	$r7, $r7, $r7
 	mv	x5, x6
 	add	x5, x5, x6
 	sw	x5, 4(x9)
 					# 	add	$r7, $r7, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 4(x9)
 	lw	x6, 0(x9)               # 	add	$r6, $r6, $r6
 	mv	x5, x6
@@ -1558,8 +1558,8 @@ __muldf3:
 	add	x11, x11, x11           # 	add	$r1, $r1, $r1
 	addi	x10, x10, 1             # 	addi	$r0, $r0, #1
 .LFAloop2:
-	sltu	tp, x11, x8             # 	slt	$ta, $r1, $fp
-	bnez	tp, .LFAloop            # 	bnez	$ta, .LFAloop
+	sltu	t2, x11, x8             # 	slt	$ta, $r1, $fp
+	bnez	t2, .LFAloop            # 	bnez	$ta, .LFAloop
 	beqz	x10, .LFmain1           # 	beqz	$r0, .LFmain1
 	sub	x14, x14, x10           # 	sub	$r4, $r4, $r0
 	li	x6, 32                  # 	subri	$r2, $r0, #32
@@ -1631,13 +1631,13 @@ __muldf3:
 	or	x10, x5, x6
 	beqz	x10, .LFsetsign         # 	beqz	$r0, .LFsetsign
 	lw	x5, 8(x9)               # 	srli	$ta, $r8, #31
-	srli	tp, x5, 31
+	srli	t2, x5, 31
 	lw	x6, 12(x9)              # 	add	$r9, $r9, $r9
 	mv	x5, x6
 	add	x5, x5, x6
 	sw	x5, 12(x9)
 					# 	add	$r9, $r9, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 12(x9)
 	lw	x6, 8(x9)               # 	add	$r8, $r8, $r8
 	mv	x5, x6
@@ -1658,8 +1658,8 @@ __muldf3:
 	add	x11, x11, x11           # 	add	$r1, $r1, $r1
 	addi	x10, x10, 1             # 	addi	$r0, $r0, #1
 .LFBloop2:
-	sltu	tp, x11, x8             # 	slt	$ta, $r1, $fp
-	bnez	tp, .LFBloop            # 	bnez	$ta, .LFBloop
+	sltu	t2, x11, x8             # 	slt	$ta, $r1, $fp
+	bnez	t2, .LFBloop            # 	bnez	$ta, .LFBloop
 	beqz	x10, .LFmain2           # 	beqz	$r0, .LFmain2
 	sub	x15, x15, x10           # 	sub	$r5, $r5, $r0
 	li	x6, 32                  # 	subri	$r2, $r0, #32
@@ -1681,15 +1681,15 @@ __muldf3:
 	sw	x5, 0(x9)
 	li	x6, 1                   # 	subri	$r3, $r4, #1
 	sub	x13, x6, x14
-	sltiu	tp, x13, 32             # 	slti	$ta, $r3, #32
-	bnez	tp, .LFunderflow2       # 	bnez	$ta, .LFunderflow2
+	sltiu	t2, x13, 32             # 	slti	$ta, $r3, #32
+	bnez	t2, .LFunderflow2       # 	bnez	$ta, .LFunderflow2
 	sw	x10, 0(x9)              # 	move	$r6, $r0
 	mv	x10, x11                # 	move	$r0, $r1
 	li	x11, 0                  # 	move	$r1, #0
 	addi	x13, x13, -32           # 	addi	$r3, $r3, #-32
 	beqz	x10, .LFunderflow2      # 	beqz	$r0, .LFunderflow2
-	sltiu	tp, x13, 32             # 	slti	$ta, $r3, #32
-	beqz	tp, .LFignore           # 	beqz	$ta, .LFignore
+	sltiu	t2, x13, 32             # 	slti	$ta, $r3, #32
+	beqz	t2, .LFignore           # 	beqz	$ta, .LFignore
 .LFunderflow2:
 	beqz	x13, .LFunderflow3      # 	beqz	$r3, .LFunderflow3
 	li	x6, 32                  # 	subri	$r2, $r3, #32
@@ -1709,8 +1709,8 @@ __muldf3:
 	ori	x10, x10, 1             # 	ori	$r0, $r0, #1
 .LFunderflow3:
 	addi	x10, x10, 1024          # 	addi	$r0, $r0, #1024
-	sltiu	tp, x10, 1024           # 	slti	$ta, $r0, #1024
-	add	x11, x11, tp            # 	add	$r1, $r1, $ta
+	sltiu	t2, x10, 1024           # 	slti	$ta, $r0, #1024
+	add	x11, x11, t2            # 	add	$r1, $r1, $ta
 	srli	x14, x11, 31            # 	srli	$r4, $r1, #31
 	tail	.LFround                # 	b	.LFround
 .LFignore:
@@ -1759,8 +1759,8 @@ __divsf3:
 	beq	x5, x6, .LGinfnanB
 	or	x13, x13, x14           # 	or	$r3, $r3, $r4
 .LGlab2:
-	sltu	tp, x12, x13            # 	slt	$ta, $r2, $r3
-	bnez	tp, .LGlab3             # 	bnez	$ta, .LGlab3
+	sltu	t2, x12, x13            # 	slt	$ta, $r2, $r3
+	bnez	t2, .LGlab3             # 	bnez	$ta, .LGlab3
 	srli	x12, x12, 1             # 	srli	$r2, $r2, #1
 	lw	x5, 0(x9)               # 	addi	$r6, $r6, #1
 	addi	x5, x5, 1
@@ -1775,8 +1775,8 @@ __divsf3:
 	lw	x5, 12(x9)              # 	mul	$r2, $r9, $r1
 	mul	x12, x5, x11
 	slli	x10, x10, 14            # 	slli	$r0, $r0, #14
-	sltu	tp, x10, x12            # 	slt	$ta, $r0, $r2
-	beqz	tp, .LGlab4             # 	beqz	$ta, .LGlab4
+	sltu	t2, x10, x12            # 	slt	$ta, $r0, $r2
+	beqz	t2, .LGlab4             # 	beqz	$ta, .LGlab4
 	addi	x11, x11, -1            # 	addi	$r1, $r1, #-1
 	add	x10, x10, x13           # 	add	$r0, $r0, $r3
 .LGlab4:
@@ -1788,8 +1788,8 @@ __divsf3:
 	sw	x5, 12(x9)
 	slli	x10, x10, 14            # 	slli	$r0, $r0, #14
 	lw	x6, 12(x9)              # 	slt	$ta, $r0, $r9
-	sltu	tp, x10, x6
-	beqz	tp, .LGlab5             # 	beqz	$ta, .LGlab5
+	sltu	t2, x10, x6
+	beqz	t2, .LGlab5             # 	beqz	$ta, .LGlab5
 	addi	x12, x12, -1            # 	addi	$r2, $r2, #-1
 	add	x10, x10, x13           # 	add	$r0, $r0, $r3
 .LGlab5:
@@ -1812,13 +1812,13 @@ __divsf3:
 					# 	blez	$r6, .LGunder
 	blez	x5, .LGunder
 	lw	x5, 0(x9)               # 	slti	$ta, $r6, #255
-	sltiu	tp, x5, 255
-	beqz	tp, .LGinf              # 	beqz	$ta, .LGinf
+	sltiu	t2, x5, 255
+	beqz	t2, .LGinf              # 	beqz	$ta, .LGinf
 .LGround:
 	addi	x12, x12, 128           # 	addi	$r2, $r2, #128
-	sltiu	tp, x12, 128            # 	slti	$ta, $r2, #128
+	sltiu	t2, x12, 128            # 	slti	$ta, $r2, #128
 	lw	x5, 0(x9)               # 	add	$r6, $r6, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 0(x9)
 	srli	x15, x12, 8             # 	srli	$r5, $r2, #8
 	andi	x15, x15, 1             # 	andi	$r5, $r5, #1
@@ -1844,14 +1844,14 @@ __divsf3:
 	sw	x5, 0(x9)
 .LGloopA2:
 	add	x12, x12, x12           # 	add	$r2, $r2, $r2
-	sltu	tp, x12, x14            # 	slt	$ta, $r2, $r4
-	bnez	tp, .LGloopA            # 	bnez	$ta, .LGloopA
+	sltu	t2, x12, x14            # 	slt	$ta, $r2, $r4
+	bnez	t2, .LGloopA            # 	bnez	$ta, .LGloopA
 	tail	.LGlab1                 # 	b	.LGlab1
 .LGzeroA:
 	beqz	x11, .LGnan             # 	beqz	$r1, .LGnan
 	li	x15, 4278190080         # 	move	$r5, #4278190080
-	sltu	tp, x15, x11            # 	slt	$ta, $r5, $r1
-	bnez	tp, .LGnan              # 	bnez	$ta, .LGnan
+	sltu	t2, x15, x11            # 	slt	$ta, $r5, $r1
+	bnez	t2, .LGnan              # 	bnez	$ta, .LGnan
 .LGzero:
 	lw	x10, 8(x9)              # 	move	$r0, $r8
 	tail	.LGret                  # 	b	.LGret
@@ -1879,15 +1879,15 @@ __divsf3:
 	sw	x5, 4(x9)
 .LGloopB2:
 	add	x13, x13, x13           # 	add	$r3, $r3, $r3
-	sltu	tp, x13, x14            # 	slt	$ta, $r3, $r4
-	bnez	tp, .LGloopB            # 	bnez	$ta, .LGloopB
+	sltu	t2, x13, x14            # 	slt	$ta, $r3, $r4
+	bnez	t2, .LGloopB            # 	bnez	$ta, .LGloopB
 	tail	.LGlab2                 # 	b	.LGlab2
 .LGunder:
 	lw	x5, 0(x9)               # 	subri	$r1, $r6, #1
 	li	x6, 1
 	sub	x11, x6, x5
-	sltiu	tp, x11, 32             # 	slti	$ta, $r1, #32
-	beqz	tp, .LGzero             # 	beqzs8	.LGzero
+	sltiu	t2, x11, 32             # 	slti	$ta, $r1, #32
+	beqz	t2, .LGzero             # 	beqzs8	.LGzero
 	li	x6, 32                  # 	subri	$r5, $r1, #32
 	sub	x15, x6, x11
 	sll	x5, x12, x15            # 	sll	$r6, $r2, $r5
@@ -1999,8 +1999,8 @@ __divdf3:
 	sub	x5, x5, x15
 	sw	x5, 4(x9)
 	mv	x6, x5                  # 	slt	$ta, $r0, $r7
-	sltu	tp, x10, x6
-	beqz	tp, .LGmain3            # 	beqz	$ta, .LGmain3
+	sltu	t2, x10, x6
+	beqz	t2, .LGmain3            # 	beqz	$ta, .LGmain3
 .LGloop1:
 	addi	x13, x13, -1            # 	addi	$r3, $r3, #-1
 	lw	x6, 12(x9)              # 	add	$r7, $r7, $r9
@@ -2008,8 +2008,8 @@ __divdf3:
 	add	x5, x5, x6
 	sw	x5, 4(x9)
 	lw	x6, 12(x9)              # 	slt	$ta, $r7, $r9
-	sltu	tp, x5, x6
-	beqz	tp, .LGloop1            # 	beqz	$ta, .LGloop1
+	sltu	t2, x5, x6
+	beqz	t2, .LGloop1            # 	beqz	$ta, .LGloop1
 .LGmain3:
 	lw	x6, 4(x9)               # 	divr	$r2, $r7, $r7, $r2
 	divu	x5, x6, x12
@@ -2032,8 +2032,8 @@ __divdf3:
 	sub	x5, x5, x15
 	sw	x5, 4(x9)
 	mv	x6, x5                  # 	slt	$ta, $r0, $r7
-	sltu	tp, x10, x6
-	beqz	tp, .LGmain4            # 	beqz	$ta, .LGmain4
+	sltu	t2, x10, x6
+	beqz	t2, .LGmain4            # 	beqz	$ta, .LGmain4
 .LGloop2:
 	addi	x12, x12, -1            # 	addi	$r2, $r2, #-1
 	lw	x6, 12(x9)              # 	add	$r7, $r7, $r9
@@ -2041,8 +2041,8 @@ __divdf3:
 	add	x5, x5, x6
 	sw	x5, 4(x9)
 	lw	x6, 12(x9)              # 	slt	$ta, $r7, $r9
-	sltu	tp, x5, x6
-	beqz	tp, .LGloop2            # 	beqz	$ta, .LGloop2
+	sltu	t2, x5, x6
+	beqz	t2, .LGloop2            # 	beqz	$ta, .LGloop2
 .LGmain4:
 	slli	x13, x13, 16            # 	slli	$r3, $r3, #16
 	add	x13, x13, x12           # 	add	$r3, $r3, $r2
@@ -2056,18 +2056,18 @@ __divdf3:
 	sub	x5, x5, x11
 	sw	x5, 4(x9)
 	mv	x6, x5                  # 	slt	$ta, $r0, $r7
-	sltu	tp, x10, x6
+	sltu	t2, x10, x6
 	lw	x5, 0(x9)               # 	beqz	$r6, .LGmain5
 	beqz	x5, .LGmain5
 	lw	x10, 4(x9)              # 	move	$r0, $r7
 	mv	x5, x10                 # 	addi	$r7, $r7, #-1
 	addi	x5, x5, -1
 	sw	x5, 4(x9)
-	bnez	tp, .LGloopA            # 	bnez	$ta, .LGloopA
+	bnez	t2, .LGloopA            # 	bnez	$ta, .LGloopA
 	lw	x6, 4(x9)               # 	slt	$ta, $r0, $r7
-	sltu	tp, x10, x6
+	sltu	t2, x10, x6
 .LGmain5:
-	beqz	tp, .LGmain6            # 	beqz	$ta, .LGmain6
+	beqz	t2, .LGmain6            # 	beqz	$ta, .LGmain6
 .LGloopA:
 	addi	x13, x13, -1            # 	addi	$r3, $r3, #-1
 	lw	x6, 8(x9)               # 	add	$r6, $r6, $r8
@@ -2081,16 +2081,16 @@ __divdf3:
 	add	x5, x5, x6
 	sw	x5, 4(x9)
 	lw	x6, 12(x9)              # 	slt	$ta, $r7, $r9
-	sltu	tp, x5, x6
+	sltu	t2, x5, x6
 	beqz	x10, .LGloopA2          # 	beqz	$r0, .LGloopA2
 	lw	x5, 4(x9)               # 	addi	$r7, $r7, #1
 	addi	x5, x5, 1
 	sw	x5, 4(x9)
-	bnez	tp, .LGmain6            # 	bnez	$ta, .LGmain6
+	bnez	t2, .LGmain6            # 	bnez	$ta, .LGmain6
 	lw	x5, 4(x9)               # 	slti	$ta, $r7, #1
-	sltiu	tp, x5, 1
+	sltiu	t2, x5, 1
 .LGloopA2:
-	beqz	tp, .LGloopA            # 	beqz	$ta, .LGloopA
+	beqz	t2, .LGloopA            # 	beqz	$ta, .LGloopA
 .LGmain6:
 	lw	x6, 12(x9)              # 	bne	$r7, $r9, .Li25
 	lw	x5, 4(x9)
@@ -2111,7 +2111,7 @@ __divdf3:
 	lw	x5, 12(x9)              # 	zeh	$r0, $r9
 	slli	x6, x5, 16
 	srli	x10, x6, 16
-	mul	tp, x10, x12            # 	mul	$ta, $r0, $r2
+	mul	t2, x10, x12            # 	mul	$ta, $r0, $r2
 	lw	x5, 4(x9)               # 	slli	$r7, $r7, #16
 	slli	x5, x5, 16
 	sw	x5, 4(x9)
@@ -2123,11 +2123,11 @@ __divdf3:
 					# 	move	$r5, $r7
 	mv	x15, x5
 	lw	x5, 4(x9)               # 	sub	$r7, $r7, $ta
-	sub	x5, x5, tp
+	sub	x5, x5, t2
 	sw	x5, 4(x9)
 	mv	x6, x5                  # 	slt	$ta, $r5, $r7
-	sltu	tp, x15, x6
-	beqz	tp, .Li26               # 	beqz	$ta, .Li26
+	sltu	t2, x15, x6
+	beqz	t2, .Li26               # 	beqz	$ta, .Li26
 .LGloop3:
 	addi	x12, x12, -1            # 	addi	$r2, $r2, #-1
 	lw	x6, 12(x9)              # 	add	$r7, $r7, $r9
@@ -2135,8 +2135,8 @@ __divdf3:
 	add	x5, x5, x6
 	sw	x5, 4(x9)
 	lw	x6, 12(x9)              # 	slt	$ta, $r7, $r9
-	sltu	tp, x5, x6
-	beqz	tp, .LGloop3            # 	beqz	$ta, .LGloop3
+	sltu	t2, x5, x6
+	beqz	t2, .LGloop3            # 	beqz	$ta, .LGloop3
 .Li26:
 	lw	x6, 4(x9)               # 	divr	$r1, $r7, $r7, $r1
 	divu	x5, x6, x11
@@ -2159,8 +2159,8 @@ __divdf3:
 	sub	x5, x5, x15
 	sw	x5, 4(x9)
 	mv	x6, x5                  # 	slt	$ta, $r0, $r7
-	sltu	tp, x10, x6
-	beqz	tp, .Li28               # 	beqz	$ta, .Li28
+	sltu	t2, x10, x6
+	beqz	t2, .Li28               # 	beqz	$ta, .Li28
 .LGloop4:
 	addi	x11, x11, -1            # 	addi	$r1, $r1, #-1
 	lw	x6, 12(x9)              # 	add	$r7, $r7, $r9
@@ -2168,8 +2168,8 @@ __divdf3:
 	add	x5, x5, x6
 	sw	x5, 4(x9)
 	lw	x6, 12(x9)              # 	slt	$ta, $r7, $r9
-	sltu	tp, x5, x6
-	beqz	tp, .LGloop4            # 	beqz	$ta, .LGloop4
+	sltu	t2, x5, x6
+	beqz	t2, .LGloop4            # 	beqz	$ta, .LGloop4
 .Li28:
 	slli	x12, x12, 16            # 	slli	$r2, $r2, #16
 	add	x12, x12, x11           # 	add	$r2, $r2, $r1
@@ -2184,18 +2184,18 @@ __divdf3:
 	sub	x5, x5, x11
 	sw	x5, 4(x9)
 	mv	x6, x5                  # 	slt	$ta, $r0, $r7
-	sltu	tp, x10, x6
+	sltu	t2, x10, x6
 	lw	x5, 0(x9)               # 	beqz	$r6, .LGmain8
 	beqz	x5, .LGmain8
 	lw	x10, 4(x9)              # 	move	$r0, $r7
 	mv	x5, x10                 # 	addi	$r7, $r7, #-1
 	addi	x5, x5, -1
 	sw	x5, 4(x9)
-	bnez	tp, .LGloopB            # 	bnez	$ta, .LGloopB
+	bnez	t2, .LGloopB            # 	bnez	$ta, .LGloopB
 	lw	x6, 4(x9)               # 	slt	$ta, $r0, $r7
-	sltu	tp, x10, x6
+	sltu	t2, x10, x6
 .LGmain8:
-	beqz	tp, .LGmain9            # 	beqz	$ta, .LGmain9
+	beqz	t2, .LGmain9            # 	beqz	$ta, .LGmain9
 .LGloopB:
 	addi	x12, x12, -1            # 	addi	$r2, $r2, #-1
 	lw	x6, 8(x9)               # 	add	$r6, $r6, $r8
@@ -2209,24 +2209,24 @@ __divdf3:
 	add	x5, x5, x6
 	sw	x5, 4(x9)
 	lw	x6, 12(x9)              # 	slt	$ta, $r7, $r9
-	sltu	tp, x5, x6
+	sltu	t2, x5, x6
 	beqz	x10, .LGloopB2          # 	beqz	$r0, .LGloopB2
 	lw	x5, 4(x9)               # 	addi	$r7, $r7, #1
 	addi	x5, x5, 1
 	sw	x5, 4(x9)
-	bnez	tp, .LGmain9            # 	bnez	$ta, .LGmain9
+	bnez	t2, .LGmain9            # 	bnez	$ta, .LGmain9
 	lw	x5, 4(x9)               # 	slti	$ta, $r7, #1
-	sltiu	tp, x5, 1
+	sltiu	t2, x5, 1
 .LGloopB2:
-	beqz	tp, .LGloopB            # 	beqz	$ta, .LGloopB
+	beqz	t2, .LGloopB            # 	beqz	$ta, .LGloopB
 .LGmain9:
-	slti	tp, x13, 0              # 	sltsi	$ta, $r3, #0
-	bnez	tp, .LGmain10           # 	bnez	$ta, .LGmain10
-	mv	tp, x12                 # 	move	$ta, $r2
+	slti	t2, x13, 0              # 	sltsi	$ta, $r3, #0
+	bnez	t2, .LGmain10           # 	bnez	$ta, .LGmain10
+	mv	t2, x12                 # 	move	$ta, $r2
 	add	x12, x12, x12           # 	add	$r2, $r2, $r2
-	sltu	tp, x12, tp             # 	slt	$ta, $r2, $ta
+	sltu	t2, x12, t2             # 	slt	$ta, $r2, $ta
 	add	x13, x13, x13           # 	add	$r3, $r3, $r3
-	add	x13, x13, tp            # 	add	$r3, $r3, $ta
+	add	x13, x13, t2            # 	add	$r3, $r3, $ta
 	addi	x14, x14, -1            # 	addi	$r4, $r4, #-1
 .LGmain10:
 	lw	x6, 0(x9)               # 	or	$r7, $r7, $r6
@@ -2244,11 +2244,11 @@ __divdf3:
 	sub	x15, x6, x14
 	blez	x15, .LGinf             # 	blez	$r5, .LGinf
 	addi	x10, x10, 1024          # 	addi	$r0, $r0, #1024
-	sltiu	tp, x10, 1024           # 	slti	$ta, $r0, #1024
-	beqz	tp, .LGround            # 	beqz	$ta, .LGround
-	add	x11, x11, tp            # 	add	$r1, $r1, $ta
-	sltu	tp, x11, tp             # 	slt	$ta, $r1, $ta
-	add	x14, x14, tp            # 	add	$r4, $r4, $ta
+	sltiu	t2, x10, 1024           # 	slti	$ta, $r0, #1024
+	beqz	t2, .LGround            # 	beqz	$ta, .LGround
+	add	x11, x11, t2            # 	add	$r1, $r1, $ta
+	sltu	t2, x11, t2             # 	slt	$ta, $r1, $ta
+	add	x14, x14, t2            # 	add	$r4, $r4, $ta
 .LGround:
 	srli	x12, x10, 11            # 	srli	$r2, $r0, #11
 	andi	x12, x12, 1             # 	andi	$r2, $r2, #1
@@ -2274,16 +2274,16 @@ __divdf3:
 .LGAexpzero:
 	lw	x6, 0(x9)               # 	or	$ta, $r7, $r6
 	lw	x5, 4(x9)
-	or	tp, x5, x6
-	beqz	tp, .LGAzero            # 	beqz	$ta, .LGAzero
+	or	t2, x5, x6
+	beqz	t2, .LGAzero            # 	beqz	$ta, .LGAzero
 	lw	x5, 0(x9)               # 	srli	$ta, $r6, #31
-	srli	tp, x5, 31
+	srli	t2, x5, 31
 	lw	x6, 4(x9)               # 	add	$r7, $r7, $r7
 	mv	x5, x6
 	add	x5, x5, x6
 	sw	x5, 4(x9)
 					# 	add	$r7, $r7, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 4(x9)
 	lw	x6, 0(x9)               # 	add	$r6, $r6, $r6
 	mv	x5, x6
@@ -2304,8 +2304,8 @@ __divdf3:
 	add	x11, x11, x11           # 	add	$r1, $r1, $r1
 	addi	x10, x10, 1             # 	addi	$r0, $r0, #1
 .LGAloop2:
-	sltu	tp, x11, x8             # 	slt	$ta, $r1, $fp
-	bnez	tp, .LGAloop            # 	bnez	$ta, .LGAloop
+	sltu	t2, x11, x8             # 	slt	$ta, $r1, $fp
+	bnez	t2, .LGAloop            # 	bnez	$ta, .LGAloop
 	beqz	x10, .LGmain1           # 	beqz	$r0, .LGmain1
 	sub	x14, x14, x10           # 	sub	$r4, $r4, $r0
 	li	x6, 32                  # 	subri	$r2, $r0, #32
@@ -2327,8 +2327,8 @@ __divdf3:
 	bnez	x15, .LGsetsign         # 	bnez	$r5, .LGsetsign
 	lw	x6, 8(x9)               # 	or	$ta, $r9, $r8
 	lw	x5, 12(x9)
-	or	tp, x5, x6
-	beqz	tp, .LGnan              # 	beqz	$ta, .LGnan
+	or	t2, x5, x6
+	beqz	t2, .LGnan              # 	beqz	$ta, .LGnan
 .LGsetsign:
 	lw	x11, 16(x9)             # 	move	$r1, $r10
 	addi	sp, sp, 16              # 	addi	$sp, $sp, #16
@@ -2390,16 +2390,16 @@ __divdf3:
 .LGBexpzero:
 	lw	x6, 8(x9)               # 	or	$ta, $r9, $r8
 	lw	x5, 12(x9)
-	or	tp, x5, x6
-	beqz	tp, .LGinf              # 	beqz	$ta, .LGinf
+	or	t2, x5, x6
+	beqz	t2, .LGinf              # 	beqz	$ta, .LGinf
 	lw	x5, 8(x9)               # 	srli	$ta, $r8, #31
-	srli	tp, x5, 31
+	srli	t2, x5, 31
 	lw	x6, 12(x9)              # 	add	$r9, $r9, $r9
 	mv	x5, x6
 	add	x5, x5, x6
 	sw	x5, 12(x9)
 					# 	add	$r9, $r9, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 12(x9)
 	lw	x6, 8(x9)               # 	add	$r8, $r8, $r8
 	mv	x5, x6
@@ -2420,8 +2420,8 @@ __divdf3:
 	add	x11, x11, x11           # 	add	$r1, $r1, $r1
 	addi	x10, x10, 1             # 	addi	$r0, $r0, #1
 .LGBloop2:
-	sltu	tp, x11, x8             # 	slt	$ta, $r1, $fp
-	bnez	tp, .LGBloop            # 	bnez	$ta, .LGBloop
+	sltu	t2, x11, x8             # 	slt	$ta, $r1, $fp
+	bnez	t2, .LGBloop            # 	bnez	$ta, .LGBloop
 	beqz	x10, .LGmain2           # 	beqz	$r0, .LGmain2
 	sub	x15, x15, x10           # 	sub	$r5, $r5, $r0
 	li	x6, 32                  # 	subri	$r2, $r0, #32
@@ -2443,15 +2443,15 @@ __divdf3:
 	sw	x5, 0(x9)
 	li	x6, 1                   # 	subri	$r3, $r4, #1
 	sub	x13, x6, x14
-	sltiu	tp, x13, 32             # 	slti	$ta, $r3, #32
-	bnez	tp, .LGunderflow2       # 	bnez	$ta, .LGunderflow2
+	sltiu	t2, x13, 32             # 	slti	$ta, $r3, #32
+	bnez	t2, .LGunderflow2       # 	bnez	$ta, .LGunderflow2
 	sw	x10, 0(x9)              # 	move	$r6, $r0
 	mv	x10, x11                # 	move	$r0, $r1
 	li	x11, 0                  # 	move	$r1, #0
 	addi	x13, x13, -32           # 	addi	$r3, $r3, #-32
 	beqz	x10, .LGunderflow2      # 	beqz	$r0, .LGunderflow2
-	sltiu	tp, x13, 32             # 	slti	$ta, $r3, #32
-	beqz	tp, .LGignore           # 	beqz	$ta, .LGignore
+	sltiu	t2, x13, 32             # 	slti	$ta, $r3, #32
+	beqz	t2, .LGignore           # 	beqz	$ta, .LGignore
 .LGunderflow2:
 	beqz	x13, .LGunderflow3      # 	beqz	$r3, .LGunderflow3
 	li	x6, 32                  # 	subri	$r2, $r3, #32
@@ -2471,8 +2471,8 @@ __divdf3:
 	ori	x10, x10, 1             # 	ori	$r0, $r0, #1
 .LGunderflow3:
 	addi	x10, x10, 1024          # 	addi	$r0, $r0, #1024
-	sltiu	tp, x10, 1024           # 	slti	$ta, $r0, #1024
-	add	x11, x11, tp            # 	add	$r1, $r1, $ta
+	sltiu	t2, x10, 1024           # 	slti	$ta, $r0, #1024
+	add	x11, x11, t2            # 	add	$r1, $r1, $ta
 	srli	x14, x11, 31            # 	srli	$r4, $r1, #31
 	tail	.LGround                # 	b	.LGround
 .LGignore:
@@ -2541,8 +2541,8 @@ __extendsfdf2:
 	addi	x13, x13, -1            # 	addi	$r3, $r3, #-1
 	add	x14, x14, x14           # 	add	$r4, $r4, $r4
 .LJdenorm:
-	sltu	tp, x14, x11            # 	slt	$ta, $r4, $r1
-	bnez	tp, .LJdenorm2          # 	bnezs8	.LJdenorm2
+	sltu	t2, x14, x11            # 	slt	$ta, $r4, $r1
+	bnez	t2, .LJdenorm2          # 	bnezs8	.LJdenorm2
 	slli	x14, x14, 1             # 	slli	$r4, $r4, #1
 	tail	.LJlab1                 # 	b	.LJlab1
 .LJinfnan:
@@ -2590,16 +2590,16 @@ __truncdfsf2:
 	addi	x5, x14, -1             # 	addi	$r7, $r4, #-1
 	sw	x5, 4(x9)
 					# 	slti	$ta, $r7, #254
-	sltiu	tp, x5, 254
-	beqz	tp, .LKspec             # 	beqzs8	.LKspec
+	sltiu	t2, x5, 254
+	beqz	t2, .LKspec             # 	beqzs8	.LKspec
 .LKlab1:
 	beqz	x12, .Li45              # 	beqz	$r2, .Li45
 	ori	x13, x13, 1             # 	ori	$r3, $r3, #1
 .Li45:
-	li	tp, 128                 # 	move	$ta, #128
-	add	x13, x13, tp            # 	add	$r3, $r3, $ta
-	sltu	tp, x13, tp             # 	slt	$ta, $r3, $ta
-	add	x14, x14, tp            # 	add	$r4, $r4, $ta
+	li	t2, 128                 # 	move	$ta, #128
+	add	x13, x13, t2            # 	add	$r3, $r3, $ta
+	sltu	t2, x13, t2             # 	slt	$ta, $r3, $ta
+	add	x14, x14, t2            # 	add	$r4, $r4, $ta
 	srli	x5, x13, 8              # 	srli	$r7, $r3, #8
 	sw	x5, 4(x9)
 					# 	andi	$r7, $r7, #1
@@ -2620,8 +2620,8 @@ __truncdfsf2:
 	ret                             # 	ret5	$lp
 .LKspec:
 	li	x6, 1151                # 	subri	$ta, $r4, #1151
-	sub	tp, x6, x14
-	bnez	tp, .Li46               # 	bnezs8	.Li46
+	sub	t2, x6, x14
+	bnez	t2, .Li46               # 	bnezs8	.Li46
 	slli	x5, x13, 1              # 	slli	$r7, $r3, #1
 	sw	x5, 4(x9)
 					# 	or	$r7, $r7, $r2
@@ -2632,8 +2632,8 @@ __truncdfsf2:
 	li	x10, 4290772992         # 	move	$r0, #4290772992
 	tail	.LK999                  # 	b	.LK999
 .Li46:
-	slti	tp, x14, 255            # 	sltsi	$ta, $r4, #255
-	bnez	tp, .Li48               # 	bnezs8	.Li48
+	slti	t2, x14, 255            # 	sltsi	$ta, $r4, #255
+	bnez	t2, .Li48               # 	bnezs8	.Li48
 	li	x5, 2139095040          # 	move	$r7, #2139095040
 	sw	x5, 4(x9)
 	mv	x6, x5                  # 	or	$r0, $r5, $r7
@@ -2647,8 +2647,8 @@ __truncdfsf2:
 	sw	x5, 4(x9)
 	mv	x6, x5                  # 	slt	$ta, $r6, $r7
 	lw	x5, 0(x9)
-	sltu	tp, x5, x6
-	bnez	tp, .Li49               # 	bnezs8	.Li49
+	sltu	t2, x5, x6
+	bnez	t2, .Li49               # 	bnezs8	.Li49
 	mv	x10, x15                # 	move	$r0, $r5
 	tail	.LK999                  # 	b	.LK999
 .Li49:
@@ -2687,14 +2687,14 @@ __fixsfdi:
 	li	x15, 2147483648         # 	move	$r5, #2147483648
 	or	x12, x12, x15           # 	or	$r2, $r2, $r5
 	li	x11, 0                  # 	move	$r1, #0
-	slti	tp, x13, 190            # 	sltsi	$ta, $r3, #190
-	beqz	tp, .LCinfnan           # 	beqzs8	.LCinfnan
+	slti	t2, x13, 190            # 	sltsi	$ta, $r3, #190
+	beqz	t2, .LCinfnan           # 	beqzs8	.LCinfnan
 	li	x6, 190                 # 	subri	$r3, $r3, #190
 	sub	x13, x6, x13
 .LL8:
 	li	x15, 32                 # 	move	$r5, #32
-	sltu	tp, x13, x15            # 	slt	$ta, $r3, $r5
-	bnez	tp, .LL9                # 	bnezs8	.LL9
+	sltu	t2, x13, x15            # 	slt	$ta, $r3, $r5
+	bnez	t2, .LL9                # 	bnezs8	.LL9
 	mv	x11, x12                # 	move	$r1, $r2
 	li	x12, 0                  # 	move	$r2, #0
 	addi	x13, x13, -32           # 	addi	$r3, $r3, #-32
@@ -2709,8 +2709,8 @@ __fixsfdi:
 	sll	x14, x14, x13           # 	sll	$r4, $r4, $r3
 	or	x11, x11, x14           # 	or	$r1, $r1, $r4
 .LL10:
-	slti	tp, x10, 0              # 	sltsi	$ta, $r0, #0
-	beqz	tp, .LCret              # 	beqzs8	.LCret
+	slti	t2, x10, 0              # 	sltsi	$ta, $r0, #0
+	beqz	t2, .LCret              # 	beqzs8	.LCret
 	sub	x12, zero, x12          # 	subri	$r2, $r2, #0
 	beqz	x11, .LL11              # 	beqz	$r1, .LL11
 	sub	x11, zero, x11          # 	subri	$r1, $r1, #0
@@ -2721,11 +2721,11 @@ __fixsfdi:
 	mv	x11, x12                # 	move	$r1, $r2
 	ret                             # 	ret5	$lp
 .LCinfnan:
-	slti	tp, x10, 0              # 	sltsi	$ta, $r0, #0
-	bnez	tp, .LCret3             # 	bnezs8	.LCret3
+	slti	t2, x10, 0              # 	sltsi	$ta, $r0, #0
+	bnez	t2, .LCret3             # 	bnezs8	.LCret3
 	li	x6, 255                 # 	subri	$ta, $r3, #255
-	sub	tp, x6, x13
-	bnez	tp, .Li7                # 	bnezs8	.Li7
+	sub	t2, x6, x13
+	bnez	t2, .Li7                # 	bnezs8	.Li7
 	slli	x15, x12, 1             # 	slli	$r5, $r2, #1
 	beqz	x15, .Li7               # 	beqz	$r5, .Li7
 .LCret3:
@@ -2754,13 +2754,13 @@ __fixsfsi:
 	sub	x11, x6, x11
 	li	x15, 2147483648         # 	move	$r5, #2147483648
 	blez	x11, .LJover            # 	blez	$r1, .LJover
-	slti	tp, x11, 32             # 	sltsi	$ta, $r1, #32
-	beqz	tp, .LJzero             # 	beqz	$ta, .LJzero
+	slti	t2, x11, 32             # 	sltsi	$ta, $r1, #32
+	beqz	t2, .LJzero             # 	beqz	$ta, .LJzero
 	or	x12, x12, x15           # 	or	$r2, $r2, $r5
 	srl	x12, x12, x11           # 	srl	$r2, $r2, $r1
-	slti	tp, x10, 0              # 	sltsi	$ta, $r0, #0
+	slti	t2, x10, 0              # 	sltsi	$ta, $r0, #0
 	sub	x10, zero, x12          # 	subri	$r0, $r2, #0
-	bne	tp, zero, .Ltmp0        # 	cmovz	$r0, $r2, $ta
+	bne	t2, zero, .Ltmp0        # 	cmovz	$r0, $r2, $ta
 	addi	x10, x12, 0
 .Ltmp0:
 	ret                             # 	ret5	$lp
@@ -2769,8 +2769,8 @@ __fixsfsi:
 	ret                             # 	ret5	$lp
 .LJover:
 	li	x14, 2139095040         # 	move	$r4, #2139095040
-	sltu	tp, x14, x10            # 	slt	$ta, $r4, $r0
-	beqz	tp, .LJnan              # 	beqzs8	.LJnan
+	sltu	t2, x14, x10            # 	slt	$ta, $r4, $r0
+	beqz	t2, .LJnan              # 	beqzs8	.LJnan
 	mv	x10, x15                # 	move	$r0, $r5
 	ret                             # 	ret5	$lp
 .LJnan:
@@ -2803,16 +2803,16 @@ __fixdfdi:
 	sw	x5, 0(x9)
 	mv	x6, x5                  # 	or	$r4, $r4, $r6
 	or	x14, x14, x6
-	sltiu	tp, x15, 1086           # 	slti	$ta, $r5, #1086
-	beqz	tp, .LCnaninf           # 	beqzs8	.LCnaninf
+	sltiu	t2, x15, 1086           # 	slti	$ta, $r5, #1086
+	beqz	t2, .LCnaninf           # 	beqzs8	.LCnaninf
 	li	x6, 1086                # 	subri	$r2, $r5, #1086
 	sub	x12, x6, x15
 .LL14:
 	li	x5, 32                  # 	move	$r6, #32
 	sw	x5, 0(x9)
 	mv	x6, x5                  # 	slt	$ta, $r2, $r6
-	sltu	tp, x12, x6
-	bnez	tp, .LL15               # 	bnezs8	.LL15
+	sltu	t2, x12, x6
+	bnez	t2, .LL15               # 	bnezs8	.LL15
 	mv	x13, x14                # 	move	$r3, $r4
 	li	x14, 0                  # 	move	$r4, #0
 	addi	x12, x12, -32           # 	addi	$r2, $r2, #-32
@@ -2827,8 +2827,8 @@ __fixdfdi:
 	sll	x10, x10, x12           # 	sll	$r0, $r0, $r2
 	or	x13, x13, x10           # 	or	$r3, $r3, $r0
 .LL16:
-	slti	tp, x11, 0              # 	sltsi	$ta, $r1, #0
-	beqz	tp, .LCret              # 	beqzs8	.LCret
+	slti	t2, x11, 0              # 	sltsi	$ta, $r1, #0
+	beqz	t2, .LCret              # 	beqzs8	.LCret
 	sub	x14, zero, x14          # 	subri	$r4, $r4, #0
 	beqz	x13, .LL17              # 	beqz	$r3, .LL17
 	sub	x13, zero, x13          # 	subri	$r3, $r3, #0
@@ -2841,11 +2841,11 @@ __fixdfdi:
 	addi	sp, sp, 24
 	ret                             # 	ret5	$lp
 .LCnaninf:
-	slti	tp, x11, 0              # 	sltsi	$ta, $r1, #0
-	bnez	tp, .LCret3             # 	bnezs8	.LCret3
+	slti	t2, x11, 0              # 	sltsi	$ta, $r1, #0
+	bnez	t2, .LCret3             # 	bnezs8	.LCret3
 	li	x6, 2047                # 	subri	$ta, $r5, #2047
-	sub	tp, x6, x15
-	bnez	tp, .Li5                # 	bnezs8	.Li5
+	sub	t2, x6, x15
+	bnez	t2, .Li5                # 	bnezs8	.Li5
 	slli	x5, x14, 1              # 	slli	$r6, $r4, #1
 	sw	x5, 0(x9)
 					# 	or	$r6, $r6, $r3
@@ -2883,13 +2883,13 @@ __fixdfsi:
 	sub	x12, x6, x14
 	blez	x12, .LLnaninf          # 	blez	$r2, .LLnaninf
 	li	x14, 32                 # 	move	$r4, #32
-	sltu	tp, x12, x14            # 	slt	$ta, $r2, $r4
-	bnez	tp, .LL72               # 	bnezs8	.LL72
+	sltu	t2, x12, x14            # 	slt	$ta, $r2, $r4
+	bnez	t2, .LL72               # 	bnezs8	.LL72
 	li	x13, 0                  # 	move	$r3, #0
 .LL72:
 	srl	x13, x13, x12           # 	srl	$r3, $r3, $r2
-	slti	tp, x11, 0              # 	sltsi	$ta, $r1, #0
-	beqz	tp, .Li50               # 	beqzs8	.Li50
+	slti	t2, x11, 0              # 	sltsi	$ta, $r1, #0
+	beqz	t2, .Li50               # 	beqzs8	.Li50
 	sub	x13, zero, x13          # 	subri	$r3, $r3, #0
 .Li50:
 	mv	x10, x13                # 	move	$r0, $r3
@@ -2899,8 +2899,8 @@ __fixdfsi:
 	ori	x11, x11, 1             # 	ori	$r1, $r1, #1
 .Li51:
 	li	x14, 2146435072         # 	move	$r4, #2146435072
-	sltu	tp, x14, x11            # 	slt	$ta, $r4, $r1
-	beqz	tp, .Li52               # 	beqzs8	.Li52
+	sltu	t2, x14, x11            # 	slt	$ta, $r4, $r1
+	beqz	t2, .Li52               # 	beqzs8	.Li52
 	li	x10, 2147483648         # 	move	$r0, #2147483648
 	ret                             # 	ret5	$lp
 .Li52:
@@ -2921,8 +2921,8 @@ __fixunssfsi:
 	srli	x13, x10, 23            # 	srli	$r3, $r0, #23
 	addi	x13, x13, -127          # 	addi	$r3, $r3, #-127
 	bltz	x13, .LZero             # 	bltz	$r3, .LZero
-	slti	tp, x13, 32             # 	sltsi	$ta, $r3, #32
-	beqz	tp, .LMax               # 	beqzs8	.LMax
+	slti	t2, x13, 32             # 	sltsi	$ta, $r3, #32
+	beqz	t2, .LMax               # 	beqzs8	.LMax
 	slli	x10, x10, 8             # 	slli	$r0, $r0, #8
 	lui	x12, 524288             # 	sethi	$r2, #524288
 	or	x11, x10, x12           # 	or	$r1, $r0, $r2
@@ -2957,16 +2957,16 @@ __fixunsdfsi:
 	srli	x14, x14, 21            # 	srli	$r4, $r4, #21
 	li	x6, 1054                # 	subri	$r2, $r4, #1054
 	sub	x12, x6, x14
-	slti	tp, x12, 0              # 	sltsi	$ta, $r2, #0
-	bnez	tp, .LNnaninf           # 	bnezs8	.LNnaninf
+	slti	t2, x12, 0              # 	sltsi	$ta, $r2, #0
+	bnez	t2, .LNnaninf           # 	bnezs8	.LNnaninf
 	li	x14, 32                 # 	move	$r4, #32
-	sltu	tp, x12, x14            # 	slt	$ta, $r2, $r4
-	bnez	tp, .LL73               # 	bnezs8	.LL73
+	sltu	t2, x12, x14            # 	slt	$ta, $r2, $r4
+	bnez	t2, .LL73               # 	bnezs8	.LL73
 	li	x13, 0                  # 	move	$r3, #0
 .LL73:
 	srl	x13, x13, x12           # 	srl	$r3, $r3, $r2
-	slti	tp, x11, 0              # 	sltsi	$ta, $r1, #0
-	beqz	tp, .Li53               # 	beqzs8	.Li53
+	slti	t2, x11, 0              # 	sltsi	$ta, $r1, #0
+	beqz	t2, .Li53               # 	beqzs8	.Li53
 	sub	x13, zero, x13          # 	subri	$r3, $r3, #0
 .Li53:
 	mv	x10, x13                # 	move	$r0, $r3
@@ -2976,8 +2976,8 @@ __fixunsdfsi:
 	ori	x11, x11, 1             # 	ori	$r1, $r1, #1
 .Li54:
 	li	x14, 2146435072         # 	move	$r4, #2146435072
-	sltu	tp, x14, x11            # 	slt	$ta, $r4, $r1
-	beqz	tp, .Li55               # 	beqzs8	.Li55
+	sltu	t2, x14, x11            # 	slt	$ta, $r4, $r1
+	beqz	t2, .Li55               # 	beqzs8	.Li55
 	li	x10, 2147483648         # 	move	$r0, #2147483648
 	ret                             # 	ret5	$lp
 .Li55:
@@ -2999,8 +2999,8 @@ __fixunssfdi:
 	srli	x12, x10, 23            # 	srli	$r2, $r0, #23
 	addi	x12, x12, -127          # 	addi	$r2, $r2, #-127
 	bltz	x12, .LZero             # 	bltz	$r2, .LZero
-	slti	tp, x12, 64             # 	sltsi	$ta, $r2, #64
-	beqz	tp, .LMax               # 	beqzs8	.LMax
+	slti	t2, x12, 64             # 	sltsi	$ta, $r2, #64
+	beqz	t2, .LMax               # 	beqzs8	.LMax
 	slli	x10, x10, 8             # 	slli	$r0, $r0, #8
 	lui	x13, 524288             # 	sethi	$r3, #524288
 	or	x10, x10, x13           # 	or33	$r0, $r3
@@ -3055,16 +3055,16 @@ __fixunsdfdi:
 	sw	x5, 0(x9)
 	mv	x6, x5                  # 	or	$r4, $r4, $r6
 	or	x14, x14, x6
-	sltiu	tp, x15, 1086           # 	slti	$ta, $r5, #1086
-	beqz	tp, .LDnaninf           # 	beqzs8	.LDnaninf
+	sltiu	t2, x15, 1086           # 	slti	$ta, $r5, #1086
+	beqz	t2, .LDnaninf           # 	beqzs8	.LDnaninf
 	li	x6, 1086                # 	subri	$r2, $r5, #1086
 	sub	x12, x6, x15
 .LL18:
 	li	x5, 32                  # 	move	$r6, #32
 	sw	x5, 0(x9)
 	mv	x6, x5                  # 	slt	$ta, $r2, $r6
-	sltu	tp, x12, x6
-	bnez	tp, .LL19               # 	bnezs8	.LL19
+	sltu	t2, x12, x6
+	bnez	t2, .LL19               # 	bnezs8	.LL19
 	mv	x13, x14                # 	move	$r3, $r4
 	li	x14, 0                  # 	move	$r4, #0
 	addi	x12, x12, -32           # 	addi	$r2, $r2, #-32
@@ -3079,8 +3079,8 @@ __fixunsdfdi:
 	sll	x10, x10, x12           # 	sll	$r0, $r0, $r2
 	or	x13, x13, x10           # 	or	$r3, $r3, $r0
 .LL20:
-	slti	tp, x11, 0              # 	sltsi	$ta, $r1, #0
-	beqz	tp, .LDret              # 	beqzs8	.LDret
+	slti	t2, x11, 0              # 	sltsi	$ta, $r1, #0
+	beqz	t2, .LDret              # 	beqzs8	.LDret
 	sub	x14, zero, x14          # 	subri	$r4, $r4, #0
 	beqz	x13, .LL21              # 	beqz	$r3, .LL21
 	sub	x13, zero, x13          # 	subri	$r3, $r3, #0
@@ -3119,8 +3119,8 @@ __floatsisf:
 	li	x13, 0                  # 	move	$r3, #0
 .LKloop:
 	add	x13, x13, x15           # 	add	$r3, $r3, $r5
-	srl	tp, x10, x13            # 	srl	$ta, $r0, $r3
-	bnez	tp, .LKloop2            # 	bnez	$ta, .LKloop2
+	srl	t2, x10, x13            # 	srl	$ta, $r0, $r3
+	bnez	t2, .LKloop2            # 	bnez	$ta, .LKloop2
 	sll	x10, x10, x15           # 	sll	$r0, $r0, $r5
 	sub	x11, x11, x15           # 	sub	$r1, $r1, $r5
 .LKloop2:
@@ -3128,8 +3128,8 @@ __floatsisf:
 	bnez	x15, .LKloop            # 	bnez	$r5, .LKloop
 	srli	x14, x14, 24            # 	srli	$r4, $r4, #24
 	add	x10, x10, x14           # 	add	$r0, $r0, $r4
-	sltu	tp, x10, x14            # 	slt	$ta, $r0, $r4
-	add	x11, x11, tp            # 	add	$r1, $r1, $ta
+	sltu	t2, x10, x14            # 	slt	$ta, $r0, $r4
+	add	x11, x11, t2            # 	add	$r1, $r1, $ta
 	srai	x14, x10, 8             # 	srai	$r4, $r0, #8
 	andi	x14, x14, 1             # 	andi	$r4, $r4, #1
 	sub	x10, x10, x14           # 	sub	$r0, $r0, $r4
@@ -3162,8 +3162,8 @@ __floatsidf:
 	mv	x13, x11                # 	move	$r3, $r1
 	mv	x12, x10                # 	move	$r2, $r0
 	beqz	x12, .Li39              # 	beqz	$r2, .Li39
-	slti	tp, x12, 0              # 	sltsi	$ta, $r2, #0
-	beqz	tp, .Li40               # 	beqzs8	.Li40
+	slti	t2, x12, 0              # 	sltsi	$ta, $r2, #0
+	beqz	t2, .Li40               # 	beqzs8	.Li40
 	li	x15, 2147483648         # 	move	$r5, #2147483648
 	sub	x12, zero, x12          # 	subri	$r2, $r2, #0
 	beqz	x11, .LL71              # 	beqz	$r1, .LL71
@@ -3242,8 +3242,8 @@ __floatdisf:
 	sw	x5, 4(x9)
 					# 	beqz	$r7, .Li1
 	beqz	x5, .Li1
-	slti	tp, x11, 0              # 	sltsi	$ta, $r1, #0
-	beqz	tp, .Li2                # 	beqzs8	.Li2
+	slti	t2, x11, 0              # 	sltsi	$ta, $r1, #0
+	beqz	t2, .Li2                # 	beqzs8	.Li2
 	sub	x13, zero, x13          # 	subri	$r3, $r3, #0
 	beqz	x12, .LL1               # 	beqz	$r2, .LL1
 	sub	x12, zero, x12          # 	subri	$r2, $r2, #0
@@ -3297,10 +3297,10 @@ __floatdisf:
 	beqz	x12, .Li3               # 	beqz	$r2, .Li3
 	ori	x13, x13, 1             # 	ori	$r3, $r3, #1
 .Li3:
-	li	tp, 128                 # 	move	$ta, #128
-	add	x13, x13, tp            # 	add	$r3, $r3, $ta
-	sltu	tp, x13, tp             # 	slt	$ta, $r3, $ta
-	add	x14, x14, tp            # 	add	$r4, $r4, $ta
+	li	t2, 128                 # 	move	$ta, #128
+	add	x13, x13, t2            # 	add	$r3, $r3, $ta
+	sltu	t2, x13, t2             # 	slt	$ta, $r3, $ta
+	add	x14, x14, t2            # 	add	$r4, $r4, $ta
 	srli	x5, x13, 8              # 	srli	$r7, $r3, #8
 	sw	x5, 4(x9)
 					# 	andi	$r7, $r7, #1
@@ -3348,8 +3348,8 @@ __floatdidf:
 					# 	beqz	$r8, .Li1
 	beqz	x5, .Li1
 	li	x14, 1086               # 	move	$r4, #1086
-	slti	tp, x11, 0              # 	sltsi	$ta, $r1, #0
-	beqz	tp, .Li2                # 	beqzs8	.Li2
+	slti	t2, x11, 0              # 	sltsi	$ta, $r1, #0
+	beqz	t2, .Li2                # 	beqzs8	.Li2
 	li	x5, 2147483648          # 	move	$r7, #2147483648
 	sw	x5, 4(x9)
 	sub	x13, zero, x13          # 	subri	$r3, $r3, #0
@@ -3401,14 +3401,14 @@ __floatdidf:
 	sll	x13, x13, x6
 	or	x13, x13, x15           # 	or	$r3, $r3, $r5
 .LL4:
-	li	tp, 1024                # 	move	$ta, #1024
-	add	x12, x12, tp            # 	add	$r2, $r2, $ta
-	sltu	tp, x12, tp             # 	slt	$ta, $r2, $ta
-	beqz	tp, .LL7                # 	beqzs8	.LL7
-	add	x13, x13, tp            # 	add	$r3, $r3, $ta
-	sltu	tp, x13, tp             # 	slt	$ta, $r3, $ta
+	li	t2, 1024                # 	move	$ta, #1024
+	add	x12, x12, t2            # 	add	$r2, $r2, $ta
+	sltu	t2, x12, t2             # 	slt	$ta, $r2, $ta
+	beqz	t2, .LL7                # 	beqzs8	.LL7
+	add	x13, x13, t2            # 	add	$r3, $r3, $ta
+	sltu	t2, x13, t2             # 	slt	$ta, $r3, $ta
 .LL7:
-	add	x14, x14, tp            # 	add	$r4, $r4, $ta
+	add	x14, x14, t2            # 	add	$r4, $r4, $ta
 	srli	x5, x12, 11             # 	srli	$r8, $r2, #11
 	sw	x5, 8(x9)
 					# 	andi	$r8, $r8, #1
@@ -3462,16 +3462,16 @@ __floatunsisf:
 	li	x13, 0                  # 	move	$r3, #0
 .LKloop:
 	add	x13, x13, x15           # 	add	$r3, $r3, $r5
-	srl	tp, x10, x13            # 	srl	$ta, $r0, $r3
-	bnez	tp, .LKloop2            # 	bnez	$ta, .LKloop2
+	srl	t2, x10, x13            # 	srl	$ta, $r0, $r3
+	bnez	t2, .LKloop2            # 	bnez	$ta, .LKloop2
 	sll	x10, x10, x15           # 	sll	$r0, $r0, $r5
 	sub	x11, x11, x15           # 	sub	$r1, $r1, $r5
 .LKloop2:
 	srli	x15, x15, 1             # 	srli	$r5, $r5, #1
 	bnez	x15, .LKloop            # 	bnez	$r5, .LKloop
 	addi	x10, x10, 128           # 	addi	$r0, $r0, #128
-	sltiu	tp, x10, 128            # 	slti	$ta, $r0, #128
-	add	x11, x11, tp            # 	add	$r1, $r1, $ta
+	sltiu	t2, x10, 128            # 	slti	$ta, $r0, #128
+	add	x11, x11, t2            # 	add	$r1, $r1, $ta
 	srli	x14, x10, 8             # 	srli	$r4, $r0, #8
 	andi	x14, x14, 1             # 	andi	$r4, $r4, #1
 	sub	x10, x10, x14           # 	sub	$r0, $r0, $r4
@@ -3600,10 +3600,10 @@ __floatundisf:
 	beqz	x12, .Li5               # 	beqz	$r2, .Li5
 	ori	x13, x13, 1             # 	ori	$r3, $r3, #1
 .Li5:
-	li	tp, 128                 # 	move	$ta, #128
-	add	x13, x13, tp            # 	add	$r3, $r3, $ta
-	sltu	tp, x13, tp             # 	slt	$ta, $r3, $ta
-	add	x14, x14, tp            # 	add	$r4, $r4, $ta
+	li	t2, 128                 # 	move	$ta, #128
+	add	x13, x13, t2            # 	add	$r3, $r3, $ta
+	sltu	t2, x13, t2             # 	slt	$ta, $r3, $ta
+	add	x14, x14, t2            # 	add	$r4, $r4, $ta
 	srli	x5, x13, 8              # 	srli	$r6, $r3, #8
 	sw	x5, 0(x9)
 					# 	andi	$r6, $r6, #1
@@ -3693,14 +3693,14 @@ __floatundidf:
 	sll	x13, x13, x6
 	or	x13, x13, x15           # 	or	$r3, $r3, $r5
 .LL10:
-	li	tp, 1024                # 	move	$ta, #1024
-	add	x12, x12, tp            # 	add	$r2, $r2, $ta
-	sltu	tp, x12, tp             # 	slt	$ta, $r2, $ta
-	beqz	tp, .LL13               # 	beqzs8	.LL13
-	add	x13, x13, tp            # 	add	$r3, $r3, $ta
-	sltu	tp, x13, tp             # 	slt	$ta, $r3, $ta
+	li	t2, 1024                # 	move	$ta, #1024
+	add	x12, x12, t2            # 	add	$r2, $r2, $ta
+	sltu	t2, x12, t2             # 	slt	$ta, $r2, $ta
+	beqz	t2, .LL13               # 	beqzs8	.LL13
+	add	x13, x13, t2            # 	add	$r3, $r3, $ta
+	sltu	t2, x13, t2             # 	slt	$ta, $r3, $ta
 .LL13:
-	add	x14, x14, tp            # 	add	$r4, $r4, $ta
+	add	x14, x14, t2            # 	add	$r4, $r4, $ta
 	srli	x5, x12, 11             # 	srli	$r7, $r2, #11
 	sw	x5, 4(x9)
 					# 	andi	$r7, $r7, #1
@@ -3770,11 +3770,11 @@ __cmpsf2:
 .LA:
 	li	x15, 4278190080         # 	move	$r5, #4278190080
 	slli	x12, x10, 1             # 	slli	$r2, $r0, #1
-	sltu	tp, x15, x12            # 	slt	$ta, $r5, $r2
-	bnez	tp, .LMnan              # 	bnez	$ta, .LMnan
+	sltu	t2, x15, x12            # 	slt	$ta, $r5, $r2
+	bnez	t2, .LMnan              # 	bnez	$ta, .LMnan
 	slli	x13, x11, 1             # 	slli	$r3, $r1, #1
-	sltu	tp, x15, x13            # 	slt	$ta, $r5, $r3
-	bnez	tp, .LMnan              # 	bnez	$ta, .LMnan
+	sltu	t2, x15, x13            # 	slt	$ta, $r5, $r3
+	bnez	t2, .LMnan              # 	bnez	$ta, .LMnan
 	xor	x15, x10, x11           # 	xor	$r5, $r0, $r1
 	bgez	x15, .LSameSign         # 	bgez	$r5, .LSameSign
 .LDiffSign:
@@ -3786,8 +3786,8 @@ __cmpsf2:
 .Ltmp0:
 	ret                             # 	ret5	$lp
 .LSameSign:
-	slti	tp, x10, 0              # 	sltsi	$ta, $r0, #0
-	bnez	tp, .LSameSignNeg       # 	bnez	$ta, .LSameSignNeg
+	slti	t2, x10, 0              # 	sltsi	$ta, $r0, #0
+	bnez	t2, .LSameSignNeg       # 	bnez	$ta, .LSameSignNeg
 .LSameSignPos:
 	sub	x10, x10, x11           # 	sub	$r0, $r0, $r1
 	ret                             # 	ret5	$lp
@@ -3854,45 +3854,45 @@ __cmpdf2:
 	sw	x5, 8(x9)
 	slli	x5, x11, 1              # 	slli	$r6, $r1, #1
 	sw	x5, 0(x9)
-	sltu	tp, x15, x10            # 	slt	$ta, $r5, $r0
+	sltu	t2, x15, x10            # 	slt	$ta, $r5, $r0
 	lw	x5, 0(x9)               # 	add	$r9, $r6, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 12(x9)
 	mv	x6, x5                  # 	slt	$ta, $r8, $r9
 	lw	x5, 8(x9)
-	sltu	tp, x5, x6
-	bnez	tp, .LMnan              # 	bnez	$ta, .LMnan
+	sltu	t2, x5, x6
+	bnez	t2, .LMnan              # 	bnez	$ta, .LMnan
 	slli	x5, x13, 1              # 	slli	$r7, $r3, #1
 	sw	x5, 4(x9)
-	sltu	tp, x15, x12            # 	slt	$ta, $r5, $r2
+	sltu	t2, x15, x12            # 	slt	$ta, $r5, $r2
 	lw	x5, 4(x9)               # 	add	$r9, $r7, $ta
-	add	x5, x5, tp
+	add	x5, x5, t2
 	sw	x5, 12(x9)
 	mv	x6, x5                  # 	slt	$ta, $r8, $r9
 	lw	x5, 8(x9)
-	sltu	tp, x5, x6
-	bnez	tp, .LMnan              # 	bnez	$ta, .LMnan
+	sltu	t2, x5, x6
+	bnez	t2, .LMnan              # 	bnez	$ta, .LMnan
 	xor	x14, x11, x13           # 	xor	$r4, $r1, $r3
 	bltz	x14, .LMdiff            # 	bltz	$r4, .LMdiff
-	slti	tp, x11, 0              # 	sltsi	$ta, $r1, #0
-	bnez	tp, .LMsame             # 	bnez	$ta, .LMsame
+	slti	t2, x11, 0              # 	sltsi	$ta, $r1, #0
+	bnez	t2, .LMsame             # 	bnez	$ta, .LMsame
 	sub	x14, x10, x12           # 	sub	$r4, $r0, $r2
-	sltu	tp, x10, x14            # 	slt	$ta, $r0, $r4
+	sltu	t2, x10, x14            # 	slt	$ta, $r0, $r4
 	sub	x10, x11, x13           # 	sub	$r0, $r1, $r3
-	sub	x10, x10, tp            # 	sub	$r0, $r0, $ta
-	sltu	tp, x15, x14            # 	slt	$ta, $r5, $r4
+	sub	x10, x10, t2            # 	sub	$r0, $r0, $ta
+	sltu	t2, x15, x14            # 	slt	$ta, $r5, $r4
 	bne	x10, zero, .Ltmp0       # 	cmovz	$r0, $ta, $r0
-	addi	x10, tp, 0
+	addi	x10, t2, 0
 .Ltmp0:
 	tail	.LMret                  # 	b	.LMret
 .LMsame:
 	sub	x14, x12, x10           # 	sub	$r4, $r2, $r0
-	sltu	tp, x12, x14            # 	slt	$ta, $r2, $r4
+	sltu	t2, x12, x14            # 	slt	$ta, $r2, $r4
 	sub	x10, x13, x11           # 	sub	$r0, $r3, $r1
-	sub	x10, x10, tp            # 	sub	$r0, $r0, $ta
-	sltu	tp, x15, x14            # 	slt	$ta, $r5, $r4
+	sub	x10, x10, t2            # 	sub	$r0, $r0, $ta
+	sltu	t2, x15, x14            # 	slt	$ta, $r5, $r4
 	bne	x10, zero, .Ltmp1       # 	cmovz	$r0, $ta, $r0
-	addi	x10, tp, 0
+	addi	x10, t2, 0
 .Ltmp1:
 	tail	.LMret                  # 	b	.LMret
 .LMdiff:
@@ -3963,14 +3963,14 @@ __unordsf2:
 __unorddf2:
 	slli	x11, x11, 1             # 	slli	$r1, $r1, #1
 	li	x14, 0                  # 	move	$r4, #0
-	sltu	tp, x14, x10            # 	slt	$ta, $r4, $r0
-	add	x10, x11, tp            # 	add	$r0, $r1, $ta
+	sltu	t2, x14, x10            # 	slt	$ta, $r4, $r0
+	add	x10, x11, t2            # 	add	$r0, $r1, $ta
 	li	x15, 4292870144         # 	move	$r5, #4292870144
 	sltu	x10, x15, x10           # 	slt	$r0, $r5, $r0
 	bnez	x10, .Li69              # 	bnez	$r0, .Li69
 	slli	x13, x13, 1             # 	slli	$r3, $r3, #1
-	sltu	tp, x14, x12            # 	slt	$ta, $r4, $r2
-	add	x13, x13, tp            # 	add	$r3, $r3, $ta
+	sltu	t2, x14, x12            # 	slt	$ta, $r4, $r2
+	add	x13, x13, t2            # 	add	$r3, $r3, $ta
 	sltu	x10, x15, x13           # 	slt	$r0, $r5, $r3
 .Li69:
 	ret                             # 	ret5	$lp
