@@ -62,8 +62,8 @@ __addsf3:
 	bne	x6, zero, .Ltmp0
 	addi	x15, t2, 0
 .Ltmp0:
-	lw	x4, 12(x9)              # 	move	$ta, $r9
-	mv	x5, x4                  # 	srl	$r9, $r9, $r5
+	lw	t2, 12(x9)              # 	move	$ta, $r9
+	mv	x5, t2                  # 	srl	$r9, $r9, $r5
 	srl	x5, x5, x15
 	sw	x5, 12(x9)
 					# 	sll	$r5, $r9, $r5
