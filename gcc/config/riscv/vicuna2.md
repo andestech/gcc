@@ -128,6 +128,13 @@
        (eq_attr "type" "dwext"))
   "vicuna2_ii, vicuna2_ex, vicuna2_mm, vicuna2_wb")
 
+;; Load-to-DSP has 2 bubbles.
+(define_bypass 3
+ "vicuna2_load_wd, vicuna2_load_bh"
+ "vicuna2_dsp_alu, vicuna2_dsp_alu64, vicuna2_dsp_alu_round,\
+  vicuna2_dsp_cmp, vicuna2_dsp_clip, vicuna2_dsp_insb, vicuna2_dsp_pack,\
+  vicuna2_dsp_bpick, vicuna2_dsp_wext, vicuna2_dsp_mul, vicuna2_dsp_mac")
+
 (define_bypass 2
  "vicuna2_dsp_mul"
  "vicuna2_dsp_alu, vicuna2_dsp_alu64, vicuna2_dsp_alu_round,\
