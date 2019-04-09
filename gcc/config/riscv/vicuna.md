@@ -21,106 +21,120 @@
 
 
 (define_automaton "vicuna_pipe")
-(define_cpu_unit "vicuna_alu" "vicuna_pipe")
+(define_cpu_unit
+ "vicuna_ii, vicuna_ex, vicuna_mm, vicuna_wb"
+ "vicuna_pipe")
 (define_cpu_unit "vicuna_mdu" "vicuna_pipe")
-(define_cpu_unit "vicuna_ag" "vicuna_pipe")
-(define_cpu_unit "vicuna_fpu" "vicuna_pipe")
+(define_cpu_unit
+ "vicuna_fpu_rf, vicuna_fpu_f1, vicuna_fpu_f2, vicuna_fpu_eu"
+ "vicuna_pipe")
+
+(define_reservation "vicuna_pipe"
+ "vicuna_ii, vicuna_ex, vicuna_mm, vicuna_wb")
+
+(define_reservation "vicuna_fpu_arith"
+ "vicuna_ii, vicuna_fpu_rf + vicuna_ex,
+  vicuna_fpu_f1 + vicuna_mm, vicuna_fpu_f2 + vicuna_wb, vicuna_fpu_eu * 2")
+
+(define_reservation "vicuna_fpu_pipe"
+ "vicuna_ii, vicuna_fpu_rf + vicuna_ex,
+  vicuna_fpu_f1 + vicuna_mm, vicuna_fpu_f2 + vicuna_wb")
 
 (define_insn_reservation "vicuna_alu_insn" 1
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "unknown,const,arith,shift,slt,multi,nop,logical,move"))
-  "vicuna_alu")
+  "vicuna_pipe")
 
 (define_insn_reservation "vicuna_load_wd" 2
   (and (eq_attr "tune" "vicuna")
        (and (eq_attr "type" "load")
             (eq_attr "mode" "SI,DI")))
-  "vicuna_alu+vicuna_ag")
+  "vicuna_pipe")
 
 (define_insn_reservation "vicuna_load_bh" 3
   (and (eq_attr "tune" "vicuna")
        (and (eq_attr "type" "load")
             (eq_attr "mode" "QI,HI")))
-  "vicuna_alu+vicuna_ag")
+  "vicuna_pipe")
 
 (define_insn_reservation "vicuna_store" 0
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "store"))
-  "vicuna_alu+vicuna_ag")
+  "vicuna_pipe")
 
 (define_insn_reservation "vicuna_branch" 0
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "branch,jump,call"))
-  "vicuna_alu+vicuna_ag")
+  "vicuna_pipe")
 
 (define_insn_reservation "vicuna_imul" 10
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "imul"))
-  "vicuna_mdu*8")
+  "vicuna_pipe, vicuna_mdu * 6")
 
 (define_insn_reservation "vicuna_idivsi" 38
   (and (eq_attr "tune" "vicuna")
        (and (eq_attr "type" "idiv")
             (eq_attr "mode" "SI")))
-  "vicuna_mdu*36")
+  "vicuna_pipe, vicuna_mdu * 34")
 
 (define_insn_reservation "vicuna_idivdi" 70
   (and (eq_attr "tune" "vicuna")
        (and (eq_attr "type" "idiv")
             (eq_attr "mode" "DI")))
-  "vicuna_mdu*68")
+  "vicuna_pipe, vicuna_mdu * 66")
 
-(define_insn_reservation "vicuna_xfer" 3
+(define_insn_reservation "vicuna_xfer" 1
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "mfc,mtc"))
-  "vicuna_alu")
+  "vicuna_pipe")
 
 (define_insn_reservation "vicuna_fpu_alu" 5
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "fadd"))
-  "vicuna_fpu")
+  "vicuna_fpu_arith")
 
 (define_insn_reservation "vicuna_fpu_mul" 5
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "fmul"))
-  "vicuna_fpu")
+  "vicuna_fpu_arith")
 
 (define_insn_reservation "vicuna_fpu_mac" 5
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "fmadd"))
-  "vicuna_fpu")
+  "vicuna_fpu_arith")
 
-(define_insn_reservation "vicuna_fpu_div" 5
+(define_insn_reservation "vicuna_fpu_div" 33
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "fdiv"))
-  "vicuna_fpu")
+  "vicuna_fpu_arith, vicuna_fpu_eu * 27")
 
-(define_insn_reservation "vicuna_fpu_sqrt" 5
+(define_insn_reservation "vicuna_fpu_sqrt" 33
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "fsqrt"))
-  "vicuna_fpu")
+  "vicuna_fpu_arith, vicuna_fpu_eu * 27")
 
 (define_insn_reservation "vicuna_fpu_move" 3
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "fmove,mtc,mfc"))
-  "vicuna_fpu")
+  "vicuna_fpu_pipe")
 
 (define_insn_reservation "vicuna_fpu_cmp" 3
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "fcmp"))
-  "vicuna_fpu")
+  "vicuna_fpu_pipe")
 
-(define_insn_reservation "vicuna_fpu_cvt" 3
+(define_insn_reservation "vicuna_fpu_cvt" 6
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "fcvt"))
-  "vicuna_fpu")
+  "vicuna_fpu_arith, vicuna_fpu_eu")
 
 (define_insn_reservation "vicuna_fpu_load" 3
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "fpload"))
-  "vicuna_fpu")
+  "vicuna_fpu_pipe")
 
 (define_insn_reservation "vicuna_fpu_store" 0
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "fpstore"))
-  "vicuna_fpu")
+  "vicuna_fpu_pipe")
