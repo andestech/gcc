@@ -138,3 +138,77 @@
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "fpstore"))
   "vicuna_fpu_pipe")
+
+(define_insn_reservation "vicuna_dsp_alu" 1
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "dalu"))
+  "vicuna_pipe")
+
+(define_insn_reservation "vicuna_dsp_alu64" 1
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "dalu64"))
+  "vicuna_pipe")
+
+(define_insn_reservation "vicuna_dsp_alu_round" 1
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "daluround"))
+  "vicuna_pipe")
+
+(define_insn_reservation "vicuna_dsp_cmp" 1
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "dcmp"))
+  "vicuna_pipe")
+
+(define_insn_reservation "vicuna_dsp_clip" 1
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "dclip"))
+  "vicuna_pipe")
+
+(define_insn_reservation "vicuna_dsp_mul" 1
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "dmul"))
+  "vicuna_pipe")
+
+(define_insn_reservation "vicuna_dsp_mac" 2
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "dmac"))
+  "vicuna_pipe")
+
+(define_insn_reservation "vicuna_dsp_insb" 1
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "dinsb"))
+  "vicuna_pipe")
+
+(define_insn_reservation "vicuna_dsp_pack" 1
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "dpack"))
+  "vicuna_pipe")
+
+(define_insn_reservation "vicuna_dsp_bpick" 1
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "dbpick"))
+  "vicuna_pipe")
+
+(define_insn_reservation "vicuna_dsp_wext" 1
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "dwext"))
+  "vicuna_pipe")
+
+;; Load-to-DSP has 2 bubbles.
+(define_bypass 3
+  "vicuna_load_wd, vicuna_load_bh"
+  "vicuna_dsp_alu, vicuna_dsp_alu64, vicuna_dsp_alu_round,\
+   vicuna_dsp_cmp, vicuna_dsp_clip, vicuna_dsp_insb, vicuna_dsp_pack,\
+   vicuna_dsp_bpick, vicuna_dsp_wext, vicuna_dsp_mul, vicuna_dsp_mac")
+
+(define_bypass 2
+ "vicuna_dsp_mul"
+ "vicuna_dsp_alu, vicuna_dsp_alu64, vicuna_dsp_alu_round,\
+  vicuna_dsp_cmp, vicuna_dsp_clip, vicuna_dsp_insb, vicuna_dsp_pack,\
+  vicuna_dsp_bpick, vicuna_dsp_wext, vicuna_dsp_mul, vicuna_dsp_mac")
+
+(define_bypass 3
+ "vicuna_dsp_mac"
+ "vicuna_dsp_alu, vicuna_dsp_alu64, vicuna_dsp_alu_round,\
+  vicuna_dsp_cmp, vicuna_dsp_clip, vicuna_dsp_insb, vicuna_dsp_pack,\
+  vicuna_dsp_bpick, vicuna_dsp_wext, vicuna_dsp_mul, vicuna_dsp_mac")
