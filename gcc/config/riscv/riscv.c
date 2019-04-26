@@ -155,6 +155,9 @@ struct GTY(())  machine_function {
 
   /* Indicate this funciton should not apply execit optimization.  */
   bool no_execit;
+
+  /* Indicate this function has indirect call attribute. */
+  bool ict_p;
 };
 
 /* Information about a single argument.  */
@@ -973,7 +976,19 @@ riscv_symbol_binds_local_p (const_rtx x)
     return false;
 }
 
-/* Return true X is a indirect call symbol.  */
+/* Return true if decl is a indirect call symbol.  */
+static bool
+riscv_indirect_call_p (tree func)
+{
+  tree func_decl = func;
+  if (func == NULL_TREE)
+    func_decl = current_function_decl;
+
+  return NULL_TREE != lookup_attribute ("indirect_call",
+					DECL_ATTRIBUTES (func_decl));
+}
+
+/* Return true if X is a indirect call symbol.  */
 bool
 riscv_indirect_call_referenced_p (const_rtx x)
 {
@@ -4733,6 +4748,9 @@ riscv_expand_prologue (void)
   unsigned mask = frame->mask;
   rtx insn;
 
+  if (cfun->machine->ict_p)
+    riscv_ict_used = true;
+
   if (flag_stack_usage_info)
     current_function_static_stack_size = size;
 
@@ -5809,6 +5827,9 @@ riscv_set_current_function (tree decl)
   cfun->machine->no_prologue_p = riscv_no_prologue_function_p (decl);
   cfun->machine->interrupt_handler_p
     = riscv_interrupt_type_p (TREE_TYPE (decl));
+
+  cfun->machine->ict_p
+    = riscv_indirect_call_p (decl);
 
   if (cfun->machine->naked_p && cfun->machine->interrupt_handler_p)
     error ("function attributes %qs and %qs are mutually exclusive",
