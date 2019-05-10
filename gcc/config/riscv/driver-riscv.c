@@ -19,12 +19,13 @@ You should have received a copy of the GNU General Public License
 along with GCC; see the file COPYING3.  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <string>
+
 #include "config.h"
 #include "system.h"
 #include "coretypes.h"
 #include "tm.h"
 #include "configargs.h"
-#include <string>
 #include "riscv-protos.h"
 
 #define MAX_ARCH_STRING_LEN 256
