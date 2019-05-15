@@ -1728,8 +1728,8 @@
 })
 
 (define_insn "*movsf_hardfloat"
-  [(set (match_operand:SF 0 "nonimmediate_operand" "=f,f,f,m,m,*f,*r,  *r,*r,*m")
-	(match_operand:SF 1 "move_operand"         " f,G,m,f,G,*r,*f,*G*r,*m,*r"))]
+  [(set (match_operand:SF 0 "nonimmediate_operand" "=f,f,f,m,m,*f,*r,  *r,!r,!m")
+	(match_operand:SF 1 "move_operand"         " f,G,m,f,G,*r,*f,*G*r,!m,!r"))]
   "TARGET_HARD_FLOAT
    && (register_operand (operands[0], SFmode)
        || reg_or_0_operand (operands[1], SFmode))"
