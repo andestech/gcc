@@ -6513,32 +6513,32 @@
   [(set_attr "type" "dmul")
    (set_attr "mode" "V4HI")])
 
-(define_insn "khmbb"
-  [(set (match_operand:V2HI 0 "register_operand" "=r")
-	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
-		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KHMBB))]
-  "TARGET_DSP && !TARGET_64BIT"
+(define_insn "khmbb<mode>"
+  [(set (match_operand:VHI 0 "register_operand" "=r")
+	(unspec:VHI [(match_operand:VHI 1 "register_operand" "r")
+		     (match_operand:VHI 2 "register_operand" "r")] UNSPEC_KHMBB))]
+  "TARGET_DSP"
   "khmbb\t%0, %1, %2"
   [(set_attr "type" "dmul")
-   (set_attr "mode" "V2HI")])
+   (set_attr "mode" "<MODE>")])
 
-(define_insn "khmbt"
-  [(set (match_operand:V2HI 0 "register_operand" "=r")
-	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
-		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KHMBT))]
-  "TARGET_DSP && !TARGET_64BIT"
+(define_insn "khmbt<mode>"
+  [(set (match_operand:VHI 0 "register_operand" "=r")
+	(unspec:VHI [(match_operand:VHI 1 "register_operand" "r")
+		     (match_operand:VHI 2 "register_operand" "r")] UNSPEC_KHMBT))]
+  "TARGET_DSP"
   "khmbt\t%0, %1, %2"
   [(set_attr "type" "dmul")
-   (set_attr "mode" "V2HI")])
+   (set_attr "mode" "<MODE>")])
 
-(define_insn "khmtt"
-  [(set (match_operand:V2HI 0 "register_operand" "=r")
-	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")
-		      (match_operand:V2HI 2 "register_operand" "r")] UNSPEC_KHMTT))]
-  "TARGET_DSP && !TARGET_64BIT"
+(define_insn "khmtt<mode>"
+  [(set (match_operand:VHI 0 "register_operand" "=r")
+	(unspec:VHI [(match_operand:VHI 1 "register_operand" "r")
+		     (match_operand:VHI 2 "register_operand" "r")] UNSPEC_KHMTT))]
+  "TARGET_DSP"
   "khmtt\t%0, %1, %2"
   [(set_attr "type" "dmul")
-   (set_attr "mode" "V2HI")])
+   (set_attr "mode" "<MODE>")])
 
 (define_insn "khmbb64"
   [(set (match_operand:DI 0 "register_operand" "=r")
