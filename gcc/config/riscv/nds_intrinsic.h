@@ -875,7 +875,7 @@ enum riscv_order
 #define __nds__sclip32(a, imm) \
   (__builtin_riscv_sclip32 ((a), (imm)))
 #define __nds__kabsw(a) \
-  (__builtin_riscv_kabs ((a)))
+  (__builtin_riscv_kabsw ((a)))
 
 #define __nds__kaddw(a, b) \
   (__builtin_riscv_kaddw ((a), (b)))
@@ -1506,20 +1506,14 @@ enum riscv_order
   (__builtin_riscv_v_clrs8 ((a)))
 #define __nds__v_clrs16(a) \
   (__builtin_riscv_v_clrs16 ((a)))
-#define __nds__v_clrs32(a) \
-  (__builtin_riscv_v_clrs32 ((a)))
 #define __nds__v_clo8(a) \
   (__builtin_riscv_v_clo8 ((a)))
 #define __nds__v_clo16(a) \
   (__builtin_riscv_v_clo16 ((a)))
-#define __nds__v_clo32(a) \
-  (__builtin_riscv_v_clo32 ((a)))
 #define __nds__v_clz8(a) \
   (__builtin_riscv_v_clz8 ((a)))
 #define __nds__v_clz16(a) \
   (__builtin_riscv_v_clz16 ((a)))
-#define __nds__v_clz32(a) \
-  (__builtin_riscv_v_clz32 ((a)))
 #else
 #define __nds__smul16(a, b) \
   (__builtin_riscv_64_smul16 ((a), (b)))
