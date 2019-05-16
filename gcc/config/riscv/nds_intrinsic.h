@@ -1134,12 +1134,6 @@ enum riscv_order
 #define __nds__clz32(a) \
   (__builtin_riscv_clz32 ((a)))
 
-#define __nds__v_kdmbb(a, b) \
-  (__builtin_riscv_v_kdmbb ((a), (b)))
-#define __nds__v_kdmbt(a, b) \
-  (__builtin_riscv_v_kdmbt ((a), (b)))
-#define __nds__v_kdmtt(a, b) \
-  (__builtin_riscv_v_kdmtt ((a), (b)))
 #define __nds__v_khmbb(a, b) \
   (__builtin_riscv_v_khmbb ((a), (b)))
 #define __nds__v_khmbt(a, b) \
@@ -1148,6 +1142,12 @@ enum riscv_order
   (__builtin_riscv_v_khmtt ((a), (b)))
 
 #if __riscv_xlen == 32
+#define __nds__v_kdmbb(a, b) \
+  (__builtin_riscv_v_kdmbb ((a), (b)))
+#define __nds__v_kdmbt(a, b) \
+  (__builtin_riscv_v_kdmbt ((a), (b)))
+#define __nds__v_kdmtt(a, b) \
+  (__builtin_riscv_v_kdmtt ((a), (b)))
 #define __nds__smul16(a, b) \
   (__builtin_riscv_smul16 ((a), (b)))
 #define __nds__umul16(a, b) \
@@ -1515,6 +1515,12 @@ enum riscv_order
 #define __nds__v_clz16(a) \
   (__builtin_riscv_v_clz16 ((a)))
 #else
+#define __nds__v_kdmbb(a, b) \
+  (__builtin_riscv_v64_kdmbb ((a), (b)))
+#define __nds__v_kdmbt(a, b) \
+  (__builtin_riscv_v64_kdmbt ((a), (b)))
+#define __nds__v_kdmtt(a, b) \
+  (__builtin_riscv_v64_kdmtt ((a), (b)))
 #define __nds__smul16(a, b) \
   (__builtin_riscv_64_smul16 ((a), (b)))
 #define __nds__umul16(a, b) \
