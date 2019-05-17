@@ -831,23 +831,6 @@ enum riscv_order
 #define __nds__uksub64(a, b) \
   (__builtin_riscv_uksub64 ((a), (b)))
 
-#define __nds__smar64(r, a, b) \
-  (__builtin_riscv_smar64 ((r), (a), (b)))
-#define __nds__smsr64(r, a, b) \
-  (__builtin_riscv_smsr64 ((r), (a), (b)))
-#define __nds__umar64(r, a, b) \
-  (__builtin_riscv_umar64 ((r), (a), (b)))
-#define __nds__umsr64(r, a, b) \
-  (__builtin_riscv_umsr64 ((r), (a), (b)))
-#define __nds__kmar64(r, a, b) \
-  (__builtin_riscv_kmar64 ((r), (a), (b)))
-#define __nds__kmsr64(r, a, b) \
-  (__builtin_riscv_kmsr64 ((r), (a), (b)))
-#define __nds__ukmar64(r, a, b) \
-  (__builtin_riscv_ukmar64 ((r), (a), (b)))
-#define __nds__ukmsr64(r, a, b) \
-  (__builtin_riscv_ukmsr64 ((r), (a), (b)))
-
 #define __nds__smalbb(r, a, b) \
   (__builtin_riscv_smalbb ((r), (a), (b)))
 #define __nds__smalbt(r, a, b) \
@@ -2058,6 +2041,38 @@ enum riscv_order
   (__builtin_riscv_v_pktb32 ((a), (b)))
 #define __nds__v_pktt32(a, b) \
   (__builtin_riscv_v_pktt32 ((a), (b)))
+#define __nds__smar64(r, a, b) \
+  (__builtin_riscv_smar64 ((r), (a), (b)))
+#define __nds__smsr64(r, a, b) \
+  (__builtin_riscv_smsr64 ((r), (a), (b)))
+#define __nds__umar64(r, a, b) \
+  (__builtin_riscv_umar64 ((r), (a), (b)))
+#define __nds__umsr64(r, a, b) \
+  (__builtin_riscv_umsr64 ((r), (a), (b)))
+#define __nds__kmar64(r, a, b) \
+  (__builtin_riscv_kmar64 ((r), (a), (b)))
+#define __nds__kmsr64(r, a, b) \
+  (__builtin_riscv_kmsr64 ((r), (a), (b)))
+#define __nds__ukmar64(r, a, b) \
+  (__builtin_riscv_ukmar64 ((r), (a), (b)))
+#define __nds__ukmsr64(r, a, b) \
+  (__builtin_riscv_ukmsr64 ((r), (a), (b)))
+#define __nds__v_smar64(r, a, b) \
+  (__builtin_riscv_v64_smar64 ((r), (a), (b)))
+#define __nds__v_smsr64(r, a, b) \
+  (__builtin_riscv_v64_smsr64 ((r), (a), (b)))
+#define __nds__v_umar64(r, a, b) \
+  (__builtin_riscv_v64_umar64 ((r), (a), (b)))
+#define __nds__v_umsr64(r, a, b) \
+  (__builtin_riscv_v64_umsr64 ((r), (a), (b)))
+#define __nds__v_kmar64(r, a, b) \
+  (__builtin_riscv_v64_kmar64 ((r), (a), (b)))
+#define __nds__v_kmsr64(r, a, b) \
+  (__builtin_riscv_v64_kmsr64 ((r), (a), (b)))
+#define __nds__v_ukmar64(r, a, b) \
+  (__builtin_riscv_v64_ukmar64 ((r), (a), (b)))
+#define __nds__v_ukmsr64(r, a, b) \
+  (__builtin_riscv_v64_ukmsr64 ((r), (a), (b)))
 #define vec64_all_eq(type, size, vec1, vec2) \
     (__builtin_riscv_vec_ ##type##cmpeq ##size (vec1, vec2) == 0xffffffffffffffffull)
 #endif
