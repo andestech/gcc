@@ -123,6 +123,9 @@
   UNSPEC_RDOV
   UNSPEC_KMMW
   UNSPEC_KMMWU
+  UNSPEC_KDMABB
+  UNSPEC_KDMABT
+  UNSPEC_KDMATT
 ])
 
 (define_c_enum "unspecv" [

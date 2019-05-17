@@ -6919,6 +6919,16 @@
   DONE;
 })
 
+(define_insn "kdmabb32"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(unspec:DI [(match_operand:DI 1 "register_operand" "0")
+		    (match_operand:SI 2 "register_operand" "r")
+		    (match_operand:SI 3 "register_operand" "r")] UNSPEC_KDMABB))]
+  "TARGET_DSP && TARGET_64BIT"
+  "kdmabb\t%0, %2, %3"
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "SI")])
+
 (define_expand "kdmabb64"
   [(match_operand:DI 0 "register_operand" "")
    (match_operand:DI 1 "register_operand" "")
@@ -6943,6 +6953,16 @@
   DONE;
 })
 
+(define_insn "kdmabt32"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(unspec:DI [(match_operand:DI 1 "register_operand" "0")
+		    (match_operand:SI 2 "register_operand" "r")
+		    (match_operand:SI 3 "register_operand" "r")] UNSPEC_KDMABT))]
+  "TARGET_DSP && TARGET_64BIT"
+  "kdmabt\t%0, %2, %3"
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "SI")])
+
 (define_expand "kdmabt64"
   [(match_operand:DI 0 "register_operand" "")
    (match_operand:DI 1 "register_operand" "")
@@ -6966,6 +6986,16 @@
 				GEN_INT (1), GEN_INT (1), operands[1]));
   DONE;
 })
+
+(define_insn "kdmatt32"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(unspec:DI [(match_operand:DI 1 "register_operand" "0")
+		    (match_operand:SI 2 "register_operand" "r")
+		    (match_operand:SI 3 "register_operand" "r")] UNSPEC_KDMATT))]
+  "TARGET_DSP && TARGET_64BIT"
+  "kdmatt\t%0, %2, %3"
+  [(set_attr "type" "dmac")
+   (set_attr "mode" "SI")])
 
 (define_expand "kdmatt64"
   [(match_operand:DI 0 "register_operand" "")
