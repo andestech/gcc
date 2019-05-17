@@ -2073,6 +2073,26 @@ enum riscv_order
   (__builtin_riscv_v64_ukmar64 ((r), (a), (b)))
 #define __nds__v_ukmsr64(r, a, b) \
   (__builtin_riscv_v64_ukmsr64 ((r), (a), (b)))
+#define __nds__v_kwmmul(a, b) \
+  (__builtin_riscv_v64_kwmmul ((a), (b)))
+#define __nds__v_kwmmul_u(a, b) \
+  (__builtin_riscv_v64_kwmmul_u ((a), (b)))
+#define __nds__v_kmmac(r, a, b) \
+  (__builtin_riscv_v64_kmmac ((r), (a), (b)))
+#define __nds__v_kmmac_u(r, a, b) \
+  (__builtin_riscv_v64_kmmac_u ((r), (a), (b)))
+#define __nds__v_kmmsb(r, a, b) \
+  (__builtin_riscv_v64_kmmsb ((r), (a), (b)))
+#define __nds__v_kmmsb_u(r, a, b) \
+  (__builtin_riscv_v64_kmmsb_u ((r), (a), (b)))
+#define __nds__v_smmul(a, b) \
+  (__builtin_riscv_v64_smmul ((a), (b)))
+#define __nds__v_smmul(a, b) \
+  (__builtin_riscv_v64_smmul ((a), (b)))
+#define __nds__v_smmul_u(a, b) \
+  (__builtin_riscv_v64_smmul_u ((a), (b)))
+#define __nds__v_smmul_u(a, b) \
+  (__builtin_riscv_v64_smmul_u ((a), (b)))
 #define vec64_all_eq(type, size, vec1, vec2) \
     (__builtin_riscv_vec_ ##type##cmpeq ##size (vec1, vec2) == 0xffffffffffffffffull)
 #endif
