@@ -759,11 +759,11 @@ enum riscv_order
 #define __nds__kmmawt2_u(r, a, b) \
   (__builtin_riscv_kmmawt2_u ((r), (a), (b)))
 #define __nds__smbb16(a, b) \
-  (__builtin_riscv_smbb ((a), (b)))
+  (__builtin_riscv_smbb16 ((a), (b)))
 #define __nds__smbt16(a, b) \
-  (__builtin_riscv_smbt ((a), (b)))
+  (__builtin_riscv_smbt16 ((a), (b)))
 #define __nds__smtt16(a, b) \
-  (__builtin_riscv_smtt ((a), (b)))
+  (__builtin_riscv_smtt16 ((a), (b)))
 #define __nds__kmda(a, b) \
   (__builtin_riscv_kmda ((a), (b)))
 #define __nds__kmxda(a, b) \
@@ -1391,11 +1391,11 @@ enum riscv_order
 #define __nds__v_kmmawt2_u(r, a, b) \
   (__builtin_riscv_v_kmmawt2_u ((r), (a), (b)))
 #define __nds__v_smbb16(a, b) \
-  (__builtin_riscv_v_smbb ((a), (b)))
+  (__builtin_riscv_v_smbb16 ((a), (b)))
 #define __nds__v_smbt16(a, b) \
-  (__builtin_riscv_v_smbt ((a), (b)))
+  (__builtin_riscv_v_smbt16 ((a), (b)))
 #define __nds__v_smtt16(a, b) \
-  (__builtin_riscv_v_smtt ((a), (b)))
+  (__builtin_riscv_v_smtt16 ((a), (b)))
 #define __nds__v_kmda(a, b) \
   (__builtin_riscv_v_kmda ((a), (b)))
 #define __nds__v_kmxda(a, b) \
@@ -1770,11 +1770,11 @@ enum riscv_order
 #define __nds__v_kmmawt2_u(r, a, b) \
   (__builtin_riscv_v64_kmmawt2_u ((r), (a), (b)))
 #define __nds__v_smbb16(a, b) \
-  (__builtin_riscv_v64_smbb ((a), (b)))
+  (__builtin_riscv_v64_smbb16 ((a), (b)))
 #define __nds__v_smbt16(a, b) \
-  (__builtin_riscv_v64_smbt ((a), (b)))
+  (__builtin_riscv_v64_smbt16 ((a), (b)))
 #define __nds__v_smtt16(a, b) \
-  (__builtin_riscv_v64_smtt ((a), (b)))
+  (__builtin_riscv_v64_smtt16 ((a), (b)))
 #define __nds__v_kmda(a, b) \
   (__builtin_riscv_v64_kmda ((a), (b)))
 #define __nds__v_kmxda(a, b) \
@@ -1848,151 +1848,151 @@ enum riscv_order
 #define __nds__v_uclip8(a, b) \
   (__builtin_riscv_v64_uclip8 ((a), (b)))
 #define __nds__v_uadd32(a, b) \
-  (__builtin_riscv_v_uadd32 ((a), (b)))
+  (__builtin_riscv_v64_uadd32 ((a), (b)))
 #define __nds__v_sadd32(a, b) \
-  (__builtin_riscv_v_sadd32 ((a), (b)))
+  (__builtin_riscv_v64_sadd32 ((a), (b)))
 #define __nds__v_radd32(a, b) \
-  (__builtin_riscv_v_radd32 ((a), (b)))
+  (__builtin_riscv_v64_radd32 ((a), (b)))
 #define __nds__v_uradd32(a, b) \
-  (__builtin_riscv_v_uradd32 ((a), (b)))
+  (__builtin_riscv_v64_uradd32 ((a), (b)))
 #define __nds__v_kadd32(a, b) \
-  (__builtin_riscv_v_kadd32 ((a), (b)))
+  (__builtin_riscv_v64_kadd32 ((a), (b)))
 #define __nds__v_ukadd32(a, b) \
-  (__builtin_riscv_v_ukadd32 ((a), (b)))
+  (__builtin_riscv_v64_ukadd32 ((a), (b)))
 #define __nds__v_usub32(a, b) \
-  (__builtin_riscv_v_usub32 ((a), (b)))
+  (__builtin_riscv_v64_usub32 ((a), (b)))
 #define __nds__v_ssub32(a, b) \
-  (__builtin_riscv_v_ssub32 ((a), (b)))
+  (__builtin_riscv_v64_ssub32 ((a), (b)))
 #define __nds__v_rsub32(a, b) \
-  (__builtin_riscv_v_rsub32 ((a), (b)))
+  (__builtin_riscv_v64_rsub32 ((a), (b)))
 #define __nds__v_ursub32(a, b) \
-  (__builtin_riscv_v_ursub32 ((a), (b)))
+  (__builtin_riscv_v64_ursub32 ((a), (b)))
 #define __nds__v_ksub32(a, b) \
-  (__builtin_riscv_v_ksub32 ((a), (b)))
+  (__builtin_riscv_v64_ksub32 ((a), (b)))
 #define __nds__v_uksub32(a, b) \
-  (__builtin_riscv_v_uksub32 ((a), (b)))
+  (__builtin_riscv_v64_uksub32 ((a), (b)))
 #define __nds__v_ucras32(a, b) \
-  (__builtin_riscv_v_ucras32 ((a), (b)))
+  (__builtin_riscv_v64_ucras32 ((a), (b)))
 #define __nds__v_scras32(a, b) \
-  (__builtin_riscv_v_scras32 ((a), (b)))
+  (__builtin_riscv_v64_scras32 ((a), (b)))
 #define __nds__v_ucrsa32(a, b) \
-  (__builtin_riscv_v_ucrsa32 ((a), (b)))
+  (__builtin_riscv_v64_ucrsa32 ((a), (b)))
 #define __nds__v_scrsa32(a, b) \
-  (__builtin_riscv_v_scrsa32 ((a), (b)))
+  (__builtin_riscv_v64_scrsa32 ((a), (b)))
 #define __nds__v_rcras32(a, b) \
-  (__builtin_riscv_v_rcras32 ((a), (b)))
+  (__builtin_riscv_v64_rcras32 ((a), (b)))
 #define __nds__v_rcrsa32(a, b) \
-  (__builtin_riscv_v_rcrsa32 ((a), (b)))
+  (__builtin_riscv_v64_rcrsa32 ((a), (b)))
 #define __nds__v_urcras32(a, b) \
-  (__builtin_riscv_v_urcras32 ((a), (b)))
+  (__builtin_riscv_v64_urcras32 ((a), (b)))
 #define __nds__v_urcrsa32(a, b) \
-  (__builtin_riscv_v_urcrsa32 ((a), (b)))
+  (__builtin_riscv_v64_urcrsa32 ((a), (b)))
 #define __nds__v_kcras32(a, b) \
-  (__builtin_riscv_v_kcras32 ((a), (b)))
+  (__builtin_riscv_v64_kcras32 ((a), (b)))
 #define __nds__v_kcrsa32(a, b) \
-  (__builtin_riscv_v_kcrsa32 ((a), (b)))
+  (__builtin_riscv_v64_kcrsa32 ((a), (b)))
 #define __nds__v_ukcras32(a, b) \
-  (__builtin_riscv_v_ukcras32 ((a), (b)))
+  (__builtin_riscv_v64_ukcras32 ((a), (b)))
 #define __nds__v_ukcrsa32(a, b) \
-  (__builtin_riscv_v_ukcrsa32 ((a), (b)))
+  (__builtin_riscv_v64_ukcrsa32 ((a), (b)))
 #define __nds__v_ustas32(a, b) \
-  (__builtin_riscv_v_ustas32 ((a), (b)))
+  (__builtin_riscv_v64_ustas32 ((a), (b)))
 #define __nds__v_sstas32(a, b) \
-  (__builtin_riscv_v_sstas32 ((a), (b)))
+  (__builtin_riscv_v64_sstas32 ((a), (b)))
 #define __nds__v_ustsa32(a, b) \
-  (__builtin_riscv_v_ustsa32 ((a), (b)))
+  (__builtin_riscv_v64_ustsa32 ((a), (b)))
 #define __nds__v_sstsa32(a, b) \
-  (__builtin_riscv_v_sstsa32 ((a), (b)))
+  (__builtin_riscv_v64_sstsa32 ((a), (b)))
 #define __nds__v_rstas32(a, b) \
-  (__builtin_riscv_v_rstas32 ((a), (b)))
+  (__builtin_riscv_v64_rstas32 ((a), (b)))
 #define __nds__v_rstsa32(a, b) \
-  (__builtin_riscv_v_rstsa32 ((a), (b)))
+  (__builtin_riscv_v64_rstsa32 ((a), (b)))
 #define __nds__v_urstas32(a, b) \
-  (__builtin_riscv_v_urstas32 ((a), (b)))
+  (__builtin_riscv_v64_urstas32 ((a), (b)))
 #define __nds__v_urstsa32(a, b) \
-  (__builtin_riscv_v_urstsa32 ((a), (b)))
+  (__builtin_riscv_v64_urstsa32 ((a), (b)))
 #define __nds__v_kstas32(a, b) \
-  (__builtin_riscv_v_kstas32 ((a), (b)))
+  (__builtin_riscv_v64_kstas32 ((a), (b)))
 #define __nds__v_kstsa32(a, b) \
-  (__builtin_riscv_v_kstsa32 ((a), (b)))
+  (__builtin_riscv_v64_kstsa32 ((a), (b)))
 #define __nds__v_ukstas32(a, b) \
-  (__builtin_riscv_v_ukstas32 ((a), (b)))
+  (__builtin_riscv_v64_ukstas32 ((a), (b)))
 #define __nds__v_ukstsa32(a, b) \
-  (__builtin_riscv_v_ukstsa32 ((a), (b)))
+  (__builtin_riscv_v64_ukstsa32 ((a), (b)))
 #define __nds__v_sra32(a, b) \
-  (__builtin_riscv_v_sra32 ((a), (b)))
+  (__builtin_riscv_v64_sra32 ((a), (b)))
 #define __nds__v_sra32_u(a, b) \
-  (__builtin_riscv_v_sra32_u ((a), (b)))
+  (__builtin_riscv_v64_sra32_u ((a), (b)))
 #define __nds__v_srl32(a, b) \
-  (__builtin_riscv_v_srl32 ((a), (b)))
+  (__builtin_riscv_v64_srl32 ((a), (b)))
 #define __nds__v_srl32_u(a, b) \
-  (__builtin_riscv_v_srl32_u ((a), (b)))
+  (__builtin_riscv_v64_srl32_u ((a), (b)))
 #define __nds__v_sll32(a, b) \
-  (__builtin_riscv_v_sll32 ((a), (b)))
+  (__builtin_riscv_v64_sll32 ((a), (b)))
 #define __nds__v_ksll32(a, b) \
-  (__builtin_riscv_v_ksll32 ((a), (b)))
+  (__builtin_riscv_v64_ksll32 ((a), (b)))
 #define __nds__v_kslra32(a, b) \
-  (__builtin_riscv_v_kslra32 ((a), (b)))
+  (__builtin_riscv_v64_kslra32 ((a), (b)))
 #define __nds__v_kslra32_u(a, b) \
-  (__builtin_riscv_v_kslra32_u ((a), (b)))
+  (__builtin_riscv_v64_kslra32_u ((a), (b)))
 #define __nds__v_smin32(a, b) \
-  (__builtin_riscv_v_smin32 ((a), (b)))
+  (__builtin_riscv_v64_smin32 ((a), (b)))
 #define __nds__v_umin32(a, b) \
-  (__builtin_riscv_v_umin32 ((a), (b)))
+  (__builtin_riscv_v64_umin32 ((a), (b)))
 #define __nds__v_smax32(a, b) \
-  (__builtin_riscv_v_smax32 ((a), (b)))
+  (__builtin_riscv_v64_smax32 ((a), (b)))
 #define __nds__v_umax32(a, b) \
-  (__builtin_riscv_v_umax32 ((a), (b)))
+  (__builtin_riscv_v64_umax32 ((a), (b)))
 #define __nds__v_kabs32(a) \
-  (__builtin_riscv_v_kabs32 ((a)))
+  (__builtin_riscv_v64_kabs32 ((a)))
 #define __nds__v_khmbb16(a, b) \
-  (__builtin_riscv_v_khmbb16 ((a), (b)))
+  (__builtin_riscv_v64_khmbb16 ((a), (b)))
 #define __nds__v_khmbt16(a, b) \
-  (__builtin_riscv_v_khmbt16 ((a), (b)))
+  (__builtin_riscv_v64_khmbt16 ((a), (b)))
 #define __nds__v_khmtt16(a, b) \
-  (__builtin_riscv_v_khmtt16 ((a), (b)))
+  (__builtin_riscv_v64_khmtt16 ((a), (b)))
 #define __nds__v_kdmbb16(a, b) \
-  (__builtin_riscv_v_kdmbb16 ((a), (b)))
+  (__builtin_riscv_v64_kdmbb16 ((a), (b)))
 #define __nds__v_kdmbt16(a, b) \
-  (__builtin_riscv_v_kdmbt16 ((a), (b)))
+  (__builtin_riscv_v64_kdmbt16 ((a), (b)))
 #define __nds__v_kdmtt16(a, b) \
-  (__builtin_riscv_v_kdmtt16 ((a), (b)))
+  (__builtin_riscv_v64_kdmtt16 ((a), (b)))
 #define __nds__v_smbb32(a, b) \
-  (__builtin_riscv_v_smbb32 ((a), (b)))
+  (__builtin_riscv_v64_smbb32 ((a), (b)))
 #define __nds__v_smbt32(a, b) \
-  (__builtin_riscv_v_smbt32 ((a), (b)))
+  (__builtin_riscv_v64_smbt32 ((a), (b)))
 #define __nds__v_smtt32(a, b) \
-  (__builtin_riscv_v_smtt32 ((a), (b)))
+  (__builtin_riscv_v64_smtt32 ((a), (b)))
 #define __nds__v_kmabb32(r, a, b) \
-  (__builtin_riscv_v_kmabb32 ((r), (a), (b)))
+  (__builtin_riscv_v64_kmabb32 ((r), (a), (b)))
 #define __nds__v_kmabt32(r, a, b) \
-  (__builtin_riscv_v_kmabt32 ((r), (a), (b)))
+  (__builtin_riscv_v64_kmabt32 ((r), (a), (b)))
 #define __nds__v_kmatt32(r, a, b) \
-  (__builtin_riscv_v_kmatt32 ((r), (a), (b)))
+  (__builtin_riscv_v64_kmatt32 ((r), (a), (b)))
 #define __nds__v_kmda32(a, b) \
-  (__builtin_riscv_v_kmda32 ((a), (b)))
+  (__builtin_riscv_v64_kmda32 ((a), (b)))
 #define __nds__v_kmxda32(a, b) \
-  (__builtin_riscv_v_kmxda32 ((a), (b)))
+  (__builtin_riscv_v64_kmxda32 ((a), (b)))
 #define __nds__v_kmada32(r, a, b) \
-  (__builtin_riscv_v_kmada32 ((r), (a), (b)))
+  (__builtin_riscv_v64_kmada32 ((r), (a), (b)))
 #define __nds__v_kmaxda32(r, a, b) \
-  (__builtin_riscv_v_kmaxda32 ((r), (a), (b)))
+  (__builtin_riscv_v64_kmaxda32 ((r), (a), (b)))
 #define __nds__v_kmads32(r, a, b) \
-  (__builtin_riscv_v_kmads32 ((r), (a), (b)))
+  (__builtin_riscv_v64_kmads32 ((r), (a), (b)))
 #define __nds__v_kmadrs32(r, a, b) \
-  (__builtin_riscv_v_kmadrs32 ((r), (a), (b)))
+  (__builtin_riscv_v64_kmadrs32 ((r), (a), (b)))
 #define __nds__v_kmaxds32(r, a, b) \
-  (__builtin_riscv_v_kmaxds32 ((r), (a), (b)))
+  (__builtin_riscv_v64_kmaxds32 ((r), (a), (b)))
 #define __nds__v_kmsda32(r, a, b) \
-  (__builtin_riscv_v_kmsda32 ((r), (a), (b)))
+  (__builtin_riscv_v64_kmsda32 ((r), (a), (b)))
 #define __nds__v_kmsxda32(r, a, b) \
-  (__builtin_riscv_v_kmsxda32 ((r), (a), (b)))
+  (__builtin_riscv_v64_kmsxda32 ((r), (a), (b)))
 #define __nds__v_smds32(a, b) \
-  (__builtin_riscv_v_smds32 ((a), (b)))
+  (__builtin_riscv_v64_smds32 ((a), (b)))
 #define __nds__v_smdrs32(a, b) \
-  (__builtin_riscv_v_smdrs32 ((a), (b)))
+  (__builtin_riscv_v64_smdrs32 ((a), (b)))
 #define __nds__v_smxds32(a, b) \
-  (__builtin_riscv_v_smxds32 ((a), (b)))
+  (__builtin_riscv_v64_smxds32 ((a), (b)))
 #define __nds__v_kdmabb(r, a, b) \
   (__builtin_riscv_v64_kdmabb ((r), (a), (b)))
 #define __nds__v_kdmabt(r, a, b) \
@@ -2034,13 +2034,13 @@ enum riscv_order
 #define __nds__v_swap16(a) \
   (__builtin_riscv_v64_swap16 ((a)))
 #define __nds__v_pkbb32(a, b) \
-  (__builtin_riscv_v_pkbb32 ((a), (b)))
+  (__builtin_riscv_v64_pkbb32 ((a), (b)))
 #define __nds__v_pkbt32(a, b) \
-  (__builtin_riscv_v_pkbt32 ((a), (b)))
+  (__builtin_riscv_v64_pkbt32 ((a), (b)))
 #define __nds__v_pktb32(a, b) \
-  (__builtin_riscv_v_pktb32 ((a), (b)))
+  (__builtin_riscv_v64_pktb32 ((a), (b)))
 #define __nds__v_pktt32(a, b) \
-  (__builtin_riscv_v_pktt32 ((a), (b)))
+  (__builtin_riscv_v64_pktt32 ((a), (b)))
 #define __nds__smar64(r, a, b) \
   (__builtin_riscv_smar64 ((r), (a), (b)))
 #define __nds__smsr64(r, a, b) \
