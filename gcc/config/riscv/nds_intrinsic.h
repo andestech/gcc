@@ -703,18 +703,10 @@ enum riscv_order
 
 #define __nds__smmul(a, b) \
   (__builtin_riscv_smmul ((a), (b)))
-#define __nds__smmul(a, b) \
-  (__builtin_riscv_smmul ((a), (b)))
-#define __nds__smmul_u(a, b) \
-  (__builtin_riscv_smmul_u ((a), (b)))
 #define __nds__smmul_u(a, b) \
   (__builtin_riscv_smmul_u ((a), (b)))
 #define __nds__kmmac(r, a, b) \
   (__builtin_riscv_kmmac ((r), (a), (b)))
-#define __nds__kmmac(r, a, b) \
-  (__builtin_riscv_kmmac ((r), (a), (b)))
-#define __nds__kmmac_u(r, a, b) \
-  (__builtin_riscv_kmmac_u ((r), (a), (b)))
 #define __nds__kmmac_u(r, a, b) \
   (__builtin_riscv_kmmac_u ((r), (a), (b)))
 #define __nds__kmmsb(r, a, b) \
@@ -895,9 +887,9 @@ enum riscv_order
 #define __nds__ave(a, b) \
   (__builtin_riscv_ave ((a), (b)))
 #define __nds__maxw(a, b) \
-  (__builtin_riscv_max ((a), (b)))
+  (__builtin_riscv_maxw ((a), (b)))
 #define __nds__minw(a, b) \
-  (__builtin_riscv_min ((a), (b)))
+  (__builtin_riscv_minw ((a), (b)))
 
 #define __nds__sra8(a, b) \
   (__builtin_riscv_sra8 ((a), (b)))
@@ -1074,9 +1066,9 @@ enum riscv_order
 #define __nds__smxds32(a, b) \
   (__builtin_riscv_smxds32 ((a), (b)))
 #define __nds__rdov() \
-  (__builtin_riscv_rdov())
+  (__builtin_riscv_csrr (0x801))
 #define __nds__clrov() \
-  (__builtin_riscv_clrov())
+  (__builtin_riscv_csrc (1, 0x801))
 
 #define __nds__kdmabb16(r, a, b) \
   (__builtin_riscv_kdmabb16 ((r), (a), (b)))
@@ -1096,7 +1088,7 @@ enum riscv_order
 #define __nds__umaqa(r, a, b) \
   (__builtin_riscv_umaqa ((r), (a), (b)))
 #define __nds__smaqa_su(r, a, b) \
-  (__builtin_riscv_sumaqa ((r), (a), (b)))
+  (__builtin_riscv_smaqa_su ((r), (a), (b)))
 
 #define __nds__clrs8(a) \
   (__builtin_riscv_clrs8 ((a)))
@@ -1116,37 +1108,6 @@ enum riscv_order
   (__builtin_riscv_clz16 ((a)))
 #define __nds__clz32(a) \
   (__builtin_riscv_clz32 ((a)))
-
-#define __nds__smar64(r, a, b) \
-  (__builtin_riscv_smar64 ((r), (a), (b)))
-#define __nds__smsr64(r, a, b) \
-  (__builtin_riscv_smsr64 ((r), (a), (b)))
-#define __nds__umar64(r, a, b) \
-  (__builtin_riscv_umar64 ((r), (a), (b)))
-#define __nds__umsr64(r, a, b) \
-  (__builtin_riscv_umsr64 ((r), (a), (b)))
-#define __nds__kmar64(r, a, b) \
-  (__builtin_riscv_kmar64 ((r), (a), (b)))
-#define __nds__kmsr64(r, a, b) \
-  (__builtin_riscv_kmsr64 ((r), (a), (b)))
-#define __nds__ukmar64(r, a, b) \
-  (__builtin_riscv_ukmar64 ((r), (a), (b)))
-#define __nds__ukmsr64(r, a, b) \
-  (__builtin_riscv_ukmsr64 ((r), (a), (b)))
-
-#if __riscv_xlen == 32
-#define __nds__v_khmbb(a, b) \
-  (__builtin_riscv_v_khmbb ((a), (b)))
-#define __nds__v_khmbt(a, b) \
-  (__builtin_riscv_v_khmbt ((a), (b)))
-#define __nds__v_khmtt(a, b) \
-  (__builtin_riscv_v_khmtt ((a), (b)))
-#define __nds__v_kdmbb(a, b) \
-  (__builtin_riscv_v_kdmbb ((a), (b)))
-#define __nds__v_kdmbt(a, b) \
-  (__builtin_riscv_v_kdmbt ((a), (b)))
-#define __nds__v_kdmtt(a, b) \
-  (__builtin_riscv_v_kdmtt ((a), (b)))
 #define __nds__smul16(a, b) \
   (__builtin_riscv_smul16 ((a), (b)))
 #define __nds__umul16(a, b) \
@@ -1163,6 +1124,8 @@ enum riscv_order
   (__builtin_riscv_umulx16 ((a), (b)))
 #define __nds__umulx8(a, b) \
   (__builtin_riscv_umulx8 ((a), (b)))
+
+#if __riscv_xlen == 32
 #define __nds__v_uadd16(a, b) \
   (__builtin_riscv_v_uadd16 ((a), (b)))
 #define __nds__v_sadd16(a, b) \
@@ -1500,7 +1463,7 @@ enum riscv_order
 #define __nds__v_umaqa(r, a, b) \
   (__builtin_riscv_v_umaqa ((r), (a), (b)))
 #define __nds__v_smaqa_su(r, a, b) \
-  (__builtin_riscv_v_sumaqa ((r), (a), (b)))
+  (__builtin_riscv_v_smaqa_su ((r), (a), (b)))
 #define __nds__v_clrs8(a) \
   (__builtin_riscv_v_clrs8 ((a)))
 #define __nds__v_clrs16(a) \
@@ -1513,35 +1476,39 @@ enum riscv_order
   (__builtin_riscv_v_clz8 ((a)))
 #define __nds__v_clz16(a) \
   (__builtin_riscv_v_clz16 ((a)))
-#else
-#define __nds__v_khmbb(a, b) \
-  (__builtin_riscv_v64_khmbb ((a), (b)))
-#define __nds__v_khmbt(a, b) \
-  (__builtin_riscv_v64_khmbt ((a), (b)))
-#define __nds__v_khmtt(a, b) \
-  (__builtin_riscv_v64_khmtt ((a), (b)))
 #define __nds__v_kdmbb(a, b) \
-  (__builtin_riscv_v64_kdmbb ((a), (b)))
+  (__builtin_riscv_v_kdmbb ((a), (b)))
 #define __nds__v_kdmbt(a, b) \
-  (__builtin_riscv_v64_kdmbt ((a), (b)))
+  (__builtin_riscv_v_kdmbt ((a), (b)))
 #define __nds__v_kdmtt(a, b) \
-  (__builtin_riscv_v64_kdmtt ((a), (b)))
-#define __nds__smul16(a, b) \
-  (__builtin_riscv_64_smul16 ((a), (b)))
-#define __nds__umul16(a, b) \
-  (__builtin_riscv_64_umul16 ((a), (b)))
-#define __nds__smul8(a, b) \
-  (__builtin_riscv_64_smul8 ((a), (b)))
-#define __nds__umul8(a, b) \
-  (__builtin_riscv_64_umul8 ((a), (b)))
-#define __nds__smulx16(a, b) \
-  (__builtin_riscv_64_smulx16 ((a), (b)))
-#define __nds__smulx8(a, b) \
-  (__builtin_riscv_64_smulx8 ((a), (b)))
-#define __nds__umulx16(a, b) \
-  (__builtin_riscv_64_umulx16 ((a), (b)))
-#define __nds__umulx8(a, b) \
-  (__builtin_riscv_64_umulx8 ((a), (b)))
+  (__builtin_riscv_v_kdmtt ((a), (b)))
+#define __nds__v_khmbb(a, b) \
+  (__builtin_riscv_v_khmbb ((a), (b)))
+#define __nds__v_khmbt(a, b) \
+  (__builtin_riscv_v_khmbt ((a), (b)))
+#define __nds__v_khmtt(a, b) \
+  (__builtin_riscv_v_khmtt ((a), (b)))
+#define __nds__v_pbsad(a, b) \
+  (__builtin_riscv_v_pbsad ((a), (b)))
+#define __nds__v_pbsada(acc, a, b) \
+  (__builtin_riscv_v_pbsada ((acc), (a), (b)))
+#else
+#define __nds__v_smul16(a, b) \
+  (__builtin_riscv_v_smul16 ((a), (b)))
+#define __nds__v_umul16(a, b) \
+  (__builtin_riscv_v_umul16 ((a), (b)))
+#define __nds__v_smul8(a, b) \
+  (__builtin_riscv_v_smul8 ((a), (b)))
+#define __nds__v_umul8(a, b) \
+  (__builtin_riscv_v_umul8 ((a), (b)))
+#define __nds__v_smulx16(a, b) \
+  (__builtin_riscv_v_smulx16 ((a), (b)))
+#define __nds__v_smulx8(a, b) \
+  (__builtin_riscv_v_smulx8 ((a), (b)))
+#define __nds__v_umulx16(a, b) \
+  (__builtin_riscv_v_umulx16 ((a), (b)))
+#define __nds__v_umulx8(a, b) \
+  (__builtin_riscv_v_umulx8 ((a), (b)))
 #define __nds__v_uadd16(a, b) \
   (__builtin_riscv_v64_uadd16 ((a), (b)))
 #define __nds__v_sadd16(a, b) \
@@ -1701,21 +1668,21 @@ enum riscv_order
 #define __nds__v_kabs16(a) \
   (__builtin_riscv_v64_kabs16 ((a)))
 #define __nds__v_smul16(a, b) \
-  (__builtin_riscv_v64_smul16 ((a), (b)))
+  (__builtin_riscv_v_smul16 ((a), (b)))
 #define __nds__v_smulx16(a, b) \
-  (__builtin_riscv_v64_smulx16 ((a), (b)))
+  (__builtin_riscv_v_smulx16 ((a), (b)))
 #define __nds__v_umul16(a, b) \
-  (__builtin_riscv_v64_umul16 ((a), (b)))
+  (__builtin_riscv_v_umul16 ((a), (b)))
 #define __nds__v_umulx16(a, b) \
-  (__builtin_riscv_v64_umulx16 ((a), (b)))
+  (__builtin_riscv_v_umulx16 ((a), (b)))
 #define __nds__v_smul8(a, b) \
-  (__builtin_riscv_v64_smul8 ((a), (b)))
+  (__builtin_riscv_v_smul8 ((a), (b)))
 #define __nds__v_smulx8(a, b) \
-  (__builtin_riscv_v64_smulx8 ((a), (b)))
+  (__builtin_riscv_v_smulx8 ((a), (b)))
 #define __nds__v_umul8(a, b) \
-  (__builtin_riscv_v64_umul8 ((a), (b)))
+  (__builtin_riscv_v_umul8 ((a), (b)))
 #define __nds__v_umulx8(a, b) \
-  (__builtin_riscv_v64_umulx8 ((a), (b)))
+  (__builtin_riscv_v_umulx8 ((a), (b)))
 #define __nds__v_smin8(a, b) \
   (__builtin_riscv_v64_smin8 ((a), (b)))
 #define __nds__v_umin8(a, b) \
@@ -2027,7 +1994,7 @@ enum riscv_order
 #define __nds__v_umaqa(r, a, b) \
   (__builtin_riscv_v64_umaqa ((r), (a), (b)))
 #define __nds__v_smaqa_su(r, a, b) \
-  (__builtin_riscv_v64_sumaqa ((r), (a), (b)))
+  (__builtin_riscv_v64_smaqa_su ((r), (a), (b)))
 #define __nds__v_clrs8(a) \
   (__builtin_riscv_v64_clrs8 ((a)))
 #define __nds__v_clrs16(a) \
@@ -2058,6 +2025,59 @@ enum riscv_order
   (__builtin_riscv_v64_pktb32 ((a), (b)))
 #define __nds__v_pktt32(a, b) \
   (__builtin_riscv_v64_pktt32 ((a), (b)))
+#define __nds__v_kdmbb(a, b) \
+  (__builtin_riscv_v64_kdmbb ((a), (b)))
+#define __nds__v_kdmbt(a, b) \
+  (__builtin_riscv_v64_kdmbt ((a), (b)))
+#define __nds__v_kdmtt(a, b) \
+  (__builtin_riscv_v64_kdmtt ((a), (b)))
+#define __nds__v_khmbb(a, b) \
+  (__builtin_riscv_v64_khmbb ((a), (b)))
+#define __nds__v_khmbt(a, b) \
+  (__builtin_riscv_v64_khmbt ((a), (b)))
+#define __nds__v_khmtt(a, b) \
+  (__builtin_riscv_v64_khmtt ((a), (b)))
+#define __nds__v_smmul(a, b) \
+  (__builtin_riscv_v64_smmul ((a), (b)))
+#define __nds__v_smmul_u(a, b) \
+  (__builtin_riscv_v64_smmul_u ((a), (b)))
+#define __nds__v_kwmmul(a, b) \
+  (__builtin_riscv_v64_kwmmul ((a), (b)))
+#define __nds__v_kwmmul_u(a, b) \
+  (__builtin_riscv_v64_kwmmul_u ((a), (b)))
+#define __nds__v_kmmac(r, a, b) \
+  (__builtin_riscv_v64_kmmac ((r), (a), (b)))
+#define __nds__v_kmmac_u(r, a, b) \
+  (__builtin_riscv_v64_kmmac_u ((r), (a), (b)))
+#define __nds__v_kmmsb(r, a, b) \
+  (__builtin_riscv_v64_kmmsb ((r), (a), (b)))
+#define __nds__v_kmmsb_u(r, a, b) \
+  (__builtin_riscv_v64_kmmsb_u ((r), (a), (b)))
+#define __nds__v_uclip32(a, imm) \
+  (__builtin_riscv_v64_uclip32 ((a), (imm)))
+#define __nds__v_sclip32(a, imm) \
+  (__builtin_riscv_v64_sclip32 ((a), (imm)))
+#define __nds__v_pbsad(a, b) \
+  (__builtin_riscv_v64_pbsad ((a), (b)))
+#define __nds__v_pbsada(acc, a, b) \
+  (__builtin_riscv_v64_pbsada ((acc), (a), (b)))
+
+#define __nds__smar64(r, a, b) \
+  (__builtin_riscv_smar64 ((r), (a), (b)))
+#define __nds__smsr64(r, a, b) \
+  (__builtin_riscv_smsr64 ((r), (a), (b)))
+#define __nds__umar64(r, a, b) \
+  (__builtin_riscv_umar64 ((r), (a), (b)))
+#define __nds__umsr64(r, a, b) \
+  (__builtin_riscv_umsr64 ((r), (a), (b)))
+#define __nds__kmar64(r, a, b) \
+  (__builtin_riscv_kmar64 ((r), (a), (b)))
+#define __nds__kmsr64(r, a, b) \
+  (__builtin_riscv_kmsr64 ((r), (a), (b)))
+#define __nds__ukmar64(r, a, b) \
+  (__builtin_riscv_ukmar64 ((r), (a), (b)))
+#define __nds__ukmsr64(r, a, b) \
+  (__builtin_riscv_ukmsr64 ((r), (a), (b)))
 #define __nds__v_smar64(r, a, b) \
   (__builtin_riscv_v64_smar64 ((r), (a), (b)))
 #define __nds__v_smsr64(r, a, b) \
@@ -2074,26 +2094,6 @@ enum riscv_order
   (__builtin_riscv_v64_ukmar64 ((r), (a), (b)))
 #define __nds__v_ukmsr64(r, a, b) \
   (__builtin_riscv_v64_ukmsr64 ((r), (a), (b)))
-#define __nds__v_kwmmul(a, b) \
-  (__builtin_riscv_v64_kwmmul ((a), (b)))
-#define __nds__v_kwmmul_u(a, b) \
-  (__builtin_riscv_v64_kwmmul_u ((a), (b)))
-#define __nds__v_kmmac(r, a, b) \
-  (__builtin_riscv_v64_kmmac ((r), (a), (b)))
-#define __nds__v_kmmac_u(r, a, b) \
-  (__builtin_riscv_v64_kmmac_u ((r), (a), (b)))
-#define __nds__v_kmmsb(r, a, b) \
-  (__builtin_riscv_v64_kmmsb ((r), (a), (b)))
-#define __nds__v_kmmsb_u(r, a, b) \
-  (__builtin_riscv_v64_kmmsb_u ((r), (a), (b)))
-#define __nds__v_smmul(a, b) \
-  (__builtin_riscv_v64_smmul ((a), (b)))
-#define __nds__v_smmul(a, b) \
-  (__builtin_riscv_v64_smmul ((a), (b)))
-#define __nds__v_smmul_u(a, b) \
-  (__builtin_riscv_v64_smmul_u ((a), (b)))
-#define __nds__v_smmul_u(a, b) \
-  (__builtin_riscv_v64_smmul_u ((a), (b)))
 #define vec64_all_eq(type, size, vec1, vec2) \
     (__builtin_riscv_vec_ ##type##cmpeq ##size (vec1, vec2) == 0xffffffffffffffffull)
 #endif
