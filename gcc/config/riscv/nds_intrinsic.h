@@ -1124,6 +1124,22 @@ enum riscv_order
   (__builtin_riscv_umulx16 ((a), (b)))
 #define __nds__umulx8(a, b) \
   (__builtin_riscv_umulx8 ((a), (b)))
+#define __nds__smar64(r, a, b) \
+  (__builtin_riscv_smar64 ((r), (a), (b)))
+#define __nds__smsr64(r, a, b) \
+  (__builtin_riscv_smsr64 ((r), (a), (b)))
+#define __nds__umar64(r, a, b) \
+  (__builtin_riscv_umar64 ((r), (a), (b)))
+#define __nds__umsr64(r, a, b) \
+  (__builtin_riscv_umsr64 ((r), (a), (b)))
+#define __nds__kmar64(r, a, b) \
+  (__builtin_riscv_kmar64 ((r), (a), (b)))
+#define __nds__kmsr64(r, a, b) \
+  (__builtin_riscv_kmsr64 ((r), (a), (b)))
+#define __nds__ukmar64(r, a, b) \
+  (__builtin_riscv_ukmar64 ((r), (a), (b)))
+#define __nds__ukmsr64(r, a, b) \
+  (__builtin_riscv_ukmsr64 ((r), (a), (b)))
 
 #if __riscv_xlen == 32
 #define __nds__v_uadd16(a, b) \
@@ -2062,22 +2078,6 @@ enum riscv_order
 #define __nds__v_pbsada(acc, a, b) \
   (__builtin_riscv_v64_pbsada ((acc), (a), (b)))
 
-#define __nds__smar64(r, a, b) \
-  (__builtin_riscv_smar64 ((r), (a), (b)))
-#define __nds__smsr64(r, a, b) \
-  (__builtin_riscv_smsr64 ((r), (a), (b)))
-#define __nds__umar64(r, a, b) \
-  (__builtin_riscv_umar64 ((r), (a), (b)))
-#define __nds__umsr64(r, a, b) \
-  (__builtin_riscv_umsr64 ((r), (a), (b)))
-#define __nds__kmar64(r, a, b) \
-  (__builtin_riscv_kmar64 ((r), (a), (b)))
-#define __nds__kmsr64(r, a, b) \
-  (__builtin_riscv_kmsr64 ((r), (a), (b)))
-#define __nds__ukmar64(r, a, b) \
-  (__builtin_riscv_ukmar64 ((r), (a), (b)))
-#define __nds__ukmsr64(r, a, b) \
-  (__builtin_riscv_ukmsr64 ((r), (a), (b)))
 #define __nds__v_smar64(r, a, b) \
   (__builtin_riscv_v64_smar64 ((r), (a), (b)))
 #define __nds__v_smsr64(r, a, b) \
