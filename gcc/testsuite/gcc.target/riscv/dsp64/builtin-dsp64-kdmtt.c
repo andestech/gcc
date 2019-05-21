@@ -13,7 +13,7 @@ long kdmtt (int ra, int rb)
 }
 
 static __attribute__ ((noinline))
-long v_kdmtt (int16x2_t ra, int16x2_t rb)
+long v_kdmtt (int16x4_t ra, int16x4_t rb)
 {
   return __nds__v_kdmtt (ra, rb);
 }
@@ -22,8 +22,8 @@ int
 main ()
 {
   long a = kdmtt (0x0001f000, 0x00011000);
-  long v_sa = v_kdmtt ((int16x2_t) {0xf777, 0xf111},
-		       (int16x2_t) {0x1000, 0x2000});
+  long v_sa = v_kdmtt ((int16x4_t) {0xf777, 0xf111, 0, 0},
+		       (int16x4_t) {0x1000, 0x2000, 0, 0});
   if (a != 0x2)
     abort ();
   else if (v_sa != 0xfffffffffc444000)

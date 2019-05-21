@@ -13,7 +13,7 @@ long kdmbt16 (unsigned long ra, unsigned long rb)
 }
 
 static __attribute__ ((noinline))
-long v_kdmbt16 (int16x4_t ra, int16x4_t rb)
+int32x2_t v_kdmbt16 (int16x4_t ra, int16x4_t rb)
 {
   return __nds__v_kdmbt16 (ra, rb);
 }
@@ -22,11 +22,12 @@ int
 main ()
 {
   long a = kdmbt16 (0x0001f0000001f000, 0x0001100000011000);
-  long v_sa = v_kdmbt16 ((int16x4_t) {0xf777, 0xf111, 0xf777, 0xf111},
-			 (int16x4_t) {0x1000, 0x2000, 0x1000, 0x2000});
+  int32x2_t va = v_kdmbt16 ((int16x4_t) {0xf777, 0xf111, 0xf777, 0xf111},
+			    (int16x4_t) {0x1000, 0x2000, 0x1000, 0x2000});
   if (a != 0xffffe000ffffe000)
     abort ();
-  else if (v_sa != 0xfdddc000fdddc000)
+  else if (va[0] != 0xfdddc000
+	   || va[1] != 0xfdddc000)
     abort ();
   else
     exit (0);

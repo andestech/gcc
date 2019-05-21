@@ -13,7 +13,7 @@ long kmatt (unsigned long rd, unsigned long ra, unsigned long rb)
 }
 
 static __attribute__ ((noinline))
-long v_kmatt (unsigned long rd, int16x4_t ra, int16x4_t rb)
+int32x2_t v_kmatt (int32x2_t rd, int16x4_t ra, int16x4_t rb)
 {
   return __nds__v_kmatt (rd, ra, rb);
 }
@@ -23,13 +23,14 @@ main ()
 {
   long va_p = 0x500000005;
   long a = kmatt (0x300000003, 0x8000000280000002, 0x8000000180000001);
-  long va = v_kmatt (0x300000003,
+  int32x2_t va = v_kmatt ((int32x2_t) {0x3, 0x3},
 		     (int16x4_t) {0xffff, 0x0002, 0xffff, 0x0002},
 		     (int16x4_t) {0xffff, 0x0001, 0xffff, 0x0001});
 
   if (a != 0x4000000340000003)
     abort ();
-  else if (va != va_p)
+  else if (va[0] != 0x5
+	   || va[1] != 0x5)
     abort ();
   else
     exit (0);

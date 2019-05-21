@@ -13,7 +13,7 @@ long smmwb (long ra, long rb)
 }
 
 static __attribute__ ((noinline))
-long v_smmwb (long ra, int16x4_t rb)
+int32x2_t v_smmwb (int32x2_t ra, int16x4_t rb)
 {
   return __nds__v_smmwb (ra, rb);
 }
@@ -22,12 +22,13 @@ int
 main ()
 {
   long a = smmwb (0x8000000080000000, 0x8000000180000001);
-  long v_sa = v_smmwb (0x8000000080000000,
-		       (int16x4_t) {0x1, 0x8000, 0x1, 0x8000});
+  int32x2_t va = v_smmwb ((int32x2_t) {0x80000000, 0x80000000},
+			  (int16x4_t) {0x1, 0x8000, 0x1, 0x8000});
 
   if (a != 0xffff8000ffff8000)
     abort ();
-  else if (v_sa != 0xffff8000ffff8000)
+  else if (va[0] != 0xffff8000
+	   || va[1] != 0xffff8000)
     abort ();
   else
     exit (0);

@@ -13,7 +13,7 @@ unsigned long srl32 (unsigned long ra, unsigned long rb)
 }
 
 static __attribute__ ((noinline))
-int32x2_t v_srl32 (int32x2_t ra, unsigned long rb)
+uint32x2_t v_srl32 (uint32x2_t ra, unsigned long rb)
 {
   return __nds__v_srl32 (ra, rb);
 }
@@ -22,7 +22,7 @@ int
 main ()
 {
   unsigned long a = srl32 (0x0ffff0000ffff000, 4);
-  int32x2_t va = v_srl32 ((int32x2_t) {0x7fff8000, 0x7fff8000}, 4);
+  uint32x2_t va = v_srl32 ((uint32x2_t) {0x7fff8000, 0x7fff8000}, 4);
 
   if (a != 0xffff0000ffff00)
     abort ();

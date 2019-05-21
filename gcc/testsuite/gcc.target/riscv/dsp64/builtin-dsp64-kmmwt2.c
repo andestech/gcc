@@ -13,7 +13,7 @@ long kmmwt2 (long ra, long rb)
 }
 
 static __attribute__ ((noinline))
-long v_kmmwt2 (long ra, int16x4_t rb)
+int32x2_t v_kmmwt2 (int32x2_t ra, int16x4_t rb)
 {
   return __nds__v_kmmwt2 (ra, rb);
 }
@@ -22,12 +22,13 @@ int
 main ()
 {
   long a = kmmwt2 (0x8000000080000000, 0x8000000180000001);
-  long v_sa = v_kmmwt2 (0x8000000080000000,
-			(int16x4_t) {0x1, 0x8000, 0x1, 0x8000});
+  int32x2_t va = v_kmmwt2 ((int32x2_t) {0x80000000, 0x80000000},
+			   (int16x4_t) {0x1, 0x8000, 0x1, 0x8000});
 
   if (a != 0x7fffffff7fffffff)
     abort ();
-  else if (v_sa != 0x7fffffff7fffffff)
+  else if (va[0] != 0x7fffffff
+	   || va[1] != 0x7fffffff)
     abort ();
   else
     exit (0);

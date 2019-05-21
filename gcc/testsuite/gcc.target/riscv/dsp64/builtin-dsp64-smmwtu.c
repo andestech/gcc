@@ -13,7 +13,7 @@ long smmwtu (long ra, long rb)
 }
 
 static __attribute__ ((noinline))
-long v_smmwtu (long ra, int16x4_t rb)
+int32x2_t v_smmwtu (int32x2_t ra, int16x4_t rb)
 {
   return __nds__v_smmwt_u (ra, rb);
 }
@@ -22,12 +22,13 @@ int
 main ()
 {
   long a = smmwtu (0x8000000080000000, 0x8000000180000001);
-  long v_sa = v_smmwtu (0x8000000080000000,
-			(int16x4_t) {0x1, 0x8000, 0x1, 0x8000});
+  int32x2_t va = v_smmwtu ((int32x2_t) {0x80000000, 0x80000000},
+			   (int16x4_t) {0x1, 0x8000, 0x1, 0x8000});
 
   if (a != 0x4000000040000000)
     abort ();
-  else if (v_sa != 0x4000000040000000)
+  else if (va[0] != 0x40000000
+	   || va[1] != 0x40000000)
     abort ();
   else
     exit (0);
