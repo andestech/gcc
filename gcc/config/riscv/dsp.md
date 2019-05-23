@@ -6493,7 +6493,7 @@
 (define_insn "kdmbb16"
   [(set (match_operand:V4HI 0 "register_operand" "=r")
 	(unspec:V4HI [(match_operand:V4HI 1 "register_operand" "r")
-		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KDMBB))]
+		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KDMBB16))]
   "TARGET_DSP && TARGET_64BIT"
   "kdmbb16\t%0, %1, %2"
   [(set_attr "type" "dmul")
@@ -6502,7 +6502,7 @@
 (define_insn "kdmbt16"
   [(set (match_operand:V4HI 0 "register_operand" "=r")
 	(unspec:V4HI [(match_operand:V4HI 1 "register_operand" "r")
-		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KDMBT))]
+		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KDMBT16))]
   "TARGET_DSP && TARGET_64BIT"
   "kdmbt16\t%0, %1, %2"
   [(set_attr "type" "dmul")
@@ -6511,7 +6511,7 @@
 (define_insn "kdmtt16"
   [(set (match_operand:V4HI 0 "register_operand" "=r")
 	(unspec:V4HI [(match_operand:V4HI 1 "register_operand" "r")
-		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KDMTT))]
+		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KDMTT16))]
   "TARGET_DSP && TARGET_64BIT"
   "kdmtt16\t%0, %1, %2"
   [(set_attr "type" "dmul")
@@ -6577,7 +6577,7 @@
 (define_insn "khmbb16"
   [(set (match_operand:V4HI 0 "register_operand" "=r")
 	(unspec:V4HI [(match_operand:V4HI 1 "register_operand" "r")
-		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KHMBB))]
+		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KHMBB16))]
   "TARGET_DSP && TARGET_64BIT"
   "khmbb16\t%0, %1, %2"
   [(set_attr "type" "dmul")
@@ -6586,7 +6586,7 @@
 (define_insn "khmbt16"
   [(set (match_operand:V4HI 0 "register_operand" "=r")
 	(unspec:V4HI [(match_operand:V4HI 1 "register_operand" "r")
-		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KHMBT))]
+		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KHMBT16))]
   "TARGET_DSP && TARGET_64BIT"
   "khmbt16\t%0, %1, %2"
   [(set_attr "type" "dmul")
@@ -6595,7 +6595,7 @@
 (define_insn "khmtt16"
   [(set (match_operand:V4HI 0 "register_operand" "=r")
 	(unspec:V4HI [(match_operand:V4HI 1 "register_operand" "r")
-		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KHMTT))]
+		      (match_operand:V4HI 2 "register_operand" "r")] UNSPEC_KHMTT16))]
   "TARGET_DSP && TARGET_64BIT"
   "khmtt16\t%0, %1, %2"
   [(set_attr "type" "dmul")
