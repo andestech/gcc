@@ -141,19 +141,19 @@ Target Report Mask(ATOMIC)
 Use atomic extension instructions.
 
 mbfo
-Target Report Mask(BFO)
+Target Report Mask(BFO) Undocumented
 Use hardware instructions for bitfields extract: bfos, bfoz.
 
 mbbcs
-Target Report Mask(BBCS)
+Target Report Mask(BBCS) Undocumented
 Use hardware instructions for bit testing branch: bbc, bbs.
 
 mbimm
-Target Report Mask(BIMM)
+Target Report Mask(BIMM) Undocumented
 Use hardware instructions: beqc, bnec.
 
 mlea
-Target Report Mask(LEA)
+Target Report Mask(LEA) Undocumented
 Use hardware load effective address instructions: lea.
 
 mnds
