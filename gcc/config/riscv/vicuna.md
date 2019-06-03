@@ -48,7 +48,7 @@
 (define_insn_reservation "vicuna_load_wd" 2
   (and (eq_attr "tune" "vicuna")
        (and (eq_attr "type" "load")
-            (eq_attr "mode" "SI,DI")))
+            (eq_attr "mode" "SI,DI,V2HI,V4HI,V4QI,V8QI,V2SI")))
   "vicuna_pipe")
 
 (define_insn_reservation "vicuna_load_bh" 3
