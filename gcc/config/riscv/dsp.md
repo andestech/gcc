@@ -263,7 +263,8 @@
 {
   emit_insn (gen_cras<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "cras<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"         "=r")
@@ -298,7 +299,8 @@
 {
   emit_insn (gen_kcras<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "kcras<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"         "=r")
@@ -333,7 +335,8 @@
 {
   emit_insn (gen_ukcras<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "ukcras<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"         "=r")
@@ -368,7 +371,8 @@
 {
   emit_insn (gen_crsa<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "crsa<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"         "=r")
@@ -403,7 +407,8 @@
 {
   emit_insn (gen_kcrsa<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "kcrsa<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"         "=r")
@@ -438,7 +443,8 @@
 {
   emit_insn (gen_ukcrsa<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "ukcrsa<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"         "=r")
@@ -473,7 +479,8 @@
 {
   emit_insn (gen_rcras<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "rcras<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"           "=r")
@@ -518,7 +525,8 @@
 {
   emit_insn (gen_urcras<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "urcras<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"           "=r")
@@ -563,7 +571,8 @@
 {
   emit_insn (gen_rcrsa<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "rcrsa<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"           "=r")
@@ -608,7 +617,8 @@
 {
   emit_insn (gen_urcrsa<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "urcrsa<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"           "=r")
@@ -653,7 +663,8 @@
 {
   emit_insn (gen_cras16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "cras16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -683,7 +694,8 @@
 {
   emit_insn (gen_kcras16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "kcras16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -713,7 +725,8 @@
 {
   emit_insn (gen_ukcras16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "ukcras16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -743,7 +756,8 @@
 {
   emit_insn (gen_crsa16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "crsa16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -773,7 +787,8 @@
 {
   emit_insn (gen_kcrsa16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "kcrsa16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -803,7 +818,8 @@
 {
   emit_insn (gen_ukcrsa16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "ukcrsa16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -833,7 +849,8 @@
 {
   emit_insn (gen_rcras16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "rcras16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -879,7 +896,8 @@
 {
   emit_insn (gen_urcras16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "urcras16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -925,7 +943,8 @@
 {
   emit_insn (gen_rcrsa16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "rcrsa16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -971,7 +990,8 @@
 {
   emit_insn (gen_urcrsa16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "urcrsa16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -1330,7 +1350,8 @@
   emit_insn (gen_vec_setv4qi_internal (operands[0], src,
 				       operands[1], selector));
   DONE;
-})
+}
+[(set_attr "type" "dinsb")])
 
 (define_expand "insvsi"
   [(set (zero_extract:SI (match_operand:SI 0 "register_operand" "")
@@ -1518,7 +1539,8 @@
   emit_insn (gen_vec_setv8qi_internal (operands[0], src,
 				       operands[1], selector));
   DONE;
-})
+}
+[(set_attr "type" "dinsb")])
 
 (define_insn "vec_setv8qi_internal"
   [(set (match_operand:V8QI 0 "register_operand"    "=r")
@@ -1621,7 +1643,8 @@
   emit_insn (gen_vec_merge<mode> (operands[0], operands[1], operands[2],
 				  GEN_INT (2), GEN_INT (0), GEN_INT (0)));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_insn "pkbbsi_1"
   [(set (match_operand:SI 0 "register_operand" "=r")
@@ -1727,7 +1750,8 @@
   emit_insn (gen_vec_merge<mode> (operands[0], operands[1], operands[2],
 				  GEN_INT (2), GEN_INT (0), GEN_INT (1)));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_expand "pktt<mode>"
   [(match_operand:VSHI 0 "register_operand")
@@ -1738,7 +1762,8 @@
   emit_insn (gen_vec_merge<mode> (operands[0], operands[1], operands[2],
 				  GEN_INT (2), GEN_INT (1), GEN_INT (1)));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_expand "pktb<mode>"
   [(match_operand:VSHI 0 "register_operand")
@@ -1749,7 +1774,8 @@
   emit_insn (gen_vec_merge<mode> (operands[0], operands[1], operands[2],
 				  GEN_INT (2), GEN_INT (1), GEN_INT (0)));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_insn "vec_mergerr"
   [(set (match_operand:V2HI 0 "register_operand"   "=  r,   r")
@@ -2033,7 +2059,8 @@
 {
   emit_insn (gen_vec_pkbb64 (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_insn "vec_pkbb64"
   [(set (match_operand:V4HI 0 "register_operand" "=r")
@@ -2055,7 +2082,8 @@
 {
   emit_insn (gen_vec_pkbt64 (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_insn "vec_pkbt64"
   [(set (match_operand:V4HI 0 "register_operand" "=r")
@@ -2077,7 +2105,8 @@
 {
   emit_insn (gen_vec_pktt64 (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_insn "vec_pktt64"
   [(set (match_operand:V4HI 0 "register_operand" "=r")
@@ -2099,7 +2128,8 @@
 {
   emit_insn (gen_vec_pktb64 (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_insn "vec_pktb64"
   [(set (match_operand:V4HI 0 "register_operand" "=r")
@@ -2267,7 +2297,8 @@
 {
   emit_insn (gen_sunpkd810_imp (operands[0], operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_insn "<zs>unpkd810_imp"
   [(set (match_operand:V2HI 0 "register_operand"                     "=r")
@@ -2314,7 +2345,8 @@
 {
   emit_insn (gen_sunpkd820_imp (operands[0], operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_insn "<zs>unpkd820_imp"
   [(set (match_operand:V2HI 0 "register_operand"                     "=r")
@@ -2361,7 +2393,8 @@
 {
   emit_insn (gen_sunpkd830_imp (operands[0], operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_insn "<zs>unpkd830_imp"
   [(set (match_operand:V2HI 0 "register_operand"                     "=r")
@@ -2408,7 +2441,8 @@
 {
   emit_insn (gen_sunpkd831_imp (operands[0], operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_insn "<zs>unpkd831_imp"
   [(set (match_operand:V2HI 0 "register_operand"                     "=r")
@@ -2455,7 +2489,8 @@
 {
   emit_insn (gen_sunpkd832_imp (operands[0], operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_insn "<zs>unpkd832_imp"
   [(set (match_operand:V2HI 0 "register_operand"                     "=r")
@@ -2502,7 +2537,8 @@
 {
   emit_insn (gen_zunpkd810_imp (operands[0], operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_expand "zunpkd820"
   [(match_operand:V2HI 0 "register_operand")
@@ -2511,7 +2547,8 @@
 {
   emit_insn (gen_zunpkd820_imp (operands[0], operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_expand "zunpkd830"
   [(match_operand:V2HI 0 "register_operand")
@@ -2520,7 +2557,8 @@
 {
   emit_insn (gen_zunpkd830_imp (operands[0], operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_expand "zunpkd831"
   [(match_operand:V2HI 0 "register_operand")
@@ -2529,7 +2567,8 @@
 {
   emit_insn (gen_zunpkd831_imp (operands[0], operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_expand "zunpkd832"
   [(match_operand:V2HI 0 "register_operand")
@@ -2538,7 +2577,8 @@
 {
   emit_insn (gen_zunpkd832_imp (operands[0], operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dpack")])
 
 (define_insn "<zs>unpkd810_64"
   [(set (match_operand:V4HI 0 "register_operand"                    "=r")
@@ -2604,7 +2644,8 @@
   emit_insn (gen_mulhisi3v (operands[0], operands[1], operands[2],
 			    GEN_INT (0), GEN_INT (0)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "smbt"
   [(match_operand:SI 0 "register_operand" "")
@@ -2615,7 +2656,8 @@
   emit_insn (gen_mulhisi3v (operands[0], operands[1], operands[2],
 			    GEN_INT (0), GEN_INT (1)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "smtt"
   [(match_operand:SI 0 "register_operand" "")
@@ -2626,7 +2668,8 @@
   emit_insn (gen_mulhisi3v (operands[0], operands[1], operands[2],
 			    GEN_INT (1), GEN_INT (1)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_insn "mulhisi3v"
   [(set (match_operand:SI 0 "register_operand"                  "=  r,   r,   r,   r")
@@ -2658,7 +2701,8 @@
   emit_insn (gen_mulv2hiv2si3v (operands[0], operands[1], operands[2],
 				GEN_INT (0), GEN_INT (2), GEN_INT (0), GEN_INT (2)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "smbt64"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -2669,7 +2713,8 @@
   emit_insn (gen_mulv2hiv2si3v (operands[0], operands[1], operands[2],
 				GEN_INT (0), GEN_INT (2), GEN_INT (1), GEN_INT (3)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "smtt64"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -2680,7 +2725,8 @@
   emit_insn (gen_mulv2hiv2si3v (operands[0], operands[1], operands[2],
 				GEN_INT (1), GEN_INT (3), GEN_INT (1), GEN_INT (3)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_insn "mulv2hiv2si3v"
   [(set (match_operand:V2SI 0 "register_operand" "=r, r, r")
@@ -2712,7 +2758,8 @@
   emit_insn (gen_mulsidi3v (operands[0], operands[1], operands[2],
 			    GEN_INT (0), GEN_INT (0)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "smbt32"
   [(match_operand:DI 0 "register_operand" "")
@@ -2723,7 +2770,8 @@
   emit_insn (gen_mulsidi3v (operands[0], operands[1], operands[2],
 			    GEN_INT (0), GEN_INT (1)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "smtt32"
   [(match_operand:DI 0 "register_operand" "")
@@ -2734,7 +2782,8 @@
   emit_insn (gen_mulsidi3v (operands[0], operands[1], operands[2],
 			    GEN_INT (1), GEN_INT (1)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_insn "mulsidi3v"
   [(set (match_operand:DI 0 "register_operand"                  "=  r,   r,   r,   r")
@@ -2768,7 +2817,8 @@
 			       GEN_INT (0), GEN_INT (0),
 			       operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmabt"
   [(match_operand:SI 0 "register_operand" "")
@@ -2781,7 +2831,8 @@
 			       GEN_INT (0), GEN_INT (1),
 			       operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmatt"
   [(match_operand:SI 0 "register_operand" "")
@@ -2794,7 +2845,8 @@
 			       GEN_INT (1), GEN_INT (1),
 			       operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "kma_internal"
   [(set (match_operand:SI 0 "register_operand"                   "=   r,   r,   r,   r")
@@ -2831,7 +2883,8 @@
 				 GEN_INT (0), GEN_INT (2), GEN_INT (0),
 				 GEN_INT (2), operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmabt64"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -2844,7 +2897,8 @@
 				 GEN_INT (0), GEN_INT (2), GEN_INT (1),
 				 GEN_INT (3), operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmatt64"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -2857,7 +2911,8 @@
 				 GEN_INT (1), GEN_INT (3), GEN_INT (1),
 				 GEN_INT (3), operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "kma64_internal"
   [(set (match_operand:V2SI 0 "register_operand"                 "=   r,   r,   r,   r")
@@ -2894,7 +2949,8 @@
 				 GEN_INT (0), GEN_INT (0),
 				 operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmabt32"
   [(match_operand:DI 0 "register_operand" "")
@@ -2907,7 +2963,8 @@
 				 GEN_INT (0), GEN_INT (1),
 				 operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmatt32"
   [(match_operand:DI 0 "register_operand" "")
@@ -2920,7 +2977,8 @@
 				 GEN_INT (1), GEN_INT (1),
 				 operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "kma32_internal"
   [(set (match_operand:DI 0 "register_operand"                   "=   r,   r,   r,   r")
@@ -2952,7 +3010,8 @@
 {
   emit_insn (gen_smds_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "smds_le"
   [(set (match_operand:SI 0 "register_operand"                         "=r")
@@ -2973,7 +3032,8 @@
 			      (parallel [(const_int 0)]))))))]
   "TARGET_DSP && !TARGET_64BIT"
 {
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "smds32"
   [(set (match_operand:DI 0 "register_operand"                         "=r")
@@ -3025,7 +3085,8 @@
 {
   emit_insn (gen_smdrs_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "smdrs_le"
   [(set (match_operand:SI 0 "register_operand"                         "=r")
@@ -3046,7 +3107,8 @@
 			      (parallel [(const_int 1)]))))))]
   "TARGET_DSP && !TARGET_64BIT"
 {
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "smdrs32"
   [(set (match_operand:DI 0 "register_operand"                         "=r")
@@ -3098,7 +3160,8 @@
 {
   emit_insn (gen_smxdsv_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 
 (define_expand "smxdsv_le"
@@ -3120,7 +3183,8 @@
 			      (parallel [(const_int 1)]))))))]
   "TARGET_DSP && !TARGET_64BIT"
 {
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "smxds32"
   [(set (match_operand:DI 0 "register_operand"                         "=r")
@@ -3560,7 +3624,8 @@
 {
   emit_insn (gen_smulhisi3_highpart_1 (operands[0], operands[1], operands[2], GEN_INT (0)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "smmwt"
   [(match_operand:SI 0 "register_operand" "")
@@ -3570,7 +3635,8 @@
 {
   emit_insn (gen_smulhisi3_highpart_1 (operands[0], operands[1], operands[2], GEN_INT (1)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_insn "smulhisi3_highpart_1"
   [(set (match_operand:SI 0 "register_operand"                       "= r,   r")
@@ -3619,7 +3685,8 @@
   emit_insn (gen_smulhisi3_highpart_64 (operands[0], operands[1], operands[2],
 					GEN_INT (0), GEN_INT (2)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "smmwt64"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -3630,7 +3697,8 @@
   emit_insn (gen_smulhisi3_highpart_64 (operands[0], operands[1], operands[2],
 					GEN_INT (1), GEN_INT (3)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_insn "smulhisi3_highpart_64"
   [(set (match_operand:V2SI 0 "register_operand"                       "=r,    r")
@@ -3676,7 +3744,8 @@
   emit_insn (gen_kmmw64 (operands[0], operands[1], operands[2],
 			  GEN_INT (0), GEN_INT (2)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "kmmwt64"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -3687,7 +3756,8 @@
   emit_insn (gen_kmmw64 (operands[0], operands[1], operands[2],
 			 GEN_INT (1), GEN_INT (3)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_insn "kmmw64"
   [(set (match_operand:V2SI 0 "register_operand"                       "=r,    r")
@@ -3732,7 +3802,8 @@
 {
   emit_insn (gen_smmw_round_internal (operands[0], operands[1], operands[2], GEN_INT (0)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "smmwt_round"
   [(match_operand:SI 0 "register_operand" "")
@@ -3742,7 +3813,8 @@
 {
   emit_insn (gen_smmw_round_internal (operands[0], operands[1], operands[2], GEN_INT (1)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_insn "smmw_round_internal"
   [(set (match_operand:SI 0 "register_operand"                          "=  r,   r")
@@ -3774,7 +3846,8 @@
   emit_insn (gen_smmw64_round_internal (operands[0], operands[1], operands[2],
 					GEN_INT (0), GEN_INT (2)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "smmwt64_round"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -3785,7 +3858,8 @@
   emit_insn (gen_smmw64_round_internal (operands[0], operands[1], operands[2],
 					GEN_INT (1), GEN_INT (3)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_insn "smmw64_round_internal"
   [(set (match_operand:V2SI 0 "register_operand"                       "=r,    r")
@@ -3834,7 +3908,8 @@
 {
   emit_insn (gen_kmmw2_internal (operands[0], operands[1], operands[2], GEN_INT (0)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "kmmwt2"
   [(match_operand:SI 0 "register_operand" "")
@@ -3844,7 +3919,8 @@
 {
   emit_insn (gen_kmmw2_internal (operands[0], operands[1], operands[2], GEN_INT (1)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_insn "kmmw2_internal"
   [(set (match_operand:SI 0 "register_operand"                       "=   r,    r")
@@ -3873,7 +3949,8 @@
   emit_insn (gen_kmmw2_round_internal (operands[0], operands[1],
 				       operands[2], GEN_INT (0)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "kmmwt2_round"
   [(match_operand:SI 0 "register_operand" "")
@@ -3884,7 +3961,8 @@
   emit_insn (gen_kmmw2_round_internal (operands[0], operands[1],
 				       operands[2], GEN_INT (1)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_insn "kmmw2_round_internal"
   [(set (match_operand:SI 0 "register_operand"                          "=   r,    r")
@@ -3914,7 +3992,8 @@
   emit_insn (gen_kmmw64_round (operands[0], operands[1], operands[2],
 			       GEN_INT (0), GEN_INT (2)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_expand "kmmwt64_round"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -3925,7 +4004,8 @@
   emit_insn (gen_kmmw64_round (operands[0], operands[1], operands[2],
 			       GEN_INT (1), GEN_INT (3)));
   DONE;
-})
+}
+[(set_attr "type" "dmul")])
 
 (define_insn "kmmw64_round"
   [(set (match_operand:V2SI 0 "register_operand"                       "=r,    r")
@@ -3974,7 +4054,8 @@
   emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3],
 				 GEN_INT (0), operands[1], GEN_INT (16)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmmawt"
   [(match_operand:SI 0 "register_operand" "")
@@ -3986,7 +4067,8 @@
   emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3],
 				 GEN_INT (1), operands[1], GEN_INT (16)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmmawb2"
   [(match_operand:SI 0 "register_operand" "")
@@ -3998,7 +4080,8 @@
   emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3],
 				 GEN_INT (0), operands[1], GEN_INT (15)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmmawt2"
   [(match_operand:SI 0 "register_operand" "")
@@ -4010,7 +4093,8 @@
   emit_insn (gen_kmmaw_internal (operands[0], operands[2], operands[3],
 				 GEN_INT (1), operands[1], GEN_INT (15)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "kmmaw_internal"
   [(set (match_operand:SI 0 "register_operand"                         "=  r,   r,   r,   r")
@@ -4044,7 +4128,8 @@
 				   GEN_INT (0), GEN_INT (2), operands[1],
 				   GEN_INT (16)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmmawt64"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -4057,7 +4142,8 @@
 				   GEN_INT (1), GEN_INT (3), operands[1],
 				   GEN_INT (16)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmmawb2_64"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -4070,7 +4156,8 @@
 				   GEN_INT (0), GEN_INT (2), operands[1],
 				   GEN_INT (15)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmmawt2_64"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -4083,7 +4170,8 @@
 				   GEN_INT (1), GEN_INT (3), operands[1],
 				   GEN_INT (15)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "kmmaw64_internal"
 [(set (match_operand:V2SI 0 "register_operand" "=r, r, r, r")
@@ -4132,7 +4220,8 @@
   emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3],
 				       GEN_INT (0), operands[1], GEN_INT (16)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmmawt_round"
   [(match_operand:SI 0 "register_operand" "")
@@ -4144,7 +4233,8 @@
   emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3],
 				       GEN_INT (1), operands[1], GEN_INT (16)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmmawb2_round"
   [(match_operand:SI 0 "register_operand" "")
@@ -4156,7 +4246,8 @@
   emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3],
 				       GEN_INT (0), operands[1], GEN_INT (15)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmmawt2_round"
   [(match_operand:SI 0 "register_operand" "")
@@ -4168,7 +4259,8 @@
   emit_insn (gen_kmmaw_round_internal (operands[0], operands[2], operands[3],
 				       GEN_INT (1), operands[1], GEN_INT (15)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "kmmaw_round_internal"
   [(set (match_operand:SI 0 "register_operand"                            "=  r,   r,   r,   r")
@@ -4204,7 +4296,8 @@
 					 GEN_INT (0), GEN_INT (2), operands[1],
 					 GEN_INT (16)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmmawt64_round"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -4217,7 +4310,8 @@
 					 GEN_INT (1), GEN_INT (3), operands[1],
 					 GEN_INT (16)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmmawb2_64_round"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -4230,7 +4324,8 @@
 					 GEN_INT (0), GEN_INT (2), operands[1],
 					 GEN_INT (15)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kmmawt2_64_round"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -4243,7 +4338,8 @@
 					 GEN_INT (1), GEN_INT (3), operands[1],
 					 GEN_INT (15)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "kmmaw64_round_internal"
 [(set (match_operand:V2SI 0 "register_operand"                           "=r,    r,   r,   r")
@@ -4297,7 +4393,8 @@
 			    operands[3], operands[1],
 			    GEN_INT (0), GEN_INT (0)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "smalbt"
   [(match_operand:DI 0 "register_operand" "")
@@ -4310,7 +4407,8 @@
 			    operands[3], operands[1],
 			    GEN_INT (0), GEN_INT (1)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "smaltt"
   [(match_operand:DI 0 "register_operand" "")
@@ -4323,7 +4421,8 @@
 			    operands[3], operands[1],
 			    GEN_INT (1), GEN_INT (1)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "smaddhidi"
   [(set (match_operand:DI 0 "register_operand"                   "=  r,   r,   r,   r")
@@ -4383,7 +4482,8 @@
 			      GEN_INT (0), GEN_INT (0),
 			      GEN_INT (2), GEN_INT (2)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "smalbt64"
   [(match_operand:DI 0 "register_operand" "")
@@ -4397,7 +4497,8 @@
 			      GEN_INT (0), GEN_INT (1),
 			      GEN_INT (2), GEN_INT (3)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "smaltt64"
   [(match_operand:DI 0 "register_operand" "")
@@ -4411,7 +4512,8 @@
 			      GEN_INT (1), GEN_INT (1),
 			      GEN_INT (3), GEN_INT (3)));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "smaddhidi64"
   [(set (match_operand:DI 0 "register_operand"                   "=  r,   r,   r,   r")
@@ -4453,7 +4555,8 @@
 {
   emit_insn (gen_smalda1_le (operands[0], operands[1], operands[2], operands[3]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "smalds1"
   [(match_operand:DI 0 "register_operand" "")
@@ -4464,7 +4567,8 @@
 {
   emit_insn (gen_smalds1_le (operands[0], operands[1], operands[2], operands[3]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "smalda1_le"
   [(set (match_operand:DI 0 "register_operand"                             "=r")
@@ -4581,7 +4685,8 @@
 {
   emit_insn (gen_smaldrs3_le (operands[0], operands[1], operands[2], operands[3]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "smaldrs3_le"
   [(set (match_operand:DI 0 "register_operand"                             "=r")
@@ -4645,7 +4750,8 @@
 {
   emit_insn (gen_smalxda1_le (operands[0], operands[1], operands[2], operands[3]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "smalxds1"
   [(match_operand:DI 0 "register_operand" "")
@@ -4656,7 +4762,8 @@
 {
   emit_insn (gen_smalxds1_le (operands[0], operands[1], operands[2], operands[3]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "smalxd<add_sub>1_le"
   [(set (match_operand:DI 0 "register_operand"                             "=r")
@@ -6921,7 +7028,8 @@
   emit_insn (gen_kdma_internal (operands[0], operands[2], operands[3],
 				GEN_INT (0), GEN_INT (0), operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "kdmabb32"
   [(set (match_operand:DI 0 "register_operand" "=r")
@@ -6943,7 +7051,8 @@
   emit_insn (gen_kdma64_internal (operands[0], operands[2], operands[3],
 				  GEN_INT (0), GEN_INT (0), operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kdmabt"
   [(match_operand:SI 0 "register_operand" "")
@@ -6955,7 +7064,8 @@
   emit_insn (gen_kdma_internal (operands[0], operands[2], operands[3],
 				GEN_INT (0), GEN_INT (1), operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "kdmabt32"
   [(set (match_operand:DI 0 "register_operand" "=r")
@@ -6977,7 +7087,8 @@
   emit_insn (gen_kdma64_internal (operands[0], operands[2], operands[3],
 				  GEN_INT (0), GEN_INT (1), operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kdmatt"
   [(match_operand:SI 0 "register_operand" "")
@@ -6989,7 +7100,8 @@
   emit_insn (gen_kdma_internal (operands[0], operands[2], operands[3],
 				GEN_INT (1), GEN_INT (1), operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "kdmatt32"
   [(set (match_operand:DI 0 "register_operand" "=r")
@@ -7011,7 +7123,8 @@
   emit_insn (gen_kdma64_internal (operands[0], operands[2], operands[3],
 				  GEN_INT (1), GEN_INT (1), operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "kdma_internal"
   [(set (match_operand:SI 0 "register_operand"                      "=   r,   r,   r,   r")
@@ -7074,7 +7187,8 @@
 				 GEN_INT (0), GEN_INT (0), GEN_INT (2),
 				 GEN_INT (2), operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kdmabt16"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -7087,7 +7201,8 @@
 				 GEN_INT (0), GEN_INT (1), GEN_INT (2),
 				 GEN_INT (3), operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "kdmatt16"
   [(match_operand:V2SI 0 "register_operand" "")
@@ -7100,7 +7215,8 @@
 				 GEN_INT (1), GEN_INT (1), GEN_INT (3),
 				 GEN_INT (3), operands[1]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "vkdma_internal"
   [(set (match_operand:V2SI 0 "register_operand"                      "=   r,   r,   r,   r")
@@ -7148,7 +7264,8 @@
   emit_insn (gen_smaqav4qi (operands[0], operands[1],
 			    operands[2], operands[3]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "umaqa"
   [(match_operand:SI 0 "register_operand")
@@ -7160,7 +7277,8 @@
   emit_insn (gen_umaqav4qi (operands[0], operands[1],
 			    operands[2], operands[3]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "<su>maqav4qi"
   [(set (match_operand:SI 0 "register_operand"             "=r")
@@ -7204,7 +7322,8 @@
   emit_insn (gen_smaqav8qi (operands[0], operands[1],
 			    operands[2], operands[3]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_expand "umaqa64"
   [(match_operand:V2SI 0 "register_operand")
@@ -7216,7 +7335,8 @@
   emit_insn (gen_umaqav8qi (operands[0], operands[1],
 			    operands[2], operands[3]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "<su>maqav8qi"
   [(set (match_operand:V2SI 0 "register_operand"             "=r")
@@ -7281,7 +7401,8 @@
   emit_insn (gen_sumaqav4qi (operands[0], operands[1],
 			     operands[2], operands[3]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "sumaqav4qi"
   [(set (match_operand:SI 0 "register_operand"             "=r")
@@ -7326,7 +7447,8 @@
   emit_insn (gen_sumaqav8qi (operands[0], operands[1],
 			     operands[2], operands[3]));
   DONE;
-})
+}
+[(set_attr "type" "dmac")])
 
 (define_insn "sumaqav8qi"
   [(set (match_operand:V2SI 0 "register_operand"             "=r")
@@ -7423,7 +7545,8 @@
 {
   emit_insn (gen_stas<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "stas<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"         "=r")
@@ -7458,7 +7581,8 @@
 {
   emit_insn (gen_kstas<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "kstas<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"         "=r")
@@ -7493,7 +7617,8 @@
 {
   emit_insn (gen_ukstas<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "ukstas<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"         "=r")
@@ -7528,7 +7653,8 @@
 {
   emit_insn (gen_stsa<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "stsa<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"         "=r")
@@ -7563,7 +7689,8 @@
 {
   emit_insn (gen_kstsa<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "kstsa<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"         "=r")
@@ -7598,7 +7725,8 @@
 {
   emit_insn (gen_ukstsa<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "ukstsa<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"         "=r")
@@ -7633,7 +7761,8 @@
 {
   emit_insn (gen_rstas<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "rstas<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"           "=r")
@@ -7678,7 +7807,8 @@
 {
   emit_insn (gen_urstas<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "urstas<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"           "=r")
@@ -7723,7 +7853,8 @@
 {
   emit_insn (gen_rstsa<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "rstsa<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"           "=r")
@@ -7768,7 +7899,8 @@
 {
   emit_insn (gen_urstsa<mode>_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "urstsa<mode>_le"
   [(set (match_operand:VSHI 0 "register_operand"           "=r")
@@ -7813,7 +7945,8 @@
 {
   emit_insn (gen_stas16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "stas16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -7843,7 +7976,8 @@
 {
   emit_insn (gen_kstas16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "kstas16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -7873,7 +8007,8 @@
 {
   emit_insn (gen_ukstas16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "ukstas16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -7903,7 +8038,8 @@
 {
   emit_insn (gen_stsa16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "stsa16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -7933,7 +8069,8 @@
 {
   emit_insn (gen_kstsa16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "kstsa16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -7963,7 +8100,8 @@
 {
   emit_insn (gen_ukstsa16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "ukstsa16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -7993,7 +8131,8 @@
 {
   emit_insn (gen_rstas16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "rstas16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -8039,7 +8178,8 @@
 {
   emit_insn (gen_urstas16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "urstas16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -8085,7 +8225,8 @@
 {
   emit_insn (gen_rstsa16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "rstsa16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
@@ -8131,7 +8272,8 @@
 {
   emit_insn (gen_urstsa16_64_le (operands[0], operands[1], operands[2]));
   DONE;
-})
+}
+[(set_attr "type" "dalu")])
 
 (define_insn "urstsa16_64_le"
   [(set (match_operand:V4HI 0 "register_operand"         "=r")
