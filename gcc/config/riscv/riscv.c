@@ -5320,9 +5320,6 @@ riscv_emit_attribute ()
   fprintf (asm_out_file, "\t.attribute arch, \"%s\"\n",
 	   riscv_arch_str ().c_str ());
 
-  fprintf (asm_out_file, "\t.attribute unaligned_access, %d\n",
-           TARGET_STRICT_ALIGN ? 0 : 1);
-
   fprintf (asm_out_file, "\t.attribute stack_align, %d\n",
            riscv_stack_boundary / 8);
 }
