@@ -643,32 +643,27 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
   if (subset_list->lookup ("c"))
     *flags |= MASK_RVC;
 
-  if (subset_list->lookup ("x"))
+  if (subset_list->lookup ("xv", 5))
     {
-      if (strcmp (isa, "v5") == 0)
-	{
-	  if ((target_flags_explicit & MASK_V5) == 0)
-	    *flags |= MASK_V5;
-	  if ((target_flags_explicit & MASK_BFO) == 0)
-	    *flags |= MASK_BFO;
-	  if ((target_flags_explicit & MASK_BBCS) == 0)
-	    *flags |= MASK_BBCS;
-	  if ((target_flags_explicit & MASK_BIMM) == 0)
-	    *flags |= MASK_BIMM;
-	  if ((target_flags_explicit & MASK_LEA) == 0)
-	    *flags |= MASK_LEA;
+      if ((target_flags_explicit & MASK_V5) == 0)
+	*flags |= MASK_V5;
+      if ((target_flags_explicit & MASK_BFO) == 0)
+	*flags |= MASK_BFO;
+      if ((target_flags_explicit & MASK_BBCS) == 0)
+	*flags |= MASK_BBCS;
+      if ((target_flags_explicit & MASK_BIMM) == 0)
+	*flags |= MASK_BIMM;
+      if ((target_flags_explicit & MASK_LEA) == 0)
+	*flags |= MASK_LEA;
 
-	  if (subset_list->lookup ("p"))
-	    if ((target_flags_explicit & MASK_DSP) == 0)
-	      *flags |= MASK_DSP;
-	}
-      else if (strcmp (isa, "dsp") == 0)
-	{
-	  if ((target_flags_explicit & MASK_DSP) == 0)
-	    *flags |= MASK_DSP;
-	}
-      else
-	error_at (loc, "-march=%s: unsupported NSE ISA substring", isa);
+      if (subset_list->lookup ("xdsp"))
+	if ((target_flags_explicit & MASK_DSP) == 0)
+	  *flags |= MASK_DSP;
+    }
+  else if (subset_list->lookup ("xdsp"))
+    {
+      if ((target_flags_explicit & MASK_DSP) == 0)
+	*flags |= MASK_DSP;
     }
 
   if (current_subset_list)
