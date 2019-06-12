@@ -1942,7 +1942,7 @@
   [(set (match_operand:DI 0 "register_operand"     "= r")
 	(any_shift:DI
 	    (match_operand:DI 1 "register_operand" "  r")
-	    (match_operand:QI 2 "arith_operand"    " rI")))]
+	    (match_operand:DI 2 "arith_operand"    " rI")))]
   "TARGET_64BIT"
 {
   if (GET_CODE (operands[2]) == CONST_INT)
