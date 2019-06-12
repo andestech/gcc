@@ -46,7 +46,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "reload.h"
 #include "tm_p.h"
 #include "target.h"
-#include "target-def.h"
 #include "basic-block.h"
 #include "expr.h"
 #include "optabs.h"
@@ -59,6 +58,10 @@ along with GCC; see the file COPYING3.  If not see
 #include "cfgrtl.h"
 #include "opts.h"
 #include "ifcvt.h"
+#include "cfgrtl.h"
+
+/* This file should be included last.  */
+#include "target-def.h"
 
 /* True if X is an UNSPEC wrapper around a SYMBOL_REF or LABEL_REF.  */
 #define UNSPEC_ADDRESS_P(X)					\
