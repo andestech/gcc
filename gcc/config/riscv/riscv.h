@@ -68,8 +68,6 @@ extern const char *riscv_arch (int, const char **);
 
 #define MARCH_POST_PROC_SPEC \
   "-march=%:riscv_arch(%{march=*} \
-		       %{mnds} \
-		       %{mno-nds} \
 		       %{matomic} \
 		       %{mno-atomic} \
 		       %{mno-16-bit} \
@@ -1007,12 +1005,6 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   " %{mno-ex9:-mno-execit}" \
   " %{mext-fpu-fma:-mfma}" \
   " %{mno-ext-fpu-fma:-mno-fma}" \
-  " %{mnds:%{!mno-bfo:-mbfo}}" \
-  " %{mnds:%{!mno-bbcs:-mbbcs}}" \
-  " %{mnds:%{!mno-bimm:-mbimm}}" \
-  " %{mnds:%{!mno-lea:-mlea}}" \
-  " %{mnds:%{!mno-execit:-mexecit}}" \
-  " %{mnds:%{!mno-gp-insn-relax:-mgp-insn-relax}}" \
   " %{mno-nds:%{!mbfo:-mno-bfo}}" \
   " %{mno-nds:%{!mbbcs:-mno-bbcs}}" \
   " %{mno-nds:%{!mbimm:-mno-bimm}}" \

@@ -156,9 +156,7 @@ mlea
 Target Report Mask(LEA) Undocumented
 Use hardware load effective address instructions: lea.
 
-mnds
-Target Report Mask(V5) Undocumented
-Enable Andes extension instructions.
+Mask(V5)
 
 mext-dsp
 Target Report Mask(DSP)
