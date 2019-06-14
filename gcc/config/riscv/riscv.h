@@ -78,7 +78,7 @@ extern const char *riscv_arch (int, const char **);
 #define ASM_SPEC "\
 %(subtarget_asm_debugging_spec) \
 %{" FPIE_OR_FPIC_SPEC ":-fpic} \
-%{march=*} \
+%{march=*:" MARCH_POST_PROC_SPEC "} \
 %{mabi=*} \
 %(subtarget_asm_spec)" \
 " %{O|O1|O2|O3|Ofast:-O1;:-Os}"
@@ -1005,14 +1005,12 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   " %{mno-ex9:-mno-execit}" \
   " %{mext-fpu-fma:-mfma}" \
   " %{mno-ext-fpu-fma:-mno-fma}" \
-  " %{mno-nds:%{!mbfo:-mno-bfo}}" \
-  " %{mno-nds:%{!mbbcs:-mno-bbcs}}" \
-  " %{mno-nds:%{!mbimm:-mno-bimm}}" \
-  " %{mno-nds:%{!mlea:-mno-lea}}" \
-  " %{mno-nds:%{!mexecit:-mno-execit}}" \
-  " %{mno-nds:%{!mgp-insn-relax:-mno-gp-insn-relax}}" \
-  " %{mno-nds:%{!mext-dsp:-mno-ext-dsp}}" \
-  " %{mno-nds:%{!mfp16:-mno-fp16}}" \
+  " %{march=rv32v5:-mabi=ilp32}" \
+  " %{march=rv32v5f:-mabi=ilp32f}" \
+  " %{march=rv32v5d:-mabi=ilp32d}" \
+  " %{march=rv64v5:-mabi=lp64}" \
+  " %{march=rv64v5f:-mabi=lp64f}" \
+  " %{march=rv64v5d:-mabi=lp64d}" \
   " %{march=*:" MARCH_POST_PROC_SPEC "}"
 
 #define CMODEL_SPEC \

@@ -97,7 +97,31 @@ parsing_march (const char *march)
       set_std_ext ('d', 1);
     }
 
-  p += 5;
+  if (strncmp (p + 4, "v5", 2) == 0)
+    {
+      set_std_ext ('m', 1);
+      set_std_ext ('c', 1);
+      nds_ext = true;
+
+      if (TARGET_LINUX_ABI)
+	set_std_ext ('a', 1);
+
+      if (strcmp (p + 4, "v5f") == 0)
+	{
+	  set_std_ext ('f', 1);
+	  p += 7;
+	}
+      else if (strcmp (p + 4, "v5d") == 0)
+	{
+	  set_std_ext ('f', 1);
+	  set_std_ext ('d', 1);
+          p += 7;
+	}
+      else
+        p += 6;
+    }
+  else
+    p += 5;
 
   arch_options_t *opt = &arch_options[0];
 

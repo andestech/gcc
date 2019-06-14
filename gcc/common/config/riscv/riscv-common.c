@@ -108,6 +108,8 @@ public:
 
 static const char *riscv_supported_std_ext (void);
 
+static const char *riscv_convert_nds_ext (const char *);
+
 static riscv_subset_list *current_subset_list = NULL;
 
 riscv_subset_t::riscv_subset_t ()
@@ -224,6 +226,19 @@ static const char *
 riscv_supported_std_ext (void)
 {
   return "mafdqlcbjtpvn";
+}
+
+static const char *
+riscv_convert_nds_ext (const char *p)
+{
+  if (strncmp (p, "v5", 2) == 0)
+    return "imacxv5";
+  else if (strncmp (p, "v5f", 3) == 0)
+    return "imafcxv5";
+  else if (strncmp (p, "v5d", 3) == 0)
+    return "imafdcxv5";
+  else
+    return p;
 }
 
 /* Parsing subset version.
@@ -532,6 +547,9 @@ riscv_subset_list::parse (const char *arch, location_t loc)
 		arch);
       goto fail;
     }
+
+  /* Convert nds string to standard extension.  */
+  p = riscv_convert_nds_ext (p);
 
   /* Parsing standard extension.  */
   p = subset_list->parse_std_ext (p);
