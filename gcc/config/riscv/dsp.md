@@ -6267,23 +6267,23 @@
   [(set_attr "type"   "daluround")
    (set_attr "mode"   "SI")])
 
-(define_insn "sclip32<mode>"
+(define_insn "sclip32<VD_SI:mode><X:mode>"
   [(set (match_operand:VD_SI 0 "register_operand" "=r")
 	(unspec:VD_SI [(match_operand:VD_SI 1 "register_operand" "r")
-		       (match_operand:SI 2 "immediate_operand" "i")] UNSPEC_CLIPS_OV))]
+		       (match_operand:X 2 "immediate_operand" "i")] UNSPEC_CLIPS_OV))]
   "TARGET_DSP"
   "sclip32\t%0, %1, %2"
   [(set_attr "type"   "dclip")
-   (set_attr "mode" "<MODE>")])
+   (set_attr "mode" "<VD_SI:MODE>")])
 
-(define_insn "uclip32<mode>"
+(define_insn "uclip32<VD_SI:mode><X:mode>"
   [(set (match_operand:VD_SI 0 "register_operand" "=r")
 	(unspec:VD_SI [(match_operand:VD_SI 1 "register_operand" "r")
-		       (match_operand:SI 2 "immediate_operand" "i")] UNSPEC_CLIP_OV))]
+		       (match_operand:X 2 "immediate_operand" "i")] UNSPEC_CLIP_OV))]
   "TARGET_DSP"
   "uclip32\t%0, %1, %2"
   [(set_attr "type"   "dclip")
-   (set_attr "mode" "<MODE>")])
+   (set_attr "mode" "<VD_SI:MODE>")])
 
 (define_insn "bitrev"
   [(set (match_operand:SI 0 "register_operand"             "=r,   r")
