@@ -1145,34 +1145,34 @@
   [(set_attr "type" "daluround, daluround")
    (set_attr "mode" "V2SI,  V2SI")])
 
-(define_insn "kslra<mode>"
-  [(set (match_operand:VECI 0 "register_operand"                   "=r")
-	(if_then_else:VECI
-	  (lt:SI (match_operand:SI 2 "register_operand"             " r")
-		 (const_int 0))
-	  (ashiftrt:VECI (match_operand:VECI 1 "register_operand" " r")
-			 (neg:SI (match_dup 2)))
-	  (ss_ashift:VECI (match_dup 1)
-		       (match_dup 2))))]
-  "TARGET_DSP"
-  "kslra<bits>\t%0, %1, %2"
-  [(set_attr "type" "dalu")
-   (set_attr "mode" "<MODE>")])
-
-(define_insn "kslra<mode>_round"
+(define_insn "kslra<VECI:mode><X:mode>"
   [(set (match_operand:VECI 0 "register_operand"                  "=r")
 	(if_then_else:VECI
-	  (lt:SI (match_operand:SI 2 "register_operand"            " r")
-		 (const_int 0))
+	  (lt:X (match_operand:X 2 "register_operand"             " r")
+		(const_int 0))
+	  (ashiftrt:VECI (match_operand:VECI 1 "register_operand" " r")
+			 (neg:X (match_dup 2)))
+	  (ss_ashift:VECI (match_dup 1)
+			  (match_dup 2))))]
+  "TARGET_DSP"
+  "kslra<VECI:bits>\t%0, %1, %2"
+  [(set_attr "type" "dalu")
+   (set_attr "mode" "<VECI:MODE>")])
+
+(define_insn "kslra<VECI:mode><X:mode>_round"
+  [(set (match_operand:VECI 0 "register_operand"                  "=r")
+	(if_then_else:VECI
+	  (lt:X (match_operand:X 2 "register_operand"             " r")
+		(const_int 0))
 	  (unspec:VECI [(ashiftrt:VECI (match_operand:VECI 1 "register_operand" " r")
-				       (neg:SI (match_dup 2)))]
+				       (neg:X (match_dup 2)))]
 		        UNSPEC_ROUND)
 	  (ss_ashift:VECI (match_dup 1)
-		       (match_dup 2))))]
+			  (match_dup 2))))]
   "TARGET_DSP"
-  "kslra<bits>.u\t%0, %1, %2"
+  "kslra<VECI:bits>.u\t%0, %1, %2"
   [(set_attr "type" "daluround")
-   (set_attr "mode" "<MODE>")])
+   (set_attr "mode" "<VECI:MODE>")])
 
 (define_insn "<optab>v2si3"
   [(set (match_operand:V2SI 0 "register_operand"                 "=  r, r")
