@@ -6839,16 +6839,16 @@
   [(set_attr "type" "dalu, dalu")
    (set_attr "mode" "<MODE>, <MODE>")])
 
-(define_insn "kslli8<mode>"
+(define_insn "kslli8<VQI:mode><X:mode>"
   [(set (match_operand:VQI 0 "register_operand"                "=  r, r")
 	(ss_ashift:VQI (match_operand:VQI 1 "register_operand" "   r, r")
-			(match_operand:SI 2 "rimm3u_operand"   " u03, r")))]
+		       (match_operand:X 2   "rimm3u_operand"   " u03, r")))]
   "TARGET_DSP"
   "@
    kslli8\t%0, %1, %2
    ksll8\t%0, %1, %2"
   [(set_attr "type" "dalu, dalu")
-   (set_attr "mode" "<MODE>, <MODE>")])
+   (set_attr "mode" "<VQI:MODE>, <VQI:MODE>")])
 
 (define_insn "*ashr<mode>3"
   [(set (match_operand:VQI 0 "register_operand"               "=  r, r")
