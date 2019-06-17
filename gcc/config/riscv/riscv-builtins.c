@@ -1915,7 +1915,7 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (bitrev, bitrev64, bitrev,
 		      RISCV_ULONG_FTYPE_ULONG_ULONG, BITREV),
   DIRECT_DSP_BUILTIN (wext, wext64, wext,
-		      RISCV_ULONG_FTYPE_LLONG_USI, WEXT),
+		      RISCV_ULONG_FTYPE_LLONG_ULONG, WEXT),
   DIRECT_DSP_BUILTIN (bpick1si, bpick1di, bpick,
 		      RISCV_ULONG_FTYPE_ULONG_ULONG_ULONG, BPICK),
   DIRECT_DSP_BUILTIN (insb, insb64, insb,

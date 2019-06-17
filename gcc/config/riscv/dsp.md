@@ -6329,7 +6329,7 @@
 	  (truncate:SI
 	    (ashiftrt:DI
 	      (match_operand:DI 1 "register_operand" " r,  r")
-	      (match_operand:SI 2 "rimm5u_operand"   " r,u05")))))]
+	      (match_operand:DI 2 "rimm5u_operand"   " r,u05")))))]
   "TARGET_DSP && TARGET_64BIT"
   "@
    wext\t%0, %1, %2
