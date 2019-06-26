@@ -47,7 +47,7 @@ along with GCC; see the file COPYING3.  If not see
 #define OPTION_DEFAULT_SPECS \
   {"tune", "%{!mtune=*:-mtune=%(VALUE)}" }, \
   {"arch", "%{!march=*:-march=%(VALUE)}" }, \
-  {"abi", "%{!mabi=*:-mabi=%(VALUE)}" }, \
+  {"abi", "%{!mabi=*:%{march=rv32v5*:-mabi=ilp32%*;:%{march=rv64v5*:-mabi=lp64%*;:-mabi=%(VALUE)}}}" }, \
 
 #ifdef IN_LIBGCC2
 #undef TARGET_64BIT
@@ -1005,12 +1005,6 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   " %{mno-ex9:-mno-execit}" \
   " %{mext-fpu-fma:-mfma}" \
   " %{mno-ext-fpu-fma:-mno-fma}" \
-  " %{march=rv32v5:-mabi=ilp32}" \
-  " %{march=rv32v5f:-mabi=ilp32f}" \
-  " %{march=rv32v5d:-mabi=ilp32d}" \
-  " %{march=rv64v5:-mabi=lp64}" \
-  " %{march=rv64v5f:-mabi=lp64f}" \
-  " %{march=rv64v5d:-mabi=lp64d}" \
   " %{march=*:" MARCH_POST_PROC_SPEC "}"
 
 #define CMODEL_SPEC \
