@@ -2463,10 +2463,34 @@ microblaze*-*-elf)
 riscv*-*-linux*)
 	tm_file="elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} riscv/linux.h"
 	case "x${enable_multilib}" in
-	xno) ;;
-	xyes) tmake_file="${tmake_file} riscv/t-linux-multilib" ;;
+	xno) riscv_multilibs="";;
+	xyes) riscv_multilibs="${with_multilib_list}" ;;
 	*) echo "Unknown value for enable_multilib"; exit 1
 	esac
+
+	if test "$riscv_multilibs" = "default"; then
+		riscv_multilibs="all"
+	fi
+	riscv_multilibs=`echo $riscv_multilibs | sed -e 's/,/ /g'`
+	for riscv_multilib in ${riscv_multilibs}; do
+		case ${riscv_multilib} in
+		all )
+			tmake_file="${tmake_file} riscv/t-linux-multilib"
+			;;
+		rv32v5 )
+			tmake_file="${tmake_file} riscv/t-linux-rv32v5"
+			;;
+		rv64v5 )
+			tmake_file="${tmake_file} riscv/t-linux-rv64v5"
+			;;
+		"" )
+			;;
+		*)
+			echo "--with-multilib-list=${riscv_multilib} not supported."
+			exit 1
+		esac
+	done
+
 	tmake_file="${tmake_file} riscv/t-riscv riscv/t-linux"
 	gnu_ld=yes
 	gas=yes

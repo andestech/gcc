@@ -1,0 +1,4 @@
+# Only XLEN and ABI affect Linux multilib dir names, e.g. /lib32/ilp32d/
+MULTILIB_OPTIONS += march=rv32v5d
+MULTILIB_DIRNAMES += lib32/ilp32d
+MULTILIB_OSDIRNAMES += ../lib32/ilp32d
