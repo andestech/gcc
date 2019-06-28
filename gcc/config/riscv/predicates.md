@@ -447,3 +447,13 @@
   (and (match_operand 0 "const_int_operand")
        (ior (match_test "satisfies_constraint_v15 (op)")
 	    (match_test "satisfies_constraint_v16 (op)"))))
+
+(define_predicate "register_even_operand"
+  (and (match_code "reg")
+       (ior (match_test "!TARGET_64BIT && GP_REG_P (REGNO (op)) && (REGNO (op) & 1) == 0")
+	    (match_test "TARGET_64BIT && GP_REG_P (REGNO (op))")
+            (match_test "REGNO (op) >= FIRST_PSEUDO_REGISTER"))))
+
+(define_predicate "reg_even_or_0_operand"
+  (ior (match_operand 0 "const_0_operand")
+       (match_operand 0 "register_even_operand")))

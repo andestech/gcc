@@ -133,8 +133,8 @@
    (set_attr "mode" "<MODE>")])
 
 (define_insn "dsp_movdi"
-  [(set (match_operand:DI 0 "register_operand" "=r, r")
-	(match_operand:DI 1 "reg_or_0_operand" " r, J"))]
+  [(set (match_operand:DI 0 "register_even_operand" "=r, r")
+	(match_operand:DI 1 "reg_even_or_0_operand" " r, J"))]
   "!TARGET_64BIT && TARGET_DSP"
   "@
    add64 %0, %1, x0
@@ -143,9 +143,9 @@
    (set_attr "mode" "DI")])
 
 (define_insn "dsp_<uk>adddi3"
-  [(set (match_operand:DI 0 "register_operand"              "=r")
-	(all_plus:DI (match_operand:DI 1 "register_operand" " r")
-		     (match_operand:DI 2 "register_operand" " r")))]
+  [(set (match_operand:DI 0 "register_even_operand"              "=r")
+	(all_plus:DI (match_operand:DI 1 "register_even_operand" " r")
+		     (match_operand:DI 2 "register_even_operand" " r")))]
   "TARGET_DSP"
   "<uk>add64 %0, %1, %2"
   [(set_attr "type" "dalu64")
@@ -176,11 +176,11 @@
    (set_attr "mode" "<MODE>")])
 
 (define_insn "radddi3"
-  [(set (match_operand:DI 0 "register_operand" "=r")
+  [(set (match_operand:DI 0 "register_even_operand" "=r")
 	(truncate:DI
 	  (ashiftrt:TI
-	    (plus:TI (sign_extend:TI (match_operand:DI 1 "register_operand" " r"))
-		     (sign_extend:TI (match_operand:DI 2 "register_operand" " r")))
+	    (plus:TI (sign_extend:TI (match_operand:DI 1 "register_even_operand" " r"))
+		     (sign_extend:TI (match_operand:DI 2 "register_even_operand" " r")))
 	  (const_int 1))))]
   "TARGET_DSP"
   "radd64\t%0, %1, %2"
@@ -188,11 +188,11 @@
    (set_attr "mode" "DI")])
 
 (define_insn "uradddi3"
-  [(set (match_operand:DI 0 "register_operand" "=r")
+  [(set (match_operand:DI 0 "register_even_operand" "=r")
 	(truncate:DI
 	  (lshiftrt:TI
-	    (plus:TI (zero_extend:TI (match_operand:DI 1 "register_operand" " r"))
-		     (zero_extend:TI (match_operand:DI 2 "register_operand" " r")))
+	    (plus:TI (zero_extend:TI (match_operand:DI 1 "register_even_operand" " r"))
+		     (zero_extend:TI (match_operand:DI 2 "register_even_operand" " r")))
 	  (const_int 1))))]
   "TARGET_DSP"
   "uradd64\t%0, %1, %2"
@@ -209,9 +209,9 @@
    (set_attr "mode" "<MODE>")])
 
 (define_insn "dsp_<uk>subdi3"
-  [(set (match_operand:DI 0 "register_operand"               "=r")
-	(all_minus:DI (match_operand:DI 1 "register_operand" " r")
-		      (match_operand:DI 2 "register_operand" " r")))]
+  [(set (match_operand:DI 0 "register_even_operand"               "=r")
+	(all_minus:DI (match_operand:DI 1 "register_even_operand" " r")
+		      (match_operand:DI 2 "register_even_operand" " r")))]
   "TARGET_DSP"
   "<uk>sub64 %0, %1, %2"
   [(set_attr "type" "dalu64")
@@ -242,11 +242,11 @@
    (set_attr "mode" "<MODE>")])
 
 (define_insn "rsubdi3"
-  [(set (match_operand:DI 0 "register_operand"                   "=r")
+  [(set (match_operand:DI 0 "register_even_operand"                   "=r")
 	(truncate:DI
 	  (ashiftrt:TI
-	    (minus:TI (sign_extend:TI (match_operand:DI 1 "register_operand" " r"))
-		      (sign_extend:TI (match_operand:DI 2 "register_operand" " r")))
+	    (minus:TI (sign_extend:TI (match_operand:DI 1 "register_even_operand" " r"))
+		      (sign_extend:TI (match_operand:DI 2 "register_even_operand" " r")))
 	  (const_int 1))))]
   "TARGET_DSP"
   "rsub64\t%0, %1, %2"
@@ -254,11 +254,11 @@
    (set_attr "mode" "DI")])
 
 (define_insn "ursubdi3"
-  [(set (match_operand:DI 0 "register_operand"                   "=r")
+  [(set (match_operand:DI 0 "register_even_operand"                   "=r")
 	(truncate:DI
 	  (lshiftrt:TI
-	    (minus:TI (zero_extend:TI (match_operand:DI 1 "register_operand" " r"))
-		      (zero_extend:TI (match_operand:DI 2 "register_operand" " r")))
+	    (minus:TI (zero_extend:TI (match_operand:DI 1 "register_even_operand" " r"))
+		      (zero_extend:TI (match_operand:DI 2 "register_even_operand" " r")))
 	  (const_int 1))))]
   "TARGET_DSP"
   "ursub64\t%0, %1, %2"
@@ -3239,8 +3239,8 @@
   [(set_attr "type" "dmac")])
 
 (define_insn "smal1"
-  [(set (match_operand:DI 0 "register_operand"             "=r")
-	(plus:DI (match_operand:DI 1 "register_operand"    " r")
+  [(set (match_operand:DI 0 "register_even_operand"             "=r")
+	(plus:DI (match_operand:DI 1 "register_even_operand"    " r")
 	  (sign_extend:DI
 	    (mult:SI
 	      (sign_extend:SI
@@ -3257,8 +3257,8 @@
    (set_attr "mode" "DI")])
 
 (define_insn "smal2"
-  [(set (match_operand:DI 0 "register_operand"           "=r")
-	(plus:DI (match_operand:DI 1 "register_operand"  " r")
+  [(set (match_operand:DI 0 "register_even_operand"           "=r")
+	(plus:DI (match_operand:DI 1 "register_even_operand"  " r")
 	  (mult:DI
 	    (sign_extend:DI
 	      (vec_select:HI
@@ -3274,8 +3274,8 @@
    (set_attr "mode" "DI")])
 
 (define_insn "smal3"
-  [(set (match_operand:DI 0 "register_operand"             "=r")
-	(plus:DI (match_operand:DI 1 "register_operand"    " r")
+  [(set (match_operand:DI 0 "register_even_operand"             "=r")
+	(plus:DI (match_operand:DI 1 "register_even_operand"    " r")
 	  (sign_extend:DI
 	    (mult:SI
 	      (sign_extend:SI
@@ -3292,8 +3292,8 @@
    (set_attr "mode" "DI")])
 
 (define_insn "smal4"
-  [(set (match_operand:DI 0 "register_operand"           "=r")
-	(plus:DI (match_operand:DI 1 "register_operand"  " r")
+  [(set (match_operand:DI 0 "register_even_operand"           "=r")
+	(plus:DI (match_operand:DI 1 "register_even_operand"  " r")
 	  (mult:DI
 	    (sign_extend:DI
 	      (vec_select:HI
@@ -3309,7 +3309,7 @@
    (set_attr "mode" "DI")])
 
 (define_insn "smal5"
-  [(set (match_operand:DI 0 "register_operand"             "=r")
+  [(set (match_operand:DI 0 "register_even_operand"             "=r")
 	(plus:DI
 	  (sign_extend:DI
 	    (mult:SI
@@ -3321,14 +3321,14 @@
 		(vec_select:HI
 		  (match_dup 2)
 		  (parallel [(const_int 1)])))))
-	  (match_operand:DI 1 "register_operand"           " r")))]
+	  (match_operand:DI 1 "register_even_operand"           " r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
   [(set_attr "type" "dmac")
    (set_attr "mode" "DI")])
 
 (define_insn "smal6"
-  [(set (match_operand:DI 0 "register_operand"           "=r")
+  [(set (match_operand:DI 0 "register_even_operand"           "=r")
 	(plus:DI
 	  (mult:DI
 	    (sign_extend:DI
@@ -3339,14 +3339,14 @@
 	      (vec_select:HI
 		(match_dup 2)
 		(parallel [(const_int 1)]))))
-	  (match_operand:DI 1 "register_operand"         " r")))]
+	  (match_operand:DI 1 "register_even_operand"         " r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
   [(set_attr "type" "dmac")
    (set_attr "mode" "DI")])
 
 (define_insn "smal7"
-  [(set (match_operand:DI 0 "register_operand"             "=r")
+  [(set (match_operand:DI 0 "register_even_operand"             "=r")
 	(plus:DI
 	  (sign_extend:DI
 	    (mult:SI
@@ -3358,14 +3358,14 @@
 		(vec_select:HI
 		  (match_dup 2)
 		  (parallel [(const_int 0)])))))
-	  (match_operand:DI 1 "register_operand"           " r")))]
+	  (match_operand:DI 1 "register_even_operand"           " r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
   [(set_attr "type" "dmac")
    (set_attr "mode" "DI")])
 
 (define_insn "smal8"
-  [(set (match_operand:DI 0 "register_operand"           "=r")
+  [(set (match_operand:DI 0 "register_even_operand"           "=r")
 	(plus:DI
 	  (mult:DI
 	    (sign_extend:DI
@@ -3376,7 +3376,7 @@
 	      (vec_select:HI
 		(match_dup 2)
 		(parallel [(const_int 0)]))))
-	  (match_operand:DI 1 "register_operand"         " r")))]
+	  (match_operand:DI 1 "register_even_operand"         " r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "smal\t%0, %1, %2"
   [(set_attr "type" "dmac")
@@ -4393,8 +4393,8 @@
   [(set_attr "type" "dmac")])
 
 (define_expand "smalbb"
-  [(match_operand:DI 0 "register_operand" "")
-   (match_operand:DI 1 "register_operand" "")
+  [(match_operand:DI 0 "register_even_operand" "")
+   (match_operand:DI 1 "register_even_operand" "")
    (match_operand:V2HI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
   "TARGET_DSP && !TARGET_64BIT"
@@ -4407,8 +4407,8 @@
 [(set_attr "type" "dmac")])
 
 (define_expand "smalbt"
-  [(match_operand:DI 0 "register_operand" "")
-   (match_operand:DI 1 "register_operand" "")
+  [(match_operand:DI 0 "register_even_operand" "")
+   (match_operand:DI 1 "register_even_operand" "")
    (match_operand:V2HI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
   "TARGET_DSP && !TARGET_64BIT"
@@ -4421,8 +4421,8 @@
 [(set_attr "type" "dmac")])
 
 (define_expand "smaltt"
-  [(match_operand:DI 0 "register_operand" "")
-   (match_operand:DI 1 "register_operand" "")
+  [(match_operand:DI 0 "register_even_operand" "")
+   (match_operand:DI 1 "register_even_operand" "")
    (match_operand:V2HI 2 "register_operand" "")
    (match_operand:V2HI 3 "register_operand" "")]
   "TARGET_DSP && !TARGET_64BIT"
@@ -4435,9 +4435,9 @@
 [(set_attr "type" "dmac")])
 
 (define_insn "smaddhidi"
-  [(set (match_operand:DI 0 "register_operand"                   "=  r,   r,   r,   r")
+  [(set (match_operand:DI 0 "register_even_operand"                   "=  r,   r,   r,   r")
 	(plus:DI
-	  (match_operand:DI 3 "register_operand"                 "   0,   0,   0,   0")
+	  (match_operand:DI 3 "register_even_operand"                 "   0,   0,   0,   0")
 	  (mult:DI
 	    (sign_extend:DI
 	      (vec_select:HI
@@ -4458,7 +4458,7 @@
 [(set_attr "type" "dmac")])
 
 (define_insn "smaddhidi2"
-  [(set (match_operand:DI 0 "register_operand"                   "=  r,   r,   r,   r")
+  [(set (match_operand:DI 0 "register_even_operand"                   "=  r,   r,   r,   r")
 	(plus:DI
 	  (mult:DI
 	    (sign_extend:DI
@@ -4469,7 +4469,7 @@
 	      (vec_select:HI
 		(match_operand:V2HI 2 "register_operand"         "   r,   r,   r,   r")
 		(parallel [(match_operand:SI 5 "imm_0_1_operand" " v00, v01, v01, v00")]))))
-	  (match_operand:DI 3 "register_operand"                 "   0,   0,   0,   0")))]
+	  (match_operand:DI 3 "register_even_operand"                 "   0,   0,   0,   0")))]
   "TARGET_DSP && !TARGET_64BIT"
 {
     const char *pats[] = { "smalbb\t%0, %1, %2",
@@ -4557,8 +4557,8 @@
   [(set_attr "type" "dmac")])
 
 (define_expand "smalda1"
-  [(match_operand:DI 0 "register_operand" "")
-   (match_operand:DI 1 "register_operand" "")
+  [(match_operand:DI 0 "register_even_operand" "")
+   (match_operand:DI 1 "register_even_operand" "")
    (match_operand:V2HI 2 "register_operand" " r")
    (match_operand:V2HI 3 "register_operand" " r")]
   "TARGET_DSP && !TARGET_64BIT"
@@ -4569,8 +4569,8 @@
 [(set_attr "type" "dmac")])
 
 (define_expand "smalds1"
-  [(match_operand:DI 0 "register_operand" "")
-   (match_operand:DI 1 "register_operand" "")
+  [(match_operand:DI 0 "register_even_operand" "")
+   (match_operand:DI 1 "register_even_operand" "")
    (match_operand:V2HI 2 "register_operand" " r")
    (match_operand:V2HI 3 "register_operand" " r")]
   "TARGET_DSP && !TARGET_64BIT"
@@ -4581,9 +4581,9 @@
 [(set_attr "type" "dmac")])
 
 (define_insn "smalda1_le"
-  [(set (match_operand:DI 0 "register_operand"                             "=r")
+  [(set (match_operand:DI 0 "register_even_operand"                             "=r")
 	(plus:DI
-	  (match_operand:DI 1 "register_operand"                           " 0")
+	  (match_operand:DI 1 "register_even_operand"                           " 0")
 	  (sign_extend:DI
 	    (plus:SI
 	      (mult:SI
@@ -4634,9 +4634,9 @@
   [(set_attr "type" "dmac")])
 
 (define_insn "smalds1_le"
-  [(set (match_operand:DI 0 "register_operand"                             "=r")
+  [(set (match_operand:DI 0 "register_even_operand"                             "=r")
 	(plus:DI
-	  (match_operand:DI 1 "register_operand"                           " 0")
+	  (match_operand:DI 1 "register_even_operand"                           " 0")
 	  (sign_extend:DI
 	    (minus:SI
 	      (mult:SI
@@ -4687,8 +4687,8 @@
   [(set_attr "type" "dmac")])
 
 (define_expand "smaldrs3"
-  [(match_operand:DI 0 "register_operand" "")
-   (match_operand:DI 1 "register_operand" "")
+  [(match_operand:DI 0 "register_even_operand" "")
+   (match_operand:DI 1 "register_even_operand" "")
    (match_operand:V2HI 2 "register_operand" " r")
    (match_operand:V2HI 3 "register_operand" " r")]
   "TARGET_DSP && !TARGET_64BIT"
@@ -4699,9 +4699,9 @@
 [(set_attr "type" "dmac")])
 
 (define_insn "smaldrs3_le"
-  [(set (match_operand:DI 0 "register_operand"                             "=r")
+  [(set (match_operand:DI 0 "register_even_operand"                             "=r")
 	(plus:DI
-	  (match_operand:DI 1 "register_operand"                           " 0")
+	  (match_operand:DI 1 "register_even_operand"                           " 0")
 	  (sign_extend:DI
 	    (minus:SI
 	      (mult:SI
@@ -4752,8 +4752,8 @@
   [(set_attr "type" "dmac")])
 
 (define_expand "smalxda1"
-  [(match_operand:DI 0 "register_operand" "")
-   (match_operand:DI 1 "register_operand" "")
+  [(match_operand:DI 0 "register_even_operand" "")
+   (match_operand:DI 1 "register_even_operand" "")
    (match_operand:V2HI 2 "register_operand" " r")
    (match_operand:V2HI 3 "register_operand" " r")]
   "TARGET_DSP && !TARGET_64BIT"
@@ -4764,8 +4764,8 @@
 [(set_attr "type" "dmac")])
 
 (define_expand "smalxds1"
-  [(match_operand:DI 0 "register_operand" "")
-   (match_operand:DI 1 "register_operand" "")
+  [(match_operand:DI 0 "register_even_operand" "")
+   (match_operand:DI 1 "register_even_operand" "")
    (match_operand:V2HI 2 "register_operand" " r")
    (match_operand:V2HI 3 "register_operand" " r")]
   "TARGET_DSP && !TARGET_64BIT"
@@ -4776,9 +4776,9 @@
 [(set_attr "type" "dmac")])
 
 (define_insn "smalxd<add_sub>1_le"
-  [(set (match_operand:DI 0 "register_operand"                             "=r")
+  [(set (match_operand:DI 0 "register_even_operand"                             "=r")
 	(plus:DI
-	  (match_operand:DI 1 "register_operand"                           " 0")
+	  (match_operand:DI 1 "register_even_operand"                           " 0")
 	  (sign_extend:DI
 	    (plus_minus:SI
 	      (mult:SI
@@ -4829,10 +4829,10 @@
   [(set_attr "type" "dmac")])
 
 (define_insn "smslda1"
-  [(set (match_operand:DI 0 "register_operand"                             "=r")
+  [(set (match_operand:DI 0 "register_even_operand"                             "=r")
 	(minus:DI
 	  (minus:DI
-	    (match_operand:DI 1 "register_operand"                         " 0")
+	    (match_operand:DI 1 "register_even_operand"                         " 0")
 	    (sign_extend:DI
 	      (mult:SI
 		(sign_extend:SI (vec_select:HI
@@ -4883,10 +4883,10 @@
   [(set_attr "type" "dmac")])
 
 (define_insn "smslxda1"
-  [(set (match_operand:DI 0 "register_operand"                               "=r")
+  [(set (match_operand:DI 0 "register_even_operand"                               "=r")
 	(minus:DI
 	  (minus:DI
-	    (match_operand:DI 1 "register_operand"                           " 0")
+	    (match_operand:DI 1 "register_even_operand"                           " 0")
 	      (sign_extend:DI
 		(mult:SI
 		  (sign_extend:SI (vec_select:HI
@@ -5788,9 +5788,9 @@
    (set_attr "mode" "<MODE>")])
 
 (define_insn "<su>mar64_1"
-  [(set (match_operand:DI 0 "register_operand"       "=r")
+  [(set (match_operand:DI 0 "register_even_operand"       "=r")
 	(plus:DI
-	  (match_operand:DI 1 "register_operand"     " 0")
+	  (match_operand:DI 1 "register_even_operand"     " 0")
 	  (mult:DI
 	    (any_extend:DI
 	      (match_operand:SI 2 "register_operand" " r"))
@@ -5825,23 +5825,23 @@
    (set_attr "mode" "DI")])
 
 (define_insn "<su>mar64_2"
-  [(set (match_operand:DI 0 "register_operand"       "=r")
+  [(set (match_operand:DI 0 "register_even_operand"       "=r")
 	(plus:DI
 	  (mult:DI
 	    (any_extend:DI
 	      (match_operand:SI 2 "register_operand" " r"))
 	    (any_extend:DI
 	      (match_operand:SI 3 "register_operand" " r")))
-	  (match_operand:DI 1 "register_operand"     " 0")))]
+	  (match_operand:DI 1 "register_even_operand"     " 0")))]
   "TARGET_DSP && !TARGET_64BIT"
   "<su>mar64\t%0, %2, %3"
   [(set_attr "type"   "dmac")
    (set_attr "mode"   "DI")])
 
 (define_insn "<su>mar64_3"
-  [(set (match_operand:DI 0 "register_operand"       "=r")
+  [(set (match_operand:DI 0 "register_even_operand"       "=r")
 	(plus:DI
-	  (match_operand:DI 1 "register_operand"     " 0")
+	  (match_operand:DI 1 "register_even_operand"     " 0")
 	  (any_extend:DI
 	    (mult:SI
 	      (match_operand:SI 2 "register_operand" " r")
@@ -5852,22 +5852,22 @@
    (set_attr "mode"   "DI")])
 
 (define_insn "<su>mar64_4"
-  [(set (match_operand:DI 0 "register_operand"       "=r")
+  [(set (match_operand:DI 0 "register_even_operand"       "=r")
 	(plus:DI
 	  (any_extend:DI
 	  (mult:SI
 	      (match_operand:SI 2 "register_operand" " r")
 	      (match_operand:SI 3 "register_operand" " r")))
-	  (match_operand:DI 1 "register_operand"     " 0")))]
+	  (match_operand:DI 1 "register_even_operand"     " 0")))]
   "TARGET_DSP && !TARGET_64BIT"
   "<su>mar64\t%0, %2, %3"
   [(set_attr "type"   "dmac")
    (set_attr "mode"   "DI")])
 
 (define_insn "<su>msr64"
-  [(set (match_operand:DI 0 "register_operand"       "=r")
+  [(set (match_operand:DI 0 "register_even_operand"       "=r")
 	(minus:DI
-	  (match_operand:DI 1 "register_operand"     " 0")
+	  (match_operand:DI 1 "register_even_operand"     " 0")
 	  (mult:DI
 	    (any_extend:DI
 	      (match_operand:SI 2 "register_operand" " r"))
@@ -5902,9 +5902,9 @@
    (set_attr "mode" "DI")])
 
 (define_insn "<su>msr64_2"
-  [(set (match_operand:DI 0 "register_operand"       "=r")
+  [(set (match_operand:DI 0 "register_even_operand"       "=r")
 	(minus:DI
-	  (match_operand:DI 1 "register_operand"     " 0")
+	  (match_operand:DI 1 "register_even_operand"     " 0")
 	  (any_extend:DI
 	    (mult:SI
 	      (match_operand:SI 2 "register_operand" " r")
@@ -5916,9 +5916,9 @@
 
 ;; kmar64, kmsr64, ukmar64 and ukmsr64
 (define_insn "kmar64_1"
-  [(set (match_operand:DI 0 "register_operand"       "=r")
+  [(set (match_operand:DI 0 "register_even_operand"       "=r")
 	(ss_plus:DI
-	  (match_operand:DI 1 "register_operand"     " 0")
+	  (match_operand:DI 1 "register_even_operand"     " 0")
 	  (mult:DI
 	    (sign_extend:DI
 	      (match_operand:SI 2 "register_operand" " r"))
@@ -5930,14 +5930,14 @@
    (set_attr "mode"   "DI")])
 
 (define_insn "kmar64_2"
-  [(set (match_operand:DI 0 "register_operand"       "=r")
+  [(set (match_operand:DI 0 "register_even_operand"       "=r")
 	(ss_plus:DI
 	  (mult:DI
 	    (sign_extend:DI
 	      (match_operand:SI 2 "register_operand" " r"))
 	    (sign_extend:DI
 	      (match_operand:SI 3 "register_operand" " r")))
-	  (match_operand:DI 1 "register_operand"     " 0")))]
+	  (match_operand:DI 1 "register_even_operand"     " 0")))]
   "TARGET_DSP && !TARGET_64BIT"
   "kmar64\t%0, %2, %3"
   [(set_attr "type"   "dmac")
@@ -5967,9 +5967,9 @@
    (set_attr "mode" "DI")])
 
 (define_insn "kmsr64"
-  [(set (match_operand:DI 0 "register_operand"       "=r")
+  [(set (match_operand:DI 0 "register_even_operand"       "=r")
 	(ss_minus:DI
-	  (match_operand:DI 1 "register_operand"     " 0")
+	  (match_operand:DI 1 "register_even_operand"     " 0")
 	  (mult:DI
 	    (sign_extend:DI
 	      (match_operand:SI 2 "register_operand" " r"))
@@ -6004,9 +6004,9 @@
    (set_attr "mode" "DI")])
 
 (define_insn "ukmar64_1"
-  [(set (match_operand:DI 0 "register_operand"       "=r")
+  [(set (match_operand:DI 0 "register_even_operand"       "=r")
 	(us_plus:DI
-	  (match_operand:DI 1 "register_operand"     " 0")
+	  (match_operand:DI 1 "register_even_operand"     " 0")
 	  (mult:DI
 	    (zero_extend:DI
 	      (match_operand:SI 2 "register_operand" " r"))
@@ -6041,23 +6041,23 @@
    (set_attr "mode" "DI")])
 
 (define_insn "ukmar64_2"
-  [(set (match_operand:DI 0 "register_operand"       "=r")
+  [(set (match_operand:DI 0 "register_even_operand"       "=r")
 	(us_plus:DI
 	  (mult:DI
 	    (zero_extend:DI
 	      (match_operand:SI 2 "register_operand" " r"))
 	    (zero_extend:DI
 	      (match_operand:SI 3 "register_operand" " r")))
-	  (match_operand:DI 1 "register_operand"     " 0")))]
+	  (match_operand:DI 1 "register_even_operand"     " 0")))]
   "TARGET_DSP && !TARGET_64BIT"
   "ukmar64\t%0, %2, %3"
   [(set_attr "type"   "dmac")
    (set_attr "mode"   "DI")])
 
 (define_insn "ukmsr64"
-  [(set (match_operand:DI 0 "register_operand"       "=r")
+  [(set (match_operand:DI 0 "register_even_operand"       "=r")
 	(us_minus:DI
-	  (match_operand:DI 1 "register_operand"     " 0")
+	  (match_operand:DI 1 "register_even_operand"     " 0")
 	  (mult:DI
 	    (zero_extend:DI
 	      (match_operand:SI 2 "register_operand" " r"))
