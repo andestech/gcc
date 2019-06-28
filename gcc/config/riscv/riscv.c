@@ -2445,6 +2445,12 @@ riscv_split_64bit_move_p (rtx dest, rtx src)
   if (TARGET_64BIT)
     return false;
 
+  if (!TARGET_64BIT && TARGET_DSP
+      && REG_P (dest)
+      && (REG_P (src)
+	  || src == CONST0_RTX (GET_MODE (src))))
+    return false;
+
   /* Allow FPR <-> FPR and FPR <-> MEM moves, and permit the special case
      of zeroing an FPR with FCVT.D.W.  */
   if (TARGET_DOUBLE_FLOAT

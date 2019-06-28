@@ -132,6 +132,16 @@
   [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
+(define_insn "dsp_movdi"
+  [(set (match_operand:DI 0 "register_operand" "=r, r")
+	(match_operand:DI 1 "reg_or_0_operand" " r, J"))]
+  "!TARGET_64BIT && TARGET_DSP"
+  "@
+   add64 %0, %1, x0
+   add64 %0, x0, x0"
+  [(set_attr "type" "dalu64")
+   (set_attr "mode" "DI")])
+
 (define_insn "dsp_<uk>adddi3"
   [(set (match_operand:DI 0 "register_operand"              "=r")
 	(all_plus:DI (match_operand:DI 1 "register_operand" " r")
