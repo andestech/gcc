@@ -115,5 +115,6 @@ extern rtx riscv_di_high_part_subreg(rtx);
 extern rtx riscv_di_low_part_subreg(rtx);
 
 extern void riscv_adjust_reg_alloc_order (void);
+extern bool riscv_dsp_64bit_split_p (void);
 
 #endif /* ! GCC_RISCV_PROTOS_H */

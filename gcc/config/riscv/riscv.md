@@ -1806,7 +1806,7 @@
 (define_split
   [(set (match_operand:MOVE64 0 "nonimmediate_operand")
 	(match_operand:MOVE64 1 "move_operand"))]
-  "reload_completed
+  "riscv_dsp_64bit_split_p ()
    && riscv_split_64bit_move_p (operands[0], operands[1])"
   [(const_int 0)]
 {

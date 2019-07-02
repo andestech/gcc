@@ -6528,6 +6528,15 @@ riscv_adjust_reg_alloc_order (void)
             sizeof (riscv_reg_alloc_order_for_O0));
 }
 
+bool
+riscv_dsp_64bit_split_p ()
+{
+  if (!TARGET_64BIT && TARGET_DSP)
+    return epilogue_completed;
+
+  return reload_completed;
+}
+
 /* Initialize the GCC target structure.  */
 #undef TARGET_ASM_ALIGNED_HI_OP
 #define TARGET_ASM_ALIGNED_HI_OP "\t.half\t"
