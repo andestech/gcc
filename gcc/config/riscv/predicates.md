@@ -84,7 +84,14 @@
   (match_code "const_int")
 {
   if (TARGET_BBCS && (INTVAL (op) >= 0))
-    return true;
+    {
+      if (TARGET_64BIT && INTVAL (op) <= 63)
+        return true;
+      else if (INTVAL (op) <=31)
+        return true;
+      else
+	return false;
+    }
 
   return (INTVAL (op) >= IMM_BITS - 1);
 })
