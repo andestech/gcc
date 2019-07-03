@@ -662,7 +662,27 @@ static const char * const riscv_csr_register_names[] =
   "tcontrol",
   "mcontext",
   "scontext",
-  "scountermask_m"
+  "scountermask_m",
+  "pmacfg0",
+  "pmacfg1",
+  "pmacfg2",
+  "pmacfg3",
+  "pmaaddr0",
+  "pmaaddr1",
+  "pmaaddr2",
+  "pmaaddr3",
+  "pmaaddr4",
+  "pmaaddr5",
+  "pmaaddr6",
+  "pmaaddr7",
+  "pmaaddr8",
+  "pmaaddr9",
+  "pmaaddr10",
+  "pmaaddr11",
+  "pmaaddr12",
+  "pmaaddr13",
+  "pmaaddr14",
+  "pmaaddr15"
 };
 
 static const char * const riscv_fence_operations [] =
