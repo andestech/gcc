@@ -2,6 +2,7 @@
 
 /* { dg-do compile } */
 /* { dg-require-effective-target lp64 } */
+/* { dg-require-effective-target riscv_atomic } */
 /* { dg-options "-std=gnu99" } */
 /* { dg-final { scan-assembler "\tamominu.d\t" } } */
 
