@@ -48,5 +48,5 @@ softfp_extensions += hftf
 softfp_truncations += tfhf
 softfp_extras := floatdihf floatsihf floatundihf floatunsihf \
 		 fixhfdi fixhfsi fixunshfdi fixunshfsi \
-		 extendhfdf2 truncdfhf2
+		 extendhfdf2 truncdfhf2 extendhfsf2 truncsfhf2
 endif
