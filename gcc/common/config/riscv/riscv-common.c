@@ -643,6 +643,10 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
   if (subset_list->lookup ("c"))
     *flags |= MASK_RVC;
 
+  *flags &= ~MASK_RVV;
+  if (subset_list->lookup ("v"))
+    *flags |= MASK_RVV;
+
   if (subset_list->lookup ("xv", 5))
     {
       if ((target_flags_explicit & MASK_V5) == 0)

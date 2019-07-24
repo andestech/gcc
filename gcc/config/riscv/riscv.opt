@@ -170,6 +170,10 @@ mb20282
 Target
 Avoid conditional jump erratum
 
+mext-vector
+Target Report Mask(RVV)
+Use vector instructions.
+
 Mask(HARD_FLOAT)
 
 Mask(DOUBLE_FLOAT)

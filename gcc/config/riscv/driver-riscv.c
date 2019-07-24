@@ -49,6 +49,7 @@ static arch_options_t arch_options[] = {
   {"f", NULL, &std_ext['f' - 'a']},
   {"d", NULL, &std_ext['d' - 'a']},
   {"c", "16-bit", &std_ext['c' - 'a']},
+  {"v", "ext-vector", &std_ext['v' - 'a']},
   {"xv5", "nds", &nds_ext},
   {"xdsp", "ext-dsp", &dsp_ext},
   {"xefhw", "fp16", &fp16_ext},
