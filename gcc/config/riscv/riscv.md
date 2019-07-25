@@ -1449,7 +1449,7 @@
   [(set (match_operand:HF    0 "register_operand" "")
        (float:HF
            (match_operand:SI 1 "register_operand" "")))]
-  "TARGET_HARD_FLOAT && TARGET_FP16"
+  "TARGET_HARD_FLOAT && (TARGET_FP16 || TARGET_SOFT_FP16)"
 {
   riscv_expand_float_hf(operands[0], operands[1], false);
   DONE;
@@ -1459,7 +1459,7 @@
   [(set (match_operand:HF   0 "register_operand" "")
 	(float:HF
 	  (match_operand:DI 1 "register_operand" "")))]
-  "TARGET_HARD_FLOAT && TARGET_FP16"
+  "TARGET_HARD_FLOAT && (TARGET_FP16 || TARGET_SOFT_FP16)"
 {
   riscv_expand_float_hf(operands[0], operands[1], false);
   DONE;
@@ -1469,7 +1469,7 @@
   [(set (match_operand:HF     0 "register_operand" "")
 	(unsigned_float:HF
 	  (match_operand:SI 1 "register_operand" "")))]
-  "TARGET_HARD_FLOAT && TARGET_FP16"
+  "TARGET_HARD_FLOAT && (TARGET_FP16 || TARGET_SOFT_FP16)"
 {
   riscv_expand_float_hf(operands[0], operands[1], true);
   DONE;
@@ -1479,7 +1479,7 @@
   [(set (match_operand:HF     0 "register_operand" "")
 	(unsigned_float:HF
 	  (match_operand:DI 1 "register_operand" "")))]
-  "TARGET_HARD_FLOAT && TARGET_FP16"
+  "TARGET_HARD_FLOAT && (TARGET_FP16 || TARGET_SOFT_FP16)"
 {
   riscv_expand_float_hf(operands[0], operands[1], true);
   DONE;
@@ -1712,7 +1712,7 @@
 (define_expand "movhf"
   [(set (match_operand:HF 0 "")
 	(match_operand:HF 1 ""))]
-  "TARGET_HARD_FLOAT && TARGET_FP16"
+  "TARGET_HARD_FLOAT && (TARGET_FP16 || TARGET_SOFT_FP16)"
 {
   if (riscv_legitimize_move (HFmode, operands[0], operands[1]))
     DONE;
@@ -1722,7 +1722,7 @@
   [(set (match_operand:HF 0 "nonimmediate_operand" "=f,r,f,r,r,m")
 	(match_operand:HF 1 "movehf_operand"       " f,f,r,r,m,r"))]
   "TARGET_HARD_FLOAT
-   && TARGET_FP16
+   && (TARGET_FP16 || TARGET_SOFT_FP16)
    && (register_operand (operands[0], HFmode)
        || register_operand (operands[1], HFmode))"
   { return riscv_output_move (operands[0], operands[1]); }

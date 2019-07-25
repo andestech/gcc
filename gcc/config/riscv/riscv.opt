@@ -306,5 +306,8 @@ mfp16
 Target Report Mask(FP16)
 Supporting __fp16 instructions.
 
+msoft-fp16
+Target Report Mask(SOFT_FP16) Undocumented
+
 mcmov
 Target Mask(CMOV)
