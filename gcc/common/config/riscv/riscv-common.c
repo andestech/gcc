@@ -659,6 +659,10 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
       if (subset_list->lookup ("xdsp"))
 	if ((target_flags_explicit & MASK_DSP) == 0)
 	  *flags |= MASK_DSP;
+
+      if (subset_list->lookup ("xefhw"))
+	if ((target_flags_explicit & MASK_FP16) == 0)
+	  *flags |= MASK_FP16;
     }
   else if (subset_list->lookup ("xdsp"))
     {

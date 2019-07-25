@@ -40,6 +40,7 @@ struct arch_options_t
 static bool nds_ext = false;
 static bool dsp_ext = false;
 static bool _dsp_ext = false;
+static bool fp16_ext = false;
 static bool std_ext[26];
 static  bool rv64_p = false;
 
@@ -52,6 +53,7 @@ static arch_options_t arch_options[] = {
   {"xv5", "nds", &nds_ext},
   {"xdsp", "ext-dsp", &dsp_ext},
   {"_xdsp", "ext-dsp", &_dsp_ext},
+  {"_xefhw", "fp16", &fp16_ext},
   {NULL, NULL, NULL},
 };
 
