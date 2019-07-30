@@ -5553,6 +5553,9 @@ riscv_option_override (void)
   if (BITS_PER_WORD != POINTER_SIZE)
     error ("ABI requires %<-march=rv%d%>", POINTER_SIZE);
 
+  if (TARGET_FP16 && !TARGET_HARD_FLOAT)
+    error ("Only support -mfp16 option on F and D instruction set");
+
   if (riscv_movebytes_per_loop == 0)
     riscv_movebytes_per_loop = UNITS_PER_WORD * 3;
   else if (riscv_movebytes_per_loop < UNITS_PER_WORD)
