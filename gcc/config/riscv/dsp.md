@@ -4846,8 +4846,8 @@
 (define_insn "smslda64"
   [(set (match_operand:DI 0 "register_operand"                             "=r")
 	(minus:DI
-	  (match_operand:DI 1 "register_operand"                           " 0")
 	  (minus:DI
+	    (match_operand:DI 1 "register_operand"                           " 0")
 	    (sign_extend:DI
 	      (minus:SI
 		(mult:SI
@@ -4859,7 +4859,7 @@
 				    (parallel [(const_int 0)]))))
 		(mult:SI
 		  (sign_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 1)])))
-		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 1)]))))))
+		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 1)])))))))
 	    (sign_extend:DI
 	      (minus:SI
 		(mult:SI
@@ -4867,7 +4867,7 @@
 		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 2)]))))
 		(mult:SI
 		  (sign_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 3)])))
-		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 3)])))))))))]
+		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 3)]))))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smslda\t%0, %2, %3"
   [(set_attr "type" "dmac")])
@@ -4900,8 +4900,8 @@
 (define_insn "smslxda64"
   [(set (match_operand:DI 0 "register_operand"                             "=r")
 	(minus:DI
-	  (match_operand:DI 1 "register_operand"                           " 0")
 	  (minus:DI
+	    (match_operand:DI 1 "register_operand"                           " 0")
 	    (sign_extend:DI
 	      (minus:SI
 		(mult:SI
@@ -4913,7 +4913,7 @@
 				    (parallel [(const_int 1)]))))
 		(mult:SI
 		  (sign_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 1)])))
-		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 0)]))))))
+		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 0)])))))))
 	    (sign_extend:DI
 	      (minus:SI
 		(mult:SI
@@ -4921,7 +4921,7 @@
 		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 3)]))))
 		(mult:SI
 		  (sign_extend:SI (vec_select:HI (match_dup 2) (parallel [(const_int 3)])))
-		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 2)])))))))))]
+		  (sign_extend:SI (vec_select:HI (match_dup 3) (parallel [(const_int 2)]))))))))]
   "TARGET_DSP && TARGET_64BIT"
   "smslxda\t%0, %2, %3"
   [(set_attr "type" "dmac")])
@@ -5870,8 +5870,9 @@
 
 (define_insn "v<su>msr64"
   [(set (match_operand:DI 0 "register_operand"             "=r")
-	(minus:DI (match_operand:DI 1 "register_operand"    " 0")
+	(minus:DI
 	  (minus:DI
+	  (match_operand:DI 1 "register_operand"    " 0")
 	    (mult:DI
 	      (any_extend:DI
 		(vec_select:SI
@@ -5880,12 +5881,12 @@
 	      (any_extend:DI
 		(vec_select:SI
 		  (match_operand:V2SI 3 "register_operand" " r")
-		  (parallel [(const_int 0)]))))
+		  (parallel [(const_int 0)])))))
 	    (mult:DI
 	      (any_extend:DI
 		(vec_select:SI (match_dup 2) (parallel [(const_int 1)])))
 	      (any_extend:DI
-		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
+		(vec_select:SI (match_dup 3) (parallel [(const_int 1)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "<su>msr64\t%0, %2, %3"
   [(set_attr "type"   "dmac")
@@ -5972,8 +5973,9 @@
 
 (define_insn "vkmsr64"
   [(set (match_operand:DI 0 "register_operand"             "=r")
-	(ss_minus:DI (match_operand:DI 1 "register_operand"    " 0")
+	(ss_minus:DI
 	  (minus:DI
+	  (match_operand:DI 1 "register_operand"    " 0")
 	    (mult:DI
 	      (sign_extend:DI
 		(vec_select:SI
@@ -5982,12 +5984,12 @@
 	      (sign_extend:DI
 		(vec_select:SI
 		  (match_operand:V2SI 3 "register_operand" " r")
-		  (parallel [(const_int 0)]))))
+		  (parallel [(const_int 0)])))))
 	    (mult:DI
 	      (sign_extend:DI
 		(vec_select:SI (match_dup 2) (parallel [(const_int 1)])))
 	      (sign_extend:DI
-		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
+		(vec_select:SI (match_dup 3) (parallel [(const_int 1)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "kmsr64\t%0, %2, %3"
   [(set_attr "type"   "dmac")
@@ -6060,8 +6062,9 @@
 
 (define_insn "vukmsr64"
   [(set (match_operand:DI 0 "register_operand"             "=r")
-	(us_minus:DI (match_operand:DI 1 "register_operand"    " 0")
+	(us_minus:DI
 	  (minus:DI
+	    (match_operand:DI 1 "register_operand"    " 0")
 	    (mult:DI
 	      (zero_extend:DI
 		(vec_select:SI
@@ -6070,12 +6073,12 @@
 	      (zero_extend:DI
 		(vec_select:SI
 		  (match_operand:V2SI 3 "register_operand" " r")
-		  (parallel [(const_int 0)]))))
+		  (parallel [(const_int 0)])))))
 	    (mult:DI
 	      (sign_extend:DI
 		(vec_select:SI (match_dup 2) (parallel [(const_int 1)])))
 	      (sign_extend:DI
-		(vec_select:SI (match_dup 3) (parallel [(const_int 1)])))))))]
+		(vec_select:SI (match_dup 3) (parallel [(const_int 1)]))))))]
   "TARGET_DSP && TARGET_64BIT"
   "ukmsr64\t%0, %2, %3"
   [(set_attr "type"   "dmac")
