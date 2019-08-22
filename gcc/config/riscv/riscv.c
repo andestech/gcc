@@ -685,7 +685,8 @@ static const char * const riscv_csr_register_names[] =
   "pmaaddr12",
   "pmaaddr13",
   "pmaaddr14",
-  "pmaaddr15"
+  "pmaaddr15",
+  "mmsc_cfg2"
 };
 
 static const char * const riscv_fence_operations [] =

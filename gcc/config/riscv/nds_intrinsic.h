@@ -354,7 +354,8 @@ enum riscv_csrs
   NDS_PMAADDR12,
   NDS_PMAADDR13,
   NDS_PMAADDR14,
-  NDS_PMAADDR15
+  NDS_PMAADDR15,
+  NDS_MMSC_CFG2
 };
 
 enum riscv_fence
