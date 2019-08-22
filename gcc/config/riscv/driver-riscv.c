@@ -39,7 +39,6 @@ struct arch_options_t
 
 static bool nds_ext = false;
 static bool dsp_ext = false;
-static bool _dsp_ext = false;
 static bool fp16_ext = false;
 static bool std_ext[26];
 static  bool rv64_p = false;
@@ -52,8 +51,7 @@ static arch_options_t arch_options[] = {
   {"c", "16-bit", &std_ext['c' - 'a']},
   {"xv5", "nds", &nds_ext},
   {"xdsp", "ext-dsp", &dsp_ext},
-  {"_xdsp", "ext-dsp", &_dsp_ext},
-  {"_xefhw", "fp16", &fp16_ext},
+  {"xefhw", "fp16", &fp16_ext},
   {NULL, NULL, NULL},
 };
 
@@ -129,6 +127,9 @@ parsing_march (const char *march)
 
   while (*p)
     {
+      while (*p == '_')
+	++p;
+
       bool found = false;
       for (;!std_ext_end_p (opt); ++opt)
 	{
@@ -206,20 +207,19 @@ riscv_arch (int argc ATTRIBUTE_UNUSED, const char **argv ATTRIBUTE_UNUSED)
   else
     str = "rv32i";
 
-  if (dsp_ext)
+  bool need_underscore = false;
+  for (;!std_ext_end_p (opt); ++opt)
     {
-      if (nds_ext)
+      if (*opt->val && opt->short_option)
 	{
-	  dsp_ext = false;
-	  _dsp_ext = true;
+	  if (need_underscore)
+	    str += "_";
+	  str += opt->short_option;
+	  if (strlen(opt->short_option) > 1)
+	    need_underscore = true;
 	}
-      else
-	_dsp_ext = false;
     }
 
-  for (;!std_ext_end_p (opt); ++opt)
-    if (*opt->val && opt->short_option)
-      str += opt->short_option;
 
   gcc_assert (str.length () < MAX_ARCH_STRING_LEN);
   strncpy (riscv_arch_string, str.c_str(), MAX_ARCH_STRING_LEN);
