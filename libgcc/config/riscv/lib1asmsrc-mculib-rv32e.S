@@ -1,7 +1,5 @@
 #ifdef L_addsub_sf
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__subsf3
 	.type	__subsf3,@function
@@ -194,8 +192,6 @@ __addsf3:
 
 #ifdef L_divsi3
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__divsi3
 	.type	__divsi3,@function
@@ -240,8 +236,6 @@ __divsi3:
 #endif
 
 #ifdef L_divdi3
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__divdi3
@@ -292,8 +286,6 @@ __divdi3:
 
 #ifdef L_modsi3
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__modsi3
 	.type	__modsi3,@function
@@ -334,8 +326,6 @@ __modsi3:
 #endif
 
 #ifdef L_moddi3
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__moddi3
@@ -388,8 +378,6 @@ __moddi3:
 
 #ifdef L_mulsi3
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__mulsi3
 	.type	__mulsi3,@function
@@ -413,8 +401,6 @@ __mulsi3:
 #endif
 
 #ifdef L_udivsi3
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__udivsi3
@@ -448,8 +434,6 @@ __udivsi3:
 
 #ifdef L_udivdi3
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__udivdi3
 	.type	__udivdi3,@function
@@ -461,8 +445,6 @@ __udivdi3:
 #endif
 
 #ifdef L_umul_ppmm
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	umul_ppmm
@@ -494,8 +476,6 @@ umul_ppmm:
 #endif
 
 #ifdef L_udivmoddi4
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.type	fudiv_qrnnd,@function
@@ -802,8 +782,6 @@ __udivmoddi4:
 
 #ifdef L_umodsi3
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__umodsi3
 	.type	__umodsi3,@function
@@ -834,8 +812,6 @@ __umodsi3:
 
 #ifdef L_umoddi3
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__umoddi3
 	.type	__umoddi3,@function
@@ -855,8 +831,6 @@ __umoddi3:
 
 #ifdef L_muldi3
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__muldi3
 	.type	__muldi3,@function
@@ -873,8 +847,6 @@ __muldi3:
 #endif
 
 #ifdef L_addsub_df
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__subdf3
@@ -1206,8 +1178,6 @@ __adddf3:
 
 #ifdef L_mul_sf
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__mulsf3
 	.type	__mulsf3,@function
@@ -1358,8 +1328,6 @@ __mulsf3:
 #endif
 
 #ifdef L_mul_df
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__muldf3
@@ -1722,8 +1690,6 @@ __muldf3:
 
 #ifdef L_div_sf
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__divsf3
 	.type	__divsf3,@function
@@ -1906,8 +1872,6 @@ __divsf3:
 #endif
 
 #ifdef L_div_df
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__divdf3
@@ -2484,8 +2448,6 @@ __divdf3:
 
 #ifdef L_negate_sf
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__negsf2
 	.type	__negsf2,@function
@@ -2499,8 +2461,6 @@ __negsf2:
 
 #ifdef L_negate_df
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__negdf2
 	.type	__negdf2,@function
@@ -2513,8 +2473,6 @@ __negdf2:
 #endif
 
 #ifdef L_sf_to_df
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__extendsfdf2
@@ -2562,8 +2520,6 @@ __extendsfdf2:
 #endif
 
 #ifdef L_df_to_sf
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__truncdfsf2
@@ -2675,8 +2631,6 @@ __truncdfsf2:
 
 #ifdef L_fixsfdi
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__fixsfdi
 	.type	__fixsfdi,@function
@@ -2741,8 +2695,6 @@ __fixsfdi:
 
 #ifdef L_fixsfsi
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__fixsfsi
 	.type	__fixsfsi,@function
@@ -2781,8 +2733,6 @@ __fixsfsi:
 #endif
 
 #ifdef L_fixdfdi
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__fixdfdi
@@ -2867,8 +2817,6 @@ __fixdfdi:
 
 #ifdef L_fixdfsi
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.globl	__fixdfsi
 	.type	__fixdfsi,@function
 __fixdfsi:
@@ -2912,8 +2860,6 @@ __fixdfsi:
 
 #ifdef L_fixunssfsi
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.globl	__fixunssfsi
 	.type	__fixunssfsi,@function
 __fixunssfsi:
@@ -2941,8 +2887,6 @@ __fixunssfsi:
 #endif
 
 #ifdef L_fixunsdfsi
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__fixunsdfsi
@@ -2989,8 +2933,6 @@ __fixunsdfsi:
 
 #ifdef L_fixunssfdi
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__fixunssfdi
 	.type	__fixunssfdi,@function
@@ -3033,8 +2975,6 @@ __fixunssfdi:
 #endif
 
 #ifdef L_fixunsdfdi
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__fixunsdfdi
@@ -3102,8 +3042,6 @@ __fixunsdfdi:
 
 #ifdef L_si_to_sf
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__floatsisf
 	.type	__floatsisf,@function
@@ -3145,8 +3083,6 @@ __floatsisf:
 #endif
 
 #ifdef L_si_to_df
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__floatsidf
@@ -3220,8 +3156,6 @@ __floatsidf:
 #endif
 
 #ifdef L_floatdisf
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__floatdisf
@@ -3327,8 +3261,6 @@ __floatdisf:
 #endif
 
 #ifdef L_floatdidf
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__floatdidf
@@ -3450,8 +3382,6 @@ __floatdidf:
 
 #ifdef L_floatunsisf
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__floatunsisf
 	.type	__floatunsisf,@function
@@ -3486,8 +3416,6 @@ __floatunsisf:
 #endif
 
 #ifdef L_floatunsidf
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__floatunsidf
@@ -3544,8 +3472,6 @@ __floatunsidf:
 #endif
 
 #ifdef L_floatundisf
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__floatundisf
@@ -3630,8 +3556,6 @@ __floatundisf:
 #endif
 
 #ifdef L_floatundidf
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__floatundidf
@@ -3739,8 +3663,6 @@ __floatundidf:
 
 #ifdef L_compare_sf
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__gtsf2
 	.type	__gtsf2,@function
@@ -3817,8 +3739,6 @@ __cmpsf2:
 #endif
 
 #ifdef L_compare_df
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__gtdf2
@@ -3935,8 +3855,6 @@ __cmpdf2:
 
 #ifdef L_unord_sf
 	.text
-	.section	.mdebug.abi_nds32,"",@progbits
-	.text
 	.p2align	2
 	.globl	__unordsf2
 	.type	__unordsf2,@function
@@ -3954,8 +3872,6 @@ __unordsf2:
 #endif
 
 #ifdef L_unord_df
-	.text
-	.section	.mdebug.abi_nds32,"",@progbits
 	.text
 	.p2align	2
 	.globl	__unorddf2
