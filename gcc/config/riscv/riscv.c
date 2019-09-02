@@ -3452,7 +3452,7 @@ riscv_pass_by_reference (cumulative_args_t cum_v, const function_arg_info &arg)
   struct riscv_arg_info info;
   CUMULATIVE_ARGS *cum = get_cumulative_args (cum_v);
 
-  if ((TARGET_FP16 || TARGET_SOFT_FP16)
+  if ((TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)
       && arg.mode == HFmode)
     return true;
 
@@ -3637,7 +3637,7 @@ static tree
 riscv_promoted_type (const_tree t)
 {
   /* Promote __fp16 to float if fp16 extension is avariable. */
-  if ((TARGET_FP16 || TARGET_SOFT_FP16)
+  if ((TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)
       && SCALAR_FLOAT_TYPE_P (t)
       && (TYPE_MAIN_VARIANT (t) == riscv_fp16_type_node))
     return float_type_node;
@@ -3661,7 +3661,7 @@ riscv_mangle_type (const_tree type)
 static bool
 riscv_libgcc_floating_mode_supported_p (scalar_float_mode mode)
 {
-  return (((TARGET_FP16 || TARGET_SOFT_FP16)
+  return (((TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)
 	   && (mode == HFmode))
 	  ? true
 	  : default_libgcc_floating_mode_supported_p (mode));
@@ -3671,7 +3671,7 @@ riscv_libgcc_floating_mode_supported_p (scalar_float_mode mode)
 static bool
 riscv_scalar_mode_supported_p (scalar_mode mode)
 {
-  if ((TARGET_FP16 || TARGET_SOFT_FP16)
+  if ((TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)
       && (mode == HFmode))
     return true;
 
@@ -5555,6 +5555,9 @@ riscv_option_override (void)
     error ("ABI requires %<-march=rv%d%>", POINTER_SIZE);
 
   if (TARGET_FP16 && !TARGET_HARD_FLOAT)
+    error ("Only support -mfp16 option on F and D instruction set");
+
+  if (TARGET_ZFH && !TARGET_HARD_FLOAT)
     error ("Only support -mfp16 option on F and D instruction set");
 
   if (riscv_movebytes_per_loop == 0)

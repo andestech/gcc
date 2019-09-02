@@ -2741,7 +2741,7 @@ riscv_init_fp16_types (void)
 void
 riscv_init_builtins (void)
 {
-  if (TARGET_FP16 || TARGET_SOFT_FP16)
+  if (TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)
     riscv_init_fp16_types ();
 
   for (size_t i = 0; i < ARRAY_SIZE (riscv_builtins); i++)

@@ -156,6 +156,8 @@ mlea
 Target Report Mask(LEA) Undocumented
 Use hardware load effective address instructions: lea.
 
+Mask(ZFH)
+
 Mask(V5)
 
 mext-dsp
