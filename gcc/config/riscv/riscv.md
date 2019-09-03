@@ -407,7 +407,8 @@
 (define_mode_iterator ANY32 [QI HI SI])
 
 ;; Iterator for hardware-supported floating-point modes.
-(define_mode_iterator ANYF [(SF "TARGET_HARD_FLOAT")
+(define_mode_iterator ANYF [(HF "TARGET_ZFH")
+			    (SF "TARGET_HARD_FLOAT")
 			    (DF "TARGET_DOUBLE_FLOAT")])
 
 ;; Iterator for floating-point modes that can be loaded into X registers.
@@ -418,7 +419,7 @@
 (define_mode_attr size [(QI "b") (HI "h")])
 
 ;; Mode attributes for loads.
-(define_mode_attr load [(QI "lb") (HI "lh") (SI "lw") (DI "ld") (SF "flw") (DF "fld")])
+(define_mode_attr load [(QI "lb") (HI "lh") (SI "lw") (DI "ld") (HF "flh") (SF "flw") (DF "fld")])
 
 ;; Instruction names for integer loads that aren't explicitly sign or zero
 ;; extended.  See riscv_output_move and LOAD_EXTEND_OP.
@@ -428,7 +429,7 @@
 (define_mode_attr softload [(SF "lw") (DF "ld")])
 
 ;; Instruction names for stores.
-(define_mode_attr store [(QI "sb") (HI "sh") (SI "sw") (DI "sd") (SF "fsw") (DF "fsd")])
+(define_mode_attr store [(QI "sb") (HI "sh") (SI "sw") (DI "sd") (HF "fsh") (SF "fsw") (DF "fsd")])
 
 ;; Instruction names for FP stores from integer registers.
 (define_mode_attr softstore [(SF "sw") (DF "sd")])
@@ -438,7 +439,7 @@
 (define_mode_attr reg [(SI "d") (DI "d") (CC "d")])
 
 ;; This attribute gives the format suffix for floating-point operations.
-(define_mode_attr fmt [(SF "s") (DF "d")])
+(define_mode_attr fmt [(HF "h") (SF "s") (DF "d")])
 
 ;; This attribute gives the integer suffix for floating-point conversions.
 (define_mode_attr ifmt [(SI "w") (DI "l")])
@@ -448,7 +449,7 @@
 
 ;; This attribute gives the upper-case mode name for one unit of a
 ;; floating-point mode.
-(define_mode_attr UNITMODE [(SF "SF") (DF "DF")])
+(define_mode_attr UNITMODE [(HF "HF") (SF "SF") (DF "DF")])
 
 ;; This attribute gives the integer mode that has half the size of
 ;; the controlling mode.
@@ -1445,7 +1446,7 @@
   [(set_attr "type" "fcvt")
    (set_attr "mode" "<ANYF:MODE>")])
 
-(define_expand "floatsihf2"
+(define_expand "fp16_floatsihf2"
   [(set (match_operand:HF    0 "register_operand" "")
        (float:HF
            (match_operand:SI 1 "register_operand" "")))]
@@ -1455,7 +1456,7 @@
   DONE;
 })
 
-(define_expand "floatdihf2"
+(define_expand "fp16_floatdihf2"
   [(set (match_operand:HF   0 "register_operand" "")
 	(float:HF
 	  (match_operand:DI 1 "register_operand" "")))]
@@ -1465,7 +1466,7 @@
   DONE;
 })
 
-(define_expand "floatunssihf2"
+(define_expand "fp16_floatunssihf2"
   [(set (match_operand:HF     0 "register_operand" "")
 	(unsigned_float:HF
 	  (match_operand:SI 1 "register_operand" "")))]
@@ -1475,7 +1476,7 @@
   DONE;
 })
 
-(define_expand "floatunsdihf2"
+(define_expand "fp16_floatunsdihf2"
   [(set (match_operand:HF     0 "register_operand" "")
 	(unsigned_float:HF
 	  (match_operand:DI 1 "register_operand" "")))]
