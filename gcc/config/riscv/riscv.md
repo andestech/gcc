@@ -1251,14 +1251,31 @@
    (set_attr "mode" "SF")])
 
 (define_insn "truncsfhf2"
+  [(set (match_operand:HF   0 "register_operand"  "=f")
+	(float_truncate:HF
+	  (match_operand:SF 1 "register_operand" " f")))]
+  "TARGET_HARD_FLOAT && TARGET_ZFH"
+  "fcvt.h.s\t%0,%1"
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "HF")])
+
+(define_insn "truncdfhf2"
+  [(set (match_operand:HF   0 "register_operand"  "=f")
+	(float_truncate:HF
+	  (match_operand:DF 1 "register_operand" " f")))]
+  "TARGET_DOUBLE_FLOAT && TARGET_ZFH"
+  "fcvt.h.d\t%0,%1"
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "HF")])
+
+(define_insn "fp16_truncsfhf2"
   [(set (match_operand:HF     0 "nonimmediate_operand" "=m")
 	(float_truncate:HF
-	    (match_operand:SF 1     "register_operand" " f")))]
+           (match_operand:SF 1  "register_operand"     " f")))]
   "TARGET_HARD_FLOAT && TARGET_FP16"
   "fshw\t%1,%0"
   [(set_attr "type" "fcvt")
    (set_attr "mode" "HF")])
-
 
 ;;
 ;;  ....................
@@ -1385,9 +1402,27 @@
    (set_attr "mode" "DF")])
 
 (define_insn "extendhfsf2"
-  [(set (match_operand:SF     0 "register_operand" "=f")
+  [(set (match_operand:SF   0 "register_operand" "=f")
 	(float_extend:SF
-	    (match_operand:HF 1 "general_operand"  " m")))]
+	  (match_operand:HF 1 "register_operand"  " f")))]
+  "TARGET_HARD_FLOAT && TARGET_ZFH"
+  "fcvt.s.h\t%0,%1"
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "SF")])
+
+(define_insn "extendhfdf2"
+  [(set (match_operand:DF   0 "register_operand" "=f")
+	(float_extend:DF
+	  (match_operand:HF 1 "register_operand"  " f")))]
+  "TARGET_DOUBLE_FLOAT && TARGET_ZFH"
+  "fcvt.d.h\t%0,%1"
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "DF")])
+
+(define_insn "fp16_extendhfsf2"
+  [(set (match_operand:SF   0 "register_operand" "=f")
+	(float_extend:SF
+	  (match_operand:HF 1 "general_operand"  " m")))]
   "TARGET_HARD_FLOAT && TARGET_FP16"
   "flhw\t%0,%1"
   [(set_attr "type" "fcvt")
