@@ -2519,7 +2519,7 @@ riscv_output_move (rtx dest, rtx src)
   src_code = GET_CODE (src);
   mode = GET_MODE (dest);
   dbl_p = (GET_MODE_SIZE (mode) == 8);
-  hf_p = (mode == HFmode);
+  hf_p = TARGET_ZFH && (mode == HFmode);
 
   if (dbl_p && riscv_split_64bit_move_p (dest, src))
     return "#";
@@ -2527,12 +2527,12 @@ riscv_output_move (rtx dest, rtx src)
   if (dest_code == REG && GP_REG_P (REGNO (dest)))
     {
       if (src_code == REG && FP_REG_P (REGNO (src)))
-	switch (GET_MODE_SIZE (mode))
-	  {
-	  case 2: return "fmv.x.h\t%0,%1";
-	  case 4: return "fmv.x.s\t%0,%1";
-	  case 8: return "fmv.x.d\t%0,%1";
-	  }
+	{
+	  if (hf_p)
+	    return "fmv.x.h\t%0,%1";
+	  else
+	    return dbl_p ? "fmv.x.d\t%0,%1" : "fmv.x.s\t%0,%1";
+	}
 
       if (src_code == MEM)
 	switch (GET_MODE_SIZE (mode))
@@ -2591,30 +2591,30 @@ riscv_output_move (rtx dest, rtx src)
   if (src_code == REG && FP_REG_P (REGNO (src)))
     {
       if (dest_code == REG && FP_REG_P (REGNO (dest)))
-	switch (GET_MODE_SIZE (mode))
-	  {
-	  case 2: return "fmv.h\t%0,%1";
-	  case 4: return "fmv.s\t%0,%1";
-	  case 8: return "fmv.d\t%0,%1";
-	  }
+	{
+	  if (hf_p)
+	    return "fmv.h\t%0,%1";
+	  else
+	    return dbl_p ? "fmv.d\t%0,%1" : "fmv.s\t%0,%1";
+	}
 
       if (dest_code == MEM)
-	switch (GET_MODE_SIZE (mode))
-	  {
-	  case 2: return "fsh\t%1,%0";
-	  case 4: return "fsw\t%1,%0";
-	  case 8: return "fsd\t%1,%0";
-	  }
+	{
+	  if (hf_p)
+	    return "fsh\t%1,%0";
+	  else
+	    return dbl_p ? "fsd\t%1,%0" : "fsw\t%1,%0";
+	}
     }
   if (dest_code == REG && FP_REG_P (REGNO (dest)))
     {
       if (src_code == MEM)
-	switch (GET_MODE_SIZE (mode))
-	  {
-	  case 2: return "flh\t%0,%1";
-	  case 4: return "flw\t%0,%1";
-	  case 8: return "fld\t%0,%1";
-	  }
+	{
+	  if (hf_p)
+	    return "flh\t%0,%1";
+	  else
+	    return dbl_p ? "fld\t%0,%1" : "flw\t%0,%1";
+	}
     }
   gcc_unreachable ();
 }

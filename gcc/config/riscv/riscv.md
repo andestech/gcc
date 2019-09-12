@@ -1758,7 +1758,18 @@
   [(set (match_operand:HF 0 "nonimmediate_operand" "=f,f,m,r,f,r,r,m")
 	(match_operand:HF 1 "movehf_operand"       " f,m,f,f,r,r,m,r"))]
   "TARGET_HARD_FLOAT
-   && (TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)
+   && TARGET_ZFH
+   && (register_operand (operands[0], HFmode)
+       || register_operand (operands[1], HFmode))"
+  { return riscv_output_move (operands[0], operands[1]); }
+  [(set_attr "move_type" "move")
+   (set_attr "mode" "HF")])
+
+(define_insn "*fp_16movhf_hardfloat"
+  [(set (match_operand:HF 0 "nonimmediate_operand" "=f,r,f,r,r,m")
+	(match_operand:HF 1 "movehf_operand"       " f,f,r,r,m,r"))]
+  "TARGET_HARD_FLOAT
+   && (TARGET_FP16 || TARGET_SOFT_FP16)
    && (register_operand (operands[0], HFmode)
        || register_operand (operands[1], HFmode))"
   { return riscv_output_move (operands[0], operands[1]); }
