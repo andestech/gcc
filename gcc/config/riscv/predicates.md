@@ -266,6 +266,14 @@
 	  && (type == SYMBOL_ABSOLUTE || type == SYMBOL_PCREL));
 })
 
+(define_predicate "pcrel_symbol_operand"
+  (match_code "symbol_ref")
+{
+  enum riscv_symbol_type type;
+  return (riscv_symbolic_constant_p (op, &type)
+	  && type == SYMBOL_PCREL);
+})
+
 (define_predicate "plt_symbolic_operand"
   (match_code "const,symbol_ref,label_ref")
 {

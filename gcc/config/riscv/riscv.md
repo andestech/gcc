@@ -3831,6 +3831,13 @@
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
+(define_insn "*large_load_address"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+        (mem:DI (match_operand 1 "pcrel_symbol_operand" "")))]
+  "TARGET_64BIT && riscv_cmodel == CM_LARGE"
+  "ld\t%0,%1"
+  [(set (attr "length") (const_int 8))])
+
 (include "sync.md")
 (include "peephole.md")
 (include "pic.md")
