@@ -268,6 +268,9 @@ static int epilogue_cfa_sp_offset;
 /* Which tuning parameters to use.  */
 static const struct riscv_tune_info *tune_info;
 
+/* The section to put constant pools in large code model.  */
+static GTY(()) section *addr_section;
+
 /* Used indirect call functions.  */
 static bool riscv_ict_used = false;
 
@@ -4282,6 +4285,13 @@ static section *
 riscv_elf_select_rtx_section (machine_mode mode, rtx x,
 			      unsigned HOST_WIDE_INT align)
 {
+   if (riscv_can_use_per_function_literal_pools_p ())
+    {
+      if (!TARGET_POOL_SECTION)
+	return function_section (current_function_decl);
+      return addr_section;
+    }
+
   section *s = default_elf_select_rtx_section (mode, x, align);
 
   if (riscv_size_ok_for_small_data_p (GET_MODE_SIZE (mode)))
@@ -5401,6 +5411,15 @@ riscv_asm_file_end (void)
     }
 }
 
+/* Implement TARGET_ASM_INIT_SECTIONS.  */
+
+static void
+riscv_asm_init_sections (void)
+{
+  addr_section = get_unnamed_section (0, output_section_asm_op,
+				      "\t.section\t.nds_addr,\"aw\",@progbits");
+}
+
 /* Implement TARGET_ASM_OUTPUT_MI_THUNK.  Generate rtl rather than asm text
    in order to avoid duplicating too much logic from elsewhere.  */
 
@@ -5559,6 +5578,12 @@ riscv_option_override (void)
   if (riscv_cmodel == CM_LARGE && flag_pic)
     sorry ("code model %qs with -f%s", "large",
 	   global_options.x_flag_pic > 1 ? "PIC" : "pic");
+
+  if (riscv_cmodel != CM_LARGE && TARGET_POOL_SECTION)
+    {
+      warning (0, "-mpool-section is only worked when -mcmodel=large.");
+      TARGET_POOL_SECTION = false;
+    }
 
   if (flag_pic)
     riscv_cmodel = CM_PIC;
@@ -6828,6 +6853,9 @@ riscv_libgcc_floating_mode_supported_p
 
 #undef TARGET_NOCE_CONVERSION_PROFITABLE_P
 #define TARGET_NOCE_CONVERSION_PROFITABLE_P riscv_noce_conversion_profitable_p
+
+#undef TARGET_ASM_INIT_SECTIONS
+#define TARGET_ASM_INIT_SECTIONS riscv_asm_init_sections
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 

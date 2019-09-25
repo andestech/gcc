@@ -315,3 +315,7 @@ Target Report Mask(SOFT_FP16) Undocumented
 
 mcmov
 Target Mask(CMOV)
+
+mpool-section
+Target Report Var(TARGET_POOL_SECTION) Init(0)
+Seprate constant pool from text section in large code model.
