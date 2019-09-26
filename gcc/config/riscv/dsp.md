@@ -2227,7 +2227,7 @@
 		    (match_operand:SI 2 "register_operand" " r")]
 		    UNSPEC_SMULX16))]
   "TARGET_DSP && TARGET_64BIT"
-  "smul16\t%0, %1, %2"
+  "smulx16\t%0, %1, %2"
   [(set_attr "type" "dmul")
    (set_attr "mode" "DI")])
 
@@ -2237,7 +2237,7 @@
 		    (match_operand:SI 2 "register_operand" " r")]
 		    UNSPEC_UMULX16))]
   "TARGET_DSP && TARGET_64BIT"
-  "umul16\t%0, %1, %2"
+  "umulx16\t%0, %1, %2"
   [(set_attr "type" "dmul")
    (set_attr "mode" "DI")])
 
