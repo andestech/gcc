@@ -82,7 +82,11 @@ extern const char *riscv_arch (int, const char **);
 %{march=*:" MARCH_POST_PROC_SPEC "} \
 %{mabi=*} \
 %(subtarget_asm_spec)" \
-" %{O|O1|O2|O3|Ofast:-O1;:-Os}"
+" %{O|O1|O2|O3|Ofast:-O1;:-Os}" \
+" %{mcmodel=small|mcmodel=medlow:-mcmodel=medlow; \
+    mcmodel=medium|mcmodel=medany:-mcmodel=medany; \
+    mcmodel=large:-mcmodel=large}"
+
 
 #ifndef TARGET_DEFAULT_MEDLOW
 #error "TARGET_DEFAULT_MEDLOW undefined!"
