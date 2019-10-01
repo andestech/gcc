@@ -747,14 +747,16 @@ typedef struct {
    may contain character constants, extra white space, comments, etc.  */
 
 #ifndef ASM_APP_ON
-#define ASM_APP_ON " #APP\n"
+#define ASM_APP_ON (riscv_cmodel == CM_LARGE ?				\
+		    "#APP\n\t.option cmodel_large\n" : "#APP\n")
 #endif
 
 /* Output to assembler file text saying following lines
    no longer contain unusual constructs.  */
 
 #ifndef ASM_APP_OFF
-#define ASM_APP_OFF " #NO_APP\n"
+#define ASM_APP_OFF (riscv_cmodel == CM_LARGE ?				\
+		     "#NO_APP\n\t.option cmodel_medany\n" : "#NO_APP\n")
 #endif
 
 #define REGISTER_NAMES						\

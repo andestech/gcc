@@ -5374,6 +5374,8 @@ riscv_file_start (void)
   /* Instruct GAS to generate position-[in]dependent code.  */
   fprintf (asm_out_file, "\t.option %spic\n", (flag_pic ? "" : "no"));
   fprintf (asm_out_file, "\t.option verbatim\n");
+  /* Instruct GAS to expand pseudo instruction as the medany model.  */
+  fprintf (asm_out_file, "\t.option cmodel_medany\n");
 
   /* If the user specifies "-mno-relax" on the command line then disable linker
      relaxation in the assembler.  */
