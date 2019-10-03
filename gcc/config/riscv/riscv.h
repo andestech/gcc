@@ -1052,4 +1052,9 @@ extern tree riscv_fp16_type_node;
 
 #define ICT_VERSION 1
 
+/* Do not emit .note.GNU-stack by default.  */
+#ifndef NEED_INDICATE_EXEC_STACK
+#define NEED_INDICATE_EXEC_STACK        0
+#endif
+
 #endif /* ! GCC_RISCV_H */

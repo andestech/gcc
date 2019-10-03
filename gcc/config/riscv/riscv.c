@@ -5400,6 +5400,8 @@ riscv_file_start (void)
 static void
 riscv_asm_file_end (void)
 {
+  if (NEED_INDICATE_EXEC_STACK)
+    file_end_indicate_exec_stack ();
   if (riscv_ict_used)
     {
       fprintf (asm_out_file, "\t.attribute ict_version, %d\n", ICT_VERSION);

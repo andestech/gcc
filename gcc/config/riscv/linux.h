@@ -72,6 +72,9 @@ along with GCC; see the file COPYING3.  If not see
 NDS32_GP_RELAX_SPEC \
 BTB_FIXUP_SPEC
 
+#undef NEED_INDICATE_EXEC_STACK
+#define NEED_INDICATE_EXEC_STACK 1
+
 #define TARGET_ASM_FILE_END file_end_indicate_exec_stack
 
 #define STARTFILE_PREFIX_SPEC 			\
