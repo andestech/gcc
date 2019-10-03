@@ -6317,7 +6317,7 @@
   [(set (match_operand:SI 0 "register_operand"     "=r,  r")
 	(truncate:SI
 	  (any_shiftrt:DI
-	    (match_operand:DI 1 "register_operand" " r,  r")
+	    (match_operand:DI 1 "register_even_operand" " r,  r")
 	    (match_operand:SI 2 "rimm5u_operand"   " r,u05"))))]
   "TARGET_DSP && !TARGET_64BIT"
   "@
