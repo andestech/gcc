@@ -5358,6 +5358,9 @@ riscv_emit_attribute ()
   fprintf (asm_out_file, "\t.attribute arch, \"%s\"\n",
 	   riscv_arch_str ().c_str ());
 
+  fprintf (asm_out_file, "\t.attribute unaligned_access, %d\n",
+	   TARGET_STRICT_ALIGN ? 0 : 1);
+
   fprintf (asm_out_file, "\t.attribute stack_align, %d\n",
            riscv_stack_boundary / 8);
 }
@@ -5382,19 +5385,11 @@ riscv_file_start (void)
   if (! riscv_mrelax)
     fprintf (asm_out_file, "\t.option norelax\n");
 
-  if (riscv_emit_attribute_p)
-    riscv_emit_attribute ();
-
   if (TARGET_EXECIT && TARGET_RVC)
     fprintf (asm_out_file, "\t.option execit\n");
 
-  fprintf (asm_out_file, "\t.attribute arch, \"%s\"\n", arch.c_str());
-
-  fprintf (asm_out_file, "\t.attribute strict_align, %d\n",
-	   TARGET_STRICT_ALIGN ? 1 : 0);
-
-  fprintf (asm_out_file, "\t.attribute stack_align, %d\n",
-	   riscv_stack_boundary / 8);
+  if (riscv_emit_attribute_p)
+    riscv_emit_attribute ();
 }
 
 static void
