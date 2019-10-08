@@ -1968,28 +1968,24 @@
   [(set_attr "type" "shift")
    (set_attr "mode" "SI")])
 
-(define_expand "<optab>di3"
+(define_expand "dsp_<optab>di3"
   [(set (match_operand:DI 0 "register_operand"     "")
 	(any_shift:DI
 	    (match_operand:DI 1 "register_operand" "")
 	    (match_operand:DI 2 "arith_operand"    "")))]
-  "TARGET_64BIT
-   || (!TARGET_64BIT && TARGET_DSP)"
+  "!TARGET_64BIT && TARGET_DSP"
 {
-  if (!TARGET_64BIT && TARGET_DSP)
-    {
-      if (!CONST_INT_P (operands[2]))
-	FAIL;
-      if (!satisfies_constraint_u06 (operands[2]))
-	FAIL;
-    }
+  if (!CONST_INT_P (operands[2]))
+    FAIL;
+  if (!satisfies_constraint_u06 (operands[2]))
+    FAIL;
 })
 
-(define_insn "*<optab>di3"
+(define_insn "<optab>di3"
   [(set (match_operand:DI 0 "register_operand"     "= r")
 	(any_shift:DI
 	    (match_operand:DI 1 "register_operand" "  r")
-	    (match_operand:DI 2 "arith_operand"    " rI")))]
+	    (match_operand:QI 2 "arith_operand"    " rI")))]
   "TARGET_64BIT"
 {
   if (GET_CODE (operands[2]) == CONST_INT)
