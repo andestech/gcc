@@ -2480,8 +2480,14 @@ riscv*-*-linux*)
 		rv32v5 )
 			tmake_file="${tmake_file} riscv/t-linux-rv32v5"
 			;;
+                rv32v5d )
+                        tmake_file="${tmake_file} riscv/t-linux-rv32v5d"
+                        ;;
 		rv64v5 )
 			tmake_file="${tmake_file} riscv/t-linux-rv64v5"
+			;;
+		rv64v5d )
+			tmake_file="${tmake_file} riscv/t-linux-rv64v5d"
 			;;
 		"" )
 			;;
