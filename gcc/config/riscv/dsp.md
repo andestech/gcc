@@ -6396,7 +6396,7 @@
 ;; 64-bit add/sub instruction: uraddw and ursubw.
 (define_insn "ur<opcode>disi3"
   [(set (match_operand:DI 0 "register_operand"                       "=r")
-	(zero_extend:DI
+	(sign_extend:DI
 	  (truncate:SI
 	    (lshiftrt:DI
 	      (plus_minus:DI
