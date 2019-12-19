@@ -801,9 +801,9 @@ static const struct riscv_cpu_info riscv_cpu_info_table[] = {
   { "n25", vicuna, &vicuna_tune_info },
   { "d25", vicuna, &vicuna_tune_info },
   { "nx25", vicuna, &vicuna_tune_info },
-  { "n25f", vicuna, &vicuna_tune_info },
-  { "d25f", vicuna, &vicuna_tune_info },
-  { "nx25f", vicuna, &vicuna_tune_info },
+  { "n25f", vicuna2, &vicuna_tune_info },
+  { "d25f", vicuna2, &vicuna_tune_info },
+  { "nx25f", vicuna2, &vicuna_tune_info },
   { "a25", vicuna, &vicuna_tune_info },
   { "ax25", vicuna, &vicuna_tune_info },
 };
