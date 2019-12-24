@@ -1026,7 +1026,7 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   CMODEL_SPEC
 
 #define MULTILIB_DEFAULTS \
-  { TARGET_DEFAULT_CMODEL_STR, "mfma" }
+  { TARGET_DEFAULT_CMODEL_STR, "" }
 
 extern tree riscv_fp16_type_node;
 
