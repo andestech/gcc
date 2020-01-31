@@ -4629,6 +4629,7 @@ case "${target}" in
 		;;
 
 	riscv*-*-*)
+		gcc_cv_as_leb128=no
 		supported_defaults="abi arch tune riscv_attribute"
 
 		case "${target}" in
