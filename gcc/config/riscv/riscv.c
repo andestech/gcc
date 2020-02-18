@@ -806,6 +806,22 @@ static const struct riscv_cpu_info riscv_cpu_info_table[] = {
   { "nx25f", vicuna2, &vicuna_tune_info },
   { "a25", vicuna, &vicuna_tune_info },
   { "ax25", vicuna, &vicuna_tune_info },
+  { "n45", vicuna, &vicuna_tune_info },
+  { "d45", vicuna, &vicuna_tune_info },
+  { "nx45", vicuna, &vicuna_tune_info },
+  { "n45f", vicuna2, &vicuna_tune_info },
+  { "d45f", vicuna2, &vicuna_tune_info },
+  { "nx45f", vicuna2, &vicuna_tune_info },
+  { "a45", vicuna, &vicuna_tune_info },
+  { "ax45", vicuna, &vicuna_tune_info },
+  { "n27", vicuna, &vicuna_tune_info },
+  { "d27", vicuna, &vicuna_tune_info },
+  { "nx27", vicuna, &vicuna_tune_info },
+  { "n27f", vicuna2, &vicuna_tune_info },
+  { "d27f", vicuna2, &vicuna_tune_info },
+  { "nx27f", vicuna2, &vicuna_tune_info },
+  { "a27", vicuna, &vicuna_tune_info },
+  { "ax27", vicuna, &vicuna_tune_info },
 };
 
 /* Return the riscv_cpu_info entry for the given name string.  */
