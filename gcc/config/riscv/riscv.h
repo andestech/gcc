@@ -185,7 +185,7 @@ extern const char *riscv_rewrite_march (int argc, const char **argv);
 #define ABI_STACK_BOUNDARY (riscv_abi == ABI_ILP32E ? BITS_PER_WORD : 128)
 
 /* There is no point aligning anything to a rounder boundary than this.  */
-#define BIGGEST_ALIGNMENT 128
+#define BIGGEST_ALIGNMENT (riscv_abi == ABI_ILP32E ? BITS_PER_WORD : 128)
 
 /* The user-level ISA permits unaligned accesses, but they are not required
    of the privileged architecture.  */
