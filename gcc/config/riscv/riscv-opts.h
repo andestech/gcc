@@ -35,14 +35,30 @@ extern enum riscv_abi_type riscv_abi;
 enum riscv_code_model {
   CM_MEDLOW,
   CM_MEDANY,
-  CM_PIC
+  CM_PIC,
+  CM_LARGE
 };
 extern enum riscv_code_model riscv_cmodel;
+
+/* Multiply instruction configuration.  */
+enum riscv_mul_type
+{
+  MUL_TYPE_AUTO,
+  MUL_TYPE_FAST,
+  MUL_TYPE_SLOW
+};
 
 /* Keep this list in sync with define_attr "tune" in riscv.md.  */
 enum riscv_microarchitecture_type {
   generic,
-  sifive_7
+  sifive_7,
+  rocket,
+  vicuna,
+  vicuna2,
+  kavalan,
+  makatau,
+  /* Used to mark the end of the processor table.  */
+  riscv_none
 };
 extern enum riscv_microarchitecture_type riscv_microarchitecture;
 
@@ -50,5 +66,75 @@ enum riscv_align_data {
   riscv_align_data_type_xlen,
   riscv_align_data_type_natural
 };
+
+/* The ict model defines the address generation strategy.  */
+enum riscv_ict_model_type
+{
+  ICT_MODEL_TINY,
+  ICT_MODEL_SMALL,
+  ICT_MODEL_LARGE
+};
+
+extern enum riscv_ict_model_type riscv_ict_model;
+
+#define MASK_ZBA      (1 << 0)
+#define MASK_ZBB      (1 << 1)
+#define MASK_ZBC      (1 << 2)
+#define MASK_ZBS      (1 << 3)
+
+#define TARGET_ZBA    ((riscv_zb_subext & MASK_ZBA) != 0)
+#define TARGET_ZBB    ((riscv_zb_subext & MASK_ZBB) != 0)
+#define TARGET_ZBC    ((riscv_zb_subext & MASK_ZBC) != 0)
+#define TARGET_ZBS    ((riscv_zb_subext & MASK_ZBS) != 0)
+
+#define MASK_ZCA      (1 << 0)
+#define MASK_ZCB      (1 << 1)
+#define MASK_ZCD      (1 << 2)
+#define MASK_ZCF      (1 << 3)
+#define MASK_ZCMP     (1 << 4)
+#define MASK_ZCMT     (1 << 5)
+
+#define TARGET_ZCA    ((riscv_zc_subext & MASK_ZCA) != 0)
+#define TARGET_ZCB    ((riscv_zc_subext & MASK_ZCB) != 0)
+#define TARGET_ZCD    ((riscv_zc_subext & MASK_ZCD) != 0)
+#define TARGET_ZCF    ((riscv_zc_subext & MASK_ZCF) != 0)
+#define TARGET_ZCMP   ((riscv_zc_subext & MASK_ZCMP) != 0)
+#define TARGET_ZCMT   ((riscv_zc_subext & MASK_ZCMT) != 0)
+
+#define MASK_ZBKB     (1 << 0)
+#define MASK_ZBKC     (1 << 1)
+#define MASK_ZBKX     (1 << 2)
+#define MASK_ZKNE     (1 << 3)
+#define MASK_ZKND     (1 << 4)
+#define MASK_ZKNH     (1 << 5)
+#define MASK_ZKR      (1 << 6)
+#define MASK_ZKSED    (1 << 7)
+#define MASK_ZKSH     (1 << 8)
+#define MASK_ZKT      (1 << 9)
+
+#define TARGET_ZBKB   ((riscv_zk_subext & MASK_ZBKB) != 0)
+#define TARGET_ZBKC   ((riscv_zk_subext & MASK_ZBKC) != 0)
+#define TARGET_ZBKX   ((riscv_zk_subext & MASK_ZBKX) != 0)
+#define TARGET_ZKNE   ((riscv_zk_subext & MASK_ZKNE) != 0)
+#define TARGET_ZKND   ((riscv_zk_subext & MASK_ZKND) != 0)
+#define TARGET_ZKNH   ((riscv_zk_subext & MASK_ZKNH) != 0)
+#define TARGET_ZKR    ((riscv_zk_subext & MASK_ZKR) != 0)
+#define TARGET_ZKSED  ((riscv_zk_subext & MASK_ZKSED) != 0)
+#define TARGET_ZKSH   ((riscv_zk_subext & MASK_ZKSH) != 0)
+#define TARGET_ZKT    ((riscv_zk_subext & MASK_ZKT) != 0)
+
+#define MASK_ZICBOZ   (1 << 0)
+#define MASK_ZICBOM   (1 << 1)
+#define MASK_ZICBOP   (1 << 2)
+
+#define TARGET_ZICBOZ ((riscv_zicmo_subext & MASK_ZICBOZ) != 0)
+#define TARGET_ZICBOM ((riscv_zicmo_subext & MASK_ZICBOM) != 0)
+#define TARGET_ZICBOP ((riscv_zicmo_subext & MASK_ZICBOP) != 0)
+
+#define MASK_SVINVAL (1 << 0)
+#define MASK_SVNAPOT (1 << 1)
+
+#define TARGET_SVINVAL ((riscv_sv_subext & MASK_SVINVAL) != 0)
+#define TARGET_SVNAPOT ((riscv_sv_subext & MASK_SVNAPOT) != 0)
 
 #endif /* ! GCC_RISCV_OPTS_H */

@@ -4,7 +4,7 @@
 // "inherit" attribute optimize from a primary template declared with
 // one.
 // { dg-do compile }
-// { dg-options "-O2 -Wall -fdump-tree-optimized" }
+// { dg-options "-O2 -Wall -fdump-tree-optimized -mno-riscv-iprintf" }
 
 enum Special { };
 

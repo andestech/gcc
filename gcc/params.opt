@@ -634,6 +634,10 @@ Maximum number of arguments in a PHI supported by TREE if-conversion unless the 
 Common Joined UInteger Var(param_max_unroll_times) Init(8) Param Optimization
 The maximum number of unrollings of a single loop.
 
+-param=max-unroll-loop-branch=
+Common Joined UInteger Var(param_max_unroll_loop_branch) Init(1) IntegerRange(1, 20) Param Optimization
+Maximum number of loop branch count.
+
 -param=max-unrolled-insns=
 Common Joined UInteger Var(param_max_unrolled_insns) Init(200) Param Optimization
 The maximum number of instructions to consider to unroll in a loop.

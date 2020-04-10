@@ -2354,6 +2354,7 @@ cant_combine_insn_p (rtx_insn *insn)
   if (REG_P (src) && REG_P (dest)
       && ((HARD_REGISTER_P (src)
 	   && ! TEST_HARD_REG_BIT (fixed_reg_set, REGNO (src))
+	   && targetm.class_likely_spilled_p (REGNO_REG_CLASS (REGNO (src)))
 #ifdef LEAF_REGISTERS
 	   && ! LEAF_REGISTERS [REGNO (src)])
 #else
@@ -9043,7 +9044,10 @@ force_int_to_mode (rtx x, scalar_int_mode mode, scalar_int_mode xmode,
 	     && INTVAL (XEXP (x, 1)) < GET_MODE_PRECISION (mode))
 	  && ! (GET_MODE (XEXP (x, 1)) != VOIDmode
 		&& (nonzero_bits (XEXP (x, 1), GET_MODE (XEXP (x, 1)))
-		    < (unsigned HOST_WIDE_INT) GET_MODE_PRECISION (mode))))
+		    < (unsigned HOST_WIDE_INT) GET_MODE_PRECISION (mode))
+		&& (SHIFT_COUNT_TRUNCATED
+		    && nonzero_bits (XEXP (x, 1), GET_MODE (XEXP (x, 1)))
+		    < (unsigned HOST_WIDE_INT) GET_MODE_PRECISION (xmode))))
 	break;
 
       /* If the shift count is a constant and we can do arithmetic in
@@ -15038,53 +15042,11 @@ dump_combine_total_stats (FILE *file)
      "\n;; Combiner totals: %d attempts, %d substitutions (%d requiring new space),\n;; %d successes.\n",
      total_attempts, total_merges, total_extras, total_successes);
 }
-
-/* Make pseudo-to-pseudo copies after every hard-reg-to-pseudo-copy, because
-   the reg-to-reg copy can usefully combine with later instructions, but we
-   do not want to combine the hard reg into later instructions, for that
-   restricts register allocation.  */
-static void
-make_more_copies (void)
-{
-  basic_block bb;
-
-  FOR_EACH_BB_FN (bb, cfun)
-    {
-      rtx_insn *insn;
-
-      FOR_BB_INSNS (bb, insn)
-        {
-          if (!NONDEBUG_INSN_P (insn))
-            continue;
-
-	  rtx set = single_set (insn);
-	  if (!set)
-	    continue;
-
-	  rtx dest = SET_DEST (set);
-	  if (!(REG_P (dest) && !HARD_REGISTER_P (dest)))
-	      continue;
-
-	  rtx src = SET_SRC (set);
-	  if (!(REG_P (src) && HARD_REGISTER_P (src)))
-	    continue;
-	  if (TEST_HARD_REG_BIT (fixed_reg_set, REGNO (src)))
-	    continue;
-
-	  rtx new_reg = gen_reg_rtx (GET_MODE (dest));
-	  rtx_insn *new_insn = gen_move_insn (new_reg, src);
-	  SET_SRC (set) = new_reg;
-	  emit_insn_before (new_insn, insn);
-	  df_insn_rescan (insn);
-	}
-    }
-}
 
 /* Try combining insns through substitution.  */
 static unsigned int
 rest_of_handle_combine (void)
 {
-  make_more_copies ();
 
   df_set_flags (DF_LR_RUN_DCE + DF_DEFER_INSN_RESCAN);
   df_note_add_problem ();

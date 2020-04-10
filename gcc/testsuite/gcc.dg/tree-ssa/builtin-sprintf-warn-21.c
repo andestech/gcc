@@ -1,7 +1,7 @@
 /* PR tree-optimization/83431 -Wformat-truncation may incorrectly report
    truncation
    { dg-do compile }
-   { dg-options "-O2 -Wall -ftrack-macro-expansion=0" } */
+   { dg-options "-O2 -Wall -ftrack-macro-expansion=0 -mno-riscv-iprintf" } */
 
 typedef __SIZE_TYPE__ size_t;
 
