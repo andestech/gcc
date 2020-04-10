@@ -1,0 +1,8 @@
+MULTILIB_OPTIONS += mtune=andes-45-series
+
+andes_45_cpus := a45 ax45 n45 nx45 d45 dx45
+MULTILIB_MATCHES += mtune?andes-45-series=mcpu?andes-45-series
+MULTILIB_MATCHES += $(foreach CPU, $(andes_45_cpus), \
+                      mtune?andes-45-series=mtune?$(CPU))
+MULTILIB_MATCHES += $(foreach CPU, $(andes_45_cpus), \
+                      mtune?andes-45-series=mcpu?$(CPU))
