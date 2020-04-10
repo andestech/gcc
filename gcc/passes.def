@@ -56,6 +56,8 @@ along with GCC; see the file COPYING3.  If not see
   NEXT_PASS (pass_build_ssa_passes);
   PUSH_INSERT_PASSES_WITHIN (pass_build_ssa_passes)
       NEXT_PASS (pass_fixup_cfg);
+      NEXT_PASS (pass_referenced_ptrargs);      /* issuehsu */
+      NEXT_PASS (pass_reduce_passed_addressof); /* issuehsu: must before pass_build_ssa. */
       NEXT_PASS (pass_build_ssa);
       NEXT_PASS (pass_warn_nonnull_compare);
       NEXT_PASS (pass_early_warn_uninitialized);
@@ -246,6 +248,7 @@ along with GCC; see the file COPYING3.  If not see
       NEXT_PASS (pass_lim);
       NEXT_PASS (pass_walloca, false);
       NEXT_PASS (pass_pre);
+      NEXT_PASS (pass_dse);
       NEXT_PASS (pass_sink_code);
       NEXT_PASS (pass_sancov);
       NEXT_PASS (pass_asan);

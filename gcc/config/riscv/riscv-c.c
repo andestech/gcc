@@ -20,12 +20,14 @@ along with GCC; see the file COPYING3.  If not see
 
 #define IN_TARGET_CODE 1
 
+#define INCLUDE_STRING
 #include "config.h"
 #include "system.h"
 #include "coretypes.h"
 #include "tm.h"
 #include "c-family/c-common.h"
 #include "cpplib.h"
+#include "riscv-subset.h"
 
 #define builtin_define(TXT) cpp_define (pfile, TXT)
 
@@ -36,14 +38,23 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
 {
   builtin_define ("__riscv");
 
+  if (riscv_virtual_hosting)
+    builtin_define ("__riscv_virtual_hosting");
+
   if (TARGET_RVC)
     builtin_define ("__riscv_compressed");
 
   if (TARGET_RVE)
     builtin_define ("__riscv_32e");
 
+  if (TARGET_RVV)
+    builtin_define ("__riscv_vector");
+
   if (TARGET_ATOMIC)
     builtin_define ("__riscv_atomic");
+
+  if (TARGET_DSP)
+    builtin_define ("__riscv_dsp");
 
   if (TARGET_MUL)
     builtin_define ("__riscv_mul");
@@ -94,8 +105,76 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
       builtin_define ("__riscv_cmodel_medany");
       break;
 
+    case CM_LARGE:
+      builtin_define ("__riscv_cmodel_large");
+      break;
+
     case CM_PIC:
       builtin_define ("__riscv_cmodel_pic");
       break;
+
+    default:
+      break;
+    }
+
+  if (TARGET_V5)
+    {
+      builtin_define ("__nds_v5");
+
+      if (TARGET_EXECIT && TARGET_RVC)
+	{
+	  builtin_define ("__nds_execit");
+
+	  /* Also define __nds_ex9 for backward compatibility.  */
+	  builtin_define ("__nds_ex9");
+	}
+    }
+
+  if (TARGET_FP16)
+    builtin_define ("__nds_fp16");
+
+  if (TARGET_SOFT_FP16)
+    builtin_define ("__nds_soft_fp16");
+
+  if (TARGET_BF16) 
+    builtin_define ("__nds_bf16");
+  
+  if (TARGET_BFO)
+    builtin_define ("__nds_bfo");
+  if (TARGET_LEA)
+    builtin_define ("__nds_lea");
+  if (TARGET_BBCS)
+    builtin_define ("__nds_bbcs");
+  if (TARGET_BIMM)
+    builtin_define ("__nds_bimm");
+
+  /* Define architecture extension test macros.  */
+  builtin_define_with_int_value ("__riscv_arch_test", 1);
+
+  const riscv_subset_list *subset_list = riscv_current_subset_list ();
+  size_t max_ext_len = 0;
+
+  /* Figure out the max length of extension name for reserving buffer.   */
+  for (const riscv_subset_t *subset = subset_list->begin ();
+       subset != subset_list->end ();
+       subset = subset->next)
+    max_ext_len = MAX (max_ext_len, subset->name.length ());
+
+  char *buf = (char *)alloca (max_ext_len + 10 /* For __riscv_ and '\0'.  */);
+
+  for (const riscv_subset_t *subset = subset_list->begin ();
+       subset != subset_list->end ();
+       subset = subset->next)
+    {
+      int version_value = (subset->major_version * 1000000)
+			   + (subset->minor_version * 1000);
+      /* Special rule for zicsr and zifencei, it's used for ISA spec 2.2 or
+	 earlier.  */
+      if ((subset->name == "zicsr" || subset->name == "zifencei")
+	  && version_value == 0)
+	version_value = 2000000;
+
+      sprintf (buf, "__riscv_%s", subset->name.c_str ());
+      builtin_define_with_int_value (buf, version_value);
     }
 }

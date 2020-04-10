@@ -91,7 +91,7 @@ along with GCC; see the file COPYING3.  If not see
 
 /* Comparison ratio of stmt cost between inner/outer loops.  Loops won't
    be interchanged if outer loop has too many stmts.  */
-#define STMT_COST_RATIO     (3)
+#define STMT_COST_RATIO     (4)
 
 /* Vector of strides that DR accesses in each level loop of a loop nest.  */
 #define DR_ACCESS_STRIDE(dr) ((vec<tree> *) dr->aux)

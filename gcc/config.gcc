@@ -525,7 +525,8 @@ pru-*-*)
 	;;
 riscv*)
 	cpu_type=riscv
-	extra_objs="riscv-builtins.o riscv-c.o riscv-sr.o"
+	extra_headers="nds32_intrinsic.h nds_intrinsic.h nds_v5_platform.h"
+	extra_objs="riscv-builtins.o riscv-c.o riscv-sr.o riscv-iprintf.o riscv-shorten-memrefs.o"
 	d_target_objs="riscv-d.o"
 	;;
 rs6000*-*-*)
@@ -2431,10 +2432,40 @@ microblaze*-*-elf)
 riscv*-*-linux*)
 	tm_file="elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} riscv/linux.h"
 	case "x${enable_multilib}" in
-	xno) ;;
-	xyes) tmake_file="${tmake_file} riscv/t-linux-multilib" ;;
+	xno) riscv_multilibs="";;
+	xyes) riscv_multilibs="${with_multilib_list}" ;;
 	*) echo "Unknown value for enable_multilib"; exit 1
 	esac
+
+	if test "$riscv_multilibs" = "default"; then
+		riscv_multilibs="all"
+	fi
+	riscv_multilibs=`echo $riscv_multilibs | sed -e 's/,/ /g'`
+	for riscv_multilib in ${riscv_multilibs}; do
+		case ${riscv_multilib} in
+		all )
+			tmake_file="${tmake_file} riscv/t-linux-multilib"
+			;;
+		rv32v5 )
+			tmake_file="${tmake_file} riscv/t-linux-rv32v5"
+			;;
+                rv32v5d )
+                        tmake_file="${tmake_file} riscv/t-linux-rv32v5d"
+                        ;;
+		rv64v5 )
+			tmake_file="${tmake_file} riscv/t-linux-rv64v5"
+			;;
+		rv64v5d )
+			tmake_file="${tmake_file} riscv/t-linux-rv64v5d"
+			;;
+		"" )
+			;;
+		*)
+			echo "--with-multilib-list=${riscv_multilib} not supported."
+			exit 1
+		esac
+	done
+
 	tmake_file="${tmake_file} riscv/t-riscv riscv/t-linux"
 	gnu_ld=yes
 	gas=yes
@@ -2450,11 +2481,47 @@ riscv*-*-elf* | riscv*-*-rtems*)
 	  tmake_file="${tmake_file} riscv/t-rtems"
 	  ;;
 	*)
-	  case "x${enable_multilib}" in
-	  xno) ;;
-	  xyes) tmake_file="${tmake_file} riscv/t-elf-multilib" ;;
-	  *) echo "Unknown value for enable_multilib"; exit 1
+	  riscv_multilibs="${with_multilib_list}"
+	  if test "$riscv_multilibs" = "default"; then
+		  riscv_multilibs="all"
+	  fi
+	  riscv_multilibs=`echo $riscv_multilibs | sed -e 's/,/ /g'`
+	  for riscv_multilib in ${riscv_multilibs}; do
+		  case ${riscv_multilib} in
+		  all )
+			  tmake_file="${tmake_file} riscv/t-elf-multilib riscv/t-elf-vh"
+			  ;;
+		  rv* )
+			  TM_MULTILIB_CONFIG="${TM_MULTILIB_CONFIG}/march=${riscv_multilib}"
+			  tmake_file="${tmake_file} riscv/t-elf-arch"
+			  ;;
+		  vh )
+			  tmake_file="${tmake_file} riscv/t-elf-vh"
+			  ;;
+		  cmodel )
+			  tmake_file="${tmake_file} riscv/t-elf-cmodel"
+			  ;;
+		  dsp )
+			  tmake_file="${tmake_file} riscv/t-elf-dsp"
+			  ;;
+		  no-fma )
+			  tmake_file="${tmake_file} riscv/t-elf-fma"
+			  ;;
+		  *)
+			  echo "--with-multilib-list=${riscv_multilib} not supported."
+			  exit 1
+		  esac
+	  done
+	  TM_MULTILIB_CONFIG=`echo $TM_MULTILIB_CONFIG | sed 's:^/::'`
+	  # process --with-libc
+	  case "${with_libc}" in
+	  mculib)
+		  tm_defines="${tm_defines} TARGET_MCULIB=1"
+		  ;;
+	  *)
+		  ;;
 	  esac
+
 	esac
 	tmake_file="${tmake_file} riscv/t-riscv"
 	gnu_ld=yes
@@ -4494,11 +4561,18 @@ case "${target}" in
 		;;
 
 	riscv*-*-*)
+		gcc_cv_as_leb128=no
 		supported_defaults="abi arch tune riscv_attribute"
 
 		case "${target}" in
-		riscv-* | riscv32*) xlen=32 ;;
-		riscv64*) xlen=64 ;;
+		riscv32*)
+			xlen=32
+			tm_defines="${tm_defines} TARGET_DEFAULT_MEDLOW=1"
+		;;
+		riscv64*)
+			xlen=64
+			tm_defines="${tm_defines} TARGET_DEFAULT_MEDLOW=0"
+		;;
 		*) echo "Unsupported RISC-V target ${target}" 1>&2; exit 1 ;;
 		esac
 
@@ -4582,59 +4656,16 @@ case "${target}" in
 			;;
 		esac
 
-		# Handle --with-multilib-list.
-		if test "x${with_multilib_list}" != xdefault; then
-			tm_file="${tm_file} riscv/withmultilib.h"
-			tmake_file="${tmake_file} riscv/t-withmultilib"
+		# Handle --enable-Os-default-ex9 setting.
+		if test x${enable_Os_default_ex9} = xyes; then
+			tm_defines="${tm_defines} TARGET_OS_DEFAULT_EX9=1"
+		fi
 
-			case ${with_multilib_list} in
-			ilp32 | ilp32f | ilp32d \
-			| lp64 | lp64f | lp64d )
-				TM_MULTILIB_CONFIG="${with_arch},${with_multilib_list}"
-				;;
-			*)
-				echo "--with-multilib-list=${with_multilib_list} not supported."
-				exit 1
-			esac
-
-			# Define macros to select the default multilib.
-			case ${with_arch} in
-			rv32gc)
-				tm_defines="${tm_defines} TARGET_MLIB_ARCH=1"
-				;;
-			rv64gc)
-				tm_defines="${tm_defines} TARGET_MLIB_ARCH=2"
-				;;
-			*)
-				echo "unsupported --with-arch for --with-multilib-list"
-				exit 1
-			esac
-			case ${with_abi} in
-			ilp32)
-				tm_defines="${tm_defines} TARGET_MLIB_ABI=1"
-				;;
-			ilp32f)
-				tm_defines="${tm_defines} TARGET_MLIB_ABI=2"
-				;;
-			ilp32d)
-				tm_defines="${tm_defines} TARGET_MLIB_ABI=3"
-				;;
-			lp64)
-				tm_defines="${tm_defines} TARGET_MLIB_ABI=4"
-				;;
-			lp64f)
-				tm_defines="${tm_defines} TARGET_MLIB_ABI=5"
-				;;
-			lp64d)
-				tm_defines="${tm_defines} TARGET_MLIB_ABI=6"
-				;;
-			*)
-				echo "unsupported --with-abi for --with-multilib"
-				exit 1
-			esac
+		# Handle --enable-gp-insn-relax-default setting.
+		if test x${enable_gp_insn_relax_default=} = xyes; then
+			tm_defines="${tm_defines} TARGET_DEFAULT_GP_RELAX=1"
 		fi
 		;;
-
 	mips*-*-*)
 		supported_defaults="abi arch arch_32 arch_64 float fpu nan fp_32 odd_spreg_32 tune tune_32 tune_64 divide llsc mips-plt synci lxc1-sxc1 madd4"
 

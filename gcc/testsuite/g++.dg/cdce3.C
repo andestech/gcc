@@ -4,6 +4,7 @@
 /* { dg-additional-options "-DLARGE_LONG_DOUBLE" { target large_long_double } } */
 /* { dg-additional-options "-DGNU_EXTENSION" { target pow10 } } */
 /* { dg-add-options ieee } */
+/* { dg-timeout-factor 5.0 } */
 /* { dg-final { scan-tree-dump  "cdce3.C:91: .* function call is shrink-wrapped into error conditions\." "cdce" { target pow10 } } } */
 /* { dg-final { scan-tree-dump  "cdce3.C:92: .* function call is shrink-wrapped into error conditions\." "cdce" { target pow10 } } } */
 /* { dg-final { scan-tree-dump  "cdce3.C:94: .* function call is shrink-wrapped into error conditions\." "cdce" } } */

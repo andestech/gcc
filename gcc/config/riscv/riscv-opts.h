@@ -35,14 +35,29 @@ extern enum riscv_abi_type riscv_abi;
 enum riscv_code_model {
   CM_MEDLOW,
   CM_MEDANY,
-  CM_PIC
+  CM_PIC,
+  CM_LARGE
 };
 extern enum riscv_code_model riscv_cmodel;
+
+/* Multiply instruction configuration.  */
+enum riscv_mul_type
+{
+  MUL_TYPE_AUTO,
+  MUL_TYPE_FAST,
+  MUL_TYPE_SLOW
+};
 
 /* Keep this list in sync with define_attr "tune" in riscv.md.  */
 enum riscv_microarchitecture_type {
   generic,
-  sifive_7
+  sifive_7,
+  rocket,
+  vicuna,
+  vicuna2,
+  kavalan,
+  /* Used to mark the end of the processor table.  */
+  riscv_none
 };
 extern enum riscv_microarchitecture_type riscv_microarchitecture;
 
@@ -50,5 +65,15 @@ enum riscv_align_data {
   riscv_align_data_type_xlen,
   riscv_align_data_type_natural
 };
+
+/* The ict model defines the address generation strategy.  */
+enum riscv_ict_model_type
+{
+  ICT_MODEL_TINY,
+  ICT_MODEL_SMALL,
+  ICT_MODEL_LARGE
+};
+
+extern enum riscv_ict_model_type riscv_ict_model;
 
 #endif /* ! GCC_RISCV_OPTS_H */

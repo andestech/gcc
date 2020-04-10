@@ -33,6 +33,87 @@ along with GCC; see the file COPYING3.  If not see
 
 #define RISCV_DONT_CARE_VERSION -1
 
+#define MAX_ARCH_STRING_LEN 256
+static char riscv_arch_string[MAX_ARCH_STRING_LEN];
+
+#define NUM_EXTS_KIND 3
+
+struct arch_options_t
+{
+  const char *ext;
+  const char *option_name;
+  bool is_spec;
+  bool val;
+  unsigned default_major_version;
+  unsigned default_minor_version;
+};
+
+static arch_options_t std_ext_options[] = {
+  {"a", "atomic",     false, false, 2, 0},
+  {"c", "16-bit",     false, false, 2, 0},
+  {"v", "ext-vector", false, false, 1, 0},
+  {"p",  "ext-dsp",   false, false, 0, 5},
+  {NULL, NULL, false, false, 2, 0}
+};
+
+static arch_options_t nonstd_z_ext_options[] = {
+  {"zfh", "zfh", false, false, 0, 1},
+  {NULL, NULL, false, false, 2, 0}
+};
+
+static arch_options_t nonstd_x_ext_options[] = {
+  {"xandes",    "nds", false, false, 5, 0},
+  {"xefhw",    "fp16", false, false, 2, 0},
+  {"xebfhw",    "bf16", false, false, 2, 0},
+  {NULL, NULL, false, false, 2, 0}
+};
+
+static arch_options_t *ext_options[] = {
+  std_ext_options,
+  nonstd_z_ext_options,
+  nonstd_x_ext_options
+};
+
+static bool
+arch_options_end_p (const arch_options_t *opt)
+{
+  return (opt->ext == NULL) && (opt->option_name == NULL);
+}
+
+static bool
+arch_options_disabled_p(const arch_options_t *opt, const char *p)
+{
+  for (; !arch_options_end_p(opt); ++opt)
+    if (strncmp(opt->ext, p, strlen(opt->ext)) == 0 &&
+	opt->is_spec && !opt->val)
+	return true;
+
+  return false;
+}
+
+static bool
+arch_options_enabled_p(const arch_options_t *opt, const char *p)
+{
+  for (; !arch_options_end_p(opt); ++opt)
+    if (strncmp(opt->ext, p, strlen(opt->ext)) == 0 &&
+	opt->is_spec && opt->val)
+	return true;
+
+  return false;
+}
+
+static void arch_options_default_version(const arch_options_t *opt, const char *p,
+					 unsigned *major_version,
+					 unsigned *minor_version)
+{
+  for (; !arch_options_end_p(opt); ++opt)
+    if (strncmp(opt->ext, p, strlen(opt->ext)) == 0)
+      {
+	*major_version = opt->default_major_version;
+	*minor_version = opt->default_minor_version;
+      }
+}
+
 /* Subset info.  */
 struct riscv_subset_t
 {
@@ -42,6 +123,20 @@ struct riscv_subset_t
   int major_version;
   int minor_version;
   struct riscv_subset_t *next;
+};
+
+/* Type for implied ISA info.  */
+struct riscv_implied_info_t
+{
+  const char *ext;
+  const char *implied_ext;
+};
+
+/* Implied ISA info, must end with NULL sentinel.  */
+riscv_implied_info_t riscv_implied_info[] =
+{
+  {"d", "f"},
+  {NULL, NULL}
 };
 
 /* Subset list.  */
@@ -70,19 +165,24 @@ private:
 
   const char *parse_std_ext (const char *);
 
-  const char *parse_sv_or_non_std_ext (const char *, const char *,
-				       const char *);
+  const char *parse_multiletter_ext (const char *, const char *,
+				     const char *,
+				     const arch_options_t *opt = NULL);
+
+  void handle_implied_ext (const char *, int, int);
 
 public:
   ~riscv_subset_list ();
 
   void add (const char *, int, int);
 
+  void add (const char *, unsigned, unsigned, const arch_options_t *opt);
+
   riscv_subset_t *lookup (const char *,
 			  int major_version = RISCV_DONT_CARE_VERSION,
 			  int minor_version = RISCV_DONT_CARE_VERSION) const;
 
-  std::string to_string () const;
+  std::string to_string (bool) const;
 
   unsigned xlen() const {return m_xlen;};
 
@@ -92,7 +192,14 @@ public:
 
 static const char *riscv_supported_std_ext (void);
 
+static const char *riscv_convert_nds_ext (const char *);
+
 static riscv_subset_list *current_subset_list = NULL;
+
+const riscv_subset_list *riscv_current_subset_list ()
+{
+  return current_subset_list;
+}
 
 riscv_subset_t::riscv_subset_t ()
   : name (), major_version (0), minor_version (0), next (NULL)
@@ -124,6 +231,12 @@ void
 riscv_subset_list::add (const char *subset, int major_version,
 			int minor_version)
 {
+  if (strcmp (subset, "xv5") == 0)
+    {
+      major_version = 5;
+      subset = "xandes";
+    }
+
   riscv_subset_t *s = new riscv_subset_t ();
 
   if (m_head == NULL)
@@ -140,10 +253,21 @@ riscv_subset_list::add (const char *subset, int major_version,
   m_tail = s;
 }
 
-/* Convert subset info to string with explicit version info.  */
+/* Find defined version from OPT and do naive add() */
+void
+riscv_subset_list::add (const char *subset, unsigned major_version,
+			unsigned minor_version, const arch_options_t *opt)
+{
+  gcc_assert (opt);
+  arch_options_default_version (opt, subset, &major_version, &minor_version);
+  add (subset, major_version, minor_version);
+}
+
+/* Convert subset info to string with explicit version info,
+   VERSION_P to determine append version info or not.  */
 
 std::string
-riscv_subset_list::to_string () const
+riscv_subset_list::to_string (bool version_p) const
 {
   std::ostringstream oss;
   oss << "rv" << m_xlen;
@@ -153,14 +277,20 @@ riscv_subset_list::to_string () const
 
   while (subset != NULL)
     {
-      if (!first)
+      /* For !version_p, we only separate extension with underline for
+	 multi-letter extension.  */
+      if (!first &&
+	  (version_p || subset->name.length() > 1))
 	oss << '_';
       first = false;
 
-      oss << subset->name
-	  << subset->major_version
-	  << 'p'
-	  << subset->minor_version;
+      oss << subset->name;
+
+      if (version_p)
+	oss  << subset->major_version
+	     << 'p'
+	     << subset->minor_version;
+
       subset = subset->next;
     }
 
@@ -203,6 +333,19 @@ riscv_supported_std_ext (void)
   return "mafdqlcbjtpvn";
 }
 
+static const char *
+riscv_convert_nds_ext (const char *p)
+{
+  if (strncmp (p, "v5f", 3) == 0)
+    return "imafcxandes";
+  else if (strncmp (p, "v5d", 3) == 0)
+    return "imafdcxandes";
+  else if (strncmp (p, "v5", 2) == 0)
+    return "imacxandes";
+  else
+    return p;
+}
+
 /* Parsing subset version.
 
    Return Value:
@@ -233,9 +376,11 @@ riscv_subset_list::parsing_subset_version (const char *p,
   unsigned minor = 0;
   char np;
 
+  bool digit_start_p = ISDIGIT (*p);
+
   for (; *p; ++p)
     {
-      if (*p == 'p')
+      if (digit_start_p && *p == 'p')
 	{
 	  np = *(p + 1);
 
@@ -343,7 +488,9 @@ riscv_subset_list::parse_std_ext (const char *p)
       for (; *std_exts != 'q'; std_exts++)
 	{
 	  const char subset[] = {*std_exts, '\0'};
-	  add (subset, major_version, minor_version);
+	  /* Check that standard extension isn't disabled by option. */
+	  if (!arch_options_disabled_p(&std_ext_options[0], subset))
+	    add (subset, major_version, minor_version);
 	}
       break;
 
@@ -357,7 +504,7 @@ riscv_subset_list::parse_std_ext (const char *p)
     {
       char subset[2] = {0, 0};
 
-      if (*p == 'x' || *p == 's')
+      if (*p == 'x' || *p == 's' || *p == 'h' || *p == 'z')
 	break;
 
       if (*p == '_')
@@ -370,7 +517,14 @@ riscv_subset_list::parse_std_ext (const char *p)
 
       /* Checking canonical order.  */
       while (*std_exts && std_ext != *std_exts)
-	std_exts++;
+	{
+	  subset[0] = *std_exts;
+
+	  /* Check that standard extension is enabled by option. */
+	  if (arch_options_enabled_p(&std_ext_options[0], subset))
+	    add (subset, 2, 0, std_ext_options);
+	  std_exts++;
+	}
 
       if (std_ext != *std_exts)
 	{
@@ -386,7 +540,7 @@ riscv_subset_list::parse_std_ext (const char *p)
 
       std_exts++;
 
-      p++;
+      char nc = *++p;
       p = parsing_subset_version (p, &major_version, &minor_version,
 				  /* default_major_version= */ 2,
 				  /* default_minor_version= */ 0,
@@ -394,25 +548,71 @@ riscv_subset_list::parse_std_ext (const char *p)
 
       subset[0] = std_ext;
 
-      add (subset, major_version, minor_version);
+      if (!ISDIGIT (nc))
+	arch_options_default_version (std_ext_options, subset, &major_version,
+				      &minor_version);
+
+      handle_implied_ext (subset, major_version, minor_version);
+
+      /* Check that standard extension isn't disabled by option. */
+      if (!arch_options_disabled_p(&std_ext_options[0], subset))
+	add (subset, major_version, minor_version);
+    }
+
+  /* Check the reminding standard extension is enabled by option. */
+  while (*std_exts)
+    {
+      char subset[2] = {*std_exts, 0};
+
+      if (arch_options_enabled_p(&std_ext_options[0], subset))
+	add (subset, 2, 0, std_ext_options);
+      std_exts++;
     }
   return p;
 }
 
-/* Parsing function for non-standard and supervisor extensions.
+
+/* Check any implied extensions for EXT with version
+   MAJOR_VERSION.MINOR_VERSION.  */
+void
+riscv_subset_list::handle_implied_ext (const char *ext,
+				       int major_version,
+				       int minor_version)
+{
+  riscv_implied_info_t *implied_info;
+  for (implied_info = &riscv_implied_info[0];
+       implied_info->ext;
+       ++implied_info)
+    {
+      if (strcmp (ext, implied_info->ext) != 0)
+	continue;
+
+      /* Skip if implied extension already present.  */
+      if (lookup (implied_info->implied_ext))
+	continue;
+
+      /* TODO: Implied extension might use different version.  */
+      if (!arch_options_disabled_p(&std_ext_options[0],
+				   implied_info->implied_ext))
+	add (implied_info->implied_ext, major_version, minor_version);
+    }
+}
+
+/* Parsing function for multi-letter extensions.
 
    Return Value:
      Points to the end of extensions.
 
    Arguments:
      `p`: Current parsing position.
-     `ext_type`: What kind of extensions, 'x', 's' or 'sx'.
+     `ext_type`: What kind of extensions, 's', 'h', 'z' or 'x'.
      `ext_type_str`: Full name for kind of extension.  */
 
 const char *
-riscv_subset_list::parse_sv_or_non_std_ext (const char *p,
-					    const char *ext_type,
-					    const char *ext_type_str)
+riscv_subset_list::parse_multiletter_ext (const char *p,
+					  const char *ext_type,
+					  const char *ext_type_str,
+					  const arch_options_t *opt)
 {
   unsigned major_version = 0;
   unsigned minor_version = 0;
@@ -429,14 +629,12 @@ riscv_subset_list::parse_sv_or_non_std_ext (const char *p,
       if (strncmp (p, ext_type, ext_type_len) != 0)
 	break;
 
-      /* It's non-standard supervisor extension if it prefix with sx.  */
-      if ((ext_type[0] == 's') && (ext_type_len == 1)
-	  && (*(p + 1) == 'x'))
-	break;
-
       char *subset = xstrdup (p);
       char *q = subset;
       const char *end_of_version;
+
+      if (strncmp(subset, "xv5", 3) == 0)
+	q += 2;
 
       while (*++q != '\0' && *q != '_' && !ISDIGIT (*q))
 	;
@@ -449,7 +647,15 @@ riscv_subset_list::parse_sv_or_non_std_ext (const char *p,
 
       *q = '\0';
 
-      add (subset, major_version, minor_version);
+      /* Update version to default one if it doesn't be specified. */
+      if (opt && (q == end_of_version))
+	arch_options_default_version(opt, subset, &major_version, &minor_version);
+
+      /* Check that non-standard-extension isn't disabled by option. */
+      if (!opt)
+	add (subset, major_version, minor_version);
+      else if (!arch_options_disabled_p(opt, subset))
+	add (subset, major_version, minor_version);
       free (subset);
       p += end_of_version - subset;
 
@@ -458,6 +664,21 @@ riscv_subset_list::parse_sv_or_non_std_ext (const char *p,
 	  error_at (m_loc, "%<-march=%s%>: %s must separate with _",
 		    m_arch, ext_type_str);
 	  return NULL;
+	}
+    }
+
+  /* Check that the other non-standard-extension is enabled by option. */
+  if (opt)
+    {
+      for (; !arch_options_end_p(opt); ++opt)
+	{
+	  if (!lookup(opt->ext) && opt->is_spec && opt->val)
+	    add (opt->ext, opt->default_major_version, opt->default_minor_version);
+    
+          // Workaround: Implictly enable zfh if (v && (f || d)) is enabled.
+          if (strcmp (opt->ext, "zfh") == 0 && !lookup(opt->ext) && lookup("v") &&
+              (lookup("f") || lookup("d")))
+            add (opt->ext, opt->default_major_version, opt->default_minor_version);
 	}
     }
 
@@ -488,27 +709,37 @@ riscv_subset_list::parse (const char *arch, location_t loc)
       goto fail;
     }
 
+  /* Convert nds string to standard extension.  */
+  p = riscv_convert_nds_ext (p);
+
   /* Parsing standard extension.  */
   p = subset_list->parse_std_ext (p);
 
   if (p == NULL)
     goto fail;
 
-  /* Parsing non-standard extension.  */
-  p = subset_list->parse_sv_or_non_std_ext (p, "x", "non-standard extension");
-
-  if (p == NULL)
-    goto fail;
-
   /* Parsing supervisor extension.  */
-  p = subset_list->parse_sv_or_non_std_ext (p, "s", "supervisor extension");
+  p = subset_list->parse_multiletter_ext (p, "s", "supervisor extension");
 
   if (p == NULL)
     goto fail;
 
-  /* Parsing non-standard supervisor extension.  */
-  p = subset_list->parse_sv_or_non_std_ext
-    (p, "sx", "non-standard supervisor extension");
+  /* Parsing hypervisor extension.  */
+  p = subset_list->parse_multiletter_ext (p, "h", "hypervisor extension");
+
+  if (p == NULL)
+    goto fail;
+
+  /* Parsing sub-extensions.  */
+  p = subset_list->parse_multiletter_ext (p, "z", "sub-extension",
+					  nonstd_z_ext_options);
+
+  if (p == NULL)
+    goto fail;
+
+  /* Parsing non-standard extension.  */
+  p = subset_list->parse_multiletter_ext (p, "x", "non-standard extension",
+					  nonstd_x_ext_options);
 
   if (p == NULL)
     goto fail;
@@ -530,10 +761,10 @@ fail:
 /* Return the current arch string.  */
 
 std::string
-riscv_arch_str ()
+riscv_arch_str (bool version_p)
 {
   gcc_assert (current_subset_list);
-  return current_subset_list->to_string ();
+  return current_subset_list->to_string (version_p);
 }
 
 /* Parse a RISC-V ISA string into an option mask.  Must clear or set all arch
@@ -575,10 +806,73 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
   if (subset_list->lookup ("c"))
     *flags |= MASK_RVC;
 
+  *flags &= ~MASK_RVV;
+  *flags &= ~MASK_ZFH;
+  if (subset_list->lookup ("v"))
+    {
+      *flags |= MASK_RVV;
+      if (subset_list->lookup ("f") || subset_list->lookup ("d"))
+        *flags |= MASK_ZFH;
+    }
+
+  if (subset_list->lookup ("zfh"))
+    *flags |= MASK_ZFH;
+
+  *flags &= ~MASK_DSP;
+  if (subset_list->lookup ("p"))
+    *flags |= MASK_DSP;
+
+  // initialize v5 related mask
+  if ((target_flags_explicit & MASK_V5) == 0)
+    *flags &= ~MASK_V5;
+  if ((target_flags_explicit & MASK_BFO) == 0)
+    *flags &= ~MASK_BFO;
+  if ((target_flags_explicit & MASK_BBCS) == 0)
+    *flags &= ~MASK_BBCS;
+  if ((target_flags_explicit & MASK_BIMM) == 0)
+    *flags &= ~MASK_BIMM;
+  if ((target_flags_explicit & MASK_LEA) == 0)
+    *flags &= ~MASK_LEA;
+  if ((target_flags_explicit & MASK_FP16) == 0)
+    *flags &= ~MASK_FP16;
+
+  if (subset_list->lookup ("xandes"))
+    {
+      if ((target_flags_explicit & MASK_V5) == 0)
+	*flags |= MASK_V5;
+      if ((target_flags_explicit & MASK_BFO) == 0)
+	*flags |= MASK_BFO;
+      if ((target_flags_explicit & MASK_BBCS) == 0)
+	*flags |= MASK_BBCS;
+      if ((target_flags_explicit & MASK_BIMM) == 0)
+	*flags |= MASK_BIMM;
+      if ((target_flags_explicit & MASK_LEA) == 0)
+	*flags |= MASK_LEA;
+
+      if (subset_list->lookup ("xefhw"))
+	if ((target_flags_explicit & MASK_FP16) == 0)
+	  *flags |= MASK_FP16;
+    }
+
   if (current_subset_list)
     delete current_subset_list;
 
   current_subset_list = subset_list;
+}
+
+static void
+riscv_parse_cpu_string (const char *isa, int *flags)
+{
+  // 45-series cpuss have CALU
+  if (strcmp (isa, "n45") == 0 ||
+      strcmp (isa, "nx45") == 0 ||
+      strcmp (isa, "n45f") == 0 ||
+      strcmp (isa, "nx45f") == 0 ||
+      strcmp (isa, "d45") == 0 ||
+      strcmp (isa, "d45f") == 0 ||
+      strcmp (isa, "a45") == 0 ||
+      strcmp (isa, "ax45") == 0)
+    *flags |= MASK_CMOV;
 }
 
 /* Implement TARGET_HANDLE_OPTION.  */
@@ -595,6 +889,10 @@ riscv_handle_option (struct gcc_options *opts,
       riscv_parse_arch_string (decoded->arg, &opts->x_target_flags, loc);
       return true;
 
+    case OPT_mtune_:
+      riscv_parse_cpu_string (decoded->arg, &opts->x_target_flags);
+      return true;
+
     default:
       return true;
     }
@@ -605,6 +903,12 @@ static const struct default_options riscv_option_optimization_table[] =
   {
     { OPT_LEVELS_1_PLUS, OPT_fsection_anchors, NULL, 1 },
     { OPT_LEVELS_2_PLUS, OPT_free, NULL, 1 },
+    { OPT_LEVELS_SIZE, OPT_msave_restore, NULL, 1 },
+#if TARGET_LINUX_ABI == 0
+    /* Disable -fdelete-null-pointer-checks by default in ELF toolchain.  */
+    { OPT_LEVELS_ALL, OPT_fdelete_null_pointer_checks, NULL, 0 },
+#endif
+    { OPT_LEVELS_3_PLUS, OPT_mipa_escape_analysis, NULL, 1 },
     { OPT_LEVELS_NONE, 0, NULL, 0 }
   };
 
@@ -615,3 +919,59 @@ static const struct default_options riscv_option_optimization_table[] =
 #define TARGET_HANDLE_OPTION riscv_handle_option
 
 struct gcc_targetm_common targetm_common = TARGETM_COMMON_INITIALIZER;
+
+
+/* Traverse all input arch options and set its value */
+
+void parse_arch_options(const char *option)
+{
+  bool val = true;
+  if (strncmp(option, "mno-", 4) == 0)
+    {
+      val = false;
+      option += 4;
+    }
+  else
+      option += 1;
+
+  int i;
+  for (i = 0; i < NUM_EXTS_KIND; ++i)
+    {
+      arch_options_t *opt = ext_options[i];
+      for (; !arch_options_end_p(opt); ++opt)
+	if (strncmp(opt->option_name, option, strlen(opt->option_name)) == 0)
+	  {
+	    opt->is_spec = true;
+            opt->val = val;
+	  }
+    }
+}
+
+/* Rewrite march with other arch options(e.g. -matomic, -mext-dsp, ...) */
+
+const char *
+riscv_rewrite_march(int argc, const char **argv)
+{
+  int i;
+  riscv_subset_list *subset_list;
+
+  for (i = 0; i < argc; ++i)
+    {
+      parse_arch_options(argv[i]);
+    }
+
+  for (i = argc - 1; i >= 0; --i)
+    {
+      if (strncmp(argv[i], "march=", 6) == 0)
+	{
+	  subset_list = riscv_subset_list::parse (argv[i] + 6, location_t());
+	  break;
+	}
+    }
+
+  gcc_assert(subset_list->to_string(true).length() < MAX_ARCH_STRING_LEN);
+  strncpy (riscv_arch_string, subset_list->to_string(true).c_str(),
+	   MAX_ARCH_STRING_LEN);
+  delete subset_list;
+  return &riscv_arch_string[0];
+}

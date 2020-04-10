@@ -47,7 +47,7 @@ along with GCC; see the file COPYING3.  If not see
 #define OPTION_DEFAULT_SPECS \
   {"tune", "%{!mtune=*:-mtune=%(VALUE)}" }, \
   {"arch", "%{!march=*:-march=%(VALUE)}" }, \
-  {"abi", "%{!mabi=*:-mabi=%(VALUE)}" }, \
+  {"abi", "%{!mabi=*:%{march=rv32v5*:-mabi=ilp32%*;:%{march=rv64v5*:-mabi=lp64%*;:-mabi=%(VALUE)}}}" }, \
 
 #ifdef IN_LIBGCC2
 #undef TARGET_64BIT
@@ -55,15 +55,58 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_64BIT           (__riscv_xlen == 64)
 #endif /* IN_LIBGCC2 */
 
+#undef  CC1_SPEC
+#define CC1_SPEC \
+  " %{Os1:-Os -mno-save-restore}" \
+  " %{Os2:-Os}" \
+  " %{Os3:-Os}"
+
+extern const char *riscv_rewrite_march (int argc, const char **argv);
+#undef EXTRA_SPEC_FUNCTIONS
+#define EXTRA_SPEC_FUNCTIONS \
+  { "riscv_rewrite_march", riscv_rewrite_march },
+
+#define MARCH_POST_PROC_SPEC \
+  "-march=%:riscv_rewrite_march(%{march=*} \
+				%{matomic} \
+				%{mno-atomic} \
+				%{mno-16-bit} \
+				%{mext-dsp} \
+				%{mno-ext-dsp} \
+				%{mext-vector} \
+				%{mno-ext-vector} \
+				%{mzfh} \
+				%{mno-zfh} \
+				%{mfp16})"
+
 #undef ASM_SPEC
 #define ASM_SPEC "\
 %(subtarget_asm_debugging_spec) \
 %{" FPIE_OR_FPIC_SPEC ":-fpic} \
-%{march=*} \
+%{march=*:" MARCH_POST_PROC_SPEC "} \
 %{mabi=*} \
-%(subtarget_asm_spec)"
+%(subtarget_asm_spec)" \
+" %{O|O1|O2|O3|Ofast:-O1;:-Os}" \
+" %{mcmodel=small|mcmodel=medlow:-mcmodel=medlow; \
+    mcmodel=medium|mcmodel=medany:-mcmodel=medany; \
+    mcmodel=large:-mcmodel=large}" \
+" %{mb20282:-mb20282}" \
+" %{mb22827:-mb22827}" \
+" %{mb22827.1:-mb22827.1}" \
+" %{mno-16-bit:-mno-16-bit}" \
+" %{mno-workaround:-mno-workaround}"
 
+
+#ifndef TARGET_DEFAULT_MEDLOW
+#error "TARGET_DEFAULT_MEDLOW undefined!"
+#endif
+#if TARGET_DEFAULT_MEDLOW == 1
 #define TARGET_DEFAULT_CMODEL CM_MEDLOW
+#define TARGET_DEFAULT_CMODEL_STR "mcmodel=medlow"
+#else
+#define TARGET_DEFAULT_CMODEL CM_MEDANY
+#define TARGET_DEFAULT_CMODEL_STR "mcmodel=medany"
+#endif
 
 #define LOCAL_LABEL_PREFIX	"."
 #define USER_LABEL_PREFIX	""
@@ -125,8 +168,18 @@ along with GCC; see the file COPYING3.  If not see
 /* Allocation boundary (in *bits*) for storing arguments in argument list.  */
 #define PARM_BOUNDARY BITS_PER_WORD
 
+#define TARGET_NEED_ALIGN \
+  (!TARGET_RVC || !optimize_size || TARGET_ALWAYS_ALIGN)
+
 /* Allocation boundary (in *bits*) for the code of a function.  */
-#define FUNCTION_BOUNDARY (TARGET_RVC ? 16 : 32)
+#define FUNCTION_BOUNDARY (TARGET_NEED_ALIGN ? 32 : 16)
+
+#define JUMP_ALIGN(x) \
+  (align_jumps.levels[0].log ? align_jumps : (TARGET_NEED_ALIGN ? 2 : 1))
+#define LOOP_ALIGN(x) \
+  (align_loops.levels[0].log ? align_loops : (TARGET_NEED_ALIGN ? 2 : 1))
+#define LABEL_ALIGN(x) \
+  (align_labels.levels[0].log ? align_labels : (TARGET_NEED_ALIGN ? 2 : 1))
 
 /* The smallest supported stack boundary the calling convention supports.  */
 #define STACK_BOUNDARY \
@@ -136,7 +189,7 @@ along with GCC; see the file COPYING3.  If not see
 #define ABI_STACK_BOUNDARY (riscv_abi == ABI_ILP32E ? BITS_PER_WORD : 128)
 
 /* There is no point aligning anything to a rounder boundary than this.  */
-#define BIGGEST_ALIGNMENT 128
+#define BIGGEST_ALIGNMENT (riscv_abi == ABI_ILP32E ? BITS_PER_WORD : 128)
 
 /* The user-level ISA permits unaligned accesses, but they are not required
    of the privileged architecture.  */
@@ -202,10 +255,8 @@ along with GCC; see the file COPYING3.  If not see
    on the full register even if a narrower mode is specified.  */
 #define WORD_REGISTER_OPERATIONS 1
 
-/* When in 64-bit mode, move insns will sign extend SImode and CCmode
-   moves.  All other references are zero extended.  */
-#define LOAD_EXTEND_OP(MODE) \
-  (TARGET_64BIT && (MODE) == SImode ? SIGN_EXTEND : ZERO_EXTEND)
+/* RISC-V always sign-extend its value from load by default.  */
+#define LOAD_EXTEND_OP(MODE) SIGN_EXTEND
 
 /* Define this macro if it is advisable to hold scalars in registers
    in a wider mode than that declared by the program.  In such cases,
@@ -322,8 +373,12 @@ along with GCC; see the file COPYING3.  If not see
    The epilogue temporary mustn't conflict with the return registers,
    the frame pointer, the EH stack adjustment, or the EH data registers. */
 
-#define RISCV_PROLOGUE_TEMP_REGNUM (GP_TEMP_FIRST + 1)
+#define RISCV_PROLOGUE_TEMP_REGNUM (GP_TEMP_FIRST)
 #define RISCV_PROLOGUE_TEMP(MODE) gen_rtx_REG (MODE, RISCV_PROLOGUE_TEMP_REGNUM)
+
+#define RISCV_CALL_ADDRESS_TEMP_REGNUM (GP_TEMP_FIRST + 1)
+#define RISCV_CALL_ADDRESS_TEMP(MODE) \
+  gen_rtx_REG (MODE, RISCV_CALL_ADDRESS_TEMP_REGNUM)
 
 #define MCOUNT_NAME "_mcount"
 
@@ -374,6 +429,8 @@ enum reg_class
   GR_REGS,			/* integer registers */
   FP_REGS,			/* floating-point registers */
   FRAME_REGS,			/* arg pointer and frame pointer */
+  T0_REG,			/* T0 register */
+  A7_REG,			/* A7 register */
   ALL_REGS,			/* all registers */
   LIM_REG_CLASSES		/* max value + 1 */
 };
@@ -394,6 +451,8 @@ enum reg_class
   "GR_REGS",								\
   "FP_REGS",								\
   "FRAME_REGS",								\
+  "T0_REG",								\
+  "A7_REG",								\
   "ALL_REGS"								\
 }
 
@@ -416,6 +475,8 @@ enum reg_class
   { 0xffffffff, 0x00000000, 0x00000000 },	/* GR_REGS */		\
   { 0x00000000, 0xffffffff, 0x00000000 },	/* FP_REGS */		\
   { 0x00000000, 0x00000000, 0x00000003 },	/* FRAME_REGS */	\
+  { 0x00000020, 0x00000000, 0x00000000 },	/* T0_REG */		\
+  { 0x00020000, 0x00000000, 0x00000000 },	/* A7_REG */		\
   { 0xffffffff, 0xffffffff, 0x00000003 }	/* ALL_REGS */		\
 }
 
@@ -460,6 +521,8 @@ enum reg_class
      registers.  */							\
   64, 65								\
 }
+
+#define ADJUST_REG_ALLOC_ORDER riscv_adjust_reg_alloc_order()
 
 /* True if VALUE is a signed 12-bit number.  */
 
@@ -697,14 +760,16 @@ typedef struct {
    may contain character constants, extra white space, comments, etc.  */
 
 #ifndef ASM_APP_ON
-#define ASM_APP_ON " #APP\n"
+#define ASM_APP_ON (riscv_cmodel == CM_LARGE ?				\
+		    "#APP\n\t.option cmodel_large\n" : "#APP\n")
 #endif
 
 /* Output to assembler file text saying following lines
    no longer contain unusual constructs.  */
 
 #ifndef ASM_APP_OFF
-#define ASM_APP_OFF " #NO_APP\n"
+#define ASM_APP_OFF (riscv_cmodel == CM_LARGE ?				\
+		     "#NO_APP\n\t.option cmodel_medany\n" : "#NO_APP\n")
 #endif
 
 #define REGISTER_NAMES						\
@@ -858,12 +923,19 @@ while (0)
 
 /* The maximum number of bytes copied by one iteration of a cpymemsi loop.  */
 
-#define RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER (UNITS_PER_WORD * 4)
+#define RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER 		\
+  ((riscv_movebytes_per_loop < UNITS_PER_WORD)		\
+	? UNITS_PER_WORD				\
+	: riscv_movebytes_per_loop)
 
 /* The maximum number of bytes that can be copied by a straight-line
    cpymemsi implementation.  */
 
 #define RISCV_MAX_MOVE_BYTES_STRAIGHT (RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER * 3)
+
+/* The base cost of a memcpy call, for MOVE_RATIO and friends. */
+
+#define RISCV_CALL_RATIO 6
 
 /* If a memory-to-memory move would take MOVE_RATIO or more simple
    move-instruction pairs, we will do a cpymem or libcall instead.
@@ -871,10 +943,10 @@ while (0)
    in effect but the target has slow unaligned accesses; in this
    case, cpymem or libcall is more efficient.  */
 
-#define MOVE_RATIO(speed)						\
-  (!STRICT_ALIGNMENT && riscv_slow_unaligned_access_p ? 1 :		\
-   (speed) ? RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER / UNITS_PER_WORD :	\
-   CLEAR_RATIO (speed) / 2)
+#define MOVE_RATIO(speed)				\
+  ((HAVE_cpymemsi && !optimize_size)                    \
+	? RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER / MOVE_MAX \
+	: RISCV_CALL_RATIO / 2)
 
 /* For CLEAR_RATIO, when optimizing for size, give a better estimate
    of the length of a memset call, but use the default otherwise.  */
@@ -920,6 +992,7 @@ extern unsigned riscv_stack_boundary;
 #define SHIFT_RS1 15
 #define SHIFT_IMM 20
 #define IMM_BITS 12
+#define C_S_BITS 5
 #define C_SxSP_BITS 6
 
 #define IMM_REACH (1LL << IMM_BITS)
@@ -929,10 +1002,79 @@ extern unsigned riscv_stack_boundary;
 #define SWSP_REACH (4LL << C_SxSP_BITS)
 #define SDSP_REACH (8LL << C_SxSP_BITS)
 
+/* This is the maximum value that can be represented in a compressed load/store
+   offset (an unsigned 5-bit value scaled by 4).  */
+#define CSW_MAX_OFFSET (((4LL << C_S_BITS) - 1) & ~3)
+
 /* Called from RISCV_REORG, this is defined in riscv-sr.c.  */
 
 extern void riscv_remove_unneeded_save_restore_calls (void);
 
 #define HARD_REGNO_RENAME_OK(FROM, TO) riscv_hard_regno_rename_ok (FROM, TO)
+
+#define ASM_OUTPUT_POOL_EPILOGUE riscv_asm_output_pool_epilogue
+
+#ifdef TARGET_OS_DEFAULT_EX9
+#define NDS32_EX9_DRIVER_SPEC " %{Os2|Os3|Os:%{!mno-execit:-mexecit}}"
+#else
+#define NDS32_EX9_DRIVER_SPEC ""
+#endif
+
+#define NDS_DRIVER_SPEC \
+  " %{frepo:-fuse-ld=bfd}" \
+  " %{mex9:-mexecit}" \
+  " %{mno-ex9:-mno-execit}" \
+  " %{mext-fpu-fma:-mfma}" \
+  " %{mno-ext-fpu-fma:-mno-fma}" \
+  " %{march=*:" MARCH_POST_PROC_SPEC "}" \
+  " %{fdata-sections:-fno-section-anchors}" \
+  " %{Os2:%{!mno-innermost-loop:-minnermost-loop}}"
+
+#define CMODEL_SPEC \
+  " %{mcmodel=small:-mcmodel=medlow}" \
+  " %{mcmodel=medium:%{march=rv32*:-mcmodel=medlow}}" \
+  " %{mcmodel=medium:%{march=rv64*:-mcmodel=medany}}" \
+  " %{mcmodel=large:%{march=rv32*:-mcmodel=medlow}}"
+
+#define DRIVER_SELF_SPECS \
+  NDS32_EX9_DRIVER_SPEC \
+  NDS_DRIVER_SPEC \
+  CMODEL_SPEC
+
+#define MULTILIB_DEFAULTS \
+  { TARGET_DEFAULT_CMODEL_STR, "" }
+
+extern tree riscv_fp16_type_node;
+extern tree riscv_bf16_type_node;
+
+#ifdef TARGET_OS_DEFAULT_EX9
+#define NDS32_EX9_SPEC " %{Os3|Os|mexecit:%{!mno-execit:--mexecit}}"
+#else
+#define NDS32_EX9_SPEC " %{mexecit:--mexecit}"
+#endif
+
+#ifdef TARGET_DEFAULT_GP_RELAX
+#define NDS32_GP_RELAX_DEFAULT_SPEC " %{!mno-gp-insn-relax:--mgp-insn-relax}"
+#else
+#define NDS32_GP_RELAX_DEFAULT_SPEC ""
+#endif
+
+#define NDS32_GP_RELAX_SPEC \
+  NDS32_GP_RELAX_DEFAULT_SPEC \
+  " %{mgp-insn-relax:--mgp-insn-relax}" \
+  " %{mno-gp-insn-relax:--mno-gp-insn-relax}"
+
+#define BTB_FIXUP_SPEC \
+  " %{Os3|Os:--mno-avoid-btb-miss}"
+
+#define WORKAROUND_SPEC \
+  " %{mno-workaround:--mno-workaround}"
+
+#define ICT_VERSION 1
+
+/* Do not emit .note.GNU-stack by default.  */
+#ifndef NEED_INDICATE_EXEC_STACK
+#define NEED_INDICATE_EXEC_STACK        0
+#endif
 
 #endif /* ! GCC_RISCV_H */

@@ -1,0 +1,9 @@
+MULTILIB_REQUIRED += march=rv64imafdcxandes/mabi=lp64d
+MULTILIB_REUSE += march.rv64imafdcxandes/mabi.lp64d=march.rv64v5d/mabi.lp64d \
+march.rv64imafdcxandes/mabi.lp64d=march.rv64imafdxandes/mabi.lp64d \
+march.rv64imafdcxandes/mabi.lp64d=march.rv64imafdczfh_xandes/mabi.lp64d \
+march.rv64imafdcxandes/mabi.lp64d=march.rv64imafdzfh_xandes/mabi.lp64d \
+march.rv64imafdcxandes/mabi.lp64d=march.rv64gcxandes/mabi.lp64d \
+march.rv64imafdcxandes/mabi.lp64d=march.rv64gxandes/mabi.lp64d \
+march.rv64imafdcxandes/mabi.lp64d=march.rv64gczfh_xandes/mabi.lp64d \
+march.rv64imafdcxandes/mabi.lp64d=march.rv64gzfh_xandes/mabi.lp64d
