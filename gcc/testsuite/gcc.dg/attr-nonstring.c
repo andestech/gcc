@@ -114,10 +114,10 @@ size_t strlen_nonstring (NONSTRING const char *s)
 
 int printf_nonstring (NONSTRING const char *s)
 {
-  return printf (s);  /* { dg-regexp "\[^\n\r\]+: warning: .printf. argument 1 declared attribute .nonstring. \\\[-Wstringop-overflow=]" "printf" } */
+  return printf (s);  /* { dg-regexp "\[^\n\r\]+: warning: .i?printf. argument 1 declared attribute .nonstring. \\\[-Wstringop-overflow=]" "printf" } */
 }
 
 int sprintf_nonstring_2 (char *d, NONSTRING const char *s)
 {
-  return sprintf (d, s);  /* { dg-regexp "\[^\n\r\]+: warning: .sprintf. argument 2 declared attribute .nonstring. \\\[-Wstringop-overflow=]" "sprintf" } */
+  return sprintf (d, s);  /* { dg-regexp "\[^\n\r\]+: warning: .si?printf. argument 2 declared attribute .nonstring. \\\[-Wstringop-overflow=]" "sprintf" } */
 }
