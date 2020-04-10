@@ -22,10 +22,13 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef GCC_RISCV_PROTOS_H
 #define GCC_RISCV_PROTOS_H
 
+#include "tree-pass.h"
+
 /* Symbol types we understand.  The order of this list must match that of
    the unspec enum in riscv.md, subsequent to UNSPEC_ADDRESS_FIRST.  */
 enum riscv_symbol_type {
   SYMBOL_ABSOLUTE,
+  SYMBOL_FORCE_TO_MEM,
   SYMBOL_PCREL,
   SYMBOL_GOT_DISP,
   SYMBOL_TLS,
@@ -74,6 +77,8 @@ extern bool riscv_expand_block_move (rtx, rtx, rtx);
 extern bool riscv_store_data_bypass_p (rtx_insn *, rtx_insn *);
 extern rtx riscv_gen_gpr_save_insn (struct riscv_frame_info *);
 extern bool riscv_gpr_save_operation_p (rtx);
+extern bool riscv_indirect_call_referenced_p (const_rtx);
+extern bool riscv_address_valid_for_prefetch_p (rtx);
 
 /* Routines implemented in riscv-c.c.  */
 void riscv_cpu_cpp_builtins (cpp_reader *);
@@ -86,10 +91,36 @@ extern void riscv_atomic_assign_expand_fenv (tree *, tree *, tree *);
 extern rtx riscv_expand_builtin (tree, rtx, rtx, machine_mode, int);
 extern tree riscv_builtin_decl (unsigned int, bool);
 extern void riscv_init_builtins (void);
+extern void riscv_final_prescan_insn (rtx_insn *);
 
 /* Routines implemented in riscv-common.c.  */
-extern std::string riscv_arch_str ();
+extern std::string riscv_arch_str (bool version_p = true);
 
 extern bool riscv_hard_regno_rename_ok (unsigned, unsigned);
+
+gimple_opt_pass * make_pass_riscv_iprintf (gcc::context *ctxt);
+rtl_opt_pass * make_pass_shorten_memrefs (gcc::context *ctxt);
+
+/* Auxiliary functions to split/output sms pattern.  */
+extern bool riscv_need_split_sms_p (rtx, rtx, rtx, rtx);
+extern const char *riscv_output_sms (rtx, rtx, rtx, rtx);
+extern void riscv_split_sms (rtx, rtx, rtx, rtx, rtx, rtx, rtx);
+
+extern void riscv_asm_output_pool_epilogue (FILE *, const char *,
+					    tree, HOST_WIDE_INT);
+
+extern void riscv_expand_float_hf(rtx, rtx, bool);
+
+extern void riscv_split_ashiftdi3 (rtx, rtx, rtx);
+extern void riscv_split_ashiftrtdi3 (rtx, rtx, rtx);
+extern void riscv_split_lshiftrtdi3 (rtx, rtx, rtx);
+extern void riscv_split_shiftrtdi3 (rtx, rtx, rtx);
+
+/* Auxiliary functions for manipulation DI mode.  */
+extern rtx riscv_di_high_part_subreg(rtx);
+extern rtx riscv_di_low_part_subreg(rtx);
+
+extern void riscv_adjust_reg_alloc_order (void);
+extern bool riscv_dsp_64bit_split_p (void);
 
 #endif /* ! GCC_RISCV_PROTOS_H */

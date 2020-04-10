@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv64 } */
 /* { dg-options "-march=rv64gc -mabi=lp64d -O2" } */
 
 /* Check that we don't have unnecessary load immediate instructions.  */

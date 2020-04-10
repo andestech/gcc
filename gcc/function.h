@@ -421,6 +421,11 @@ struct GTY(()) function {
 
   /* Set if this is a coroutine-related function.  */
   unsigned int coroutine_component : 1;
+
+  /* Nonzero if we are sure that the function does not
+   * escape its input pointer parameters.  If not sure, set it to zero.
+   */
+  unsigned int not_escape_ptr_parm : 1;
 };
 
 /* Add the decl D to the local_decls list of FUN.  */
