@@ -1,0 +1,1 @@
+MULTILIB_OPTIONS += $(subst $(comma),/,$(TM_MULTILIB_CONFIG))

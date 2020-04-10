@@ -9021,7 +9021,10 @@ force_int_to_mode (rtx x, scalar_int_mode mode, scalar_int_mode xmode,
 	     && INTVAL (XEXP (x, 1)) < GET_MODE_PRECISION (mode))
 	  && ! (GET_MODE (XEXP (x, 1)) != VOIDmode
 		&& (nonzero_bits (XEXP (x, 1), GET_MODE (XEXP (x, 1)))
-		    < (unsigned HOST_WIDE_INT) GET_MODE_PRECISION (mode))))
+		    < (unsigned HOST_WIDE_INT) GET_MODE_PRECISION (mode))
+		&& (SHIFT_COUNT_TRUNCATED
+		    && nonzero_bits (XEXP (x, 1), GET_MODE (XEXP (x, 1)))
+		    < (unsigned HOST_WIDE_INT) GET_MODE_PRECISION (xmode))))
 	break;
 
       /* If the shift count is a constant and we can do arithmetic in

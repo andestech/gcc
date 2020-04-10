@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv64 } */
 /* { dg-options "-march=rv64gc -mabi=lp64d -O2" } */
 
 /* Fails if lshrsi3_zero_extend_3+1 uses a temp reg which has no REG_DEST
