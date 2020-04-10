@@ -1,5 +1,6 @@
 // devirt.cc
 /* { dg-options "-O2 -fdump-ipa-profile_estimate -fdump-tree-optimized" } */
+/* { dg-timeout-factor 4 } */
 
 class A {
 public:

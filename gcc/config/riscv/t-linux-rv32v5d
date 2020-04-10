@@ -1,0 +1,10 @@
+MULTILIB_REQUIRED += march=rv32imafdcxandes/mabi=ilp32d
+MULTILIB_REUSE += march.rv32imafdcxandes/mabi.ilp32d=march.rv32v5d/mabi.ilp32d \
+march.rv32imafdcxandes/mabi.ilp32d=march.rv32imafdxandes/mabi.ilp32d \
+march.rv32imafdcxandes/mabi.ilp32d=march.rv32imafdzfh_xandes/mabi.ilp32d \
+march.rv32imafdcxandes/mabi.ilp32d=march.rv32imafdczfh_xandes/mabi.ilp32d \
+march.rv32imafdcxandes/mabi.ilp32d=march.rv32gcxandes/mabi.ilp32d \
+march.rv32imafdcxandes/mabi.ilp32d=march.rv32gxandes/mabi.ilp32d \
+march.rv32imafdcxandes/mabi.ilp32d=march.rv32gzfh_xandes/mabi.ilp32d \
+march.rv32imafdcxandes/mabi.ilp32d=march.rv32gczfh_xandes/mabi.ilp32d
+

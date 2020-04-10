@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv64 } */
 /* { dg-options "-march=rv64gc -mabi=lp64 -O" } */
 
 /* Test for lshrsi3_zero_extend_3+1 pattern that uses p2m1_shift_operand.  */
