@@ -85,7 +85,8 @@ extern const char *riscv_arch (int, const char **);
 " %{O|O1|O2|O3|Ofast:-O1;:-Os}" \
 " %{mcmodel=small|mcmodel=medlow:-mcmodel=medlow; \
     mcmodel=medium|mcmodel=medany:-mcmodel=medany; \
-    mcmodel=large:-mcmodel=large}"
+    mcmodel=large:-mcmodel=large}" \
+" %{mb20282:-mb20282}"
 
 
 #ifndef TARGET_DEFAULT_MEDLOW

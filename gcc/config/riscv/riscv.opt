@@ -166,6 +166,10 @@ mext-dsp
 Target Report Mask(DSP)
 Use hardware DSP instructions.
 
+mb20282
+Target
+Avoid conditional jump erratum
+
 Mask(HARD_FLOAT)
 
 Mask(DOUBLE_FLOAT)
