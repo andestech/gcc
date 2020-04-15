@@ -676,6 +676,21 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
   current_subset_list = subset_list;
 }
 
+static void
+riscv_parse_cpu_string (const char *isa, int *flags)
+{
+  // 45-series cpuss have CALU
+  if (strcmp (isa, "n45") == 0 ||
+      strcmp (isa, "nx45") == 0 ||
+      strcmp (isa, "n45f") == 0 ||
+      strcmp (isa, "nx45f") == 0 ||
+      strcmp (isa, "d45") == 0 ||
+      strcmp (isa, "d45f") == 0 ||
+      strcmp (isa, "a45") == 0 ||
+      strcmp (isa, "ax45") == 0)
+    *flags |= MASK_CMOV;
+}
+
 /* Implement TARGET_HANDLE_OPTION.  */
 
 static bool
@@ -688,6 +703,10 @@ riscv_handle_option (struct gcc_options *opts,
     {
     case OPT_march_:
       riscv_parse_arch_string (decoded->arg, &opts->x_target_flags, loc);
+      return true;
+
+    case OPT_mtune_:
+      riscv_parse_cpu_string (decoded->arg, &opts->x_target_flags);
       return true;
 
     default:
