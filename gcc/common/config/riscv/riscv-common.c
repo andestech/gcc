@@ -647,6 +647,22 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
   if (subset_list->lookup ("v"))
     *flags |= MASK_RVV;
 
+  // initialize v5 related mask
+  if ((target_flags_explicit & MASK_V5) == 0)
+    *flags &= ~MASK_V5;
+  if ((target_flags_explicit & MASK_BFO) == 0)
+    *flags &= ~MASK_BFO;
+  if ((target_flags_explicit & MASK_BBCS) == 0)
+    *flags &= ~MASK_BBCS;
+  if ((target_flags_explicit & MASK_BIMM) == 0)
+    *flags &= ~MASK_BIMM;
+  if ((target_flags_explicit & MASK_LEA) == 0)
+    *flags &= ~MASK_LEA;
+  if ((target_flags_explicit & MASK_DSP) == 0)
+    *flags &= ~MASK_DSP;
+  if ((target_flags_explicit & MASK_FP16) == 0)
+    *flags &= ~MASK_FP16;
+
   if (subset_list->lookup ("xv", 5))
     {
       if ((target_flags_explicit & MASK_V5) == 0)
