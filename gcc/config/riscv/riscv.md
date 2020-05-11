@@ -3118,6 +3118,40 @@
 }
 )
 
+; Only use for target-combine
+(define_insn "lea_h_ze2"
+  [(set (match_operand:DI 0 "register_operand"                                     "=r")
+	(plus:DI (ashift:DI (and:DI (match_operand:DI 1 "register_operand" " r")
+                               (const_int 4294967295))
+			    (const_int 1))
+		 (match_operand:DI 2 "register_operand"                            " r")))]
+  "TARGET_64BIT && TARGET_LEA"
+  { return "lea.h.ze\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "lea_w_ze2"
+  [(set (match_operand:DI 0 "register_operand"                                     "=r")
+	(plus:DI (ashift:DI (and:DI (match_operand:DI 1 "register_operand" " r")
+                               (const_int 4294967295))
+			    (const_int 2))
+		 (match_operand:DI 2 "register_operand"                            " r")))]
+  "TARGET_64BIT && TARGET_LEA"
+  { return "lea.w.ze\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "lea_d_ze2"
+  [(set (match_operand:DI 0 "register_operand"                                     "=r")
+	(plus:DI (ashift:DI (and:DI (match_operand:DI 1 "register_operand" " r")
+                               (const_int 4294967295))
+			    (const_int 3))
+		 (match_operand:DI 2 "register_operand"                            " r")))]
+  "TARGET_64BIT && TARGET_LEA"
+  { return "lea.d.ze\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
 (define_expand "mov<mode>cc"
   [(set (match_operand:ANYI 0 "register_operand" "")
         (if_then_else:ANYI (match_operand 1 "ordered_comparison_operator" "")
