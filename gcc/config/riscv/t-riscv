@@ -24,3 +24,9 @@ riscv-target-combine.o: $(srcdir)/config/riscv/riscv-target-combine.c \
   $(BASIC_BLOCK_H) cfg.h $(RTL_H) $(TREE_PASS_H) insn-config.h $(RECOG_H)
 	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) \
 		$(srcdir)/config/riscv/riscv-target-combine.c
+
+riscv-shorten-memrefs.o: $(srcdir)/config/riscv/riscv-shorten-memrefs.c
+	$(COMPILE) $<
+	$(POSTCOMPILE)
+
+PASSES_EXTRA += $(srcdir)/config/riscv/riscv-passes.def

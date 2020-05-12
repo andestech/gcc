@@ -95,6 +95,8 @@ extern std::string riscv_arch_str (bool version_p = true);
 
 extern bool riscv_hard_regno_rename_ok (unsigned, unsigned);
 
+rtl_opt_pass * make_pass_shorten_memrefs (gcc::context *ctxt);
+
 /* Auxiliary functions to split/output sms pattern.  */
 extern bool riscv_need_split_sms_p (rtx, rtx, rtx, rtx);
 extern const char *riscv_output_sms (rtx, rtx, rtx, rtx);
