@@ -2099,22 +2099,6 @@
 
 ;; Patterns for implementations that optimize short forward branches.
 
-(define_expand "mov<mode>cc"
-  [(set (match_operand:GPR 0 "register_operand")
-	(if_then_else:GPR (match_operand 1 "comparison_operator")
-			  (match_operand:GPR 2 "register_operand")
-			  (match_operand:GPR 3 "sfb_alu_operand")))]
-  "TARGET_SFB_ALU"
-{
-  rtx cmp = operands[1];
-  /* We only handle word mode integer compares for now.  */
-  if (GET_MODE (XEXP (cmp, 0)) != word_mode)
-    FAIL;
-  riscv_expand_conditional_move (operands[0], operands[2], operands[3],
-				 GET_CODE (cmp), XEXP (cmp, 0), XEXP (cmp, 1));
-  DONE;
-})
-
 (define_insn "*mov<GPR:mode><X:mode>cc"
   [(set (match_operand:GPR 0 "register_operand" "=r,r")
 	(if_then_else:GPR
