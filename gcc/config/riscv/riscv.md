@@ -3173,7 +3173,7 @@
 ;;Combine for conditional alu instructions.
 
 ;;branch + alu
-(define_insn "cmov<optab><mode>_<cond_alu:optab>"
+(define_insn "cmov<equality_op:optab><mode>_<cond_alu:optab>"
   [(set (match_operand:X 0 "register_operand"                                  "=r,    r")
         (if_then_else:X (equality_op (match_operand:X 1 "register_operand"     " r,    r")
 				     (match_operand:X 2 "reg_or_imm7u_operand" "rJ, Bz07"))
@@ -3182,13 +3182,13 @@
 			(match_operand:X 3 "arith_operand"                     " 0,    0")))]
   "TARGET_CMOV"
   "@
-   <rev_br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:
-   <rev_br_insn>c %1, %2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
+   <equality_op:rev_br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:
+   <equality_op:rev_br_insn>c %1, %2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmoveq<optab><mode>_<cond_alu:optab>_rev"
+(define_insn "cmoveq<equality_op:optab><mode>_<cond_alu:optab>_rev"
   [(set (match_operand:X 0 "register_operand"                                  "=r,    r")
         (if_then_else:X (equality_op (match_operand:X 1 "register_operand"     " r,    r")
 				     (match_operand:X 2 "reg_or_imm7u_operand" "rJ, Bz07"))
@@ -3197,13 +3197,13 @@
 				    (match_operand:X 5 "const_arith_operand"   " I,    I"))))]
   "TARGET_CMOV"
   "@
-   <br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:
-   <br_insn>c %1, %2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
+   <equality_op:br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:
+   <equality_op:br_insn>c %1, %2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov<optab><mode>_<cond_alu:optab>"
+(define_insn "cmov<inequal_op:optab><mode>_<cond_alu:optab>"
   [(set (match_operand:X 0 "register_operand" "=r")
         (if_then_else:X (inequal_op (match_operand:X 1 "register_operand" " r")
 				    (match_operand:X 2 "reg_or_0_operand" "rJ"))
@@ -3211,12 +3211,12 @@
 				    (match_operand:X 5 "const_arith_operand" "I"))
 			(match_operand:X 3 "arith_operand" "0")))]
   "TARGET_CMOV"
-  "<rev_br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
+  "<inequal_op:rev_br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov<optab><mode>_<cond_alu:optab>_rev"
+(define_insn "cmov<inequal_op:optab><mode>_<cond_alu:optab>_rev"
   [(set (match_operand:X 0 "register_operand" "=r")
         (if_then_else:X (inequal_op (match_operand:X 1 "register_operand" " r")
 				    (match_operand:X 2 "reg_or_0_operand" "rJ"))
@@ -3224,13 +3224,13 @@
 			(cond_alu:X (match_operand:X 4 "register_operand" "r")
 				    (match_operand:X 5 "const_arith_operand" "I"))))]
   "TARGET_CMOV"
-  "<br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
+  "<inequal_op:br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
 ;; bbc|s + alu
-(define_insn "cmov_bb<optab><mode>_<cond_alu:optab>"
+(define_insn "cmov_bb<equality_op:optab><mode>_<cond_alu:optab>"
   [(set (match_operand:X 0 "register_operand" "=r")
         (if_then_else:X (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
 				     (const_int 1)
@@ -3240,12 +3240,12 @@
 				    (match_operand:X 5 "const_arith_operand" "I"))
 			(match_operand:X 3 "arith_operand" "0")))]
   "TARGET_CMOV && TARGET_BBCS"
-  "<rev_bbcs> %4, %1, 0f\n\t<cond_alu:insn> %0, %2, %5\n0:"
+  "<equality_op:rev_bbcs> %4, %1, 0f\n\t<cond_alu:insn> %0, %2, %5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
-(define_insn "cmov_bb<optab><mode>_<cond_alu:optab>_rev"
+(define_insn "cmov_bb<equality_op:optab><mode>_<cond_alu:optab>_rev"
   [(set (match_operand:X 0 "register_operand" "=r")
         (if_then_else:X (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
 				     (const_int 1)
@@ -3272,8 +3272,8 @@
 			(match_operand:X 3 "arith_operand"                     " 0,    0")))]
   "TARGET_CMOV"
   "@
-   <rev_br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:
-   <rev_br_insn>c %1, %2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:"
+   <equality_op:rev_br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:
+   <equality_op:rev_br_insn>c %1, %2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
@@ -3287,8 +3287,8 @@
 				     (match_operand:X 5 "const_arith_operand"  " I,    I"))))]
   "TARGET_CMOV"
   "@
-   <br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:
-   <br_insn>c %1, %2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:"
+   <equality_op:br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:
+   <equality_op:br_insn>c %1, %2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
@@ -3301,7 +3301,7 @@
 				     (match_operand:X 5 "const_arith_operand" "I"))
 			(match_operand:X 3 "arith_operand" "0")))]
   "TARGET_CMOV"
-  "<rev_br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:"
+  "<inequal_op:rev_br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
@@ -3314,7 +3314,7 @@
 			(any_shift:X (match_operand:X 4 "register_operand" "r")
 				     (match_operand:X 5 "const_arith_operand" "I"))))]
   "TARGET_CMOV"
-  "<br_insn> %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
+  "<inequal_op:br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
@@ -3358,12 +3358,12 @@
 				       (match_operand 1 "branch_bbcs_operand"))
 				       (const_int 0))
 			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
-					   (match_operand 5 "extract_size_imm_<mode>" "n")
-					   (match_operand 6 "extract_loc_imm_<mode>" "n"))
+					   (match_operand 5 "extract_size_imm_<X:mode>" "n")
+					   (match_operand 6 "extract_loc_imm_<X:mode>" "n"))
 			  (match_operand:GPR 3 "register_operand" "0")))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
    && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
-		1, GET_MODE_BITSIZE (<MODE>mode))"
+		1, GET_MODE_BITSIZE (<X:MODE>mode))"
   {
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
     return "<rev_bbcs> %4, %1, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
@@ -3380,11 +3380,11 @@
 				       (const_int 0))
 			  (match_operand:GPR 3 "register_operand" "0")
 			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
-					   (match_operand 5 "extract_size_imm_<mode>" "n")
-					   (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
+					   (match_operand 5 "extract_size_imm_<X:mode>" "n")
+					   (match_operand 6 "extract_loc_imm_<X:mode>" "n"))))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
    && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
-		1, GET_MODE_BITSIZE (<MODE>mode))"
+		1, GET_MODE_BITSIZE (<X:MODE>mode))"
   {
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
     return "<bbcs> %4, %1, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
@@ -3399,12 +3399,12 @@
         (if_then_else:GPR (inequal_op (match_operand:X 1 "register_operand" " r")
 				      (match_operand:X 4 "reg_or_0_operand" "rJ"))
 			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
-					   (match_operand 5 "extract_size_imm_<mode>" "n")
-					   (match_operand 6 "extract_loc_imm_<mode>" "n"))
+					   (match_operand 5 "extract_size_imm_<X:mode>" "n")
+					   (match_operand 6 "extract_loc_imm_<X:mode>" "n"))
 			  (match_operand:GPR 3 "register_operand" "0")))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
    && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
-		1, GET_MODE_BITSIZE (<MODE>mode))"
+		1, GET_MODE_BITSIZE (<X:MODE>mode))"
   {
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
     return "<rev_br_insn> %1, %z4, 0f\n\bfo<any_extract:sz> %0, %2, %5, %6\n0:";
@@ -3419,11 +3419,11 @@
 				      (match_operand:X 4 "reg_or_0_operand" "rJ"))
 			  (match_operand:GPR 3 "register_operand" "0")
 			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
-					   (match_operand 5 "extract_size_imm_<mode>" "n")
-					   (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
+					   (match_operand 5 "extract_size_imm_<X:mode>" "n")
+					   (match_operand 6 "extract_loc_imm_<X:mode>" "n"))))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
    && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
-		1, GET_MODE_BITSIZE (<MODE>mode))"
+		1, GET_MODE_BITSIZE (<X:MODE>mode))"
   {
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
     return "<br_insn> %1, %z4, 0f\n\bfo<any_extract:sz> %0, %2, %5, %6\n0:";
@@ -3437,12 +3437,12 @@
         (if_then_else:GPR (equality_op (match_operand:X 1 "register_operand"          " r,    r")
 				       (match_operand:X 4 "reg_or_imm7u_operand"      "rJ, Bz07"))
 			  (any_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
-					   (match_operand 5 "extract_size_imm_<mode>" " n,    n")
-					   (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))
+					   (match_operand 5 "extract_size_imm_<X:mode>" " n,    n")
+					   (match_operand 6 "extract_loc_imm_<X:mode>"  " n,    n"))
 			  (match_operand:GPR 3 "register_operand"                     " 0,    0")))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
    && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
-		1, GET_MODE_BITSIZE (<MODE>mode))"
+		1, GET_MODE_BITSIZE (<X:MODE>mode))"
   {
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
 
@@ -3466,11 +3466,11 @@
 				       (match_operand:X 4 "reg_or_imm7u_operand"      "rJ, Bz07"))
 			  (match_operand:GPR 3 "register_operand"                     " 0,    0")
 			  (any_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
-					   (match_operand 5 "extract_size_imm_<mode>" " n,    n")
-					   (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))))]
+					   (match_operand 5 "extract_size_imm_<X:mode>" " n,    n")
+					   (match_operand 6 "extract_loc_imm_<X:mode>"  " n,    n"))))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
    && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
-		1, GET_MODE_BITSIZE (<MODE>mode))"
+		1, GET_MODE_BITSIZE (<X:MODE>mode))"
   {
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
 
