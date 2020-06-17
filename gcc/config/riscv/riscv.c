@@ -6028,36 +6028,27 @@ static void
 riscv_insert_innermost_loop (void)
 {
   struct loop *loop;
-  basic_block *bbs, bb;
+  basic_block *bbs;
 
-  compute_bb_for_insn ();
   /* initial loop structure */
-  loop_optimizer_init (0);
+  loop_optimizer_init (AVOID_CFG_MODIFICATIONS);
 
   /* Scan all inner most loops.  */
   FOR_EACH_LOOP (loop, LI_ONLY_INNERMOST)
     {
       bbs = get_loop_body (loop);
-      bb = *bbs;
+
+      for (unsigned i = 0; i < loop->num_nodes; i++)
+        {
+          emit_insn_before (gen_innermost_loop_begin (), BB_HEAD (bbs[i]));
+
+          if (CALL_P (BB_END (bbs[i])))
+	    emit_insn_before (gen_innermost_loop_end (), BB_END (bbs[i]));
+          else
+	    emit_insn_after (gen_innermost_loop_end (), BB_END (bbs[i]));
+        }
+
       free (bbs);
-
-      emit_insn_before (gen_innermost_loop_begin (),
-			BB_HEAD (bb));
-
-      /* Find the final basic block in the loop.  */
-      while (bb)
-	{
-	  if (bb->next_bb == NULL)
-	    break;
-
-	  if (bb->next_bb->loop_father != loop)
-	    break;
-
-	  bb = bb->next_bb;
-	}
-
-      emit_insn_before (gen_innermost_loop_end (),
-			BB_END (bb));
     }
 
   /* release loop structre */
