@@ -9,11 +9,11 @@
 void
 func (unsigned long src)
 {
-  __nds__csrc (src, 0x456);
+  __nds__csrc (src, 0x43);
 }
 
 void
 func_i (void)
 {
-  __nds__csrc (0x4, 0x304);
+  __nds__csrc (0x4, 0x43);
 }

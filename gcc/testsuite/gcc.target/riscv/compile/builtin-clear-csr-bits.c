@@ -9,11 +9,11 @@
 void
 func (unsigned long src)
 {
-  __nds__clear_csr_bits (src, 0x456);
+  __nds__clear_csr_bits (src, 0x001);
 }
 
 void
 func_i (void)
 {
-  __nds__clear_csr_bits (0x4, 0x304);
+  __nds__clear_csr_bits (0x4, 0x001);
 }
