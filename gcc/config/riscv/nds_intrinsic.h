@@ -1222,6 +1222,11 @@ enum riscv_order
   (__builtin_riscv_ukmar64 ((r), (a), (b)))
 #define __nds__ukmsr64(r, a, b) \
   (__builtin_riscv_ukmsr64 ((r), (a), (b)))
+#define __nds_fcvt_s_bf16(a) \
+  (__builtin_riscv_fcvt_s_bf16 ((a)))
+#define __nds_fcvt_bf16_s(a) \
+  (__builtin_riscv_fcvt_bf16_s ((a)))
+
 
 #if __riscv_xlen == 32
 #define __nds__v_uadd16(a, b) \

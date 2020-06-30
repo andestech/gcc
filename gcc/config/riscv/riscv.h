@@ -1041,6 +1041,7 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   { TARGET_DEFAULT_CMODEL_STR, "" }
 
 extern tree riscv_fp16_type_node;
+extern tree riscv_bf16_type_node;
 
 #ifdef TARGET_OS_DEFAULT_EX9
 #define NDS32_EX9_SPEC " %{Os3|Os|mexecit:%{!mno-execit:--mexecit}}"

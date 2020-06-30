@@ -115,6 +115,8 @@ enum riscv_builtins
   RISCV_BUILTIN_V_SMULX8,
   RISCV_BUILTIN_V_UMUL8,
   RISCV_BUILTIN_V_UMULX8,
+  RISCV_BUILTIN_FCVT_S_BF16,
+  RISCV_BUILTIN_FCVT_BF16_S,
   RISCV_BUILTIN_DSP_BEGIN,
   RISCV_BUILTIN_RDOV,
   RISCV_BUILTIN_CLROV,
@@ -960,6 +962,9 @@ struct riscv_builtin_description {
 /* Argument types.  */
 #define RISCV_ATYPE_VOID void_type_node
 #define RISCV_ATYPE_SI intSI_type_node
+#define RISCV_ATYPE_HI intHI_type_node
+#define RISCV_ATYPE_BF riscv_bf16_type_node
+#define RISCV_ATYPE_SF float_type_node
 #define RISCV_ATYPE_USI unsigned_intSI_type_node
 #define RISCV_ATYPE_ULONG long_unsigned_type_node
 #define RISCV_ATYPE_LONG long_integer_type_node
@@ -1116,6 +1121,10 @@ static const struct riscv_builtin_description riscv_builtins[] = {
 		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRS),
   DIRECT_BUILTIN (csrrcsi, csrrcdi, csrrc,
 		  RISCV_ULONG_FTYPE_ULONG_USI, CSRRC),
+  DIRECT_BUILTIN (fcvt_s_bf16, fcvt_s_bf16, fcvt_s_bf16,
+                 RISCV_SF_FTYPE_BF, FCVT_S_BF16),
+  DIRECT_BUILTIN (fcvt_bf16_s, fcvt_bf16_s, fcvt_bf16_s,
+                 RISCV_BF_FTYPE_SF, FCVT_BF16_S),
 
   /* DSP Extension: SIMD 16bit Add/Subtract.  */
   DIRECT_DSP_BUILTIN (addv2hi3, addv4hi3, add16,
@@ -2752,11 +2761,28 @@ riscv_init_fp16_types (void)
   (*lang_hooks.types.register_builtin_type) (riscv_fp16_type_node, "__fp16");
 }
 
+tree riscv_bf16_type_node = NULL_TREE;
+tree riscv_bf16_ptr_type_node = NULL_TREE;
+
+static void
+riscv_init_bf16_types (void)
+{
+  riscv_bf16_type_node = make_node (REAL_TYPE);
+  TYPE_PRECISION (riscv_bf16_type_node) = 16;
+  SET_TYPE_MODE (riscv_bf16_type_node, BFmode);
+  layout_type (riscv_bf16_type_node);
+
+  (*lang_hooks.types.register_builtin_type) (riscv_bf16_type_node, "__bf16");
+  riscv_bf16_ptr_type_node = build_pointer_type (riscv_bf16_type_node);
+}
+
 void
 riscv_init_builtins (void)
 {
   if (TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)
     riscv_init_fp16_types ();
+    
+  riscv_init_bf16_types ();
 
   for (size_t i = 0; i < ARRAY_SIZE (riscv_builtins); i++)
     {

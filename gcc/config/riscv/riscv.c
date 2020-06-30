@@ -2152,10 +2152,14 @@ bool
 riscv_legitimize_move (machine_mode mode, rtx dest, rtx src)
 {
   if (!register_operand (dest, mode)
-      && ((!reg_or_0_operand (src, mode) && mode != HFmode)
-	  || (!register_operand (src, mode) && mode == HFmode)))
+      && (((!reg_or_0_operand (src, mode) && mode != HFmode)
+	  || (!register_operand (src, mode) && mode == HFmode))
+      || ((!reg_or_0_operand (src, mode) && mode != BFmode)
+	  || (!register_operand (src, mode) && mode == BFmode))))
     {
       rtx reg;
+      
+               
 
       if (GET_CODE (src) == CONST_INT)
 	{
@@ -2177,8 +2181,9 @@ riscv_legitimize_move (machine_mode mode, rtx dest, rtx src)
 	  if (promoted_mode != mode)
 	    reg = gen_lowpart (mode, reg);
 	}
-      else
+      else  
 	reg = force_reg (mode, src);
+  
       riscv_emit_move (dest, reg);
       return true;
     }
@@ -2698,8 +2703,8 @@ riscv_output_move (rtx dest, rtx src)
   src_code = GET_CODE (src);
   mode = GET_MODE (dest);
   dbl_p = (GET_MODE_SIZE (mode) == 8);
-  hf_p = TARGET_ZFH && (mode == HFmode);
-
+  hf_p = ((TARGET_ZFH && (mode == HFmode)) || (TARGET_ZFH &&(TARGET_BF16 && (mode == BFmode))));
+  
   if (dbl_p && riscv_split_64bit_move_p (dest, src))
     return "#";
 
@@ -3073,6 +3078,10 @@ riscv_emit_float_compare (enum rtx_code *code, rtx *op0, rtx *op1)
       else if (GET_MODE (cmp_op0) == HFmode && TARGET_64BIT)		\
 	emit_insn (gen_f##CMP##_quiethfdi4 (*op0, cmp_op0, cmp_op1));	\
       else if (GET_MODE (cmp_op0) == HFmode)				\
+	emit_insn (gen_f##CMP##_quietdfsi4 (*op0, cmp_op0, cmp_op1));	\
+      else if (GET_MODE (cmp_op0) == BFmode && TARGET_64BIT)		\
+	emit_insn (gen_f##CMP##_quiethfdi4 (*op0, cmp_op0, cmp_op1));	\
+      else if (GET_MODE (cmp_op0) == BFmode)				\
 	emit_insn (gen_f##CMP##_quiethfsi4 (*op0, cmp_op0, cmp_op1));	\
       else								\
 	gcc_unreachable ();						\
@@ -3661,6 +3670,10 @@ riscv_pass_by_reference (cumulative_args_t cum_v, const function_arg_info &arg)
   if ((TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)
       && arg.mode == HFmode)
     return true;
+    
+  if ((TARGET_BF16)
+      && arg.mode == BFmode)
+    return true;
 
   /* ??? std_gimplify_va_arg_expr passes NULL for cum.  Fortunately, we
      never pass variadic arguments in floating-point registers, so we can
@@ -3842,10 +3855,10 @@ riscv_va_start (tree valist, rtx nextarg)
 static tree
 riscv_promoted_type (const_tree t)
 {
-  /* Promote __fp16 to float if fp16 extension is avariable. */
-  if ((TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)
+  /* Promote __fp16/__bf16 to float if fp16/bf16 extension is avariable. */
+  if ((TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH || TARGET_BF16)
       && SCALAR_FLOAT_TYPE_P (t)
-      && (TYPE_MAIN_VARIANT (t) == riscv_fp16_type_node))
+      && ((TYPE_MAIN_VARIANT (t) == riscv_fp16_type_node) || (TYPE_MAIN_VARIANT (t) == riscv_bf16_type_node)))
     return float_type_node;
 
   return NULL_TREE;
@@ -3867,8 +3880,8 @@ riscv_mangle_type (const_tree type)
 static bool
 riscv_libgcc_floating_mode_supported_p (scalar_float_mode mode)
 {
-  return (((TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)
-	   && (mode == HFmode))
+  return ((((TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)
+	   && (mode == HFmode))||(TARGET_BF16 && (mode == BFmode)))
 	  ? true
 	  : default_libgcc_floating_mode_supported_p (mode));
 }
@@ -3879,6 +3892,10 @@ riscv_scalar_mode_supported_p (scalar_mode mode)
 {
   if ((TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)
       && (mode == HFmode))
+    return true;
+    
+  if ((TARGET_BF16)
+      && (mode == BFmode))
     return true;
 
   return default_scalar_mode_supported_p (mode);
@@ -5775,6 +5792,9 @@ riscv_option_override (void)
 
   if (TARGET_ZFH && !TARGET_HARD_FLOAT)
     error ("Only support -mfp16 option on F and D instruction set");
+  
+  if (TARGET_BF16 && !TARGET_HARD_FLOAT)
+    error ("Only support -mbf16 option on F and D instruction set");
 
   if (riscv_movebytes_per_loop == 0)
     riscv_movebytes_per_loop = UNITS_PER_WORD * 3;

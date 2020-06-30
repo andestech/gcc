@@ -136,6 +136,9 @@
   UNSPEC_KDMABB
   UNSPEC_KDMABT
   UNSPEC_KDMATT
+  UNSPEC_FMV_X_BF16
+  UNSPEC_FMV_BF16_X
+
 ])
 
 (define_c_enum "unspecv" [
@@ -220,7 +223,7 @@
   (const_string "unknown"))
 
 ;; Main data type used by the insn
-(define_attr "mode" "unknown,none,QI,HI,SI,DI,TI,HF,SF,DF,TF,V2HI,V4HI,V8HI,V4QI,V8QI,V2SI,V4SI"
+(define_attr "mode" "unknown,none,QI,HI,SI,DI,TI,HF,BF,SF,DF,TF,V2HI,V4HI,V8HI,V4QI,V8QI,V2SI,V4SI"
   (const_string "unknown"))
 
 ;; True if the main data type is twice the size of a word.
@@ -408,6 +411,7 @@
 
 ;; Iterator for hardware-supported floating-point modes.
 (define_mode_iterator ANYF [(HF "TARGET_ZFH")
+          (BF "TARGET_BF16")
 			    (SF "TARGET_HARD_FLOAT")
 			    (DF "TARGET_DOUBLE_FLOAT")])
 
@@ -419,7 +423,7 @@
 (define_mode_attr size [(QI "b") (HI "h")])
 
 ;; Mode attributes for loads.
-(define_mode_attr load [(QI "lb") (HI "lh") (SI "lw") (DI "ld") (HF "flh") (SF "flw") (DF "fld")])
+(define_mode_attr load [(QI "lb") (HI "lh") (SI "lw") (DI "ld") (HF "flh") (BF "flh") (SF "flw") (DF "fld")])
 
 ;; Instruction names for integer loads that aren't explicitly sign or zero
 ;; extended.  See riscv_output_move and LOAD_EXTEND_OP.
@@ -429,7 +433,7 @@
 (define_mode_attr softload [(SF "lw") (DF "ld")])
 
 ;; Instruction names for stores.
-(define_mode_attr store [(QI "sb") (HI "sh") (SI "sw") (DI "sd") (HF "fsh") (SF "fsw") (DF "fsd")])
+(define_mode_attr store [(QI "sb") (HI "sh") (SI "sw") (DI "sd") (HF "fsh") (BF "fsh") (SF "fsw") (DF "fsd")])
 
 ;; Instruction names for FP stores from integer registers.
 (define_mode_attr softstore [(SF "sw") (DF "sd")])
@@ -439,7 +443,7 @@
 (define_mode_attr reg [(SI "d") (DI "d") (CC "d")])
 
 ;; This attribute gives the format suffix for floating-point operations.
-(define_mode_attr fmt [(HF "h") (SF "s") (DF "d")])
+(define_mode_attr fmt [(HF "h") (BF "bf16") (SF "s") (DF "d")])
 
 ;; This attribute gives the integer suffix for floating-point conversions.
 (define_mode_attr ifmt [(SI "w") (DI "l")])
@@ -449,7 +453,7 @@
 
 ;; This attribute gives the upper-case mode name for one unit of a
 ;; floating-point mode.
-(define_mode_attr UNITMODE [(HF "HF") (SF "SF") (DF "DF")])
+(define_mode_attr UNITMODE [(HF "HF") (BF "BF") (SF "SF") (DF "DF")])
 
 ;; This attribute gives the integer mode that has half the size of
 ;; the controlling mode.
@@ -1276,6 +1280,14 @@
   "fshw\t%1,%0"
   [(set_attr "type" "fcvt")
    (set_attr "mode" "HF")])
+   
+(define_insn "riscv_fcvt_bf16_s"
+   [(set (match_operand:BF 0 "register_operand" "=f")
+              (float_truncate:BF  (match_operand:SF 1 "register_operand" "f")))]
+  "TARGET_HARD_FLOAT && TARGET_BF16"
+  "fcvt.bf16.s\t%0, %1"
+  [(set_attr "mode" "BF")]
+)
 
 ;;
 ;;  ....................
@@ -1427,6 +1439,16 @@
   "flhw\t%0,%1"
   [(set_attr "type" "fcvt")
    (set_attr "mode" "SF")])
+
+(define_insn "riscv_fcvt_s_bf16"
+   [(set (match_operand:SF 0 "register_operand" "=f")
+              (float_extend:SF (match_operand:BF 1 "register_operand" "f")))]
+  "TARGET_HARD_FLOAT && TARGET_BF16"
+  "fcvt.s.bf16\t%0, %1"
+  [(set_attr "mode" "SF")]
+)
+
+
 
 ;;
 ;;  ....................
@@ -1754,6 +1776,48 @@
     DONE;
 })
 
+(define_expand "movbf"
+  [(set (match_operand:BF 0 "")
+	(match_operand:BF 1 ""))]
+  "TARGET_HARD_FLOAT && TARGET_BF16 && TARGET_V5"
+{
+  rtx shell_reg;
+  if(((GET_CODE(operands[0])==MEM) ||(GET_CODE(operands[1])==MEM))&&!TARGET_ZFH) {
+    shell_reg = gen_reg_rtx (HImode);
+    emit_insn(gen_rtx_SET ( shell_reg,gen_rtx_UNSPEC(HImode,gen_rtvec(1,operands[1]),UNSPEC_FMV_X_BF16)));
+    operands[1] = gen_rtx_UNSPEC(BFmode,gen_rtvec(1,shell_reg),UNSPEC_FMV_BF16_X);
+  } else {
+    if (riscv_legitimize_move (BFmode, operands[0], operands[1]))
+      DONE;
+  }
+})
+
+
+(define_insn "movbf_bftohi"
+  [(set (match_operand:BF 0 "nonimmediate_operand" "=f,m,r,f,r,m")
+	 (unspec:BF [(match_operand:HI 1 "register_operand" " f,f,f,r,r,r")] UNSPEC_FMV_BF16_X))]
+  "TARGET_HARD_FLOAT && TARGET_BF16 && !TARGET_ZFH && TARGET_V5"
+  {
+    if(register_operand (operands[0], BFmode)) 
+      return "fmv.w.x\t%0,%1";
+    else if(GET_CODE(operands[0])==MEM)
+      return "sh\t%1,%0";
+  }
+
+)
+
+(define_insn "movbf_hitobf"
+ [(set (match_operand:HI 0 "register_operand" "=f,f,f,r,r,r" )
+	(unspec:HI [(match_operand:BF 1 "nonimmediate_operand" "f,m,r,f,r,m")] UNSPEC_FMV_X_BF16))]
+  "TARGET_HARD_FLOAT && TARGET_BF16 && !TARGET_ZFH && TARGET_V5"
+{
+    if(register_operand (operands[1], BFmode))
+      return "fmv.x.w\t%0,%1";
+    else if (GET_CODE(operands[1])==MEM)
+      return "lhu\t%0,%1";
+
+})
+
 (define_insn "*movhf_hardfloat"
   [(set (match_operand:HF 0 "nonimmediate_operand" "=f,f,m,r,f,r,r,m")
 	(match_operand:HF 1 "movehf_operand"       " f,m,f,f,r,r,m,r"))]
@@ -1764,6 +1828,19 @@
   { return riscv_output_move (operands[0], operands[1]); }
   [(set_attr "move_type" "move")
    (set_attr "mode" "HF")])
+   
+(define_insn "*movbf_hardfloat"
+  [(set (match_operand:BF 0 "nonimmediate_operand" "=f,f,m,r,f,r,r,m")
+	(match_operand:BF 1 "movehf_operand"       " f,m,f,f,r,r,m,r"))]
+  "TARGET_HARD_FLOAT
+   && TARGET_BF16
+   && TARGET_ZFH
+   && TARGET_V5
+   && (register_operand (operands[0], BFmode)
+       || register_operand (operands[1], BFmode))"
+  { return riscv_output_move (operands[0], operands[1]); }
+  [(set_attr "move_type" "move")
+   (set_attr "mode" "BF")])
 
 (define_insn "*fp_16movhf_hardfloat"
   [(set (match_operand:HF 0 "nonimmediate_operand" "=f,r,f,r,r,m")

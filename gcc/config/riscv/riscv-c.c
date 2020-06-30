@@ -136,7 +136,10 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
 
   if (TARGET_ZFH)
     builtin_define ("__riscv_zfh");
-
+  
+  if (TARGET_BF16) 
+    builtin_define ("__nds_bf16");
+  
   if (TARGET_BFO)
     builtin_define ("__nds_bfo");
   if (TARGET_LEA)
