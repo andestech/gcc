@@ -75,6 +75,8 @@ extern const char *riscv_arch (int, const char **);
 		       %{mno-ext-dsp} \
 		       %{mext-vector} \
 		       %{mno-ext-vector} \
+		       %{mzfh} \
+		       %{mno-zfh} \
 		       %{mfp16})"
 
 #undef ASM_SPEC

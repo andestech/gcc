@@ -37,6 +37,7 @@ struct arch_options_t
   bool *val;
 };
 
+static bool zfh_ext = false;
 static bool nds_ext = false;
 static bool dsp_ext = false;
 static bool fp16_ext = false;
@@ -50,6 +51,7 @@ static arch_options_t arch_options[] = {
   {"d", NULL, &std_ext['d' - 'a']},
   {"c", "16-bit", &std_ext['c' - 'a']},
   {"v", "ext-vector", &std_ext['v' - 'a']},
+  {"zfh", "zfh", &zfh_ext},
   {"xv5", "nds", &nds_ext},
   {"xdsp", "ext-dsp", &dsp_ext},
   {"xefhw", "fp16", &fp16_ext},
