@@ -6227,12 +6227,27 @@ proc check_effective_target_riscv64 { } {
 	}]
     }
 }
+
 # return true if the riscv target supports hard floating-point unit.
 
 proc check_effective_target_riscv_hard_fp { } {
     if { [istarget riscv*-*-*] } {
 	return [check_no_compiler_messages hard_fp object {
 	    #if defined __riscv_flen
+	    int dummy;
+	    #else
+	    #error no support fpu
+	    #endif
+	}]
+    }
+}
+
+# return true if the riscv target supports hard double floating-point unit.
+
+proc check_effective_target_riscv_hard_fp64 { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages hard_fp object {
+	    #if  __riscv_flen == 64
 	    int dummy;
 	    #else
 	    #error no support fpu
