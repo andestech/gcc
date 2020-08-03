@@ -61,23 +61,23 @@ along with GCC; see the file COPYING3.  If not see
   " %{Os2:-Os -minnermost-loop}" \
   " %{Os3:-Os}" \
 
-extern const char *riscv_arch (int, const char **);
+extern const char *riscv_rewrite_march (int argc, const char **argv);
 #undef EXTRA_SPEC_FUNCTIONS
 #define EXTRA_SPEC_FUNCTIONS \
-  { "riscv_arch", riscv_arch },			\
+  { "riscv_rewrite_march", riscv_rewrite_march },
 
 #define MARCH_POST_PROC_SPEC \
-  "-march=%:riscv_arch(%{march=*} \
-		       %{matomic} \
-		       %{mno-atomic} \
-		       %{mno-16-bit} \
-		       %{mext-dsp} \
-		       %{mno-ext-dsp} \
-		       %{mext-vector} \
-		       %{mno-ext-vector} \
-		       %{mzfh} \
-		       %{mno-zfh} \
-		       %{mfp16})"
+  "-march=%:riscv_rewrite_march(%{march=*} \
+				%{matomic} \
+				%{mno-atomic} \
+				%{mno-16-bit} \
+				%{mext-dsp} \
+				%{mno-ext-dsp} \
+				%{mext-vector} \
+				%{mno-ext-vector} \
+				%{mzfh} \
+				%{mno-zfh} \
+				%{mfp16})"
 
 #undef ASM_SPEC
 #define ASM_SPEC "\
