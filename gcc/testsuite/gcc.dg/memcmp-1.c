@@ -2,7 +2,7 @@
 /* { dg-do run } */
 /* { dg-options "-O2" } */
 /* { dg-require-effective-target ptr32plus } */
-/* { dg-timeout-factor 2 } */
+/* { dg-timeout-factor 4 } */
 
 #include <stdio.h>
 #include <stdlib.h>
