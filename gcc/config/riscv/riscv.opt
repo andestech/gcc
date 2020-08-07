@@ -124,7 +124,7 @@ Target Report Mask(EXPLICIT_RELOCS)
 Use %reloc() operators, rather than assembly macros, to load addresses.
 
 merror-on-no-atomic
-Target Report Var(flags_error_on_no_atomic) Init(1)
+Target Report Mask(ERROR_ON_NO_ATOMIC)
 Raise an error when generating atomic instruction if atomic ext not enabled.
 
 mrelax
