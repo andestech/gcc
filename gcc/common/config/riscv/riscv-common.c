@@ -298,12 +298,12 @@ riscv_supported_std_ext (void)
 static const char *
 riscv_convert_nds_ext (const char *p)
 {
-  if (strncmp (p, "v5", 2) == 0)
-    return "imacxv5";
-  else if (strncmp (p, "v5f", 3) == 0)
+  if (strncmp (p, "v5f", 3) == 0)
     return "imafcxv5";
   else if (strncmp (p, "v5d", 3) == 0)
     return "imafdcxv5";
+  else if (strncmp (p, "v5", 2) == 0)
+    return "imacxv5";
   else
     return p;
 }
