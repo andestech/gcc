@@ -4175,7 +4175,8 @@ riscv_in_small_data_p (const_tree x)
   if (TREE_CODE (x) == VAR_DECL && DECL_SECTION_NAME (x))
     {
       const char *sec = DECL_SECTION_NAME (x);
-      return strcmp (sec, ".sdata") == 0 || strcmp (sec, ".sbss") == 0;
+      if (strcmp (sec, ".sdata") == 0 || strcmp (sec, ".sbss") == 0)
+	return true;
     }
 
   return riscv_size_ok_for_small_data_p (int_size_in_bytes (TREE_TYPE (x)));
