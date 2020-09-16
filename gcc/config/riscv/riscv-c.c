@@ -45,6 +45,9 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
   if (TARGET_RVE)
     builtin_define ("__riscv_32e");
 
+  if (TARGET_RVV)
+    builtin_define ("__riscv_vector");
+
   if (TARGET_ATOMIC)
     builtin_define ("__riscv_atomic");
 
