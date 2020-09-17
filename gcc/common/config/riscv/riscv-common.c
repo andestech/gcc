@@ -59,7 +59,7 @@ static arch_options_t nonstd_z_ext_options[] = {
 };
 
 static arch_options_t nonstd_x_ext_options[] = {
-  {"xv5",   "nds",     false, false},
+  {"xandes", "nds", false, false},
   {"xdsp",  "ext-dsp", false, false},
   {"xefhw", "fp16",    false, false},
   {NULL, NULL, false, false}
@@ -209,6 +209,12 @@ void
 riscv_subset_list::add (const char *subset, int major_version,
 			int minor_version)
 {
+  if (strcmp (subset, "xv5") == 0)
+    {
+      major_version = 5;
+      subset = "xandes";
+    }
+
   riscv_subset_t *s = new riscv_subset_t ();
 
   if (m_head == NULL)
@@ -299,11 +305,11 @@ static const char *
 riscv_convert_nds_ext (const char *p)
 {
   if (strncmp (p, "v5f", 3) == 0)
-    return "imafcxv5";
+    return "imafcxandes";
   else if (strncmp (p, "v5d", 3) == 0)
-    return "imafdcxv5";
+    return "imafdcxandes";
   else if (strncmp (p, "v5", 2) == 0)
-    return "imacxv5";
+    return "imacxandes";
   else
     return p;
 }
@@ -771,7 +777,7 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
   if ((target_flags_explicit & MASK_FP16) == 0)
     *flags &= ~MASK_FP16;
 
-  if (subset_list->lookup ("xv5"))
+  if (subset_list->lookup ("xandes"))
     {
       if ((target_flags_explicit & MASK_V5) == 0)
 	*flags |= MASK_V5;
