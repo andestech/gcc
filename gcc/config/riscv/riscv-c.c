@@ -131,7 +131,7 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
     builtin_define ("__nds_soft_fp16");
 
   if (TARGET_ZFH)
-    builtin_define ("__nds_zfh");
+    builtin_define ("__riscv_zfh");
 
   if (TARGET_BFO)
     builtin_define ("__nds_bfo");
