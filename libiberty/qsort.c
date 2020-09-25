@@ -34,6 +34,10 @@
 
 #include <stdlib.h>
 
+#ifdef __CYGWIN__
+typedef _ssize_t ssize_t;
+#endif
+
 #define min(a, b)	(a) < (b) ? a : b
 
 /*
