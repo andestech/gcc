@@ -28,6 +28,7 @@ enum riscv_csrs
   NDS_UEPC = 0x041,
   NDS_UCAUSE = 0x042,
   NDS_UTVAL = 0x043,
+  NDS_UBADADDR = 0x043,
   NDS_UIP = 0x044,
 
   /* User Floating-Point CSRs */
