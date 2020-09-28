@@ -609,6 +609,143 @@ static const struct riscv_csr_data csr_data_list[] = {
   {"dcsr", 0x7B0},
   {"dpc", 0x7B1},
   {"dscratch", 0x7B2},
+
+  // User Mode CSRs
+  {"uitb", 0x800},
+  {"ucode", 0x801},
+  {"udcause", 0x809},
+  {"ucctlbeginaddr", 0x80B},
+  {"ucctlcommand", 0x80C},
+  {"wfe", 0x810},
+  {"sleepvalue", 0x811},
+  {"txevt", 0x812},
+
+  // Supervisor Mode Trap CSRs
+  {"slie", 0x9C4},
+  {"slip", 0x9C5},
+  {"sdcause", 0x9C9},
+
+  // Supervisor Mode Counter CSRs
+  {"scounterinten", 0x9CF},
+  {"scountermask_m", 0x9D1},
+  {"scountermask_s", 0x9D2},
+  {"scountermask_u", 0x9D3},
+  {"scounterovf", 0x9D4},
+  {"scountinhibit", 0x9E0},
+  {"shpmevent3", 0x9E3},
+  {"shpmevent4", 0x9E4},
+  {"shpmevent5", 0x9E5},
+  {"shpmevent6", 0x9E6},
+
+  // Supervisor Mode Control CSRs
+  {"scctldata", 0x9CD},
+  {"smisc_ctl", 0x9D0},
+
+  // Machine Mode Configuration CSRs
+  {"micm_cfg", 0xFC0},
+  {"mdcm_cfg", 0xFC1},
+  {"mmsc_cfg", 0xFC2},
+  {"mmsc_cfg2", 0xFC3},
+  {"mvec_cfg", 0xFC7},
+
+  // Machine Mode Crash Debug CSRs
+  {"mcrash_statesave", 0xFC8},
+  {"mstatus_crashsave", 0xFC9},
+
+  // Machine Mode Memory and Miscellaneous CSRs
+  {"milmb", 0x7C0},
+  {"mdlmb", 0x7C1},
+  {"mecc_code", 0x7C2},
+  {"mnvec", 0x7C3},
+  {"mpft_ctl", 0x7C5},
+  {"mcache_ctl", 0x7CA},
+  {"mmisc_ctl", 0x7D0},
+  {"mclk_ctl", 0x7DF},
+  {"mcctlbeginaddr", 0x7CB},
+  {"mcctlcommand", 0x7CC},
+  {"mcctldata", 0x7CD},
+  {"mppib", 0x7F0},
+  {"mfiob", 0x7F1},
+
+  // Machine Mode Trap CSRs
+  {"mxstatus", 0x7C4},
+  {"mdcause", 0x7C9},
+  {"mslideleg", 0x7D5},
+  {"msavestatus", 0x7D6},
+  {"msaveepc1", 0x7D7},
+  {"msavecause1", 0x7D8},
+  {"msaveepc2", 0x7D9},
+  {"msavecause2", 0x7DA},
+  {"msavedcause1", 0x7DB},
+  {"msavedcause2", 0x7DC},
+
+  // Machine Mode Hardware Stack Protection and Recording CSRs
+  {"mhsp_ctl", 0x7C6},
+  {"msp_bound", 0x7C7},
+  {"msp_base", 0x7C8},
+
+  // Machine Mode Counter CSRs
+  {"mcounterwen", 0x7CE},
+  {"mcountermask_m", 0x7D1},
+  {"mcountermask_s", 0x7D2},
+  {"mcountermask_u", 0x7D3},
+  {"mcounterinten", 0x7CF},
+  {"mcounterovf", 0x7D4},
+  {"mcountinhibit", 0x320},
+
+  // Machine Mode Enhanced CLIC CSRs
+  {"mirq_entry", 0x7EC},
+  {"mintsel_jal", 0x7ED},
+  {"pushmcause", 0x7EE},
+  {"pushmepc", 0x7EF},
+  {"pushmxstatus", 0x7EB},
+
+  // Machine Mode Physical Memory Attribute Unit CSRs
+  {"pmacfg0", 0xBC0},
+  {"pmacfg1", 0xBC1},
+  {"pmacfg2", 0xBC2},
+  {"pmacfg3", 0xBC3},
+  {"pmaaddr0", 0xBD0},
+  {"pmaaddr1", 0xBD1},
+  {"pmaaddr2", 0xBD2},
+  {"pmaaddr3", 0xBD3},
+  {"pmaaddr4", 0xBD4},
+  {"pmaaddr5", 0xBD5},
+  {"pmaaddr6", 0xBD6},
+  {"pmaaddr7", 0xBD7},
+  {"pmaaddr8", 0xBD8},
+  {"pmaaddr9", 0xBD9},
+  {"pmaaddr10", 0xBDA},
+  {"pmaaddr11", 0xBDB},
+  {"pmaaddr12", 0xBDC},
+  {"pmaaddr13", 0xBDD},
+  {"pmaaddr14", 0xBDE},
+  {"pmaaddr15", 0xBDF},
+
+  // Debug/ Trace Registers (shared with Debug Mode)
+  {"mcontrol", 0x7A1},
+  {"icount", 0x7A1},
+  {"itrigger", 0x7A1},
+  {"etrigger", 0x7A1},
+  {"textra32", 0x7A3},
+  {"textra64", 0x7A3},
+  {"tinfo", 0x7A4},
+  {"tcontrol", 0x7A5},
+  {"mcontext", 0x7A8},
+  {"scontext", 0x7AA},
+
+  // Debug Mode CSRs
+  {"dscratch0", 0x7B2},
+  {"dscratch1", 0x7B3},
+  {"dexc2dbg", 0x7E0},
+  {"ddcause", 0x7E1},
+
+  // CLIC Extension CSRs
+  {"mtvt", 0x307},
+  {"mnxti", 0x345},
+  {"mintstatus", 0x346},
+  {"mscratchcsw", 0x348},
+  {"mscratchcswl", 0x349},
 };
 
 static const char * const riscv_fence_operations [] =
