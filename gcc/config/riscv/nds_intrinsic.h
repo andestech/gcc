@@ -408,6 +408,15 @@ enum riscv_csrs
   NDS_MINTSTATUS = 0x346,
   NDS_MSCRATCHCSW = 0x348,
   NDS_MSCRATCHCSWL = 0x349,
+
+  /* Vector CSRs */
+  NDS_VSTART = 0x008,
+  NDS_VXSAT = 0x009,
+  NDS_VXRM = 0x00A,
+  NDS_VCSR = 0x00F,
+  NDS_VL = 0xC20,
+  NDS_VTYPE = 0xC21,
+  NDS_VLENB = 0xC22,
 };
 
 enum riscv_fence

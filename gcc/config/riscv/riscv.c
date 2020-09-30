@@ -746,6 +746,15 @@ static const struct riscv_csr_data csr_data_list[] = {
   {"mintstatus", 0x346},
   {"mscratchcsw", 0x348},
   {"mscratchcswl", 0x349},
+
+  // Vector CSRs
+  {"vstart", 0x008},
+  {"vxsat", 0x009},
+  {"vxrm", 0x00A},
+  {"vcsr", 0x00F},
+  {"vl", 0xC20},
+  {"vtype", 0xC21},
+  {"vlenb", 0xC22},
 };
 
 static const char * const riscv_fence_operations [] =
