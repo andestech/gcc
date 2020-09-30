@@ -4195,7 +4195,6 @@ riscv_print_operand (FILE *file, rtx op, int letter)
 {
   machine_mode mode = GET_MODE (op);
   enum rtx_code code = GET_CODE (op);
-  const char *csr_name = NULL;
 
   switch (letter)
     {
@@ -4291,14 +4290,19 @@ riscv_print_operand (FILE *file, rtx op, int letter)
 
 	HOST_WIDE_INT op_value = INTVAL (op);
 
-        for (size_t i = 0; i < ARRAY_SIZE (csr_data_list); ++i)
+	if (op_value >= 4096)
+	  error ("intrinsic register index is out of range");
+
+	const char *csr_name = NULL;
+	for (size_t i = 0; i < ARRAY_SIZE (csr_data_list); ++i)
             if (csr_data_list[i].num == op_value)
                 csr_name = csr_data_list[i].name;
 
-        if (!csr_name)
-	    error ("intrinsic register index is out of range");
+	if (csr_name)
+	  fprintf (file, "%s", csr_name);
+	else
+	  fprintf (file, "%ld", op_value);
 
-	fprintf (file, "%s", csr_name);
 	break;
       }
 
