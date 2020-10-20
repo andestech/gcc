@@ -1541,6 +1541,13 @@ find_single_drs (class loop *loop, struct graph *rdg, partition *partition,
   if (!single_st)
     return false;
 
+  /* Skip if storing reference is small array */
+  if (TREE_CODE (DR_REF (single_st)) == ARRAY_REF
+      && TREE_CODE (TREE_OPERAND (DR_REF (single_st), 0)) == VAR_DECL
+      && DECL_SIZE (TREE_OPERAND (DR_REF (single_st), 0))
+      && tree_to_uhwi (DECL_SIZE (TREE_OPERAND (DR_REF (single_st), 0))) <= 64)
+    return false;
+
   /* Bail out if this is a bitfield memory reference.  */
   if (TREE_CODE (DR_REF (single_st)) == COMPONENT_REF
       && DECL_BIT_FIELD (TREE_OPERAND (DR_REF (single_st), 1)))
