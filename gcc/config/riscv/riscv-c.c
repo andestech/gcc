@@ -118,10 +118,14 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
   if (TARGET_V5)
     {
       builtin_define ("__nds_v5");
-      builtin_define ("__nds_execit");
 
-      /* Also define __nds_ex9 for backward compatibility.  */
-      builtin_define ("__nds_ex9");
+      if (TARGET_EXECIT && TARGET_RVC)
+	{
+	  builtin_define ("__nds_execit");
+
+	  /* Also define __nds_ex9 for backward compatibility.  */
+	  builtin_define ("__nds_ex9");
+	}
     }
 
   if (TARGET_FP16)
