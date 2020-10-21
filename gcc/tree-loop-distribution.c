@@ -3096,7 +3096,8 @@ loop_distribution::distribute_loop (class loop *loop, vec<gimple *> stmts,
 	 since it's not likely to enable many vectorization opportunities.
 	 Also if loop has any data reference which may be not addressable
 	 since alias check needs to take, compare address of the object.  */
-      if (loop->inner || has_nonaddressable_dataref_p)
+      if (optimize_loop_for_size_p (loop) || loop->inner
+	  || has_nonaddressable_dataref_p)
 	merge_dep_scc_partitions (rdg, &partitions, false);
       else
 	{
