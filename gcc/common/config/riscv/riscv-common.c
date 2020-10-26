@@ -44,25 +44,27 @@ struct arch_options_t
   const char *option_name;
   bool is_spec;
   bool val;
+  unsigned default_major_version;
+  unsigned default_minor_version;
 };
 
 static arch_options_t std_ext_options[] = {
-  {"a", "atomic",     false, false},
-  {"c", "16-bit",     false, false},
-  {"v", "ext-vector", false, false},
-  {NULL, NULL, false, false}
+  {"a", "atomic",     false, false, 2, 0},
+  {"c", "16-bit",     false, false, 2, 0},
+  {"v", "ext-vector", false, false, 2, 0},
+  {NULL, NULL, false, false, 2, 0}
 };
 
 static arch_options_t nonstd_z_ext_options[] = {
-  {"zfh", "zfh", false, false},
-  {NULL, NULL, false, false}
+  {"zfh", "zfh", false, false, 2, 0},
+  {NULL, NULL, false, false, 2, 0}
 };
 
 static arch_options_t nonstd_x_ext_options[] = {
-  {"xandes", "nds", false, false},
-  {"xdsp",  "ext-dsp", false, false},
-  {"xefhw", "fp16",    false, false},
-  {NULL, NULL, false, false}
+  {"xandes",    "nds", false, false, 5, 0},
+  {"xdsp",  "ext-dsp", false, false, 2, 0},
+  {"xefhw",    "fp16", false, false, 2, 0},
+  {NULL, NULL, false, false, 2, 0}
 };
 
 static arch_options_t *ext_options[] = {
@@ -97,6 +99,18 @@ arch_options_enabled_p(const arch_options_t *opt, const char *p)
 	return true;
 
   return false;
+}
+
+static bool arch_options_default_version(const arch_options_t *opt, const char *p,
+					 unsigned *major_version,
+					 unsigned *minor_version)
+{
+  for (; !arch_options_end_p(opt); ++opt)
+    if (strncmp(opt->ext, p, strlen(opt->ext)) == 0)
+      {
+	*major_version = opt->default_major_version;
+	*minor_version = opt->default_minor_version;
+      }
 }
 
 /* Subset info.  */
@@ -607,6 +621,10 @@ riscv_subset_list::parse_multiletter_ext (const char *p,
 
       *q = '\0';
 
+      /* Update version to default one if it doesn't be specified. */
+      if (opt && (q == end_of_version))
+	arch_options_default_version(opt, subset, &major_version, &minor_version);
+
       /* Check that non-standard-extension isn't disabled by option. */
       if (!opt)
 	add (subset, major_version, minor_version);
@@ -629,7 +647,7 @@ riscv_subset_list::parse_multiletter_ext (const char *p,
       for (; !arch_options_end_p(opt); ++opt)
 	{
 	  if (!lookup(opt->ext) && opt->is_spec && opt->val)
-	    add (opt->ext, 2, 0);
+	    add (opt->ext, opt->default_major_version, opt->default_minor_version);
 	}
     }
 
