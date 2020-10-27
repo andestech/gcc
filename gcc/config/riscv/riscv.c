@@ -6786,7 +6786,7 @@ riscv_binds_local_p (const_tree exp)
 static bool
 riscv_noce_conversion_profitable_p (rtx_insn *seq, struct noce_if_info *if_info)
 {
-  if (TARGET_CMOV && if_info->speed_p)
+  if (TARGET_CMOV)
     return true;
 
   return default_noce_conversion_profitable_p (seq, if_info);
