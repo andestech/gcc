@@ -2416,7 +2416,11 @@ riscv_rtx_costs (rtx x, machine_mode mode, int outer_code, int opno ATTRIBUTE_UN
     case ZERO_EXTRACT:
       if (TARGET_BFO)
 	{
-	  *total = COSTS_N_INSNS (1);
+	  /* Cost for BBC/BBS.*/
+	  if (outer_code == NE || outer_code == EQ)
+	    *total = 0;
+	  else
+	    *total = COSTS_N_INSNS (1);
 	  return true;
 	}
 
