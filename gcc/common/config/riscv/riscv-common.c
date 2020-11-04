@@ -175,6 +175,8 @@ public:
 
   void add (const char *, int, int);
 
+  void add (const char *, unsigned, unsigned, const arch_options_t *opt);
+
   riscv_subset_t *lookup (const char *,
 			  int major_version = RISCV_DONT_CARE_VERSION,
 			  int minor_version = RISCV_DONT_CARE_VERSION) const;
@@ -243,6 +245,16 @@ riscv_subset_list::add (const char *subset, int major_version,
     m_tail->next = s;
 
   m_tail = s;
+}
+
+/* Find defined version from OPT and do naive add() */
+void
+riscv_subset_list::add (const char *subset, unsigned major_version,
+			unsigned minor_version, const arch_options_t *opt)
+{
+  gcc_assert (opt);
+  arch_options_default_version (opt, subset, &major_version, &minor_version);
+  add (subset, major_version, minor_version);
 }
 
 /* Convert subset info to string with explicit version info,
@@ -499,9 +511,10 @@ riscv_subset_list::parse_std_ext (const char *p)
       while (*std_exts && std_ext != *std_exts)
 	{
 	  subset[0] = *std_exts;
+
 	  /* Check that standard extension is enabled by option. */
 	  if (arch_options_enabled_p(&std_ext_options[0], subset))
-	    add(subset, 2, 0);
+	    add (subset, 2, 0, std_ext_options);
 	  std_exts++;
 	}
 
@@ -538,8 +551,9 @@ riscv_subset_list::parse_std_ext (const char *p)
   while (*std_exts)
     {
       char subset[2] = {*std_exts, 0};
+
       if (arch_options_enabled_p(&std_ext_options[0], subset))
-	add (subset, 2, 0);
+	add (subset, 2, 0, std_ext_options);
       std_exts++;
     }
   return p;
