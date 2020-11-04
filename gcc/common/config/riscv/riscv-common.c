@@ -52,6 +52,7 @@ static arch_options_t std_ext_options[] = {
   {"a", "atomic",     false, false, 2, 0},
   {"c", "16-bit",     false, false, 2, 0},
   {"v", "ext-vector", false, false, 2, 0},
+  {"p",  "ext-dsp",   false, false, 0, 5},
   {NULL, NULL, false, false, 2, 0}
 };
 
@@ -62,7 +63,6 @@ static arch_options_t nonstd_z_ext_options[] = {
 
 static arch_options_t nonstd_x_ext_options[] = {
   {"xandes",    "nds", false, false, 5, 0},
-  {"xdsp",  "ext-dsp", false, false, 2, 0},
   {"xefhw",    "fp16", false, false, 2, 0},
   {NULL, NULL, false, false, 2, 0}
 };
@@ -793,6 +793,10 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
   if (subset_list->lookup ("v"))
     *flags |= MASK_RVV;
 
+  *flags &= ~MASK_DSP;
+  if (subset_list->lookup ("p"))
+    *flags |= MASK_DSP;
+
   // initialize v5 related mask
   if ((target_flags_explicit & MASK_V5) == 0)
     *flags &= ~MASK_V5;
@@ -804,8 +808,6 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
     *flags &= ~MASK_BIMM;
   if ((target_flags_explicit & MASK_LEA) == 0)
     *flags &= ~MASK_LEA;
-  if ((target_flags_explicit & MASK_DSP) == 0)
-    *flags &= ~MASK_DSP;
   if ((target_flags_explicit & MASK_FP16) == 0)
     *flags &= ~MASK_FP16;
 
@@ -822,18 +824,9 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
       if ((target_flags_explicit & MASK_LEA) == 0)
 	*flags |= MASK_LEA;
 
-      if (subset_list->lookup ("xdsp"))
-	if ((target_flags_explicit & MASK_DSP) == 0)
-	  *flags |= MASK_DSP;
-
       if (subset_list->lookup ("xefhw"))
 	if ((target_flags_explicit & MASK_FP16) == 0)
 	  *flags |= MASK_FP16;
-    }
-  else if (subset_list->lookup ("xdsp"))
-    {
-      if ((target_flags_explicit & MASK_DSP) == 0)
-	*flags |= MASK_DSP;
     }
 
   if (current_subset_list)
