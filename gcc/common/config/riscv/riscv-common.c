@@ -370,9 +370,11 @@ riscv_subset_list::parsing_subset_version (const char *p,
   unsigned minor = 0;
   char np;
 
+  bool digit_start_p = ISDIGIT (*p);
+
   for (; *p; ++p)
     {
-      if (*p == 'p')
+      if (digit_start_p && *p == 'p')
 	{
 	  np = *(p + 1);
 
