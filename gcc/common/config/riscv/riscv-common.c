@@ -532,13 +532,17 @@ riscv_subset_list::parse_std_ext (const char *p)
 
       std_exts++;
 
-      p++;
+      char nc = *++p;
       p = parsing_subset_version (p, &major_version, &minor_version,
 				  /* default_major_version= */ 2,
 				  /* default_minor_version= */ 0,
 				  /* std_ext_p= */ true);
 
       subset[0] = std_ext;
+
+      if (!ISDIGIT (nc))
+	arch_options_default_version (std_ext_options, subset, &major_version,
+				      &minor_version);
 
       handle_implied_ext (subset, major_version, minor_version);
 
