@@ -343,7 +343,8 @@
 		     (match_operand:GPR 2 "nonmemory_operand" "r")] UNSPEC_FFB))]
   ""
   "ffb\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "mode" "<MODE>")
+   (set_attr "type" "arith")])
 
 (define_insn "ffmism<mode>"
   [(set (match_operand:GPR 0 "register_operand" "=r")
@@ -351,7 +352,8 @@
 		     (match_operand:GPR 2 "register_operand" "r")] UNSPEC_FFMISM))]
   ""
   "ffmism\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "mode" "<MODE>")
+   (set_attr "type" "arith")])
 
 (define_insn "flmism<mode>"
   [(set (match_operand:GPR 0 "register_operand" "=r")
@@ -359,4 +361,5 @@
 		     (match_operand:GPR 2 "register_operand" "r")] UNSPEC_FLMISM))]
   ""
   "flmism\t%0, %1, %2"
-  [(set_attr "mode" "<MODE>")])
+  [(set_attr "mode" "<MODE>")
+   (set_attr "type" "arith")])

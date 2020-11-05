@@ -357,7 +357,7 @@
 ;; Microarchitectures we know how to tune for.
 ;; Keep this in sync with enum riscv_microarchitecture.
 (define_attr "tune"
-  "generic,sifive_7,rocket,vicuna,vicuna2"
+  "generic,sifive_7,rocket,vicuna,vicuna2,kavalan"
   (const (symbol_ref "((enum attr_tune) riscv_microarchitecture)")))
 
 ;; Describe a user's asm statement.
@@ -2287,7 +2287,8 @@
     operands[0] = gen_rtx_GE (<MODE>mode, operands[4], const0_rtx);
   else
     operands[0] = gen_rtx_LT (<MODE>mode, operands[4], const0_rtx);
-})
+}
+  [(set_attr "type" "branch")])
 
 (define_insn_and_split "*branch_on_bit_range<X:mode>"
   [(set (pc)
@@ -2312,7 +2313,8 @@
 	    (pc)))]
 {
   operands[3] = GEN_INT (GET_MODE_BITSIZE (<MODE>mode) - INTVAL (operands[3]));
-})
+}
+  [(set_attr "type" "branch")])
 
 (define_insn "*branch_imms7<mode>"
   [(set (pc)
@@ -3877,3 +3879,4 @@
 (include "vicuna2.md")
 (include "builtins.md")
 (include "dsp.md")
+(include "kavalan.md")

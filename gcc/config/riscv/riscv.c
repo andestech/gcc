@@ -340,6 +340,20 @@ static const struct riscv_tune_info vicuna_tune_info = {
   false,					/* slow_unaligned_access */
 };
 
+/* Costs to use when optimizing for Kavalan.  */
+static const struct riscv_tune_info kavalan_tune_info = {
+  {COSTS_N_INSNS (4), COSTS_N_INSNS (5)},      /* fp_add */
+  {COSTS_N_INSNS (4), COSTS_N_INSNS (5)},      /* fp_mul */
+  {COSTS_N_INSNS (20), COSTS_N_INSNS (20)},    /* fp_div */
+  {COSTS_N_INSNS (2), COSTS_N_INSNS (2)},      /* int_mul */
+  {COSTS_N_INSNS (24), COSTS_N_INSNS (24)},    /* int_div */
+  2,                                           /* issue_rate */
+  3,                                           /* branch_cost */
+  3,                                           /* memory_cost */
+  false,                                       /* slow_unaligned_access */
+};
+
+
 /* Costs to use when optimizing for size.  */
 static const struct riscv_tune_info optimize_size_tune_info = {
   {COSTS_N_INSNS (1), COSTS_N_INSNS (1)},	/* fp_add */
@@ -913,6 +927,7 @@ static const struct riscv_cpu_info riscv_cpu_info_table[] = {
   { "size", rocket, &optimize_size_tune_info },
   { "vicuna", vicuna, &vicuna_tune_info },
   { "vicuna2", vicuna2, &vicuna_tune_info },
+  { "kavalan", kavalan, &kavalan_tune_info},
   { "n22", vicuna, &vicuna_tune_info },
   { "fs02", vicuna, &vicuna_tune_info },
   { "n25", vicuna, &vicuna_tune_info },
@@ -923,14 +938,14 @@ static const struct riscv_cpu_info riscv_cpu_info_table[] = {
   { "nx25f", vicuna, &vicuna_tune_info },
   { "a25", vicuna, &vicuna_tune_info },
   { "ax25", vicuna, &vicuna_tune_info },
-  { "n45", vicuna, &vicuna_tune_info },
-  { "d45", vicuna, &vicuna_tune_info },
-  { "nx45", vicuna, &vicuna_tune_info },
-  { "n45f", vicuna2, &vicuna_tune_info },
-  { "d45f", vicuna2, &vicuna_tune_info },
-  { "nx45f", vicuna2, &vicuna_tune_info },
-  { "a45", vicuna, &vicuna_tune_info },
-  { "ax45", vicuna, &vicuna_tune_info },
+  { "n45", kavalan, &kavalan_tune_info },
+  { "d45", kavalan, &kavalan_tune_info },
+  { "nx45", kavalan, &kavalan_tune_info },
+  { "n45f", kavalan, &kavalan_tune_info },
+  { "d45f", kavalan, &kavalan_tune_info },
+  { "nx45f", kavalan, &kavalan_tune_info },
+  { "a45", kavalan, &kavalan_tune_info },
+  { "ax45", kavalan, &kavalan_tune_info },
   { "n27", vicuna, &vicuna_tune_info },
   { "nx27", vicuna, &vicuna_tune_info },
   { "nx27v", vicuna, &vicuna_tune_info },
