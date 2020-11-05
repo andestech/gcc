@@ -51,7 +51,7 @@ struct arch_options_t
 static arch_options_t std_ext_options[] = {
   {"a", "atomic",     false, false, 2, 0},
   {"c", "16-bit",     false, false, 2, 0},
-  {"v", "ext-vector", false, false, 2, 0},
+  {"v", "ext-vector", false, false, 1, 0},
   {"p",  "ext-dsp",   false, false, 0, 5},
   {NULL, NULL, false, false, 2, 0}
 };
