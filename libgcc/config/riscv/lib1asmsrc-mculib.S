@@ -1978,6 +1978,9 @@ __truncdfsf2:
 	.globl	__fixsfdi
 	.type	__fixsfdi,@function
 __fixsfdi:
+#ifdef __riscv_float_abi_single
+  fmv.x.w x10, f10
+#endif
 	srli	x13, x10, 23            # 	srli	$r3, $r0, #23
 	andi	x13, x13, 255           # 	andi	$r3, $r3, #255
 	slli	x12, x10, 8             # 	slli	$r2, $r0, #8
@@ -2269,6 +2272,9 @@ __fixunsdfsi:
 	.globl	__fixunssfdi
 	.type	__fixunssfdi,@function
 __fixunssfdi:
+#ifdef __riscv_float_abi_single
+  fmv.x.w x10, f10
+#endif
 	bltz	x10, .LZero             # 	bltz	$r0, .LZero
 	srli	x12, x10, 23            # 	srli	$r2, $r0, #23
 	addi	x12, x12, -127          # 	addi	$r2, $r2, #-127
@@ -2547,6 +2553,9 @@ __floatdisf:
 .Li1:
 	or	x10, x13, x15           # 	or	$r0, $r3, $r5
 .LA999:
+#ifdef __riscv_float_abi_single
+  fmv.w.x f10, x10
+#endif
 	lw	x9, 0(sp)               # 	pop.s	$r6, $r7, {$lp}
 	lw	x18, 4(sp)
 	lw	ra, 8(sp)
@@ -2799,7 +2808,11 @@ __floatundisf:
 	slli	x9, x14, 23             # 	slli	$r6, $r4, #23
 	or	x13, x13, x9            # 	or	$r3, $r3, $r6
 .Li4:
+#ifdef __riscv_float_abi_single
+  fmv.w.x f10, x13
+#else
 	mv	x10, x13                # 	move	$r0, $r3
+#endif
 .LB999:
 	lw	x9, 0(sp)               # 	pop.s	$r6, $r6, {$lp}
 	lw	ra, 4(sp)
