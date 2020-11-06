@@ -1849,6 +1849,9 @@ __negdf2:
 	.globl	__extendsfdf2
 	.type	__extendsfdf2,@function
 __extendsfdf2:
+#ifdef __riscv_float_abi_single
+  fmv.x.w x10, f10
+#endif
 	slli	x15, x10, 1             # 	slli	$r5, $r0, #1
 	beqz	x15, .LJzero            # 	beqz	$r5, .LJzero
 	srli	x13, x15, 24            # 	srli	$r3, $r5, #24
@@ -1930,6 +1933,9 @@ __truncdfsf2:
 	or	x13, x13, x18           # 	or	$r3, $r3, $r7
 	or	x10, x13, x15           # 	or	$r0, $r3, $r5
 .LK999:
+#ifdef __riscv_float_abi_single
+  fmv.w.x f10, x10
+#endif
 	lw	x9, 0(sp)               # 	popm	$r6, $r8
 	lw	x18, 4(sp)
 	lw	x19, 8(sp)
