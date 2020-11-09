@@ -5607,9 +5607,6 @@ riscv_file_start (void)
   if (TARGET_EXECIT && TARGET_RVC)
     fprintf (asm_out_file, "\t.option execit\n");
 
-  if (!TARGET_RVC)
-    fprintf (asm_out_file, "\t.option norvc\n");
-
   if (riscv_emit_attribute_p)
     riscv_emit_attribute ();
 }
