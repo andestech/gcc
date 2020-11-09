@@ -90,7 +90,8 @@ extern const char *riscv_rewrite_march (int argc, const char **argv);
 " %{mcmodel=small|mcmodel=medlow:-mcmodel=medlow; \
     mcmodel=medium|mcmodel=medany:-mcmodel=medany; \
     mcmodel=large:-mcmodel=large}" \
-" %{mb20282:-mb20282}"
+" %{mb20282:-mb20282}" \
+" %{mno-16-bit:-mno-16-bit}"
 
 
 #ifndef TARGET_DEFAULT_MEDLOW
