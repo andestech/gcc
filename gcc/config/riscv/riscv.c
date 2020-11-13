@@ -830,8 +830,6 @@ static const unsigned gpr_save_reg_order[] = {
   S10_REGNUM, S11_REGNUM
 };
 
-rtl_opt_pass *make_pass_riscv_target_combine (gcc::context *);
-
 static void
 riscv_register_pass (
   rtl_opt_pass *(*make_pass_func) (gcc::context *),
@@ -873,13 +871,6 @@ riscv_register_pass (
 static void
 riscv_register_passes (void)
 {
-  if (TARGET_COMBINE)
-    {
-      riscv_register_pass (
-        make_pass_riscv_target_combine,
-        PASS_POS_INSERT_AFTER,
-        "combine");
-    }
 }
 
 /* Add some checking when inserting attributes.  */

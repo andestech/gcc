@@ -329,7 +329,3 @@ Target Mask(CMOV)
 mpool-section
 Target Report Var(TARGET_POOL_SECTION) Init(0)
 Seprate constant pool from text section in large code model.
-
-mtarget-combine
-Target Report Mask(COMBINE) Undocumented
-Enable target-combine pass
