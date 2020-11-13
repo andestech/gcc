@@ -58,8 +58,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "cfgloop.h"
 #include "cfgrtl.h"
 #include "opts.h"
-#include "tree-pass.h"
-#include "context.h"
 #include "ifcvt.h"
 #include "cfgrtl.h"
 
@@ -829,49 +827,6 @@ static const unsigned gpr_save_reg_order[] = {
   S5_REGNUM, S6_REGNUM, S7_REGNUM, S8_REGNUM, S9_REGNUM,
   S10_REGNUM, S11_REGNUM
 };
-
-static void
-riscv_register_pass (
-  rtl_opt_pass *(*make_pass_func) (gcc::context *),
-  enum pass_positioning_ops pass_pos,
-  const char *ref_pass_name)
-{
-  opt_pass *new_opt_pass = make_pass_func (g);
-
-  struct register_pass_info insert_pass =
-    {
-      new_opt_pass,	/* pass */
-      ref_pass_name,	/* reference_pass_name */
-      1,		/* ref_pass_instance_number */
-      pass_pos		/* po_op */
-    };
-
-  register_pass (&insert_pass);
-}
-
-static void
-riscv_register_pass (
-  gimple_opt_pass *(*make_pass_func) (gcc::context *),
-  enum pass_positioning_ops pass_pos,
-  const char *ref_pass_name)
-{
-  opt_pass *new_opt_pass = make_pass_func (g);
-
-  struct register_pass_info insert_pass =
-    {
-      new_opt_pass,	/* pass */
-      ref_pass_name,	/* reference_pass_name */
-      1,		/* ref_pass_instance_number */
-      pass_pos		/* po_op */
-    };
-
-  register_pass (&insert_pass);
-}
-
-static void
-riscv_register_passes (void)
-{
-}
 
 /* Add some checking when inserting attributes.  */
 static void
@@ -7090,9 +7045,6 @@ riscv_libgcc_floating_mode_supported_p
 
 #undef TARGET_ASM_INIT_SECTIONS
 #define TARGET_ASM_INIT_SECTIONS riscv_asm_init_sections
-
-#undef TARGET_REGISTER_PASSES
-#define TARGET_REGISTER_PASSES riscv_register_passes
 
 #undef TARGET_C_EXCESS_PRECISION
 #define TARGET_C_EXCESS_PRECISION riscv_excess_precision
