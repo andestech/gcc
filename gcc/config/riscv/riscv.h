@@ -1012,7 +1012,7 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
 #define ASM_OUTPUT_POOL_EPILOGUE riscv_asm_output_pool_epilogue
 
 #ifdef TARGET_OS_DEFAULT_EX9
-#define NDS32_EX9_DRIVER_SPEC " %{Os3|Os:%{!mno-execit:-mexecit}}"
+#define NDS32_EX9_DRIVER_SPEC " %{Os2|Os3|Os:%{!mno-execit:-mexecit}}"
 #else
 #define NDS32_EX9_DRIVER_SPEC ""
 #endif
