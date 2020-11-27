@@ -317,7 +317,7 @@ Target Report Undocumented
 Generating fma instructions.
 
 mfp16
-Target Report Mask(FP16)
+Target Report Mask(FP16) Undocumented
 Supporting __fp16 instructions.
 
 msoft-fp16
