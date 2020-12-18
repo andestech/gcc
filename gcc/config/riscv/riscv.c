@@ -4638,6 +4638,20 @@ riscv_save_libcall_count (unsigned mask)
 
 static HOST_WIDE_INT riscv_first_stack_step (struct riscv_frame_info *frame);
 
+/* Determine whether to call GPR save/restore routines.  */
+static bool
+riscv_use_push_libcall ()
+{
+  if ((TARGET_SAVE_RESTORE)
+      && !crtl->calls_eh_return && !frame_pointer_needed
+      && !cfun->machine->interrupt_handler_p)
+    return true;
+
+  return false;
+}
+
+#define RA_MASK (1 << (1 - GP_REG_FIRST))
+
 static void
 riscv_compute_frame_info (void)
 {
@@ -4704,6 +4718,9 @@ riscv_compute_frame_info (void)
   /* Next are the callee-saved GPRs. */
   if (frame->mask)
     {
+      if ((frame->mask & RA_MASK) == 0 && riscv_use_push_libcall ())
+	num_x_saved += 1;
+
       unsigned x_save_size = RISCV_STACK_ALIGN (num_x_saved * UNITS_PER_WORD);
       unsigned num_save_restore = 1 + riscv_save_libcall_count (frame->mask);
 
