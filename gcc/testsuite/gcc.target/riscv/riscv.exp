@@ -52,6 +52,9 @@ dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/dsp64/*.\[cS\]]] \
 
 dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/zfh/*.\[cS\]]] \
 	"" $DEFAULT_CFLAGS
+ 
+dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/bf16/*.\[cS\]]] \
+	"" $DEFAULT_CFLAGS
 
 # All done.
 dg-finish
