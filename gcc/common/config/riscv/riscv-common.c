@@ -64,6 +64,7 @@ static arch_options_t nonstd_z_ext_options[] = {
 static arch_options_t nonstd_x_ext_options[] = {
   {"xandes",    "nds", false, false, 5, 0},
   {"xefhw",    "fp16", false, false, 2, 0},
+  {"xebfhw",    "bf16", false, false, 2, 0},
   {NULL, NULL, false, false, 2, 0}
 };
 
