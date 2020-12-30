@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with GCC; see the file COPYING3.  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#define TARGET_LINUX_ABI 1
+
 #define TARGET_OS_CPP_BUILTINS()				\
   do {								\
     GNU_USER_TARGET_OS_CPP_BUILTINS();				\
@@ -30,7 +32,7 @@ along with GCC; see the file COPYING3.  If not see
   "%{mabi=ilp32d:}" \
   "%{mabi=lp64:-sf}" \
   "%{mabi=lp64f:-sp}" \
-  "%{mabi=lp64d:}" \
+  "%{mabi=lp64d:}"
 
 #undef MUSL_DYNAMIC_LINKER
 #define MUSL_DYNAMIC_LINKER "/lib/ld-musl-riscv" XLEN_SPEC MUSL_ABI_SUFFIX ".so.1"
@@ -47,11 +49,30 @@ along with GCC; see the file COPYING3.  If not see
 
 #define ICACHE_FLUSH_FUNC "__riscv_flush_icache"
 
+#define LD_EMUL_SUFFIX \
+  "%{mabi=lp64d:}" \
+  "%{mabi=lp64f:_lp64f}" \
+  "%{mabi=lp64:_lp64}" \
+  "%{mabi=ilp32d:}" \
+  "%{mabi=ilp32f:_ilp32f}" \
+  "%{mabi=ilp32:_ilp32}"
+
 #define LINK_SPEC "\
--melf" XLEN_SPEC "lriscv \
+-melf" XLEN_SPEC "lriscv" LD_EMUL_SUFFIX " \
+%{mno-relax:--no-relax} \
+%{minnermost-loop:-mexecit-loop-aware} \
 %{shared} \
   %{!shared: \
     %{!static: \
       %{rdynamic:-export-dynamic} \
       -dynamic-linker " GNU_USER_DYNAMIC_LINKER "} \
-    %{static:-static}}"
+    %{static:-static}}" \
+NDS32_GP_RELAX_SPEC \
+BTB_FIXUP_SPEC
+
+#define CPP_SPEC "%{pthread:-D_REENTRANT}"
+
+#undef NEED_INDICATE_EXEC_STACK
+#define NEED_INDICATE_EXEC_STACK 1
+
+#define TARGET_ASM_FILE_END file_end_indicate_exec_stack

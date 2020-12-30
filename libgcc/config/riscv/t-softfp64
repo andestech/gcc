@@ -1,3 +1,7 @@
 include $(srcdir)/config/riscv/t-softfp32
 
 softfp_int_modes += ti
+
+ifneq ($(findstring $(FP16)$(SOFT_FP16), __nds_fp16 __nds_soft_fp16),)
+softfp_extras += fixhfti fixunshfti floattihf floatuntihf
+endif

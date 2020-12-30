@@ -387,6 +387,8 @@ struct GTY(()) function {
 
   /* Set when the tail call has been identified.  */
   unsigned int tail_call_marked : 1;
+
+  unsigned int not_escape_ptr_parm : 1;
 };
 
 /* Add the decl D to the local_decls list of FUN.  */

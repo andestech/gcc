@@ -26,6 +26,7 @@
   ;; Symbolic accesses.  The order of this list must match that of
   ;; enum riscv_symbol_type in riscv-protos.h.
   UNSPEC_ADDRESS_FIRST
+  UNSPEC_FORCE_FOR_MEM
   UNSPEC_PCREL
   UNSPEC_LOAD_GOT
   UNSPEC_TLS
@@ -36,6 +37,9 @@
   ;; High part of PC-relative address.
   UNSPEC_AUIPC
 
+  ;; Indirect call function.
+  UNSPEC_ICT
+
   ;; Floating-point unspecs.
   UNSPEC_FLT_QUIET
   UNSPEC_FLE_QUIET
@@ -45,6 +49,93 @@
 
   ;; Stack tie
   UNSPEC_TIE
+
+  ;; innermost loop
+  UNSPECV_INNERMOST_LOOP_BEGIN
+  UNSPECV_INNERMOST_LOOP_END
+
+  ;; builtin
+  UNSPECV_CSRR
+  UNSPECV_CSRW
+  UNSPECV_SCALL
+  UNSPECV_FRCSR
+  UNSPECV_FSCSR
+  UNSPECV_FWCSR
+  UNSPECV_FRRM
+  UNSPECV_FSRM
+  UNSPECV_FWRM
+  UNSPECV_FWFLAGS
+  UNSPECV_LRW
+  UNSPECV_LRD
+  UNSPECV_SCW
+  UNSPECV_SCD
+  UNSPECV_AMOW
+  UNSPECV_AMOD
+  UNSPECV_AMOWSWAP
+  UNSPECV_AMODSWAP
+  UNSPECV_SBREAK
+  UNSPECV_CSRRW
+  UNSPECV_CSRRS
+  UNSPECV_CSRRC
+  UNSPECV_CSRS
+  UNSPECV_CSRC
+  UNSPEC_ROUND
+  UNSPEC_ROUND64
+  UNSPEC_VEC_COMPARE
+  UNSPEC_CLIPS
+  UNSPEC_CLIP
+  UNSPEC_KHM
+  UNSPEC_KHMX
+  UNSPEC_CLIP_OV
+  UNSPEC_CLIPS_OV
+  UNSPEC_BITREV
+  UNSPEC_KABS
+  UNSPEC_KSLRAWU
+  UNSPEC_KSLRAW
+  UNSPEC_KHMTT
+  UNSPEC_KHMBT
+  UNSPEC_KHMBB
+  UNSPEC_KDMTT
+  UNSPEC_KDMBT
+  UNSPEC_KDMBB
+  UNSPEC_KHMTT16
+  UNSPEC_KHMBT16
+  UNSPEC_KHMBB16
+  UNSPEC_KDMTT16
+  UNSPEC_KDMBT16
+  UNSPEC_KDMBB16
+  UNSPEC_KADDH
+  UNSPEC_KSUBH
+  UNSPEC_KADDW
+  UNSPEC_KSUBW
+  UNSPEC_CLO
+  UNSPEC_PBSAD
+  UNSPEC_PBSADA
+  UNSPEC_BSWAP
+  UNSPEC_FFB
+  UNSPEC_FFMISM
+  UNSPEC_FLMISM
+  UNSPEC_UMUL8
+  UNSPEC_SMUL8
+  UNSPEC_UMULX8
+  UNSPEC_SMULX8
+  UNSPEC_UMUL16
+  UNSPEC_SMUL16
+  UNSPEC_UMULX16
+  UNSPEC_SMULX16
+  UNSPEC_UKADDW
+  UNSPEC_UKSUBW
+  UNSPEC_UKADDW64
+  UNSPEC_UKSUBW64
+  UNSPEC_UKADDH
+  UNSPEC_UKSUBH
+  UNSPEC_CLROV
+  UNSPEC_RDOV
+  UNSPEC_KMMW
+  UNSPEC_KMMWU
+  UNSPEC_KDMABB
+  UNSPEC_KDMABT
+  UNSPEC_KDMATT
 ])
 
 (define_c_enum "unspecv" [
@@ -56,6 +147,11 @@
   UNSPECV_FRFLAGS
   UNSPECV_FSFLAGS
 
+  ;; Interrupt handler instructions.
+  UNSPECV_MRET
+  UNSPECV_SRET
+  UNSPECV_URET
+
   ;; Blockage and synchronization.
   UNSPECV_BLOCKAGE
   UNSPECV_FENCE
@@ -64,11 +160,25 @@
 
 (define_constants
   [(RETURN_ADDR_REGNUM		1)
+   (SP_REGNUM			2)
+   (GP_REGNUM			3)
    (T0_REGNUM			5)
    (T1_REGNUM			6)
    (S0_REGNUM			8)
    (S1_REGNUM			9)
+   (A0_REGNUM			10)
+   (A1_REGNUM			11)
+   (A2_REGNUM			12)
+   (A3_REGNUM			13)
+   (A4_REGNUM			14)
+   (A5_REGNUM			15)
+   (A6_REGNUM			16)
+   (A7_REGNUM			17)
    (S2_REGNUM			18)
+
+   (NORMAL_RETURN		0)
+   (SIBCALL_RETURN		1)
+   (EXCEPTION_RETURN		2)
 ])
 
 (include "predicates.md")
@@ -100,7 +210,7 @@
   (const_string "unknown"))
 
 ;; Main data type used by the insn
-(define_attr "mode" "unknown,none,QI,HI,SI,DI,TI,SF,DF,TF"
+(define_attr "mode" "unknown,none,QI,HI,SI,DI,TI,HF,SF,DF,TF,V2HI,V4HI,V8HI,V4QI,V8QI,V2SI,V4SI"
   (const_string "unknown"))
 
 ;; True if the main data type is twice the size of a word.
@@ -113,6 +223,10 @@
 	      (ne (symbol_ref "TARGET_64BIT") (const_int 0)))
 	 (const_string "yes")]
 	(const_string "no")))
+
+(define_attr "tune"
+  "rocket,vicuna,vicuna2"
+  (const (symbol_ref "((enum attr_tune) riscv_tune)")))
 
 ;; Classification of each insn.
 ;; branch	conditional branch
@@ -144,9 +258,10 @@
 ;; nop		no operation
 ;; ghost	an instruction that produces no real code
 (define_attr "type"
-  "unknown,branch,jump,call,load,fpload,store,fpstore,
+  "unknown,branch,branch_imm, jump,call,load,fpload,store,fpstore,
    mtc,mfc,const,arith,logical,shift,slt,imul,idiv,move,fmove,fadd,fmul,
-   fmadd,fdiv,fcmp,fcvt,fsqrt,multi,nop,ghost"
+   fmadd,fdiv,fcmp,fcvt,fsqrt,multi,nop,ghost,
+   dalu,dalu64,daluround,dcmp,dclip,dmul,dmac,dinsb,dpack,dbpick,dwext"
   (cond [(eq_attr "got" "load") (const_string "load")
 
 	 ;; If a doubleword move uses these expensive instructions,
@@ -184,6 +299,13 @@
 	  (eq_attr "type" "branch")
 	  (if_then_else (and (le (minus (match_dup 0) (pc)) (const_int 4088))
 				  (le (minus (pc) (match_dup 0)) (const_int 4092)))
+	  (const_int 4)
+	  (const_int 8))
+
+	  ;; Branches further than +/- 1 KiB require two instructions.
+	  (eq_attr "type" "branch_imm")
+	  (if_then_else (and (le (minus (match_dup 0) (pc)) (const_int 1016))
+			     (le (minus (pc) (match_dup 0)) (const_int 1020)))
 	  (const_int 4)
 	  (const_int 8))
 
@@ -268,8 +390,15 @@
 ;; Iterator for hardware-supported integer modes.
 (define_mode_iterator ANYI [QI HI SI (DI "TARGET_64BIT")])
 
+(define_mode_iterator ANYC [(QI "!TARGET_64BIT") (HI "!TARGET_64BIT")
+			    (SI "!TARGET_64BIT") (DI "TARGET_64BIT")])
+
+;; Iterator for hardware-supported integer modes.
+(define_mode_iterator ANY32 [QI HI SI])
+
 ;; Iterator for hardware-supported floating-point modes.
-(define_mode_iterator ANYF [(SF "TARGET_HARD_FLOAT")
+(define_mode_iterator ANYF [(HF "TARGET_ZFH")
+			    (SF "TARGET_HARD_FLOAT")
 			    (DF "TARGET_DOUBLE_FLOAT")])
 
 ;; This attribute gives the length suffix for a sign- or zero-extension
@@ -277,17 +406,17 @@
 (define_mode_attr size [(QI "b") (HI "h")])
 
 ;; Mode attributes for loads.
-(define_mode_attr load [(QI "lb") (HI "lh") (SI "lw") (DI "ld") (SF "flw") (DF "fld")])
+(define_mode_attr load [(QI "lb") (HI "lh") (SI "lw") (DI "ld") (HF "flh") (SF "flw") (DF "fld")])
 
 ;; Instruction names for stores.
-(define_mode_attr store [(QI "sb") (HI "sh") (SI "sw") (DI "sd") (SF "fsw") (DF "fsd")])
+(define_mode_attr store [(QI "sb") (HI "sh") (SI "sw") (DI "sd") (HF "fsh") (SF "fsw") (DF "fsd")])
 
 ;; This attribute gives the best constraint to use for registers of
 ;; a given mode.
 (define_mode_attr reg [(SI "d") (DI "d") (CC "d")])
 
 ;; This attribute gives the format suffix for floating-point operations.
-(define_mode_attr fmt [(SF "s") (DF "d")])
+(define_mode_attr fmt [(HF "h") (SF "s") (DF "d")])
 
 ;; This attribute gives the integer suffix for floating-point conversions.
 (define_mode_attr ifmt [(SI "w") (DI "l")])
@@ -297,11 +426,17 @@
 
 ;; This attribute gives the upper-case mode name for one unit of a
 ;; floating-point mode.
-(define_mode_attr UNITMODE [(SF "SF") (DF "DF")])
+(define_mode_attr UNITMODE [(HF "HF") (SF "SF") (DF "DF")])
 
 ;; This attribute gives the integer mode that has half the size of
 ;; the controlling mode.
 (define_mode_attr HALFMODE [(DF "SI") (DI "SI") (TF "DI")])
+
+;; Give the number of bits in the mode
+(define_mode_attr sizen [(QI "8") (HI "16") (SI "32") (DI "64")])
+
+;; Give the number of shift limitation in the mode
+(define_mode_attr sh_limit [(QI "7") (HI "15") (SI "31") (DI "63")])
 
 ;; Iterator and attributes for floating-point rounding instructions.
 (define_int_iterator RINT [UNSPEC_LRINT UNSPEC_LROUND])
@@ -315,6 +450,10 @@
 ;; This code iterator allows signed and unsigned widening multiplications
 ;; to use the same template.
 (define_code_iterator any_extend [sign_extend zero_extend])
+
+;; This code iterator allows signed and unsigned extract
+;; to use the same template.
+(define_code_iterator any_extract [sign_extract zero_extract])
 
 ;; This code iterator allows the two right shift instructions to be
 ;; generated from the same template.
@@ -342,6 +481,12 @@
 (define_code_iterator any_ge [ge geu])
 (define_code_iterator any_lt [lt ltu])
 (define_code_iterator any_le [le leu])
+(define_code_iterator inequal_op [gt gtu ge geu lt ltu le leu])
+
+(define_code_iterator cond_alu [plus minus and ior xor lt ltu])
+
+;; Equality operators.
+(define_code_iterator equality_op [eq ne])
 
 ;; <u> expands to an empty string when doing a signed operation and
 ;; "u" when doing an unsigned operation.
@@ -351,8 +496,8 @@
 		     (lt "") (ltu "u")
 		     (le "") (leu "u")])
 
-;; <su> is like <u>, but the signed form expands to "s" rather than "".
-(define_code_attr su [(sign_extend "s") (zero_extend "u")])
+;; <sz> is like <u>, but the signed form expands to "s" rather than "".
+(define_code_attr sz [(sign_extend "s") (zero_extend "z") (sign_extract "s") (zero_extract "z")])
 
 ;; <optab> expands to the name of the optab for a particular code.
 (define_code_attr optab [(ashift "ashl")
@@ -370,7 +515,22 @@
 			 (xor "xor")
 			 (and "and")
 			 (plus "add")
-			 (minus "sub")])
+			 (minus "sub")
+			 (sign_extend "extend")
+			 (zero_extend "zero_extend")
+			 (eq "eq")
+			 (ne "ne")
+			 (lt "lt")
+			 (le "le")
+			 (gt "gt")
+			 (ge "ge")
+			 (ltu "ltu")
+			 (leu "leu")
+			 (gtu "gtu")
+			 (geu "geu")
+			 (clrsb "clrsb")
+			 (clz "clz")
+			 (popcount "popcount")])
 
 ;; <insn> expands to the name of the insn that implements a particular code.
 (define_code_attr insn [(ashift "sll")
@@ -384,7 +544,39 @@
 			(xor "xor")
 			(and "and")
 			(plus "add")
-			(minus "sub")])
+			(minus "sub")
+			(clrsb "clrs")
+			(clz "clz")
+			(lt  "slt")
+			(ltu "sltu")])
+
+(define_code_attr br_insn [(eq "beq")
+			   (ne "bne")
+			   (lt "blt")
+			   (le "ble")
+			   (gt "bgt")
+			   (ge "bge")
+			   (ltu "bltu")
+			   (leu "bleu")
+			   (gtu "bgtu")
+			   (geu "bgeu")])
+
+(define_code_attr rev_br_insn [(eq "bne")
+			       (ne "beq")
+			       (lt "bge")
+			       (le "bgt")
+			       (gt "ble")
+			       (ge "blt")
+			       (ltu "bgeu")
+			       (leu "bgtu")
+			       (gtu "bleu")
+			       (geu "bltu")])
+
+(define_code_attr bbcs [(eq "bbc")
+			(ne "bbs")])
+
+(define_code_attr rev_bbcs [(eq "bbs")
+			    (ne "bbc")])
 
 ;; Ghost instructions produce no real code and introduce no hazards.
 ;; They exist purely to express an effect on dataflow.
@@ -401,47 +593,57 @@
 ;;
 
 (define_insn "add<mode>3"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-	(plus:ANYF (match_operand:ANYF 1 "register_operand" "f")
-		   (match_operand:ANYF 2 "register_operand" "f")))]
+  [(set (match_operand:ANYF            0 "register_operand" "=f")
+	(plus:ANYF (match_operand:ANYF 1 "register_operand" " f")
+		   (match_operand:ANYF 2 "register_operand" " f")))]
   "TARGET_HARD_FLOAT"
   "fadd.<fmt>\t%0,%1,%2"
   [(set_attr "type" "fadd")
    (set_attr "mode" "<UNITMODE>")])
 
 (define_insn "addsi3"
-  [(set (match_operand:SI 0 "register_operand" "=r,r")
-	(plus:SI (match_operand:SI 1 "register_operand" "r,r")
-		  (match_operand:SI 2 "arith_operand" "r,I")))]
+  [(set (match_operand:SI          0 "register_operand" "=r,r")
+	(plus:SI (match_operand:SI 1 "register_operand" " r,r")
+		 (match_operand:SI 2 "arith_operand"    " r,I")))]
   ""
   { return TARGET_64BIT ? "addw\t%0,%1,%2" : "add\t%0,%1,%2"; }
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
-(define_insn "adddi3"
-  [(set (match_operand:DI 0 "register_operand" "=r,r")
-	(plus:DI (match_operand:DI 1 "register_operand" "r,r")
-		  (match_operand:DI 2 "arith_operand" "r,I")))]
+(define_expand "adddi3"
+  [(set (match_operand:DI          0 "register_operand" "")
+	(plus:DI (match_operand:DI 1 "register_operand" "")
+		 (match_operand:DI 2 "arith_operand"    "")))]
+  "TARGET_64BIT || TARGET_DSP"
+{
+  if (!TARGET_64BIT && !REG_P(operands[2]))
+    FAIL;
+})
+
+(define_insn "*adddi3"
+  [(set (match_operand:DI          0 "register_operand" "=r,r")
+	(plus:DI (match_operand:DI 1 "register_operand" " r,r")
+		 (match_operand:DI 2 "arith_operand"    " r,I")))]
   "TARGET_64BIT"
   "add\t%0,%1,%2"
   [(set_attr "type" "arith")
    (set_attr "mode" "DI")])
 
 (define_insn "*addsi3_extended"
-  [(set (match_operand:DI 0 "register_operand" "=r,r")
+  [(set (match_operand:DI               0 "register_operand" "=r,r")
 	(sign_extend:DI
-	     (plus:SI (match_operand:SI 1 "register_operand" "r,r")
-		      (match_operand:SI 2 "arith_operand" "r,I"))))]
+	     (plus:SI (match_operand:SI 1 "register_operand" " r,r")
+		      (match_operand:SI 2 "arith_operand"    " r,I"))))]
   "TARGET_64BIT"
   "addw\t%0,%1,%2"
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
 (define_insn "*addsi3_extended2"
-  [(set (match_operand:DI 0 "register_operand" "=r,r")
+  [(set (match_operand:DI                       0 "register_operand" "=r,r")
 	(sign_extend:DI
-	  (subreg:SI (plus:DI (match_operand:DI 1 "register_operand" "r,r")
-			      (match_operand:DI 2 "arith_operand" "r,I"))
+	  (subreg:SI (plus:DI (match_operand:DI 1 "register_operand" " r,r")
+			      (match_operand:DI 2 "arith_operand"    " r,I"))
 		     0)))]
   "TARGET_64BIT"
   "addw\t%0,%1,%2"
@@ -457,50 +659,95 @@
 ;;
 
 (define_insn "sub<mode>3"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-	(minus:ANYF (match_operand:ANYF 1 "register_operand" "f")
-		    (match_operand:ANYF 2 "register_operand" "f")))]
+  [(set (match_operand:ANYF             0 "register_operand" "=f")
+	(minus:ANYF (match_operand:ANYF 1 "register_operand" " f")
+		    (match_operand:ANYF 2 "register_operand" " f")))]
   "TARGET_HARD_FLOAT"
   "fsub.<fmt>\t%0,%1,%2"
   [(set_attr "type" "fadd")
    (set_attr "mode" "<UNITMODE>")])
 
-(define_insn "subdi3"
-  [(set (match_operand:DI 0 "register_operand" "=r")
-	(minus:DI (match_operand:DI 1 "reg_or_0_operand" "rJ")
-		   (match_operand:DI 2 "register_operand" "r")))]
+(define_expand "subdi3"
+  [(set (match_operand:DI           0 "register_operand" "")
+	(minus:DI (match_operand:DI 1 "reg_or_0_operand" "")
+		  (match_operand:DI 2 "register_operand" "")))]
+  "TARGET_64BIT || TARGET_DSP"
+{
+  if (!TARGET_64BIT && !REG_P(operands[1]))
+    FAIL;
+})
+
+(define_insn "*subdi3"
+  [(set (match_operand:DI 0            "register_operand" "= r")
+	(minus:DI (match_operand:DI 1  "reg_or_0_operand" " rJ")
+		   (match_operand:DI 2 "register_operand" "  r")))]
   "TARGET_64BIT"
   "sub\t%0,%z1,%2"
   [(set_attr "type" "arith")
    (set_attr "mode" "DI")])
 
 (define_insn "subsi3"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(minus:SI (match_operand:SI 1 "reg_or_0_operand" "rJ")
-		   (match_operand:SI 2 "register_operand" "r")))]
+  [(set (match_operand:SI           0 "register_operand" "= r")
+	(minus:SI (match_operand:SI 1 "reg_or_0_operand" " rJ")
+		  (match_operand:SI 2 "register_operand" "  r")))]
   ""
   { return TARGET_64BIT ? "subw\t%0,%z1,%2" : "sub\t%0,%z1,%2"; }
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
 (define_insn "*subsi3_extended"
-  [(set (match_operand:DI 0 "register_operand" "=r")
+  [(set (match_operand:DI               0 "register_operand" "= r")
 	(sign_extend:DI
-	    (minus:SI (match_operand:SI 1 "reg_or_0_operand" "rJ")
-		      (match_operand:SI 2 "register_operand" "r"))))]
+	    (minus:SI (match_operand:SI 1 "reg_or_0_operand" " rJ")
+		      (match_operand:SI 2 "register_operand" "  r"))))]
   "TARGET_64BIT"
   "subw\t%0,%z1,%2"
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
 (define_insn "*subsi3_extended2"
-  [(set (match_operand:DI 0 "register_operand" "=r")
+  [(set (match_operand:DI                        0 "register_operand" "= r")
 	(sign_extend:DI
-	  (subreg:SI (minus:DI (match_operand:DI 1 "reg_or_0_operand" "r")
-			       (match_operand:DI 2 "register_operand" "r"))
+	  (subreg:SI (minus:DI (match_operand:DI 1 "reg_or_0_operand" " rJ")
+			       (match_operand:DI 2 "register_operand" "  r"))
 		     0)))]
   "TARGET_64BIT"
   "subw\t%0,%z1,%2"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "negdi2"
+  [(set (match_operand:DI         0 "register_operand" "=r")
+	(neg:DI (match_operand:DI 1 "register_operand" " r")))]
+  "TARGET_64BIT"
+  "neg\t%0,%1"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "negsi2"
+  [(set (match_operand:SI         0 "register_operand" "=r")
+	(neg:SI (match_operand:SI 1 "register_operand" " r")))]
+  ""
+  { return TARGET_64BIT ? "negw\t%0,%1" : "neg\t%0,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "*negsi2_extended"
+  [(set (match_operand:DI          0 "register_operand" "=r")
+	(sign_extend:DI
+	 (neg:SI (match_operand:SI 1 "register_operand" " r"))))]
+  "TARGET_64BIT"
+  "negw\t%0,%1"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")])
+
+(define_insn "*negsi2_extended2"
+  [(set (match_operand:DI                     0 "register_operand" "=r")
+	(sign_extend:DI
+	 (subreg:SI (neg:DI (match_operand:DI 1 "register_operand" " r"))
+	 	    0)))]
+  "TARGET_64BIT"
+  "negw\t%0,%1"
   [(set_attr "type" "arith")
    (set_attr "mode" "SI")])
 
@@ -513,47 +760,47 @@
 ;;
 
 (define_insn "mul<mode>3"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-	(mult:ANYF (match_operand:ANYF 1 "register_operand" "f")
-		      (match_operand:ANYF 2 "register_operand" "f")))]
+  [(set (match_operand:ANYF               0 "register_operand" "=f")
+	(mult:ANYF (match_operand:ANYF    1 "register_operand" " f")
+		      (match_operand:ANYF 2 "register_operand" " f")))]
   "TARGET_HARD_FLOAT"
   "fmul.<fmt>\t%0,%1,%2"
   [(set_attr "type" "fmul")
    (set_attr "mode" "<UNITMODE>")])
 
 (define_insn "mulsi3"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(mult:SI (match_operand:SI 1 "register_operand" "r")
-		  (match_operand:SI 2 "register_operand" "r")))]
+  [(set (match_operand:SI          0 "register_operand" "=r")
+	(mult:SI (match_operand:SI 1 "register_operand" " r")
+		 (match_operand:SI 2 "register_operand" " r")))]
   "TARGET_MUL"
   { return TARGET_64BIT ? "mulw\t%0,%1,%2" : "mul\t%0,%1,%2"; }
   [(set_attr "type" "imul")
    (set_attr "mode" "SI")])
 
 (define_insn "muldi3"
-  [(set (match_operand:DI 0 "register_operand" "=r")
-	(mult:DI (match_operand:DI 1 "register_operand" "r")
-		  (match_operand:DI 2 "register_operand" "r")))]
+  [(set (match_operand:DI          0 "register_operand" "=r")
+	(mult:DI (match_operand:DI 1 "register_operand" " r")
+		 (match_operand:DI 2 "register_operand" " r")))]
   "TARGET_MUL && TARGET_64BIT"
   "mul\t%0,%1,%2"
   [(set_attr "type" "imul")
    (set_attr "mode" "DI")])
 
 (define_insn "*mulsi3_extended"
-  [(set (match_operand:DI 0 "register_operand" "=r")
+  [(set (match_operand:DI              0 "register_operand" "=r")
 	(sign_extend:DI
-	    (mult:SI (match_operand:SI 1 "register_operand" "r")
-		     (match_operand:SI 2 "register_operand" "r"))))]
+	    (mult:SI (match_operand:SI 1 "register_operand" " r")
+		     (match_operand:SI 2 "register_operand" " r"))))]
   "TARGET_MUL && TARGET_64BIT"
   "mulw\t%0,%1,%2"
   [(set_attr "type" "imul")
    (set_attr "mode" "SI")])
 
 (define_insn "*mulsi3_extended2"
-  [(set (match_operand:DI 0 "register_operand" "=r")
+  [(set (match_operand:DI                       0 "register_operand" "=r")
 	(sign_extend:DI
-	  (subreg:SI (mult:DI (match_operand:DI 1 "register_operand" "r")
-			      (match_operand:DI 2 "register_operand" "r"))
+	  (subreg:SI (mult:DI (match_operand:DI 1 "register_operand" " r")
+			      (match_operand:DI 2 "register_operand" " r"))
 		     0)))]
   "TARGET_MUL && TARGET_64BIT"
   "mulw\t%0,%1,%2"
@@ -570,7 +817,7 @@
 
 
 (define_expand "<u>mulditi3"
-  [(set (match_operand:TI 0 "register_operand")
+  [(set (match_operand:TI                         0 "register_operand")
 	(mult:TI (any_extend:TI (match_operand:DI 1 "register_operand"))
 		 (any_extend:TI (match_operand:DI 2 "register_operand"))))]
   "TARGET_MUL && TARGET_64BIT"
@@ -587,13 +834,13 @@
 })
 
 (define_insn "<u>muldi3_highpart"
-  [(set (match_operand:DI 0 "register_operand" "=r")
+  [(set (match_operand:DI                0 "register_operand" "=r")
 	(truncate:DI
 	  (lshiftrt:TI
 	    (mult:TI (any_extend:TI
-		       (match_operand:DI 1 "register_operand" "r"))
+		       (match_operand:DI 1 "register_operand" " r"))
 		     (any_extend:TI
-		       (match_operand:DI 2 "register_operand" "r")))
+		       (match_operand:DI 2 "register_operand" " r")))
 	    (const_int 64))))]
   "TARGET_MUL && TARGET_64BIT"
   "mulh<u>\t%0,%1,%2"
@@ -601,7 +848,7 @@
    (set_attr "mode" "DI")])
 
 (define_expand "usmulditi3"
-  [(set (match_operand:TI 0 "register_operand")
+  [(set (match_operand:TI                          0 "register_operand")
 	(mult:TI (zero_extend:TI (match_operand:DI 1 "register_operand"))
 		 (sign_extend:TI (match_operand:DI 2 "register_operand"))))]
   "TARGET_MUL && TARGET_64BIT"
@@ -618,13 +865,13 @@
 })
 
 (define_insn "usmuldi3_highpart"
-  [(set (match_operand:DI 0 "register_operand" "=r")
+  [(set (match_operand:DI                0 "register_operand" "=r")
 	(truncate:DI
 	  (lshiftrt:TI
 	    (mult:TI (zero_extend:TI
-		       (match_operand:DI 1 "register_operand" "r"))
+		       (match_operand:DI 1 "register_operand"  "r"))
 		     (sign_extend:TI
-		       (match_operand:DI 2 "register_operand" "r")))
+		       (match_operand:DI 2 "register_operand" " r")))
 	    (const_int 64))))]
   "TARGET_MUL && TARGET_64BIT"
   "mulhsu\t%0,%2,%1"
@@ -632,29 +879,36 @@
    (set_attr "mode" "DI")])
 
 (define_expand "<u>mulsidi3"
-  [(set (match_operand:DI 0 "register_operand" "=r")
+  [(set (match_operand:DI            0 "register_operand" "=r")
 	(mult:DI (any_extend:DI
-		   (match_operand:SI 1 "register_operand" "r"))
+		   (match_operand:SI 1 "register_operand" " r"))
 		 (any_extend:DI
-		   (match_operand:SI 2 "register_operand" "r"))))]
+		   (match_operand:SI 2 "register_operand" " r"))))]
   "TARGET_MUL && !TARGET_64BIT"
 {
-  rtx temp = gen_reg_rtx (SImode);
-  emit_insn (gen_mulsi3 (temp, operands[1], operands[2]));
-  emit_insn (gen_<u>mulsi3_highpart (riscv_subword (operands[0], true),
-				     operands[1], operands[2]));
-  emit_insn (gen_movsi (riscv_subword (operands[0], false), temp));
+  if (TARGET_DSP)
+    {
+      emit_insn (gen_dsp_<u>mulsidi3 (operands[0], operands[1], operands[2]));
+    }
+  else
+    {
+      rtx temp = gen_reg_rtx (SImode);
+      emit_insn (gen_mulsi3 (temp, operands[1], operands[2]));
+      emit_insn (gen_<u>mulsi3_highpart (riscv_subword (operands[0], true),
+					 operands[1], operands[2]));
+      emit_insn (gen_movsi (riscv_subword (operands[0], false), temp));
+    }
   DONE;
 })
 
 (define_insn "<u>mulsi3_highpart"
-  [(set (match_operand:SI 0 "register_operand" "=r")
+  [(set (match_operand:SI                0 "register_operand" "=r")
 	(truncate:SI
 	  (lshiftrt:DI
 	    (mult:DI (any_extend:DI
-		       (match_operand:SI 1 "register_operand" "r"))
+		       (match_operand:SI 1 "register_operand" " r"))
 		     (any_extend:DI
-		       (match_operand:SI 2 "register_operand" "r")))
+		       (match_operand:SI 2 "register_operand" " r")))
 	    (const_int 32))))]
   "TARGET_MUL && !TARGET_64BIT"
   "mulh<u>\t%0,%1,%2"
@@ -663,11 +917,11 @@
 
 
 (define_expand "usmulsidi3"
-  [(set (match_operand:DI 0 "register_operand" "=r")
+  [(set (match_operand:DI            0 "register_operand" "=r")
 	(mult:DI (zero_extend:DI
-		   (match_operand:SI 1 "register_operand" "r"))
+		   (match_operand:SI 1 "register_operand" " r"))
 		 (sign_extend:DI
-		   (match_operand:SI 2 "register_operand" "r"))))]
+		   (match_operand:SI 2 "register_operand" " r"))))]
   "TARGET_MUL && !TARGET_64BIT"
 {
   rtx temp = gen_reg_rtx (SImode);
@@ -679,13 +933,13 @@
 })
 
 (define_insn "usmulsi3_highpart"
-  [(set (match_operand:SI 0 "register_operand" "=r")
+  [(set (match_operand:SI                0 "register_operand" "=r")
 	(truncate:SI
 	  (lshiftrt:DI
 	    (mult:DI (zero_extend:DI
-		       (match_operand:SI 1 "register_operand" "r"))
+		       (match_operand:SI 1 "register_operand" " r"))
 		     (sign_extend:DI
-		       (match_operand:SI 2 "register_operand" "r")))
+		       (match_operand:SI 2 "register_operand" " r")))
 	    (const_int 32))))]
   "TARGET_MUL && !TARGET_64BIT"
   "mulhsu\t%0,%2,%1"
@@ -701,37 +955,37 @@
 ;;
 
 (define_insn "<optab>si3"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(any_div:SI (match_operand:SI 1 "register_operand" "r")
-		    (match_operand:SI 2 "register_operand" "r")))]
+  [(set (match_operand:SI             0 "register_operand" "=r")
+	(any_div:SI (match_operand:SI 1 "register_operand" " r")
+		    (match_operand:SI 2 "register_operand" " r")))]
   "TARGET_DIV"
   { return TARGET_64BIT ? "<insn>w\t%0,%1,%2" : "<insn>\t%0,%1,%2"; }
   [(set_attr "type" "idiv")
    (set_attr "mode" "SI")])
 
 (define_insn "<optab>di3"
-  [(set (match_operand:DI 0 "register_operand" "=r")
-	(any_div:DI (match_operand:DI 1 "register_operand" "r")
-		    (match_operand:DI 2 "register_operand" "r")))]
+  [(set (match_operand:DI             0 "register_operand" "=r")
+	(any_div:DI (match_operand:DI 1 "register_operand" " r")
+		    (match_operand:DI 2 "register_operand" " r")))]
   "TARGET_DIV && TARGET_64BIT"
   "<insn>\t%0,%1,%2"
   [(set_attr "type" "idiv")
    (set_attr "mode" "DI")])
 
 (define_insn "*<optab>si3_extended"
-  [(set (match_operand:DI 0 "register_operand" "=r")
+  [(set (match_operand:DI                 0 "register_operand" "=r")
 	(sign_extend:DI
-	    (any_div:SI (match_operand:SI 1 "register_operand" "r")
-			(match_operand:SI 2 "register_operand" "r"))))]
+	    (any_div:SI (match_operand:SI 1 "register_operand" " r")
+			(match_operand:SI 2 "register_operand" " r"))))]
   "TARGET_DIV && TARGET_64BIT"
   "<insn>w\t%0,%1,%2"
   [(set_attr "type" "idiv")
    (set_attr "mode" "DI")])
 
 (define_insn "div<mode>3"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-	(div:ANYF (match_operand:ANYF 1 "register_operand" "f")
-		  (match_operand:ANYF 2 "register_operand" "f")))]
+  [(set (match_operand:ANYF           0 "register_operand" "=f")
+	(div:ANYF (match_operand:ANYF 1 "register_operand" " f")
+		  (match_operand:ANYF 2 "register_operand" " f")))]
   "TARGET_HARD_FLOAT && TARGET_FDIV"
   "fdiv.<fmt>\t%0,%1,%2"
   [(set_attr "type" "fdiv")
@@ -745,8 +999,8 @@
 ;;  ....................
 
 (define_insn "sqrt<mode>2"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-	(sqrt:ANYF (match_operand:ANYF 1 "register_operand" "f")))]
+  [(set (match_operand:ANYF            0 "register_operand" "=f")
+	(sqrt:ANYF (match_operand:ANYF 1 "register_operand" " f")))]
   "TARGET_HARD_FLOAT && TARGET_FDIV"
 {
     return "fsqrt.<fmt>\t%0,%1";
@@ -758,100 +1012,98 @@
 
 ;; a * b + c
 (define_insn "fma<mode>4"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-    (fma:ANYF
-      (match_operand:ANYF 1 "register_operand" "f")
-      (match_operand:ANYF 2 "register_operand" "f")
-      (match_operand:ANYF 3 "register_operand" "f")))]
-  "TARGET_HARD_FLOAT"
+  [(set (match_operand:ANYF           0 "register_operand" "=f")
+	(fma:ANYF (match_operand:ANYF 1 "register_operand" " f")
+		  (match_operand:ANYF 2 "register_operand" " f")
+		  (match_operand:ANYF 3 "register_operand" " f")))]
+  "TARGET_HARD_FLOAT && TARGET_FMA"
   "fmadd.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
 
 ;; a * b - c
 (define_insn "fms<mode>4"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-    (fma:ANYF
-      (match_operand:ANYF 1 "register_operand" "f")
-      (match_operand:ANYF 2 "register_operand" "f")
-      (neg:ANYF (match_operand:ANYF 3 "register_operand" "f"))))]
-  "TARGET_HARD_FLOAT"
+  [(set (match_operand:ANYF                     0 "register_operand" "=f")
+	(fma:ANYF (match_operand:ANYF           1 "register_operand" " f")
+		  (match_operand:ANYF           2 "register_operand" " f")
+		  (neg:ANYF (match_operand:ANYF 3 "register_operand" " f"))))]
+  "TARGET_HARD_FLOAT && TARGET_FMA"
   "fmsub.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
 
 ;; -a * b - c
 (define_insn "fnms<mode>4"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-    (fma:ANYF
-      (neg:ANYF (match_operand:ANYF 1 "register_operand" "f"))
-      (match_operand:ANYF 2 "register_operand" "f")
-      (neg:ANYF (match_operand:ANYF 3 "register_operand" "f"))))]
-  "TARGET_HARD_FLOAT"
+  [(set (match_operand:ANYF               0 "register_operand" "=f")
+	(fma:ANYF
+	    (neg:ANYF (match_operand:ANYF 1 "register_operand" " f"))
+	    (match_operand:ANYF           2 "register_operand" " f")
+	    (neg:ANYF (match_operand:ANYF 3 "register_operand" " f"))))]
+  "TARGET_HARD_FLOAT && TARGET_FMA"
   "fnmadd.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
 
 ;; -a * b + c
 (define_insn "fnma<mode>4"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-    (fma:ANYF
-      (neg:ANYF (match_operand:ANYF 1 "register_operand" "f"))
-      (match_operand:ANYF 2 "register_operand" "f")
-      (match_operand:ANYF 3 "register_operand" "f")))]
-  "TARGET_HARD_FLOAT"
+  [(set (match_operand:ANYF               0 "register_operand" "=f")
+	(fma:ANYF
+	    (neg:ANYF (match_operand:ANYF 1 "register_operand" " f"))
+	    (match_operand:ANYF           2 "register_operand" " f")
+	    (match_operand:ANYF           3 "register_operand" " f")))]
+  "TARGET_HARD_FLOAT && TARGET_FMA"
   "fnmsub.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
 
 ;; -(-a * b - c), modulo signed zeros
 (define_insn "*fma<mode>4"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-    (neg:ANYF
-      (fma:ANYF
-	(neg:ANYF (match_operand:ANYF 1 "register_operand" "f"))
-	(match_operand:ANYF 2 "register_operand" "f")
-	(neg:ANYF (match_operand:ANYF 3 "register_operand" "f")))))]
-  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode)"
+  [(set (match_operand:ANYF                   0 "register_operand" "=f")
+	(neg:ANYF
+	    (fma:ANYF
+		(neg:ANYF (match_operand:ANYF 1 "register_operand" " f"))
+		(match_operand:ANYF           2 "register_operand" " f")
+		(neg:ANYF (match_operand:ANYF 3 "register_operand" " f")))))]
+  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode) && TARGET_FMA"
   "fmadd.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
 
 ;; -(-a * b + c), modulo signed zeros
 (define_insn "*fms<mode>4"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-    (neg:ANYF
-      (fma:ANYF
-	(neg:ANYF (match_operand:ANYF 1 "register_operand" "f"))
-	(match_operand:ANYF 2 "register_operand" "f")
-	(match_operand:ANYF 3 "register_operand" "f"))))]
-  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode)"
+  [(set (match_operand:ANYF                   0 "register_operand" "=f")
+	(neg:ANYF
+	    (fma:ANYF
+		(neg:ANYF (match_operand:ANYF 1 "register_operand" " f"))
+		(match_operand:ANYF           2 "register_operand" " f")
+		(match_operand:ANYF           3 "register_operand" " f"))))]
+  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode) && TARGET_FMA"
   "fmsub.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
 
 ;; -(a * b + c), modulo signed zeros
 (define_insn "*fnms<mode>4"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-    (neg:ANYF
-      (fma:ANYF
-	(match_operand:ANYF 1 "register_operand" "f")
-	(match_operand:ANYF 2 "register_operand" "f")
-	(match_operand:ANYF 3 "register_operand" "f"))))]
-  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode)"
+  [(set (match_operand:ANYF         0 "register_operand" "=f")
+	(neg:ANYF
+	    (fma:ANYF
+		(match_operand:ANYF 1 "register_operand" " f")
+		(match_operand:ANYF 2 "register_operand" " f")
+		(match_operand:ANYF 3 "register_operand" " f"))))]
+  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode) && TARGET_FMA"
   "fnmadd.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
 
 ;; -(a * b - c), modulo signed zeros
 (define_insn "*fnma<mode>4"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-    (neg:ANYF
-      (fma:ANYF
-	(match_operand:ANYF 1 "register_operand" "f")
-	(match_operand:ANYF 2 "register_operand" "f")
-	(neg:ANYF (match_operand:ANYF 3 "register_operand" "f")))))]
-  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode)"
+  [(set (match_operand:ANYF                   0 "register_operand" "=f")
+	(neg:ANYF
+	    (fma:ANYF
+		(match_operand:ANYF           1 "register_operand" " f")
+		(match_operand:ANYF           2 "register_operand" " f")
+		(neg:ANYF (match_operand:ANYF 3 "register_operand" " f")))))]
+  "TARGET_HARD_FLOAT && !HONOR_SIGNED_ZEROS (<MODE>mode) && TARGET_FMA"
   "fnmsub.<fmt>\t%0,%1,%2,%3"
   [(set_attr "type" "fmadd")
    (set_attr "mode" "<UNITMODE>")])
@@ -864,17 +1116,17 @@
 ;;  ....................
 
 (define_insn "abs<mode>2"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-	(abs:ANYF (match_operand:ANYF 1 "register_operand" "f")))]
+  [(set (match_operand:ANYF           0 "register_operand" "=f")
+	(abs:ANYF (match_operand:ANYF 1 "register_operand" " f")))]
   "TARGET_HARD_FLOAT"
   "fabs.<fmt>\t%0,%1"
   [(set_attr "type" "fmove")
    (set_attr "mode" "<UNITMODE>")])
 
 (define_insn "copysign<mode>3"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-	(unspec:ANYF [(match_operand:ANYF 1 "register_operand" "f")
-		      (match_operand:ANYF 2 "register_operand" "f")]
+  [(set (match_operand:ANYF 0 "register_operand"               "=f")
+	(unspec:ANYF [(match_operand:ANYF 1 "register_operand" " f")
+		      (match_operand:ANYF 2 "register_operand" " f")]
 		     UNSPEC_COPYSIGN))]
   "TARGET_HARD_FLOAT"
   "fsgnj.<fmt>\t%0,%1,%2"
@@ -882,8 +1134,8 @@
    (set_attr "mode" "<UNITMODE>")])
 
 (define_insn "neg<mode>2"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-	(neg:ANYF (match_operand:ANYF 1 "register_operand" "f")))]
+  [(set (match_operand:ANYF           0 "register_operand" "=f")
+	(neg:ANYF (match_operand:ANYF 1 "register_operand" " f")))]
   "TARGET_HARD_FLOAT"
   "fneg.<fmt>\t%0,%1"
   [(set_attr "type" "fmove")
@@ -897,18 +1149,18 @@
 ;;  ....................
 
 (define_insn "smin<mode>3"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-		   (smin:ANYF (match_operand:ANYF 1 "register_operand" "f")
-			    (match_operand:ANYF 2 "register_operand" "f")))]
+  [(set (match_operand:ANYF            0 "register_operand" "=f")
+	(smin:ANYF (match_operand:ANYF 1 "register_operand" " f")
+		   (match_operand:ANYF 2 "register_operand" " f")))]
   "TARGET_HARD_FLOAT"
   "fmin.<fmt>\t%0,%1,%2"
   [(set_attr "type" "fmove")
    (set_attr "mode" "<UNITMODE>")])
 
 (define_insn "smax<mode>3"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-		   (smax:ANYF (match_operand:ANYF 1 "register_operand" "f")
-			    (match_operand:ANYF 2 "register_operand" "f")))]
+  [(set (match_operand:ANYF            0 "register_operand" "=f")
+	(smax:ANYF (match_operand:ANYF 1 "register_operand" " f")
+		   (match_operand:ANYF 2 "register_operand" " f")))]
   "TARGET_HARD_FLOAT"
   "fmax.<fmt>\t%0,%1,%2"
   [(set_attr "type" "fmove")
@@ -926,34 +1178,34 @@
 ;; but SImode versions exist for combine.
 
 (define_insn "<optab><mode>3"
-  [(set (match_operand:X 0 "register_operand" "=r,r")
+  [(set (match_operand:X                0 "register_operand" "=r,r")
 	(any_bitwise:X (match_operand:X 1 "register_operand" "%r,r")
-		       (match_operand:X 2 "arith_operand" "r,I")))]
+		       (match_operand:X 2 "arith_operand"    " r,I")))]
   ""
   "<insn>\t%0,%1,%2"
   [(set_attr "type" "logical")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "*<optab>si3_internal"
-  [(set (match_operand:SI 0 "register_operand" "=r,r")
+  [(set (match_operand:SI                 0 "register_operand" "=r,r")
 	(any_bitwise:SI (match_operand:SI 1 "register_operand" "%r,r")
-			(match_operand:SI 2 "arith_operand" "r,I")))]
+			(match_operand:SI 2 "arith_operand"    " r,I")))]
   "TARGET_64BIT"
   "<insn>\t%0,%1,%2"
   [(set_attr "type" "logical")
    (set_attr "mode" "SI")])
 
 (define_insn "one_cmpl<mode>2"
-  [(set (match_operand:X 0 "register_operand" "=r")
-	(not:X (match_operand:X 1 "register_operand" "r")))]
+  [(set (match_operand:X        0 "register_operand" "=r")
+	(not:X (match_operand:X 1 "register_operand" " r")))]
   ""
   "not\t%0,%1"
   [(set_attr "type" "logical")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "*one_cmplsi2_internal"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(not:SI (match_operand:SI 1 "register_operand" "r")))]
+  [(set (match_operand:SI         0 "register_operand" "=r")
+	(not:SI (match_operand:SI 1 "register_operand" " r")))]
   "TARGET_64BIT"
   "not\t%0,%1"
   [(set_attr "type" "logical")
@@ -967,12 +1219,40 @@
 ;;  ....................
 
 (define_insn "truncdfsf2"
-  [(set (match_operand:SF 0 "register_operand" "=f")
-	(float_truncate:SF (match_operand:DF 1 "register_operand" "f")))]
+  [(set (match_operand:SF     0 "register_operand" "=f")
+	(float_truncate:SF
+	    (match_operand:DF 1 "register_operand" " f")))]
   "TARGET_DOUBLE_FLOAT"
   "fcvt.s.d\t%0,%1"
   [(set_attr "type" "fcvt")
    (set_attr "mode" "SF")])
+
+(define_insn "truncsfhf2"
+  [(set (match_operand:HF   0 "register_operand"  "=f")
+	(float_truncate:HF
+	  (match_operand:SF 1 "register_operand" " f")))]
+  "TARGET_HARD_FLOAT && TARGET_ZFH"
+  "fcvt.h.s\t%0,%1"
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "HF")])
+
+(define_insn "truncdfhf2"
+  [(set (match_operand:HF   0 "register_operand"  "=f")
+	(float_truncate:HF
+	  (match_operand:DF 1 "register_operand" " f")))]
+  "TARGET_DOUBLE_FLOAT && TARGET_ZFH"
+  "fcvt.h.d\t%0,%1"
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "HF")])
+
+(define_insn "fp16_truncsfhf2"
+  [(set (match_operand:HF     0 "nonimmediate_operand" "=m")
+	(float_truncate:HF
+           (match_operand:SF 1  "register_operand"     " f")))]
+  "TARGET_HARD_FLOAT && TARGET_FP16"
+  "fshw\t%1,%0"
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "HF")])
 
 ;;
 ;;  ....................
@@ -984,13 +1264,14 @@
 ;; Extension insns.
 
 (define_insn_and_split "zero_extendsidi2"
-  [(set (match_operand:DI 0 "register_operand" "=r,r")
-	(zero_extend:DI (match_operand:SI 1 "nonimmediate_operand" "r,m")))]
+  [(set (match_operand:DI     0 "register_operand"     "=r,r")
+	(zero_extend:DI
+	   (match_operand:SI 1 "nonimmediate_operand" " r,m")))]
   "TARGET_64BIT"
   "@
-   #
+   bfoz\t%0,%1,31,0
    lwu\t%0,%1"
-  "&& reload_completed && REG_P (operands[1])"
+  "&& reload_completed && REG_P (operands[1]) && !TARGET_BFO"
   [(set (match_dup 0)
 	(ashift:DI (match_dup 1) (const_int 32)))
    (set (match_dup 0)
@@ -1000,13 +1281,14 @@
    (set_attr "mode" "DI")])
 
 (define_insn_and_split "zero_extendhi<GPR:mode>2"
-  [(set (match_operand:GPR 0 "register_operand" "=r,r")
-	(zero_extend:GPR (match_operand:HI 1 "nonimmediate_operand" "r,m")))]
+  [(set (match_operand:GPR    0 "register_operand"     "=r,r")
+	(zero_extend:GPR
+	   (match_operand:HI 1 "nonimmediate_operand" " r,m")))]
   ""
   "@
-   #
+   bfoz\t%0,%1,15,0
    lhu\t%0,%1"
-  "&& reload_completed && REG_P (operands[1])"
+  "&& reload_completed && REG_P (operands[1]) && !TARGET_BFO"
   [(set (match_dup 0)
 	(ashift:GPR (match_dup 1) (match_dup 2)))
    (set (match_dup 0)
@@ -1019,9 +1301,9 @@
    (set_attr "mode" "<GPR:MODE>")])
 
 (define_insn "zero_extendqi<SUPERQI:mode>2"
-  [(set (match_operand:SUPERQI 0 "register_operand" "=r,r")
+  [(set (match_operand:SUPERQI 0 "register_operand"    "=r,r")
 	(zero_extend:SUPERQI
-	     (match_operand:QI 1 "nonimmediate_operand" "r,m")))]
+	    (match_operand:QI 1 "nonimmediate_operand" " r,m")))]
   ""
   "@
    and\t%0,%1,0xff
@@ -1037,24 +1319,36 @@
 ;;  ....................
 
 (define_insn "extendsidi2"
-  [(set (match_operand:DI 0 "register_operand" "=r,r")
-	(sign_extend:DI (match_operand:SI 1 "nonimmediate_operand" "r,m")))]
+  [(set (match_operand:DI     0 "register_operand"     "=r,r")
+	(sign_extend:DI
+	    (match_operand:SI 1 "nonimmediate_operand" " r,m")))]
   "TARGET_64BIT"
-  "@
-   sext.w\t%0,%1
-   lw\t%0,%1"
+{
+  switch (which_alternative)
+    {
+      case 0:
+	if (TARGET_BFO)
+	  return "bfos\t%0,%1,31,0";
+	else
+	  return "sext.w\t%0,%1";
+      case 1:
+	return "lw\t%0,%1";
+      default:
+	gcc_unreachable ();
+    }
+}
   [(set_attr "move_type" "move,load")
    (set_attr "mode" "DI")])
 
 (define_insn_and_split "extend<SHORT:mode><SUPERQI:mode>2"
-  [(set (match_operand:SUPERQI 0 "register_operand" "=r,r")
+  [(set (match_operand:SUPERQI   0 "register_operand"     "=r,r")
 	(sign_extend:SUPERQI
-	     (match_operand:SHORT 1 "nonimmediate_operand" "r,m")))]
+	    (match_operand:SHORT 1 "nonimmediate_operand" " r,m")))]
   ""
   "@
-   #
+   bfos\t%0,%1,<SHORT:sh_limit>,0
    l<SHORT:size>\t%0,%1"
-  "&& reload_completed && REG_P (operands[1])"
+  "reload_completed && REG_P (operands[1]) && !TARGET_BFO"
   [(set (match_dup 0) (ashift:SI (match_dup 1) (match_dup 2)))
    (set (match_dup 0) (ashiftrt:SI (match_dup 0) (match_dup 2)))]
 {
@@ -1067,12 +1361,40 @@
    (set_attr "mode" "SI")])
 
 (define_insn "extendsfdf2"
-  [(set (match_operand:DF 0 "register_operand" "=f")
-	(float_extend:DF (match_operand:SF 1 "register_operand" "f")))]
+  [(set (match_operand:DF     0 "register_operand" "=f")
+	(float_extend:DF
+	    (match_operand:SF 1 "register_operand" " f")))]
   "TARGET_DOUBLE_FLOAT"
   "fcvt.d.s\t%0,%1"
   [(set_attr "type" "fcvt")
    (set_attr "mode" "DF")])
+
+(define_insn "extendhfsf2"
+  [(set (match_operand:SF   0 "register_operand" "=f")
+	(float_extend:SF
+	  (match_operand:HF 1 "register_operand"  " f")))]
+  "TARGET_HARD_FLOAT && TARGET_ZFH"
+  "fcvt.s.h\t%0,%1"
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "SF")])
+
+(define_insn "extendhfdf2"
+  [(set (match_operand:DF   0 "register_operand" "=f")
+	(float_extend:DF
+	  (match_operand:HF 1 "register_operand"  " f")))]
+  "TARGET_DOUBLE_FLOAT && TARGET_ZFH"
+  "fcvt.d.h\t%0,%1"
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "DF")])
+
+(define_insn "fp16_extendhfsf2"
+  [(set (match_operand:SF   0 "register_operand" "=f")
+	(float_extend:SF
+	  (match_operand:HF 1 "general_operand"  " m")))]
+  "TARGET_HARD_FLOAT && TARGET_FP16"
+  "flhw\t%0,%1"
+  [(set_attr "type" "fcvt")
+   (set_attr "mode" "SF")])
 
 ;;
 ;;  ....................
@@ -1082,45 +1404,90 @@
 ;;  ....................
 
 (define_insn "fix_trunc<ANYF:mode><GPR:mode>2"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
-	(fix:GPR (match_operand:ANYF 1 "register_operand" "f")))]
+  [(set (match_operand:GPR      0 "register_operand" "=r")
+	(fix:GPR
+	    (match_operand:ANYF 1 "register_operand" " f")))]
   "TARGET_HARD_FLOAT"
   "fcvt.<GPR:ifmt>.<ANYF:fmt> %0,%1,rtz"
   [(set_attr "type" "fcvt")
    (set_attr "mode" "<ANYF:MODE>")])
 
 (define_insn "fixuns_trunc<ANYF:mode><GPR:mode>2"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
-	(unsigned_fix:GPR (match_operand:ANYF 1 "register_operand" "f")))]
+  [(set (match_operand:GPR      0 "register_operand" "=r")
+	(unsigned_fix:GPR
+	    (match_operand:ANYF 1 "register_operand" " f")))]
   "TARGET_HARD_FLOAT"
   "fcvt.<GPR:ifmt>u.<ANYF:fmt> %0,%1,rtz"
   [(set_attr "type" "fcvt")
    (set_attr "mode" "<ANYF:MODE>")])
 
 (define_insn "float<GPR:mode><ANYF:mode>2"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-	(float:ANYF (match_operand:GPR 1 "reg_or_0_operand" "rJ")))]
+  [(set (match_operand:ANYF    0 "register_operand" "= f")
+	(float:ANYF
+	    (match_operand:GPR 1 "reg_or_0_operand" " rJ")))]
   "TARGET_HARD_FLOAT"
   "fcvt.<ANYF:fmt>.<GPR:ifmt>\t%0,%z1"
   [(set_attr "type" "fcvt")
    (set_attr "mode" "<ANYF:MODE>")])
 
 (define_insn "floatuns<GPR:mode><ANYF:mode>2"
-  [(set (match_operand:ANYF 0 "register_operand" "=f")
-	(unsigned_float:ANYF (match_operand:GPR 1 "reg_or_0_operand" "rJ")))]
+  [(set (match_operand:ANYF    0 "register_operand" "= f")
+	(unsigned_float:ANYF
+	    (match_operand:GPR 1 "reg_or_0_operand" " rJ")))]
   "TARGET_HARD_FLOAT"
   "fcvt.<ANYF:fmt>.<GPR:ifmt>u\t%0,%z1"
   [(set_attr "type" "fcvt")
    (set_attr "mode" "<ANYF:MODE>")])
 
 (define_insn "l<rint_pattern><ANYF:mode><GPR:mode>2"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
-	(unspec:GPR [(match_operand:ANYF 1 "register_operand" "f")]
-		    RINT))]
+  [(set (match_operand:GPR       0 "register_operand" "=r")
+	(unspec:GPR
+	    [(match_operand:ANYF 1 "register_operand" " f")]
+	    RINT))]
   "TARGET_HARD_FLOAT"
   "fcvt.<GPR:ifmt>.<ANYF:fmt> %0,%1,<rint_rm>"
   [(set_attr "type" "fcvt")
    (set_attr "mode" "<ANYF:MODE>")])
+
+(define_expand "fp16_floatsihf2"
+  [(set (match_operand:HF    0 "register_operand" "")
+       (float:HF
+           (match_operand:SI 1 "register_operand" "")))]
+  "TARGET_HARD_FLOAT && (TARGET_FP16 || TARGET_SOFT_FP16)"
+{
+  riscv_expand_float_hf(operands[0], operands[1], false);
+  DONE;
+})
+
+(define_expand "fp16_floatdihf2"
+  [(set (match_operand:HF   0 "register_operand" "")
+	(float:HF
+	  (match_operand:DI 1 "register_operand" "")))]
+  "TARGET_HARD_FLOAT && (TARGET_FP16 || TARGET_SOFT_FP16)"
+{
+  riscv_expand_float_hf(operands[0], operands[1], false);
+  DONE;
+})
+
+(define_expand "fp16_floatunssihf2"
+  [(set (match_operand:HF     0 "register_operand" "")
+	(unsigned_float:HF
+	  (match_operand:SI 1 "register_operand" "")))]
+  "TARGET_HARD_FLOAT && (TARGET_FP16 || TARGET_SOFT_FP16)"
+{
+  riscv_expand_float_hf(operands[0], operands[1], true);
+  DONE;
+})
+
+(define_expand "fp16_floatunsdihf2"
+  [(set (match_operand:HF     0 "register_operand" "")
+	(unsigned_float:HF
+	  (match_operand:DI 1 "register_operand" "")))]
+  "TARGET_HARD_FLOAT && (TARGET_FP16 || TARGET_SOFT_FP16)"
+{
+  riscv_expand_float_hf(operands[0], operands[1], true);
+  DONE;
+})
 
 ;;
 ;;  ....................
@@ -1134,49 +1501,54 @@
 ;; opportunities.
 
 (define_insn "got_load<mode>"
-   [(set (match_operand:P 0 "register_operand" "=r")
-       (unspec:P [(match_operand:P 1 "symbolic_operand" "")]
-		 UNSPEC_LOAD_GOT))]
+   [(set (match_operand:P      0 "register_operand" "=r")
+	 (unspec:P
+	     [(match_operand:P 1 "symbolic_operand" "")]
+	     UNSPEC_LOAD_GOT))]
   ""
   "la\t%0,%1"
    [(set_attr "got" "load")
     (set_attr "mode" "<MODE>")])
 
 (define_insn "tls_add_tp_le<mode>"
-  [(set (match_operand:P 0 "register_operand" "=r")
-	(unspec:P [(match_operand:P 1 "register_operand" "r")
-		   (match_operand:P 2 "register_operand" "r")
-		   (match_operand:P 3 "symbolic_operand" "")]
-		  UNSPEC_TLS_LE))]
+  [(set (match_operand:P      0 "register_operand" "=r")
+	(unspec:P
+	    [(match_operand:P 1 "register_operand" "r")
+	     (match_operand:P 2 "register_operand" "r")
+	     (match_operand:P 3 "symbolic_operand" "")]
+	    UNSPEC_TLS_LE))]
   ""
   "add\t%0,%1,%2,%%tprel_add(%3)"
   [(set_attr "type" "arith")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "got_load_tls_gd<mode>"
-  [(set (match_operand:P 0 "register_operand" "=r")
-       (unspec:P [(match_operand:P 1 "symbolic_operand" "")]
-		 UNSPEC_TLS_GD))]
+  [(set (match_operand:P      0 "register_operand" "=r")
+	(unspec:P
+	    [(match_operand:P 1 "symbolic_operand" "")]
+	    UNSPEC_TLS_GD))]
   ""
   "la.tls.gd\t%0,%1"
   [(set_attr "got" "load")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "got_load_tls_ie<mode>"
-  [(set (match_operand:P 0 "register_operand" "=r")
-       (unspec:P [(match_operand:P 1 "symbolic_operand" "")]
-		 UNSPEC_TLS_IE))]
+  [(set (match_operand:P      0 "register_operand" "=r")
+	(unspec:P
+	    [(match_operand:P 1 "symbolic_operand" "")]
+	    UNSPEC_TLS_IE))]
   ""
   "la.tls.ie\t%0,%1"
   [(set_attr "got" "load")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "auipc<mode>"
-  [(set (match_operand:P 0 "register_operand" "=r")
-       (unspec:P [(match_operand:P 1 "symbolic_operand" "")
+  [(set (match_operand:P           0 "register_operand" "=r")
+	(unspec:P
+	    [(match_operand:P      1 "symbolic_operand" "")
 		  (match_operand:P 2 "const_int_operand")
 		  (pc)]
-		 UNSPEC_AUIPC))]
+	    UNSPEC_AUIPC))]
   ""
   ".LA%2: auipc\t%0,%h1"
   [(set_attr "type" "arith")
@@ -1187,8 +1559,8 @@
 ;; should be applied.
 
 (define_insn "*low<mode>"
-  [(set (match_operand:P 0 "register_operand" "=r")
-	(lo_sum:P (match_operand:P 1 "register_operand" "r")
+  [(set (match_operand:P           0 "register_operand" "=r")
+	(lo_sum:P (match_operand:P 1 "register_operand" " r")
 		  (match_operand:P 2 "symbolic_operand" "")))]
   ""
   "addi\t%0,%1,%R2"
@@ -1233,7 +1605,7 @@
 
 (define_insn "*movdi_32bit"
   [(set (match_operand:DI 0 "nonimmediate_operand" "=r,r,r,m,  *f,*f,*r,*f,*m")
-	(match_operand:DI 1 "move_operand" " r,i,m,r,*J*r,*m,*f,*f,*f"))]
+	(match_operand:DI 1 "move_operand"         " r,i,m,r,*J*r,*m,*f,*f,*f"))]
   "!TARGET_64BIT
    && (register_operand (operands[0], DImode)
        || reg_or_0_operand (operands[1], DImode))"
@@ -1242,8 +1614,8 @@
    (set_attr "mode" "DI")])
 
 (define_insn "*movdi_64bit"
-  [(set (match_operand:DI 0 "nonimmediate_operand" "=r,r,r, m,*f,*f,*r,*f,*m")
-	(match_operand:DI 1 "move_operand" " r,T,m,rJ,*r*J,*m,*f,*f,*f"))]
+  [(set (match_operand:DI 0 "nonimmediate_operand" "=r,r,r, m,  *f,*f,*r,*f,*m")
+	(match_operand:DI 1 "move_operand"         " r,T,m,rJ,*r*J,*m,*f,*f,*f"))]
   "TARGET_64BIT
    && (register_operand (operands[0], DImode)
        || reg_or_0_operand (operands[1], DImode))"
@@ -1262,11 +1634,11 @@
     DONE;
 })
 
-(define_insn "*movsi_internal"
-  [(set (match_operand:SI 0 "nonimmediate_operand" "=r,r,r,m,*f,*f,*r,*m")
-	(match_operand:SI 1 "move_operand" "r,T,m,rJ,*r*J,*m,*f,*f"))]
-  "(register_operand (operands[0], SImode)
-    || reg_or_0_operand (operands[1], SImode))"
+(define_insn "*mov<mode>_internal"
+  [(set (match_operand:MOVE32 0 "nonimmediate_operand" "=r,r,r, m,  *f,*f,*r,*m")
+	(match_operand:MOVE32 1 "move_operand"         " r,T,m,rJ,*r*J,*m,*f,*f"))]
+  "(register_operand (operands[0], <MODE>mode)
+    || reg_or_0_operand (operands[1], <MODE>mode))"
   { return riscv_output_move (operands[0], operands[1]); }
   [(set_attr "move_type" "move,const,load,store,mtc,fpload,mfc,fpstore")
    (set_attr "mode" "SI")])
@@ -1288,8 +1660,8 @@
 })
 
 (define_insn "*movhi_internal"
-  [(set (match_operand:HI 0 "nonimmediate_operand" "=r,r,r,m,*f,*r")
-	(match_operand:HI 1 "move_operand"	 "r,T,m,rJ,*r*J,*f"))]
+  [(set (match_operand:HI 0 "nonimmediate_operand" "=r,r,r, m,  *f,*r")
+	(match_operand:HI 1 "move_operand"	   " r,T,m,rJ,*r*J,*f"))]
   "(register_operand (operands[0], HImode)
     || reg_or_0_operand (operands[1], HImode))"
   { return riscv_output_move (operands[0], operands[1]); }
@@ -1300,18 +1672,18 @@
 ;; si+si->hi without truncation is legal because of TRULY_NOOP_TRUNCATION.
 
 (define_insn "*add<mode>hi3"
-  [(set (match_operand:HI 0 "register_operand" "=r,r")
-	(plus:HI (match_operand:HISI 1 "register_operand" "r,r")
-		  (match_operand:HISI 2 "arith_operand" "r,I")))]
+  [(set (match_operand:HI            0 "register_operand" "=r,r")
+	(plus:HI (match_operand:HISI 1 "register_operand" " r,r")
+		 (match_operand:HISI 2 "arith_operand"    " r,I")))]
   ""
   { return TARGET_64BIT ? "addw\t%0,%1,%2" : "add\t%0,%1,%2"; }
   [(set_attr "type" "arith")
    (set_attr "mode" "HI")])
 
 (define_insn "*xor<mode>hi3"
-  [(set (match_operand:HI 0 "register_operand" "=r,r")
-	(xor:HI (match_operand:HISI 1 "register_operand" "r,r")
-		  (match_operand:HISI 2 "arith_operand" "r,I")))]
+  [(set (match_operand:HI 0 "register_operand"           "=r,r")
+	(xor:HI (match_operand:HISI 1 "register_operand" " r,r")
+		(match_operand:HISI 2 "arith_operand"    " r,I")))]
   ""
   "xor\t%0,%1,%2"
   [(set_attr "type" "logical")
@@ -1329,13 +1701,46 @@
 })
 
 (define_insn "*movqi_internal"
-  [(set (match_operand:QI 0 "nonimmediate_operand" "=r,r,r,m,*f,*r")
-	(match_operand:QI 1 "move_operand"	 "r,I,m,rJ,*r*J,*f"))]
+  [(set (match_operand:QI 0 "nonimmediate_operand" "=r,r,r, m,  *f,*r")
+	(match_operand:QI 1 "move_operand"         " r,I,m,rJ,*r*J,*f"))]
   "(register_operand (operands[0], QImode)
     || reg_or_0_operand (operands[1], QImode))"
   { return riscv_output_move (operands[0], operands[1]); }
   [(set_attr "move_type" "move,const,load,store,mtc,mfc")
    (set_attr "mode" "QI")])
+
+;; 16-bit Integer moves
+
+(define_expand "movhf"
+  [(set (match_operand:HF 0 "")
+	(match_operand:HF 1 ""))]
+  "TARGET_HARD_FLOAT && (TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)"
+{
+  if (riscv_legitimize_move (HFmode, operands[0], operands[1]))
+    DONE;
+})
+
+(define_insn "*movhf_hardfloat"
+  [(set (match_operand:HF 0 "nonimmediate_operand" "=f,f,m,r,f,r,r,m")
+	(match_operand:HF 1 "movehf_operand"       " f,m,f,f,r,r,m,r"))]
+  "TARGET_HARD_FLOAT
+   && TARGET_ZFH
+   && (register_operand (operands[0], HFmode)
+       || register_operand (operands[1], HFmode))"
+  { return riscv_output_move (operands[0], operands[1]); }
+  [(set_attr "move_type" "move")
+   (set_attr "mode" "HF")])
+
+(define_insn "*fp_16movhf_hardfloat"
+  [(set (match_operand:HF 0 "nonimmediate_operand" "=f,r,f,r,r,m")
+	(match_operand:HF 1 "movehf_operand"       " f,f,r,r,m,r"))]
+  "TARGET_HARD_FLOAT
+   && (TARGET_FP16 || TARGET_SOFT_FP16)
+   && (register_operand (operands[0], HFmode)
+       || register_operand (operands[1], HFmode))"
+  { return riscv_output_move (operands[0], operands[1]); }
+  [(set_attr "move_type" "move")
+   (set_attr "mode" "HF")])
 
 ;; 32-bit floating point moves
 
@@ -1349,8 +1754,8 @@
 })
 
 (define_insn "*movsf_hardfloat"
-  [(set (match_operand:SF 0 "nonimmediate_operand" "=f,f,f,m,m,*f,*r,*r,*r,*m")
-	(match_operand:SF 1 "move_operand" "f,G,m,f,G,*r,*f,*G*r,*m,*r"))]
+  [(set (match_operand:SF 0 "nonimmediate_operand" "=f,f,f,m,m,*f,*r,  *r,!r,!m")
+	(match_operand:SF 1 "move_operand"         " f,G,m,f,G,*r,*f,*G*r,!m,!r"))]
   "TARGET_HARD_FLOAT
    && (register_operand (operands[0], SFmode)
        || reg_or_0_operand (operands[1], SFmode))"
@@ -1359,8 +1764,8 @@
    (set_attr "mode" "SF")])
 
 (define_insn "*movsf_softfloat"
-  [(set (match_operand:SF 0 "nonimmediate_operand" "=r,r,m")
-	(match_operand:SF 1 "move_operand" "Gr,m,r"))]
+  [(set (match_operand:SF 0 "nonimmediate_operand" "= r,r,m")
+	(match_operand:SF 1 "move_operand"         " Gr,m,r"))]
   "!TARGET_HARD_FLOAT
    && (register_operand (operands[0], SFmode)
        || reg_or_0_operand (operands[1], SFmode))"
@@ -1382,8 +1787,8 @@
 ;; In RV32, we lack fmv.x.d and fmv.d.x.  Go through memory instead.
 ;; (However, we can still use fcvt.d.w to zero a floating-point register.)
 (define_insn "*movdf_hardfloat_rv32"
-  [(set (match_operand:DF 0 "nonimmediate_operand" "=f,f,f,m,m,*r,*r,*m")
-	(match_operand:DF 1 "move_operand" "f,G,m,f,G,*r*G,*m,*r"))]
+  [(set (match_operand:DF 0 "nonimmediate_operand" "=f,f,f,m,m,  *r,*r,*m")
+	(match_operand:DF 1 "move_operand"         " f,G,m,f,G,*r*G,*m,*r"))]
   "!TARGET_64BIT && TARGET_DOUBLE_FLOAT
    && (register_operand (operands[0], DFmode)
        || reg_or_0_operand (operands[1], DFmode))"
@@ -1392,8 +1797,8 @@
    (set_attr "mode" "DF")])
 
 (define_insn "*movdf_hardfloat_rv64"
-  [(set (match_operand:DF 0 "nonimmediate_operand" "=f,f,f,m,m,*f,*r,*r,*r,*m")
-	(match_operand:DF 1 "move_operand" "f,G,m,f,G,*r,*f,*r*G,*m,*r"))]
+  [(set (match_operand:DF 0 "nonimmediate_operand" "=f,f,f,m,m,*f,*r,  *r,*r,*m")
+	(match_operand:DF 1 "move_operand"         " f,G,m,f,G,*r,*f,*r*G,*m,*r"))]
   "TARGET_64BIT && TARGET_DOUBLE_FLOAT
    && (register_operand (operands[0], DFmode)
        || reg_or_0_operand (operands[1], DFmode))"
@@ -1402,8 +1807,8 @@
    (set_attr "mode" "DF")])
 
 (define_insn "*movdf_softfloat"
-  [(set (match_operand:DF 0 "nonimmediate_operand" "=r,r,m")
-	(match_operand:DF 1 "move_operand" "rG,m,rG"))]
+  [(set (match_operand:DF 0 "nonimmediate_operand" "= r,r, m")
+	(match_operand:DF 1 "move_operand"         " rG,m,rG"))]
   "!TARGET_DOUBLE_FLOAT
    && (register_operand (operands[0], DFmode)
        || reg_or_0_operand (operands[1], DFmode))"
@@ -1414,7 +1819,7 @@
 (define_split
   [(set (match_operand:MOVE64 0 "nonimmediate_operand")
 	(match_operand:MOVE64 1 "move_operand"))]
-  "reload_completed
+  "riscv_dsp_64bit_split_p ()
    && riscv_split_64bit_move_p (operands[0], operands[1])"
   [(const_int 0)]
 {
@@ -1457,9 +1862,10 @@
 ;;  ....................
 
 (define_insn "<optab>si3"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(any_shift:SI (match_operand:SI 1 "register_operand" "r")
-		       (match_operand:SI 2 "arith_operand" "rI")))]
+  [(set (match_operand:SI     0 "register_operand" "= r")
+	(any_shift:SI
+	    (match_operand:SI 1 "register_operand" "  r")
+	    (match_operand:SI 2 "arith_operand"    " rI")))]
   ""
 {
   if (GET_CODE (operands[2]) == CONST_INT)
@@ -1471,10 +1877,28 @@
   [(set_attr "type" "shift")
    (set_attr "mode" "SI")])
 
-(define_insn "<optab>di3"
-  [(set (match_operand:DI 0 "register_operand" "=r")
-	(any_shift:DI (match_operand:DI 1 "register_operand" "r")
-		       (match_operand:DI 2 "arith_operand" "rI")))]
+(define_expand "<optab>di3"
+  [(set (match_operand:DI 0 "register_operand"     "")
+	(any_shift:DI
+	    (match_operand:DI 1 "register_operand" "")
+	    (match_operand:DI 2 "arith_operand"    "")))]
+  "TARGET_64BIT
+   || (!TARGET_64BIT && TARGET_DSP)"
+{
+  if (!TARGET_64BIT && TARGET_DSP)
+    {
+      if (!CONST_INT_P (operands[2]))
+	FAIL;
+      if (!satisfies_constraint_u06 (operands[2]))
+	FAIL;
+    }
+})
+
+(define_insn "*<optab>di3"
+  [(set (match_operand:DI 0 "register_operand"     "= r")
+	(any_shift:DI
+	    (match_operand:DI 1 "register_operand" "  r")
+	    (match_operand:DI 2 "arith_operand"    " rI")))]
   "TARGET_64BIT"
 {
   if (GET_CODE (operands[2]) == CONST_INT)
@@ -1487,16 +1911,59 @@
    (set_attr "mode" "DI")])
 
 (define_insn "*<optab>si3_extend"
-  [(set (match_operand:DI 0 "register_operand" "=r")
+  [(set (match_operand:DI                   0 "register_operand" "= r")
 	(sign_extend:DI
-	   (any_shift:SI (match_operand:SI 1 "register_operand" "r")
-			 (match_operand:SI 2 "arith_operand" "rI"))))]
+	    (any_shift:SI (match_operand:SI 1 "register_operand" "  r")
+			  (match_operand:SI 2 "arith_operand"    " rI"))))]
   "TARGET_64BIT"
 {
   if (GET_CODE (operands[2]) == CONST_INT)
     operands[2] = GEN_INT (INTVAL (operands[2]) & 0x1f);
 
   return "<insn>w\t%0,%1,%2";
+}
+  [(set_attr "type" "shift")
+   (set_attr "mode" "SI")])
+
+;; Non-canonical, but can be formed by ree when combine is not successful at
+;; producing one of the two canonical patterns below.
+(define_insn "*lshrsi3_zero_extend_1"
+  [(set (match_operand:DI                   0 "register_operand" "=r")
+	(zero_extend:DI
+	 (lshiftrt:SI (match_operand:SI     1 "register_operand" " r")
+		      (match_operand:SI     2 "const_int_operand"))))]
+  "TARGET_64BIT && (INTVAL (operands[2]) & 0x1f) > 0"
+{
+  operands[2] = GEN_INT (INTVAL (operands[2]) & 0x1f);
+
+  return "srliw\t%0,%1,%2";
+}
+  [(set_attr "type" "shift")
+   (set_attr "mode" "SI")])
+
+;; Canonical form for a zero-extend of a logical right shift.
+(define_insn "*lshrsi3_zero_extend_2"
+  [(set (match_operand:DI                   0 "register_operand" "=r")
+	(zero_extract:DI (match_operand:DI  1 "register_operand" " r")
+			 (match_operand     2 "const_int_operand")
+			 (match_operand     3 "const_int_operand")))]
+  "(TARGET_64BIT && (INTVAL (operands[3]) > 0)
+    && (INTVAL (operands[2]) + INTVAL (operands[3]) == 32))"
+{
+  return "srliw\t%0,%1,%3";
+}
+  [(set_attr "type" "shift")
+   (set_attr "mode" "SI")])
+
+;; Canonical form for a zero-extend of a logical right shift when the
+;; shift count is 31.
+(define_insn "*lshrsi3_zero_extend_3"
+  [(set (match_operand:DI                   0 "register_operand" "=r")
+	(lt:DI (match_operand:SI            1 "register_operand" " r")
+	       (const_int 0)))]
+  "TARGET_64BIT"
+{
+  return "srliw\t%0,%1,31";
 }
   [(set_attr "type" "shift")
    (set_attr "mode" "SI")])
@@ -1546,8 +2013,8 @@
 (define_expand "cbranch<mode>4"
   [(set (pc)
 	(if_then_else (match_operator 0 "comparison_operator"
-		       [(match_operand:BR 1 "register_operand")
-			(match_operand:BR 2 "nonmemory_operand")])
+		      [(match_operand:BR 1 "register_operand")
+		       (match_operand:BR 2 "nonmemory_operand")])
 		      (label_ref (match_operand 3 ""))
 		      (pc)))]
   ""
@@ -1574,24 +2041,29 @@
 (define_insn_and_split "*branch_on_bit<X:mode>"
   [(set (pc)
 	(if_then_else
-	 (match_operator 0 "equality_operator"
-	  [(zero_extract:X (match_operand:X 2 "register_operand" "r")
-		 (const_int 1)
-		 (match_operand 3 "branch_on_bit_operand"))
-		 (const_int 0)])
-	 (label_ref (match_operand 1))
-	 (pc)))
+	    (match_operator 0 "equality_operator"
+	        [(zero_extract:X (match_operand:X 2 "register_operand" "r")
+				 (const_int 1)
+				 (match_operand 3 "branch_bbcs_operand"))
+				 (const_int 0)])
+	    (label_ref (match_operand 1))
+	    (pc)))
    (clobber (match_scratch:X 4 "=&r"))]
   ""
-  "#"
-  "reload_completed"
+{
+  if (GET_CODE (operands[0]) == EQ)
+    return "bbc\t%2,%3,%1";
+  else
+    return "bbs\t%2,%3,%1";
+}
+  "reload_completed && !TARGET_BBCS"
   [(set (match_dup 4)
 	(ashift:X (match_dup 2) (match_dup 3)))
    (set (pc)
 	(if_then_else
-	 (match_op_dup 0 [(match_dup 4) (const_int 0)])
-	 (label_ref (match_operand 1))
-	 (pc)))]
+	    (match_op_dup 0 [(match_dup 4) (const_int 0)])
+	    (label_ref (match_operand 1))
+	    (pc)))]
 {
   int shift = GET_MODE_BITSIZE (<MODE>mode) - 1 - INTVAL (operands[3]);
   operands[3] = GEN_INT (shift);
@@ -1605,13 +2077,13 @@
 (define_insn_and_split "*branch_on_bit_range<X:mode>"
   [(set (pc)
 	(if_then_else
-	 (match_operator 0 "equality_operator"
-	  [(zero_extract:X (match_operand:X 2 "register_operand" "r")
-		 (match_operand 3 "branch_on_bit_operand")
-		 (const_int 0))
-		 (const_int 0)])
-	 (label_ref (match_operand 1))
-	 (pc)))
+	    (match_operator 0 "equality_operator"
+		[(zero_extract:X (match_operand:X 2 "register_operand" "r")
+				 (match_operand 3 "branch_on_bit_operand")
+				 (const_int 0))
+				 (const_int 0)])
+	    (label_ref (match_operand 1))
+	    (pc)))
    (clobber (match_scratch:X 4 "=&r"))]
   ""
   "#"
@@ -1620,12 +2092,25 @@
 	(ashift:X (match_dup 2) (match_dup 3)))
    (set (pc)
 	(if_then_else
-	 (match_op_dup 0 [(match_dup 4) (const_int 0)])
-	 (label_ref (match_operand 1))
-	 (pc)))]
+	    (match_op_dup 0 [(match_dup 4) (const_int 0)])
+	    (label_ref (match_operand 1))
+	    (pc)))]
 {
   operands[3] = GEN_INT (GET_MODE_BITSIZE (<MODE>mode) - INTVAL (operands[3]));
 })
+
+(define_insn "*branch_imms7<mode>"
+  [(set (pc)
+	(if_then_else
+	  (equality_op (match_operand:X 1 "register_operand" "r")
+			     (match_operand:X 2 "branch_bimm_operand" "Bz07"))
+	(label_ref (match_operand 0 "" ""))
+	(pc)))]
+  "TARGET_BIMM"
+  "b<optab>c\t%1,%2,%0"
+  [(set_attr "type" "branch_imm")
+   (set_attr "mode" "none")])
+
 
 ;;
 ;;  ....................
@@ -1639,8 +2124,8 @@
 (define_expand "cstore<mode>4"
   [(set (match_operand:SI 0 "register_operand")
 	(match_operator:SI 1 "order_operator"
-	 [(match_operand:GPR 2 "register_operand")
-	  (match_operand:GPR 3 "nonmemory_operand")]))]
+	    [(match_operand:GPR 2 "register_operand")
+	     (match_operand:GPR 3 "nonmemory_operand")]))]
   ""
 {
   riscv_expand_int_scc (operands[0], GET_CODE (operands[1]), operands[2],
@@ -1651,8 +2136,8 @@
 (define_expand "cstore<mode>4"
   [(set (match_operand:SI 0 "register_operand")
 	(match_operator:SI 1 "fp_scc_comparison"
-	 [(match_operand:ANYF 2 "register_operand")
-	  (match_operand:ANYF 3 "register_operand")]))]
+	     [(match_operand:ANYF 2 "register_operand")
+	      (match_operand:ANYF 3 "register_operand")]))]
   "TARGET_HARD_FLOAT"
 {
   riscv_expand_float_scc (operands[0], GET_CODE (operands[1]), operands[2],
@@ -1661,58 +2146,80 @@
 })
 
 (define_insn "*cstore<ANYF:mode><X:mode>4"
-   [(set (match_operand:X 0 "register_operand" "=r")
-	(match_operator:X 1 "fp_native_comparison"
-	      [(match_operand:ANYF 2 "register_operand" "f")
-	       (match_operand:ANYF 3 "register_operand" "f")]))]
+   [(set (match_operand:X         0 "register_operand" "=r")
+	 (match_operator:X 1 "fp_native_comparison"
+	     [(match_operand:ANYF 2 "register_operand" " f")
+	      (match_operand:ANYF 3 "register_operand" " f")]))]
   "TARGET_HARD_FLOAT"
   "f%C1.<fmt>\t%0,%2,%3"
   [(set_attr "type" "fcmp")
    (set_attr "mode" "<UNITMODE>")])
 
-(define_insn "f<quiet_pattern>_quiet<ANYF:mode><X:mode>4"
-   [(set (match_operand:X 0 "register_operand" "=r")
+(define_expand "f<quiet_pattern>_quiet<ANYF:mode><X:mode>4"
+   [(parallel [(set (match_operand:X      0 "register_operand")
+		    (unspec:X
+		     [(match_operand:ANYF 1 "register_operand")
+		      (match_operand:ANYF 2 "register_operand")]
+		     QUIET_COMPARISON))
+	       (clobber (match_scratch:X 3))])]
+  "TARGET_HARD_FLOAT")
+
+(define_insn "*f<quiet_pattern>_quiet<ANYF:mode><X:mode>4_default"
+   [(set (match_operand:X      0 "register_operand" "=r")
 	 (unspec:X
-	    [(match_operand:ANYF 1 "register_operand" "f")
-	     (match_operand:ANYF 2 "register_operand" "f")]
-	    QUIET_COMPARISON))
+	  [(match_operand:ANYF 1 "register_operand" " f")
+	   (match_operand:ANYF 2 "register_operand" " f")]
+	  QUIET_COMPARISON))
     (clobber (match_scratch:X 3 "=&r"))]
-  "TARGET_HARD_FLOAT"
+  "TARGET_HARD_FLOAT && ! HONOR_SNANS (<ANYF:MODE>mode)"
   "frflags\t%3\n\tf<quiet_pattern>.<fmt>\t%0,%1,%2\n\tfsflags %3"
   [(set_attr "type" "fcmp")
    (set_attr "mode" "<UNITMODE>")
    (set (attr "length") (const_int 12))])
 
+(define_insn "*f<quiet_pattern>_quiet<ANYF:mode><X:mode>4_snan"
+   [(set (match_operand:X      0 "register_operand" "=r")
+	 (unspec:X
+	  [(match_operand:ANYF 1 "register_operand" " f")
+	   (match_operand:ANYF 2 "register_operand" " f")]
+	  QUIET_COMPARISON))
+    (clobber (match_scratch:X 3 "=&r"))]
+  "TARGET_HARD_FLOAT && HONOR_SNANS (<ANYF:MODE>mode)"
+  "frflags\t%3\n\tf<quiet_pattern>.<fmt>\t%0,%1,%2\n\tfsflags %3\n\tfeq.<fmt>\tzero,%1,%2"
+  [(set_attr "type" "fcmp")
+   (set_attr "mode" "<UNITMODE>")
+   (set (attr "length") (const_int 16))])
+
 (define_insn "*seq_zero_<X:mode><GPR:mode>"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
-	(eq:GPR (match_operand:X 1 "register_operand" "r")
-	       (const_int 0)))]
+  [(set (match_operand:GPR       0 "register_operand" "=r")
+	(eq:GPR (match_operand:X 1 "register_operand" " r")
+		(const_int 0)))]
   ""
   "seqz\t%0,%1"
   [(set_attr "type" "slt")
    (set_attr "mode" "<X:MODE>")])
 
 (define_insn "*sne_zero_<X:mode><GPR:mode>"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
-	(ne:GPR (match_operand:X 1 "register_operand" "r")
-	       (const_int 0)))]
+  [(set (match_operand:GPR       0 "register_operand" "=r")
+	(ne:GPR (match_operand:X 1 "register_operand" " r")
+		(const_int 0)))]
   ""
   "snez\t%0,%1"
   [(set_attr "type" "slt")
    (set_attr "mode" "<X:MODE>")])
 
 (define_insn "*sgt<u>_<X:mode><GPR:mode>"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
-	(any_gt:GPR (match_operand:X 1 "register_operand" "r")
-		    (match_operand:X 2 "reg_or_0_operand" "rJ")))]
+  [(set (match_operand:GPR           0 "register_operand" "= r")
+	(any_gt:GPR (match_operand:X 1 "register_operand" "  r")
+		    (match_operand:X 2 "reg_or_0_operand" " rJ")))]
   ""
   "sgt<u>\t%0,%1,%z2"
   [(set_attr "type" "slt")
    (set_attr "mode" "<X:MODE>")])
 
 (define_insn "*sge<u>_<X:mode><GPR:mode>"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
-	(any_ge:GPR (match_operand:X 1 "register_operand" "r")
+  [(set (match_operand:GPR           0 "register_operand" "=r")
+	(any_ge:GPR (match_operand:X 1 "register_operand" " r")
 		    (const_int 1)))]
   ""
   "slt<u>\t%0,zero,%1"
@@ -1720,17 +2227,17 @@
    (set_attr "mode" "<MODE>")])
 
 (define_insn "*slt<u>_<X:mode><GPR:mode>"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
-	(any_lt:GPR (match_operand:X 1 "register_operand" "r")
-		    (match_operand:X 2 "arith_operand" "rI")))]
+  [(set (match_operand:GPR           0 "register_operand" "= r")
+	(any_lt:GPR (match_operand:X 1 "register_operand" "  r")
+		    (match_operand:X 2 "arith_operand"    " rI")))]
   ""
   "slt<u>\t%0,%1,%2"
   [(set_attr "type" "slt")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "*sle<u>_<X:mode><GPR:mode>"
-  [(set (match_operand:GPR 0 "register_operand" "=r")
-	(any_le:GPR (match_operand:X 1 "register_operand" "r")
+  [(set (match_operand:GPR           0 "register_operand" "=r")
+	(any_le:GPR (match_operand:X 1 "register_operand" " r")
 		    (match_operand:X 2 "sle_operand" "")))]
   ""
 {
@@ -1832,7 +2339,7 @@
   [(const_int 2)]
   ""
 {
-  riscv_expand_epilogue (false);
+  riscv_expand_epilogue (NORMAL_RETURN);
   DONE;
 })
 
@@ -1840,7 +2347,7 @@
   [(const_int 2)]
   ""
 {
-  riscv_expand_epilogue (true);
+  riscv_expand_epilogue (SIBCALL_RETURN);
   DONE;
 })
 
@@ -1855,7 +2362,9 @@
 (define_insn "simple_return"
   [(simple_return)]
   ""
-  "ret"
+{
+  return riscv_output_return ();
+}
   [(set_attr "type"	"jump")
    (set_attr "mode"	"none")])
 
@@ -1880,6 +2389,9 @@
     emit_insn (gen_eh_set_lr_di (operands[0]));
   else
     emit_insn (gen_eh_set_lr_si (operands[0]));
+
+  emit_jump_insn (gen_eh_return_internal ());
+  emit_barrier ();
   DONE;
 })
 
@@ -1907,6 +2419,14 @@
   riscv_set_return_address (operands[0], operands[1]);
   DONE;
 })
+
+(define_insn_and_split "eh_return_internal"
+  [(eh_return)]
+  ""
+  "#"
+  "epilogue_completed"
+  [(const_int 0)]
+  "riscv_expand_epilogue (EXCEPTION_RETURN); DONE;")
 
 ;;
 ;;  ....................
@@ -2061,16 +2581,23 @@
   ""
   "")
 
-(define_insn "riscv_frflags"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(unspec_volatile [(const_int 0)] UNSPECV_FRFLAGS))]
-  "TARGET_HARD_FLOAT"
-  "frflags %0")
+(define_insn "riscv_mret"
+  [(return)
+   (unspec_volatile [(const_int 0)] UNSPECV_MRET)]
+  ""
+  "mret")
 
-(define_insn "riscv_fsflags"
-  [(unspec_volatile [(match_operand:SI 0 "csr_operand" "rK")] UNSPECV_FSFLAGS)]
-  "TARGET_HARD_FLOAT"
-  "fsflags %0")
+(define_insn "riscv_sret"
+  [(return)
+   (unspec_volatile [(const_int 0)] UNSPECV_SRET)]
+  ""
+  "sret")
+
+(define_insn "riscv_uret"
+  [(return)
+   (unspec_volatile [(const_int 0)] UNSPECV_URET)]
+  ""
+  "uret")
 
 (define_insn "stack_tie<mode>"
   [(set (mem:BLK (scratch))
@@ -2082,7 +2609,1012 @@
   [(set_attr "length" "0")]
 )
 
+;; Block moves, see riscv.c for more details.
+;; Argument 0 is the destination
+;; Argument 1 is the source
+;; Argument 2 is the length
+;; Argument 3 is the alignment
+
+(define_expand "movmemsi"
+  [(parallel [(set (match_operand:BLK 0 "general_operand")
+                   (match_operand:BLK 1 "general_operand"))
+              (use (match_operand:SI 2 ""))
+              (use (match_operand:SI 3 "const_int_operand"))])]
+  ""
+{
+  if (riscv_expand_block_move (operands[0], operands[1], operands[2]))
+    DONE;
+  else
+    FAIL;
+})
+
+(define_insn "innermost_loop_begin"
+  [(unspec_volatile:SI [(const_int 0)] UNSPECV_INNERMOST_LOOP_BEGIN)]
+  ""
+  ".innermost_loop_begin"
+  [(set_attr "length" "0")]
+)
+
+(define_insn "innermost_loop_end"
+  [(unspec_volatile:SI [(const_int 0)] UNSPECV_INNERMOST_LOOP_END)]
+  ""
+  ".innermost_loop_end"
+  [(set_attr "length" "0")]
+)
+
+;;
+;;  ....................
+;;
+;;	BIT FIELD OPERATION
+;;
+;;  ....................
+;;
+
+;; BFO[SZ]: msb >= lsb: Extract sequence tail bits.
+(define_insn "*bfo_<sz>extra<mode>4"
+  [(set (match_operand:GPR 0 "register_operand"                      "=r")
+	(any_extract:GPR (match_operand:GPR 1 "register_operand"     " r")
+			  (match_operand 2 "extract_size_imm_<mode>" " n")
+			  (match_operand 3 "extract_loc_imm_<mode>"  " n")))]
+  "TARGET_BFO
+   && IN_RANGE (INTVAL (operands[2]) + INTVAL (operands[3]),
+                1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[2] = GEN_INT (INTVAL (operands[2]) + INTVAL (operands[3]) - 1);
+    return "bfo<sz>\t%0,%1,%2,%3";
+  }
+)
+;; BFOZ: msb >= lsb: Mask sequence bits.
+(define_insn "*bfoz_and<mode>3"
+  [(set (match_operand:GPR 0 "register_operand"          "=r")
+	(and:GPR (match_operand:GPR 1 "register_operand" " r")
+		 (match_operand 2 "imm_extract_operand"  " Bext")))]
+  "TARGET_BFO"
+  {
+    operands[2] = GEN_INT (__builtin_popcountll (INTVAL (operands[2])) - 1);
+    return "bfoz\t%0,%1,%2,0";
+  }
+)
+;; BFOZ: msb >= lsb: Extract sequence bits.
+(define_insn "*zero_extend<GPR:mode>_lshr<SHORT:mode>"
+  [(set (match_operand:GPR 0 "register_operand"                                    "=r")
+	(zero_extend:GPR (lshiftrt:SHORT (match_operand:SHORT 1 "register_operand" " r")
+			 (match_operand 2 "const_int_operand"                      " n"))))]
+  "TARGET_BFO
+   && UINTVAL (operands[2]) < GET_MODE_BITSIZE (<SHORT:MODE>mode)"
+  "bfoz\t%0, %1, <SHORT:sh_limit>, %2"
+  [(set_attr "type" "shift")
+   (set_attr "mode" "<GPR:MODE>")])
+
+;; BFOS: msb >= lsb
+(define_insn "*extend<GPR:mode>_ashr<SHORT:mode>"
+  [(set (match_operand:GPR 0 "register_operand"                                    "=r")
+	(sign_extend:GPR (ashiftrt:SHORT (match_operand:SHORT 1 "register_operand" " r")
+					 (match_operand 2 "const_int_operand"      " n"))))]
+  "TARGET_BFO
+   && UINTVAL (operands[2]) < GET_MODE_BITSIZE (<SHORT:MODE>mode)"
+  "bfos\t%0, %1, <SHORT:sh_limit>, %2"
+  [(set_attr "type" "shift")
+   (set_attr "mode" "<GPR:MODE>")])
+
+;; BFO[SZ]: msb < lsb: Combine pass doesn't convert (and (ashift) Y) to
+;; zero_extract when exact_log2 (Y + 1) < 0.
+(define_insn "*bfoz<mode>4"
+  [(set (match_operand:GPR 0 "register_operand"                        "=r")
+	(and:GPR (ashift:GPR (match_operand:GPR 1 "register_operand"   " r")
+			     (match_operand 2 "extract_loc_imm_<mode>" " n"))
+		 (match_operand 3 "const_int_operand"                  " i")))]
+  "TARGET_BFO
+   && (UINTVAL (operands[2]) != 0)
+   && (exact_log2 ((UINTVAL (operands[3]) >> UINTVAL (operands[2])) + 1) > 1)
+   && ((UINTVAL (operands[3]) & ((1 << UINTVAL (operands[2])) - 1)) == 0)"
+  {
+    operands[3] =
+      GEN_INT (exact_log2 ((UINTVAL (operands[3]) >> UINTVAL (operands[2])) + 1)
+	       + UINTVAL (operands[2]) - 1) ;
+    return "bfoz\t%0,%1,%2,%3";
+  }
+)
+
+;; BFOZ: msb = 0.
+(define_insn "*bfoz0<mode>4"
+  [(set (match_operand:GPR 0 "register_operand"                        "=r")
+	(and:GPR (ashift:GPR (match_operand:GPR 1 "register_operand"   " r")
+			     (match_operand 2 "extract_loc_imm_<mode>" " n"))
+		 (match_operand 3 "const_int_operand"                  " i")))]
+  "TARGET_BFO
+   && (UINTVAL (operands[2]) != 0)
+   && (exact_log2 ((UINTVAL (operands[3]) >> UINTVAL (operands[2])) + 1) == 1)
+   && ((UINTVAL (operands[3]) & ((1 << UINTVAL (operands[2])) - 1)) == 0)"
+  {
+    return "bfoz\t%0,%1,0,%2";
+  }
+)
+
+;; BFO: msb = 0.
+(define_insn "*bfos0<mode>4"
+  [(set (match_operand:GPR 0 "register_operand"                              "=r")
+	(ashift:GPR (any_extract:GPR (match_operand:GPR 1 "register_operand" " r")
+				     (const_int 1)
+				     (const_int 0))
+		    (match_operand 2 "extract_loc_imm_<mode>"                " n")))]
+  "TARGET_BFO"
+  {
+    return "bfo<sz>\t%0,%1,0,%2";
+  }
+)
+
+;; BFO: msb < lsb.
+(define_insn "*bfos_<sz>extra_<mode>4"
+  [(set (match_operand:GPR 0 "register_operand"                                 "=r")
+	(ashift:GPR (any_extract:GPR (match_operand:GPR 1 "register_operand"    " r")
+				     (match_operand 2 "extract_size_imm_<mode>" " n")
+				     (const_int 0))
+		    (match_operand 3 "extract_loc_imm_<mode>"                   " n")))]
+  "TARGET_BFO
+   && UINTVAL (operands[2]) != 1"
+  {
+    operands[2] =  GEN_INT (UINTVAL (operands[2]) + UINTVAL (operands[3]) - 1);
+    return "bfo<sz>\t%0,%1,%3,%2";
+  }
+)
+
+;; BFO: msb < lsb
+(define_insn "*<optab><ANY32:mode>_shft_<GPR:mode>"
+  [(set (match_operand:GPR 0 "register_operand"               "=r")
+	(ashift:GPR (any_extend:GPR
+		    (match_operand:ANY32 1 "register_operand" " r"))
+		    (match_operand 2 "const_int_operand"      " n")))]
+  "TARGET_BFO
+   && (UINTVAL (operands[2]) < <ANY32:sizen>)
+   && ((INTVAL (operands[2]) + <ANY32:sizen>) <= <GPR:sizen>)"
+{
+  operands[3] = GEN_INT (<ANY32:sizen> + INTVAL (operands[2]) - 1);
+  return "bfo<sz>\t%0, %1, %2, %3";
+}
+  [(set_attr "type" "shift")]
+)
+
+;; BFO: msb < lsb
+(define_insn "*<optab><GPR:mode>_ashl<ANY32:mode>"
+  [(set (match_operand:GPR 0 "register_operand"                 "=r")
+	(any_extend:GPR
+	(ashift:ANY32 (match_operand:ANY32 1 "register_operand" " r")
+		      (match_operand 2 "const_int_operand"      " n"))))]
+  "TARGET_BFO
+   && UINTVAL (operands[2]) < ((<ANY32:sizen>) - 1)"
+{
+  operands[3] = GEN_INT (<ANY32:sizen> - 1);
+  return "bfo<sz>\t%0, %1, %2, %3";
+}
+  [(set_attr "type" "shift")]
+)
+
+;;
+;;  ....................
+;;
+;;	LOAD ADDRESS
+;;
+;;  ....................
+;;
+
+(define_insn "lea_h<mode>"
+  [(set (match_operand:P                   0 "register_operand" "=r")
+	(plus:P (ashift:P (match_operand:P 1 "register_operand" " r")
+			  (const_int 1))
+		(match_operand:P           2 "register_operand" " r")))]
+  "TARGET_LEA"
+  { return "lea.h\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")])
+
+(define_insn "lea_w<mode>"
+  [(set (match_operand:P                   0 "register_operand" "=r")
+	(plus:P (ashift:P (match_operand:P 1 "register_operand" " r")
+			  (const_int 2))
+		(match_operand:P           2 "register_operand" " r")))]
+  "TARGET_LEA"
+  { return "lea.w\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")])
+
+(define_insn "lea_d<mode>"
+  [(set (match_operand:P                   0 "register_operand" "=r")
+	(plus:P (ashift:P (match_operand:P 1 "register_operand" " r")
+			  (const_int 3))
+		(match_operand:P           2 "register_operand" " r")))]
+  "TARGET_LEA"
+  { return "lea.d\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")])
+
+(define_insn "lea_b_ze"
+  [(set (match_operand:DI 0 "register_operand"                          "=r")
+	(plus:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+		 (match_operand:DI 2 "register_operand"                 " r")))]
+  "TARGET_64BIT && TARGET_LEA"
+  { return "lea.b.ze\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "lea_h_ze"
+  [(set (match_operand:DI 0 "register_operand"                                     "=r")
+	(plus:DI (ashift:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+			    (const_int 1))
+		 (match_operand:DI 2 "register_operand"                            " r")))]
+  "TARGET_64BIT && TARGET_LEA"
+  { return "lea.h.ze\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "lea_w_ze"
+  [(set (match_operand:DI 0 "register_operand"                                     "=r")
+	(plus:DI (ashift:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+			    (const_int 2))
+		 (match_operand:DI 2 "register_operand"                            " r")))]
+  "TARGET_64BIT && TARGET_LEA"
+  { return "lea.w.ze\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "lea_d_ze"
+  [(set (match_operand:DI 0 "register_operand"                                     "=r")
+	(plus:DI (ashift:DI (zero_extend:DI (match_operand:SI 1 "register_operand" " r"))
+			    (const_int 3))
+		 (match_operand:DI 2 "register_operand"                            " r")))]
+  "TARGET_64BIT && TARGET_LEA"
+  { return "lea.d.ze\t%0,%2,%1"; }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "DI")])
+
+(define_insn "lea_andim_ashift"
+  [(set (match_operand:DI 0 "register_operand"				   "=r")
+	(plus:DI (and:DI (ashift:DI (match_operand:DI 1 "register_operand" " r")
+				    (match_operand 2 "const_int_operand"   " i"))
+			 (match_operand 3 "const_int_operand"		   " i"))
+	(match_operand:DI 4 "register_operand"				   " r")))]
+  "TARGET_64BIT && TARGET_LEA
+   && IN_RANGE (UINTVAL (operands[2]), 0, 3)
+   && exact_log2 ((INTVAL (operands[3]) >> INTVAL (operands[2])) + 1) == 32
+   && (INTVAL (operands[3]) & ((1 << INTVAL (operands[2])) - 1)) == 0"
+{
+  switch (UINTVAL (operands[2]))
+    {
+    case 0:
+      return "lea.b.ze %0, %4, %1";
+    case 1:
+      return "lea.h.ze %0, %4, %1";
+    case 2:
+      return "lea.w.ze %0, %4, %1";
+    case 3:
+      return "lea.d.ze %0, %4, %1";
+    default:
+      gcc_unreachable ();
+    }
+}
+)
+
+(define_expand "mov<mode>cc"
+  [(set (match_operand:ANYI 0 "register_operand" "")
+        (if_then_else:ANYI (match_operand 1 "ordered_comparison_operator" "")
+			   (match_operand:ANYI 2 "arith_operand" "")
+			   (match_operand:ANYI 3 "arith_operand" "")))]
+  "TARGET_CMOV"
+{
+  enum rtx_code code = GET_CODE (operands[1]);
+  rtx cmp_op0 = XEXP (operands[1], 0);
+  rtx cmp_op1 = XEXP (operands[1], 1);
+
+  if ((CONST_INT_P (operands[2])
+      && CONST_INT_P (operands[3])))
+    FAIL;
+
+  if (operands[0] != operands[2]
+      && operands[0] != operands[3])
+    FAIL;
+
+  if (!reg_or_0_operand (cmp_op0, GET_MODE (cmp_op0)))
+    cmp_op0 = force_reg (word_mode, cmp_op0);
+
+  if (!reg_or_0_operand (cmp_op1, GET_MODE (cmp_op1)))
+    {
+      if (!((code == EQ || code == NE) && TARGET_BIMM))
+	cmp_op1 = force_reg (word_mode, cmp_op1);
+    }
+
+  if (TARGET_64BIT)
+    {
+      if (GET_MODE_SIZE (word_mode) > GET_MODE_SIZE (GET_MODE (cmp_op0))
+	  && !register_operand (cmp_op0, word_mode))
+	{
+	  if (unsigned_condition (code) == code)
+	    cmp_op0 = gen_rtx_ZERO_EXTEND (word_mode, cmp_op0);
+	  else
+	    cmp_op0 = gen_rtx_SIGN_EXTEND (word_mode, cmp_op0);
+
+	  cmp_op0 = force_reg (word_mode, cmp_op0);
+	}
+
+      if (GET_MODE_SIZE (word_mode) > GET_MODE_SIZE (GET_MODE (cmp_op1))
+	  && !reg_or_0_operand (cmp_op1, word_mode))
+	{
+	  if (unsigned_condition (code) == code)
+	    cmp_op1 = gen_rtx_ZERO_EXTEND (word_mode, cmp_op1);
+	  else
+	    cmp_op1 = gen_rtx_SIGN_EXTEND (word_mode, cmp_op1);
+
+	  cmp_op1 = force_reg (word_mode, cmp_op1);
+	}
+    }
+
+  operands[1] = gen_rtx_fmt_ee (code, VOIDmode, cmp_op0, cmp_op1);
+})
+
+(define_insn "cmov<optab><ANYI:mode><X:mode>"
+  [(set (match_operand:ANYI 0 "register_operand"                                  "=r,  r,    r,    r,  r,  r,    r,    r")
+        (if_then_else:ANYI (equality_op (match_operand:X 1 "register_operand"     " r,  r,    r,    r,  r,  0,    r,    r")
+					(match_operand:X 4 "reg_or_imm7u_operand" "rJ, rJ, Bz07, Bz07, rJ, rJ, Bz07, Bz07"))
+			   (match_operand:ANYI 2 "arith_operand"                  " r,  I,    r,    I,  0,  0,    0,    0")
+			   (match_operand:ANYI 3 "arith_operand"                  " 0,  0,    0,    0,  r,  I,    r,    I")))]
+  "TARGET_CMOV"
+  "@
+   <rev_br_insn> %1, %z4, 0f\n\tadd %0, %2, zero\n0:
+   <rev_br_insn> %1, %z4, 0f\n\tadd %0, zero, %2\n0:
+   <rev_br_insn>c %1,  %4, 0f\n\tadd %0, %2, zero\n0:
+   <rev_br_insn>c %1,  %4, 0f\n\tadd %0, zero, %2\n0:
+   <br_insn> %1, %z4, 0f\n\tadd %0, %3, zero\n0:
+   <br_insn> %1, %z4, 0f\n\tadd %0, zero, %3\n0:
+   <br_insn>c %1,  %4, 0f\n\tadd %0, %3, zero\n0:
+   <br_insn>c %1,  %4, 0f\n\tadd %0, zero, %3\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<X:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><ANYI:mode><X:mode>"
+  [(set (match_operand:ANYI 0 "register_operand"                             "=r,  r,  r,  r")
+        (if_then_else:ANYI (inequal_op (match_operand:X 1 "register_operand" " r,  r,  r,  r")
+				       (match_operand:X 4 "reg_or_0_operand" "rJ, rJ, rJ, rJ"))
+			   (match_operand:ANYI 2 "arith_operand"             " r,  I,  0,  0")
+			   (match_operand:ANYI 3 "arith_operand"             " 0,  0,  r,  I")))]
+  "TARGET_CMOV"
+  "@
+   <rev_br_insn> %1, %z4, 0f\n\tadd %0, %2, zero\n0:
+   <rev_br_insn> %1, %z4, 0f\n\tadd %0, zero, %2\n0:
+   <br_insn> %1, %z4, 0f\n\tadd %0, %3, zero\n0:
+   <br_insn> %1, %z4, 0f\n\tadd %0, zero, %3\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<X:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab><ANYI:mode><X:mode>"
+  [(set (match_operand:ANYI 0 "register_operand" "=r, r, r, r")
+        (if_then_else:ANYI (equality_op
+			     (zero_extract:X (match_operand:X 4 "register_operand" "r, r, r, r")
+			     (const_int 1)
+			     (match_operand 1 "branch_bbcs_operand"))
+			     (const_int 0))
+			    (match_operand:ANYI 2 "arith_operand" " r, I, 0, 0")
+			    (match_operand:ANYI 3 "arith_operand" " 0, 0, r, I")))]
+  "TARGET_CMOV && TARGET_BBCS"
+  "@
+   <rev_bbcs> %4, %1, 0f\n\tadd %0, %2, zero\n0:
+   <rev_bbcs> %4, %1, 0f\n\tadd %0, zero, %2\n0:
+   <bbcs> %4, %1, 0f\n\tadd %0, %3, zero\n0:
+   <bbcs> %4, %1, 0f\n\tadd %0, zero, %3\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<ANYI:MODE>")
+   (set (attr "length") (const_int 8))])
+
+;;Combine for conditional alu instructions.
+
+;;branch + alu
+(define_insn "cmov<optab><mode>_<cond_alu:optab>"
+  [(set (match_operand:X 0 "register_operand"                                  "=r,    r")
+        (if_then_else:X (equality_op (match_operand:X 1 "register_operand"     " r,    r")
+				     (match_operand:X 2 "reg_or_imm7u_operand" "rJ, Bz07"))
+			(cond_alu:X (match_operand:X 4 "register_operand"      " r,    r")
+				    (match_operand:X 5 "const_arith_operand"   " I,    I"))
+			(match_operand:X 3 "arith_operand"                     " 0,    0")))]
+  "TARGET_CMOV"
+  "@
+   <rev_br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:
+   <rev_br_insn>c %1, %2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmoveq<optab><mode>_<cond_alu:optab>_rev"
+  [(set (match_operand:X 0 "register_operand"                                  "=r,    r")
+        (if_then_else:X (equality_op (match_operand:X 1 "register_operand"     " r,    r")
+				     (match_operand:X 2 "reg_or_imm7u_operand" "rJ, Bz07"))
+			(match_operand:X 3  "arith_operand"                    " 0,    0")
+			(cond_alu:X (match_operand:X 4 "register_operand"      " r,    r")
+				    (match_operand:X 5 "const_arith_operand"   " I,    I"))))]
+  "TARGET_CMOV"
+  "@
+   <br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:
+   <br_insn>c %1, %2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><mode>_<cond_alu:optab>"
+  [(set (match_operand:X 0 "register_operand" "=r")
+        (if_then_else:X (inequal_op (match_operand:X 1 "register_operand" " r")
+				    (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			(cond_alu:X (match_operand:X 4 "register_operand" "r")
+				    (match_operand:X 5 "const_arith_operand" "I"))
+			(match_operand:X 3 "arith_operand" "0")))]
+  "TARGET_CMOV"
+  "<rev_br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><mode>_<cond_alu:optab>_rev"
+  [(set (match_operand:X 0 "register_operand" "=r")
+        (if_then_else:X (inequal_op (match_operand:X 1 "register_operand" " r")
+				    (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			(match_operand:X 3 "arith_operand" "0")
+			(cond_alu:X (match_operand:X 4 "register_operand" "r")
+				    (match_operand:X 5 "const_arith_operand" "I"))))]
+  "TARGET_CMOV"
+  "<br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+;; bbc|s + alu
+(define_insn "cmov_bb<optab><mode>_<cond_alu:optab>"
+  [(set (match_operand:X 0 "register_operand" "=r")
+        (if_then_else:X (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				     (const_int 1)
+				     (match_operand 1 "branch_bbcs_operand"))
+				     (const_int 0))
+			(cond_alu:X (match_operand:X 2 "register_operand"    "r")
+				    (match_operand:X 5 "const_arith_operand" "I"))
+			(match_operand:X 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS"
+  "<rev_bbcs> %4, %1, 0f\n\t<cond_alu:insn> %0, %2, %5\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab><mode>_<cond_alu:optab>_rev"
+  [(set (match_operand:X 0 "register_operand" "=r")
+        (if_then_else:X (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				     (const_int 1)
+				     (match_operand 1 "branch_bbcs_operand"))
+				     (const_int 0))
+			(match_operand:X 3 "arith_operand" "0")
+			(cond_alu:X (match_operand:X 2 "register_operand"    "r")
+				    (match_operand:X 5 "const_arith_operand" "I"))))]
+  "TARGET_CMOV && TARGET_BBCS"
+  "<bbcs> %4, %1, 0f\n\t<cond_alu:insn> %0, %2, %5\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+;;Combine for conditional any shift instructions.
+
+;;branch + shift
+(define_insn "cmov<equality_op:optab><mode>_<any_shift:optab>"
+  [(set (match_operand:X 0 "register_operand"                                  "=r,    r")
+        (if_then_else:X (equality_op (match_operand:X 1 "register_operand"     " r,    r")
+				     (match_operand:X 2 "reg_or_imm7u_operand" "rJ, Bz07"))
+			(any_shift:X (match_operand:X 4 "register_operand"     " r,    r")
+				     (match_operand:X 5 "const_arith_operand"  " I,    I"))
+			(match_operand:X 3 "arith_operand"                     " 0,    0")))]
+  "TARGET_CMOV"
+  "@
+   <rev_br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:
+   <rev_br_insn>c %1, %2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<equality_op:optab><mode>_<any_shift:optab>_rev"
+  [(set (match_operand:X 0 "register_operand"                                  "=r,    r")
+        (if_then_else:X (equality_op (match_operand:X 1 "register_operand"     " r,    r")
+				     (match_operand:X 2 "reg_or_imm7u_operand" "rJ, Bz07"))
+			(match_operand:X 3  "arith_operand"                    " 0,    0")
+			(any_shift:X (match_operand:X 4 "register_operand"     " r,    r")
+				     (match_operand:X 5 "const_arith_operand"  " I,    I"))))]
+  "TARGET_CMOV"
+  "@
+   <br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:
+   <br_insn>c %1, %2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<inequal_op:optab><mode>_<any_shift:optab>"
+  [(set (match_operand:X 0 "register_operand" "=r")
+        (if_then_else:X (inequal_op (match_operand:X 1 "register_operand" " r")
+				    (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			(any_shift:X (match_operand:X 4 "register_operand" "r")
+				     (match_operand:X 5 "const_arith_operand" "I"))
+			(match_operand:X 3 "arith_operand" "0")))]
+  "TARGET_CMOV"
+  "<rev_br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<inequal_op:optab><mode><any_shift:optab>_rev"
+  [(set (match_operand:X 0 "register_operand" "=r")
+        (if_then_else:X (inequal_op (match_operand:X 1 "register_operand" " r")
+				    (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			(match_operand:X 3 "arith_operand" "0")
+			(any_shift:X (match_operand:X 4 "register_operand" "r")
+				     (match_operand:X 5 "const_arith_operand" "I"))))]
+  "TARGET_CMOV"
+  "<br_insn> %1, %z2, 0f\n\t<insn> %0, %4, %s5\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+;;bbc|s + shift
+(define_insn "cmov_bb<equality_op:optab><mode>_<any_shift:optab>"
+  [(set (match_operand:X 0 "register_operand" "=r")
+        (if_then_else:X (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				     (const_int 1)
+				     (match_operand 1 "branch_bbcs_operand"))
+				     (const_int 0))
+			(any_shift:X (match_operand:X 2 "register_operand"    "r")
+				     (match_operand:X 5 "const_arith_operand" "I"))
+			(match_operand:X 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS"
+  "<rev_bbcs> %4, %1, 0f\n\t<any_shift:insn> %0, %2, %s5\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<equality_op:optab><mode>_<any_shift:optab>_rev"
+  [(set (match_operand:X 0 "register_operand" "=r")
+        (if_then_else:X (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				     (const_int 1)
+				     (match_operand 1 "branch_bbcs_operand"))
+				     (const_int 0))
+			(match_operand:X 3 "arith_operand" "0")
+			(any_shift:X (match_operand:X 2 "register_operand"    "r")
+				     (match_operand:X 5 "const_arith_operand" "I"))))]
+  "TARGET_CMOV && TARGET_BBCS"
+  "<bbcs> %4, %1, 0f\n\t<any_shift:insn> %0, %2, %s5\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<MODE>")
+   (set (attr "length") (const_int 8))])
+
+;;bbcs + bfoz|s
+(define_insn "cmov_bb<optab><X:mode>_<any_extract:sz>extra<GPR:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				       (const_int 1)
+				       (match_operand 1 "branch_bbcs_operand"))
+				       (const_int 0))
+			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					   (match_operand 5 "extract_size_imm_<mode>" "n")
+					   (match_operand 6 "extract_loc_imm_<mode>" "n"))
+			  (match_operand:GPR 3 "register_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+    return "<rev_bbcs> %4, %1, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab><X:mode>_<any_extract:sz>extra<GPR:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				       (const_int 1)
+				       (match_operand 1 "branch_bbcs_operand"))
+				       (const_int 0))
+			  (match_operand:GPR 3 "register_operand" "0")
+			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					   (match_operand 5 "extract_size_imm_<mode>" "n")
+					   (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+    return "<bbcs> %4, %1, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+;;brach + bfoz|s
+(define_insn "cmov<optab><X:mode>_<any_extract:sz>extra<GPR:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:X 1 "register_operand" " r")
+				      (match_operand:X 4 "reg_or_0_operand" "rJ"))
+			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					   (match_operand 5 "extract_size_imm_<mode>" "n")
+					   (match_operand 6 "extract_loc_imm_<mode>" "n"))
+			  (match_operand:GPR 3 "register_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+    return "<rev_br_insn> %1, %z4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><X:mode>_<any_extract:sz>extra<GPR:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:X 1 "register_operand" " r")
+				      (match_operand:X 4 "reg_or_0_operand" "rJ"))
+			  (match_operand:GPR 3 "register_operand" "0")
+			  (any_extract:GPR (match_operand:GPR 2 "register_operand" "r")
+					   (match_operand 5 "extract_size_imm_<mode>" "n")
+					   (match_operand 6 "extract_loc_imm_<mode>" "n"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+    return "<br_insn> %1, %z4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><X:mode>_<any_extract:sz>extra<GPR:mode>"
+  [(set (match_operand:GPR 0 "register_operand"                                       "=r,    r")
+        (if_then_else:GPR (equality_op (match_operand:X 1 "register_operand"          " r,    r")
+				       (match_operand:X 4 "reg_or_imm7u_operand"      "rJ, Bz07"))
+			  (any_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
+					   (match_operand 5 "extract_size_imm_<mode>" " n,    n")
+					   (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))
+			  (match_operand:GPR 3 "register_operand"                     " 0,    0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+
+    switch (which_alternative)
+      {
+      case 0:
+	return "<rev_br_insn> %1, %z4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0";
+      case 1:
+	return "<rev_br_insn>c %1, %4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
+      default:
+	gcc_unreachable ();
+    }
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><X:mode>_<any_extract:sz>extra<GPR:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand"                                       "=r,    r")
+        (if_then_else:GPR (equality_op (match_operand:X 1 "register_operand"          " r,    r")
+				       (match_operand:X 4 "reg_or_imm7u_operand"      "rJ, Bz07"))
+			  (match_operand:GPR 3 "register_operand"                     " 0,    0")
+			  (any_extract:GPR (match_operand:GPR 2 "register_operand"    " r,    r")
+					   (match_operand 5 "extract_size_imm_<mode>" " n,    n")
+					   (match_operand 6 "extract_loc_imm_<mode>"  " n,    n"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO
+   && IN_RANGE (INTVAL (operands[5]) + INTVAL (operands[6]),
+		1, GET_MODE_BITSIZE (<MODE>mode))"
+  {
+    operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
+
+    switch (which_alternative)
+      {
+      case 0:
+	return "<br_insn> %1, %z4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0";
+      case 1:
+	return "<br_insn>c %1, %4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n0:";
+      default:
+	gcc_unreachable ();
+    }
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+;;branch + zero_extend
+(define_insn "cmov<optab>_zext<GPR:mode><X:mode>"
+  [(set (match_operand:GPR 0 "register_operand"                                   "=r,    r")
+        (if_then_else:GPR (equality_op (match_operand:X 1 "register_operand"      " r,    r")
+				       (match_operand:X 2 "reg_or_imm7u_operand"  "rJ, Bz07"))
+			  (zero_extend:GPR (match_operand:HI 4 "register_operand" " r,    r"))
+			  (match_operand:GPR 3 "arith_operand"                    " 0,    0")))]
+  "TARGET_CMOV && TARGET_BFO"
+  "@
+   <rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n0:
+   <rev_br_insn>c %1, %2, 0f\n\tbfoz %0, %4, 15, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab>_zext<GPR:mode><X:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand"                                  "=r,    r")
+        (if_then_else:GPR (equality_op (match_operand:X 1 "register_operand"     " r,    r")
+				       (match_operand:X 2 "reg_or_imm7u_operand" "rJ, Bz07"))
+			(match_operand:GPR 3  "arith_operand"                    " 0,    0")
+			(zero_extend:GPR (match_operand:HI 4 "register_operand"  " r,    r"))))]
+  "TARGET_CMOV && TARGET_BFO"
+  "@
+   <br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n0:
+   <br_insn>c %1, %2, 0f\n\tbfoz %0, %4, 15, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab>_zext<GPR:mode><X:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:X 1 "register_operand" " r")
+				      (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			  (zero_extend:GPR (match_operand:HI 4 "register_operand"  "r"))
+			  (match_operand:GPR 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BFO"
+  "<rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab>_zext<GPR:mode><X:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:X 1 "register_operand" " r")
+				      (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			  (match_operand:GPR 3 "arith_operand" "0")
+			  (zero_extend:GPR (match_operand:HI 4 "register_operand" "r"))))]
+  "TARGET_CMOV && TARGET_BFO"
+  "<br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab>_zext<GPR:mode><X:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				       (const_int 1)
+				       (match_operand 1 "branch_bbcs_operand"))
+				       (const_int 0))
+			  (zero_extend:GPR (match_operand:HI 2 "register_operand" "r"))
+			  (match_operand:GPR 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
+  "<rev_bbcs> %4, %1, 0f\n\tbfoz %0, %2, 15, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab>_zext<GPR:mode><X:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				     (const_int 1)
+				     (match_operand 1 "branch_bbcs_operand"))
+				     (const_int 0))
+			(match_operand:GPR 3 "arith_operand" "0")
+			(zero_extend:GPR (match_operand:HI 2 "register_operand" "r"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
+  "<bbcs> %4, %1, 0f\n\tbfoz %0, %2, 15, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+;;branch + sign_extend
+(define_insn "cmov<optab><X:mode>_extend<SHORT:mode><SUPERQI:mode>2"
+  [(set (match_operand:SUPERQI 0 "register_operand"                                           "=r,    r")
+        (if_then_else:SUPERQI (equality_op (match_operand:X 1 "register_operand"              " r,    r")
+					   (match_operand:X 2 "reg_or_imm7u_operand"          "rJ, Bz07"))
+			      (sign_extend:SUPERQI (match_operand:SHORT 4 "register_operand"  " r,    r"))
+			      (match_operand:SUPERQI 3 "arith_operand"                        " 0,    0")))]
+  "TARGET_CMOV && TARGET_BFO"
+  "@
+   <rev_br_insn> %1, %z2, 0f\n\tbfos %0, %4, <SHORT:sh_limit>, 0\n0:
+   <rev_br_insn>c %1, %2, 0f\n\tbfos %0, %4, <SHORT:sh_limit>, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><X:mode>_extend<SHORT:mode><SUPERQI:mode>2_rev"
+  [(set (match_operand:SUPERQI 0 "register_operand"                                     "=r,    r")
+        (if_then_else:SUPERQI (equality_op (match_operand:X 1 "register_operand"        " r,    r")
+					   (match_operand:X 2 "reg_or_imm7u_operand"    "rJ, Bz07"))
+			(match_operand:SUPERQI 3  "arith_operand"                       " 0,    0")
+			(sign_extend:SUPERQI (match_operand:SHORT 4 "register_operand"  " r,    r"))))]
+  "TARGET_CMOV && TARGET_BFO"
+  "@
+   <br_insn> %1, %z2, 0f\n\tbfos %0, %4, <SHORT:sh_limit>, 0\n0:
+   <br_insn>c %1, %2, 0f\n\tbfos %0, %4, <SHORT:sh_limit>, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><X:mode>_extend<SHORT:mode><SUPERQI:mode>2"
+  [(set (match_operand:SUPERQI 0 "register_operand" "=r")
+        (if_then_else:SUPERQI (inequal_op (match_operand:X 1 "register_operand" " r")
+					  (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			      (zero_extend:SUPERQI (match_operand:SHORT 4 "register_operand"  "r"))
+			      (match_operand:SUPERQI 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BFO"
+  "<rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, <SHORT:sh_limit>, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab><X:mode>_extend<SHORT:mode><SUPERQI:mode>2_rev"
+  [(set (match_operand:SUPERQI 0 "register_operand" "=r")
+        (if_then_else:SUPERQI (inequal_op (match_operand:X 1 "register_operand" " r")
+					  (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			      (match_operand:SUPERQI 3 "arith_operand" "0")
+			      (zero_extend:SUPERQI (match_operand:SHORT 4 "register_operand" "r"))))]
+  "TARGET_CMOV && TARGET_BFO"
+  "<br_insn> %1, %z2, 0f\n\tbfoz %0, %4, <SHORT:sh_limit>, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab><X:mode>_extend<SHORT:mode><SUPERQI:mode>2"
+  [(set (match_operand:SUPERQI 0 "register_operand" "=r")
+        (if_then_else:SUPERQI (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+					   (const_int 1)
+					   (match_operand 1 "branch_bbcs_operand"))
+					   (const_int 0))
+			      (zero_extend:SUPERQI (match_operand:SHORT 2 "register_operand" "r"))
+			      (match_operand:SUPERQI 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
+  "<rev_bbcs> %4, %1, 0f\n\tbfoz %0, %2, <SHORT:sh_limit>, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab><X:mode>_extend<SHORT:mode><SUPERQI:mode>2_rev"
+  [(set (match_operand:SUPERQI 0 "register_operand" "=r")
+        (if_then_else:SUPERQI (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+					   (const_int 1)
+					   (match_operand 1 "branch_bbcs_operand"))
+					   (const_int 0))
+			      (match_operand:SUPERQI 3 "arith_operand" "0")
+			      (zero_extend:SUPERQI (match_operand:SHORT 2 "register_operand" "r"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
+  "<bbcs> %4, %1, 0f\n\tbfoz %0, %2, <SHORT:sh_limit>, 0\n0:"
+  [(set_attr "type" "arith")
+   (set_attr "mode" "SI")
+   (set (attr "length") (const_int 8))])
+
+;;branch + mask
+(define_insn "cmov<optab>_mask<GPR:mode><X:mode>"
+  [(set (match_operand:GPR 0 "register_operand"                                   "=  r,      r")
+        (if_then_else:GPR (equality_op (match_operand:X 1 "register_operand"      "   r,      r")
+				       (match_operand:X 2 "reg_or_imm7u_operand"  "  rJ,   Bz07"))
+			  (and:GPR (match_operand:GPR 4 "register_operand"        "   r,      r")
+				   (match_operand:GPR 5 "imm_extract_operand"     "Bext,   Bext"))
+			  (match_operand:GPR 3 "arith_operand"                    "   0,      0")))]
+  "TARGET_CMOV && TARGET_BFO"
+  {
+    operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
+
+    switch (which_alternative)
+      {
+      case 0:
+	return "<rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, %5, 0\n0:";
+      case 1:
+	return "<rev_br_insn>c %1, %2, 0f\n\tbfoz %0, %4, %5, 0\n0:";
+      default:
+	gcc_unreachable ();
+    }
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab>_mask<GPR:mode><X:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand"                                  "=  r,    r")
+        (if_then_else:GPR (equality_op (match_operand:X 1 "register_operand"     "   r,    r")
+				       (match_operand:X 2 "reg_or_imm7u_operand" "  rJ, Bz07"))
+			(match_operand:GPR 3  "arith_operand"                    "   0,    0")
+			(and:GPR (match_operand:GPR 4 "register_operand"         "   r,    r")
+				 (match_operand:GPR 5 "imm_extract_operand"      "Bext, Bext"))))]
+  "TARGET_CMOV && TARGET_BFO"
+  {
+
+    switch (which_alternative)
+      {
+      case 0:
+	return "<br_insn> %1, %z2, 0f\n\tbfoz %0, %4, %5, 0\n0:";
+      case 1:
+	return "<br_insn>c %1, %2, 0f\n\tbfoz %0, %4, %5, 0\n0:";
+      default:
+	gcc_unreachable ();
+    }
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab>_mask<GPR:mode><X:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:X 1 "register_operand" " r")
+				      (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			  (and:GPR (match_operand:GPR 4 "register_operand"  "r")
+				   (match_operand:GPR 5 "imm_extract_operand" "Bext"))
+			  (match_operand:GPR 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BFO"
+  {
+    operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
+    return "<rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov<optab>_mask<GPR:mode><X:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (inequal_op (match_operand:X 1 "register_operand" " r")
+				      (match_operand:X 2 "reg_or_0_operand" "rJ"))
+			  (match_operand:GPR 3 "arith_operand" "0")
+			  (and:GPR (match_operand:GPR 4 "register_operand" "r")
+				   (match_operand:GPR 5 "imm_extract_operand" "Bext"))))]
+  "TARGET_CMOV && TARGET_BFO"
+  {
+    operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
+    return "<br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab>_mask<GPR:mode><X:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				       (const_int 1)
+				       (match_operand 1 "branch_bbcs_operand"))
+				       (const_int 0))
+			  (and:GPR (match_operand:GPR 2 "register_operand" "r")
+				   (match_operand:GPR 5 "imm_extract_operand" "Bext"))
+			  (match_operand:GPR 3 "arith_operand" "0")))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
+  {
+    operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
+    return "<rev_bbcs> %4, %1, 0f\n\tbfoz %0, %2, 15, 0\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "cmov_bb<optab>_mask<GPR:mode><X:mode>_rev"
+  [(set (match_operand:GPR 0 "register_operand" "=r")
+        (if_then_else:GPR (equality_op (zero_extract:X (match_operand:X 4 "register_operand" "r")
+				       (const_int 1)
+				       (match_operand 1 "branch_bbcs_operand"))
+				       (const_int 0))
+			(match_operand:GPR 3 "arith_operand" "0")
+			(and:GPR (match_operand:GPR 2 "register_operand" "r")
+				 (match_operand:GPR 5 "imm_extract_operand" "Bext"))))]
+  "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
+  {
+    operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
+    return "<bbcs> %4, %1, 0f\n\tbfoz %0, %2, 15, 0\n0:";
+  }
+  [(set_attr "type" "arith")
+   (set_attr "mode" "<GPR:MODE>")
+   (set (attr "length") (const_int 8))])
+
+(define_insn "*large_load_address"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+        (mem:DI (match_operand 1 "pcrel_symbol_operand" "")))]
+  "TARGET_64BIT && riscv_cmodel == CM_LARGE"
+  "ld\t%0,%1"
+  [(set (attr "length") (const_int 8))])
+
 (include "sync.md")
 (include "peephole.md")
 (include "pic.md")
 (include "generic.md")
+(include "vicuna.md")
+(include "vicuna2.md")
+(include "builtins.md")
+(include "dsp.md")

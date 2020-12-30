@@ -293,6 +293,41 @@ __riscv_restore_0:
   .cfi_endproc
 
 #else
+#ifdef __riscv_32e
+__riscv_save_2:
+__riscv_save_1:
+__riscv_save_0:
+  .cfi_startproc
+  # __riscv_save_* routine use t0/x5 as return address
+  .cfi_return_column 5
+  addi sp, sp, -12
+  .cfi_def_cfa_offset 12
+  sw s1, 0(sp)
+  .cfi_offset 9, -12
+  sw s0, 4(sp)
+  .cfi_offset 8, -8
+  sw ra, 8(sp)
+  .cfi_offset 1, -4
+  jr t0
+  .cfi_endproc
+
+__riscv_restore_2:
+__riscv_restore_1:
+__riscv_restore_0:
+  .cfi_startproc
+  .cfi_def_cfa_offset 12
+  lw s1, 0(sp)
+  .cfi_restore 9
+  lw s0, 4(sp)
+  .cfi_restore 8
+  lw ra, 8(sp)
+  .cfi_restore 1
+  addi sp, sp, 12
+  .cfi_def_cfa_offset 0
+  ret
+  .cfi_endproc
+
+#else
 
 __riscv_save_12:
   .cfi_startproc
@@ -460,4 +495,5 @@ __riscv_restore_0:
   ret
   .cfi_endproc
 
+#endif
 #endif

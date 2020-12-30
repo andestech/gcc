@@ -1,0 +1,54 @@
+ABI_SOFT:=$(findstring __riscv_float_abi_soft,$(shell $(gcc_compile_bare) -dM -E - </dev/null))
+ABI_E:=$(findstring  __riscv_32e,$(shell $(gcc_compile_bare) -dM -E - </dev/null))
+
+ifdef ABI_SOFT
+ifndef ABI_E
+LIB1ASMSRC   = riscv/lib1asmsrc-mculib.S
+else
+LIB1ASMSRC   = riscv/lib1asmsrc-mculib-rv32e.S
+endif
+
+LIB1ASMFUNCS =   \
+	_addsub_sf   \
+	_divsi3      \
+	_divdi3      \
+	_modsi3      \
+	_moddi3      \
+	_mulsi3      \
+	_udivsi3     \
+	_udivdi3     \
+	_umul_ppmm   \
+	_udivmoddi4  \
+	_umodsi3     \
+	_umoddi3     \
+	_muldi3      \
+	_addsub_df   \
+	_mul_sf      \
+	_mul_df      \
+	_div_sf      \
+	_div_df      \
+	_negate_sf   \
+	_negate_df   \
+	_sf_to_df    \
+	_df_to_sf    \
+	_fixsfdi     \
+	_fixsfsi     \
+	_fixdfdi     \
+	_fixdfsi     \
+	_fixunssfsi  \
+	_fixunsdfsi  \
+	_fixunssfdi  \
+	_fixunsdfdi  \
+	_si_to_sf    \
+	_si_to_df    \
+	_floatdisf   \
+	_floatdidf   \
+	_floatunsisf \
+	_floatunsidf \
+	_floatundisf \
+	_floatundidf \
+	_compare_sf  \
+	_compare_df  \
+	_unord_sf    \
+	_unord_df
+endif

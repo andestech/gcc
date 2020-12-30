@@ -198,6 +198,13 @@ case ${host} in
     ;;
 esac
 
+case ${target} in
+  riscv*-*-*)
+    host_extra_gcc_objs="driver-riscv.o"
+    host_xmake_file="${host_xmake_file} riscv/x-riscv"
+    ;;
+esac
+
 # Machine-specific settings.
 case ${host} in
   hppa1.0-*-hpux10* | hppa1.1-*-hpux10* | hppa2*-*-hpux10*)

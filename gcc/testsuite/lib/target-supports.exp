@@ -4843,6 +4843,88 @@ proc check_effective_target_powerpc_elfv2 { } {
     }
 }
 
+# Return true if the target is a 32-bit RISC-V target.
+
+proc check_effective_target_riscv32 { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages riscv32 object {
+	#if __riscv_xlen == 32
+	int dummy;
+	#else
+	#error not 32-bit RISC-V target
+	#endif
+	}]
+    }
+}
+
+# return true if the target is a 64-bit RISC-V target.
+
+proc check_effective_target_riscv64 { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages riscv64 object {
+	#if __riscv_xlen == 64
+	int dummy;
+	#else
+	#error not 64-bit RISC-V target
+	#endif
+	}]
+    }
+}
+# return true if the riscv target supports hard floating-point unit.
+
+proc check_effective_target_riscv_hard_fp { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages hard_fp object {
+	    #if defined __riscv_flen
+	    int dummy;
+	    #else
+	    #error no support fpu
+	    #endif
+	}]
+    }
+}
+
+# return true if the riscv target supports v5.
+proc check_effective_target_riscv_xv5 { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages xv5 object {
+	    #if defined __nds_v5
+	    int dummy;
+	    #else
+	    #error no support XV5
+	    #endif
+	}]
+    }
+}
+
+# return true if the riscv target supports atomic.
+
+proc check_effective_target_riscv_atomic { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages atomic object {
+	    #if defined __riscv_atomic
+	    int dummy;
+	    #else
+	    #error no support atomic
+	    #endif
+	}]
+    }
+}
+
+# return true if the riscv target supports rve.
+
+proc check_effective_target_riscv_rve { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages rve object {
+	    #if defined __riscv_32e
+	    int dummy;
+	    #else
+	    #error no support E set
+	    #endif
+	}]
+    }
+}
+
 # Return 1 if this is a SPU target with a toolchain that
 # supports automatic overlay generation.
 
