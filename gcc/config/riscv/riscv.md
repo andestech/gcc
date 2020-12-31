@@ -3208,6 +3208,9 @@
   rtx cmp_op0 = XEXP (operands[1], 0);
   rtx cmp_op1 = XEXP (operands[1], 1);
 
+  if (GET_MODE_CLASS (GET_MODE (cmp_op0)) != MODE_INT)
+    FAIL;
+
   if ((CONST_INT_P (operands[2])
       && CONST_INT_P (operands[3])))
     FAIL;
