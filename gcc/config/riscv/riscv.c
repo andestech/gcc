@@ -2309,6 +2309,16 @@ riscv_rtx_costs (rtx x, machine_mode mode, int outer_code, int opno ATTRIBUTE_UN
 
   switch (GET_CODE (x))
     {
+    case SET:
+      /* Cost for DF moves */
+      if (mode == DFmode && TARGET_DOUBLE_FLOAT && REG_P (SET_SRC (x))
+	  && REG_P (SET_DEST (x)))
+	{
+	  *total = tune_info->fp_add[1];
+	  return true;
+	}
+      return false;
+
     case CONST_INT:
       if (riscv_immediate_operand_p (outer_code, INTVAL (x))
 	  || (outer_code == SET && LUI_OPERAND (INTVAL (x))))
