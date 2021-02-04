@@ -4148,7 +4148,7 @@ riscv_expand_block_move (rtx dest, rtx src, rtx length)
   if(optimize_size)
     return false;
 
-  if (CONST_INT_P (length))
+  if (CONST_INT_P (length) && INTVAL (length) >= 0)
     {
       unsigned HOST_WIDE_INT hwi_length = UINTVAL (length);
       unsigned HOST_WIDE_INT factor, align, max_move_straight;
