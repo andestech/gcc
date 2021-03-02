@@ -1076,7 +1076,7 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_BUILTIN (scwsi, scwdi, scw,
 		  RISCV_SI_FTYPE_SI_PSI_USI, SCW),
   DIRECT_BUILTIN (scd, scd, scd,
-		  RISCV_LLONG_FTYPE_LLONG_PLLONG_USI, SCD),
+		  RISCV_ULLONG_FTYPE_LLONG_PLLONG_USI, SCD),
   DIRECT_BUILTIN (amowswapsi, amowswapdi, amoswapw,
 		  RISCV_SI_FTYPE_SI_PSI_USI, AMOW),
   DIRECT_BUILTIN (amowaddsi, amowadddi, amoaddw,
