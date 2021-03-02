@@ -70,7 +70,8 @@ along with GCC; see the file COPYING3.  If not see
       -dynamic-linker " GNU_USER_DYNAMIC_LINKER "} \
     %{static:-static}}" \
 NDS32_GP_RELAX_SPEC \
-BTB_FIXUP_SPEC
+BTB_FIXUP_SPEC \
+WORKAROUND_SPEC
 
 #undef NEED_INDICATE_EXEC_STACK
 #define NEED_INDICATE_EXEC_STACK 1

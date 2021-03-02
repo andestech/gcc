@@ -91,7 +91,8 @@ extern const char *riscv_rewrite_march (int argc, const char **argv);
     mcmodel=medium|mcmodel=medany:-mcmodel=medany; \
     mcmodel=large:-mcmodel=large}" \
 " %{mb20282:-mb20282}" \
-" %{mno-16-bit:-mno-16-bit}"
+" %{mno-16-bit:-mno-16-bit}" \
+" %{mno-workaround:-mno-workaround}"
 
 
 #ifndef TARGET_DEFAULT_MEDLOW
@@ -1062,6 +1063,9 @@ extern tree riscv_bf16_type_node;
 
 #define BTB_FIXUP_SPEC \
   " %{Os3|Os:--mno-avoid-btb-miss}"
+
+#define WORKAROUND_SPEC \
+  " %{mno-workaround:--mno-workaround}"
 
 #define ICT_VERSION 1
 
