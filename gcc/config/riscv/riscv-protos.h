@@ -22,6 +22,8 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef GCC_RISCV_PROTOS_H
 #define GCC_RISCV_PROTOS_H
 
+#include "tree-pass.h"
+
 /* Symbol types we understand.  The order of this list must match that of
    the unspec enum in riscv.md, subsequent to UNSPEC_ADDRESS_FIRST.  */
 enum riscv_symbol_type {
@@ -95,6 +97,7 @@ extern std::string riscv_arch_str (bool version_p = true);
 
 extern bool riscv_hard_regno_rename_ok (unsigned, unsigned);
 
+gimple_opt_pass * make_pass_riscv_iprintf (gcc::context *ctxt);
 rtl_opt_pass * make_pass_shorten_memrefs (gcc::context *ctxt);
 
 /* Auxiliary functions to split/output sms pattern.  */
