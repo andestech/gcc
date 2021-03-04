@@ -5817,6 +5817,8 @@ riscv_option_override (void)
     {
       flag_tree_loop_vectorize = false;
       flag_gcse_const = true;
+      flag_store_data_races = true;
+      flag_version_loops_for_strides = false;
 
       SET_OPTION_IF_UNSET (&global_options, &global_options_set,
                            param_max_average_unrolled_insns, 200);
