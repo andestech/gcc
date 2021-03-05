@@ -67,10 +67,10 @@
        (eq_attr "type" "branch,jump,call"))
   "vicuna_pipe")
 
-(define_insn_reservation "vicuna_imul" 10
+(define_insn_reservation "vicuna_imul" 3
   (and (eq_attr "tune" "vicuna")
        (eq_attr "type" "imul"))
-  "vicuna_pipe, vicuna_mdu * 6")
+  "vicuna_pipe")
 
 (define_insn_reservation "vicuna_idivsi" 38
   (and (eq_attr "tune" "vicuna")
