@@ -2314,7 +2314,7 @@ riscv_rtx_costs (rtx x, machine_mode mode, int outer_code, int opno ATTRIBUTE_UN
       if (mode == DFmode && TARGET_DOUBLE_FLOAT && REG_P (SET_SRC (x))
 	  && REG_P (SET_DEST (x)))
 	{
-	  *total = tune_info->fp_add[1];
+	  *total = COSTS_N_INSNS (1);
 	  return true;
 	}
       return false;
