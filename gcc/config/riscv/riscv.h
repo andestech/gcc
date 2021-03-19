@@ -58,8 +58,8 @@ along with GCC; see the file COPYING3.  If not see
 #undef  CC1_SPEC
 #define CC1_SPEC \
   " %{Os1:-Os -mno-save-restore}" \
-  " %{Os2:-Os -minnermost-loop}" \
-  " %{Os3:-Os}" \
+  " %{Os2:-Os}" \
+  " %{Os3:-Os}"
 
 extern const char *riscv_rewrite_march (int argc, const char **argv);
 #undef EXTRA_SPEC_FUNCTIONS
@@ -1025,7 +1025,8 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
   " %{mext-fpu-fma:-mfma}" \
   " %{mno-ext-fpu-fma:-mno-fma}" \
   " %{march=*:" MARCH_POST_PROC_SPEC "}" \
-  " %{fdata-sections:-fno-section-anchors}"
+  " %{fdata-sections:-fno-section-anchors}" \
+  " %{Os2:%{!mno-innermost-loop:-minnermost-loop}}"
 
 #define CMODEL_SPEC \
   " %{mcmodel=small:-mcmodel=medlow}" \
