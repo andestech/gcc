@@ -6239,6 +6239,21 @@ riscv_promote_function_mode (const_tree type ATTRIBUTE_UNUSED,
   return mode;
 }
 
+/* Return TRUE if BB has only one call_insn except note_insn */
+
+static bool
+single_call_basic_block_p (basic_block bb)
+{
+  rtx_insn *insn;
+  if (!CALL_P (BB_END (bb)))
+    return false;
+  for (insn = BB_HEAD (bb); insn && insn != BB_END (bb);
+       insn = NEXT_INSN (insn))
+    if (NONDEBUG_INSN_P (insn))
+      return false;
+  return true;
+}
+
 static void
 riscv_insert_innermost_loop (void)
 {
@@ -6255,7 +6270,10 @@ riscv_insert_innermost_loop (void)
 
       for (unsigned i = 0; i < loop->num_nodes; i++)
         {
-          emit_insn_before (gen_innermost_loop_begin (), BB_HEAD (bbs[i]));
+	  if (single_call_basic_block_p (bbs[i]))
+	    continue;
+
+	  emit_insn_before (gen_innermost_loop_begin (), BB_HEAD (bbs[i]));
 
           if (CALL_P (BB_END (bbs[i])))
 	    emit_insn_before (gen_innermost_loop_end (), BB_END (bbs[i]));
