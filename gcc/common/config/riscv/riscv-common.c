@@ -57,7 +57,7 @@ static arch_options_t std_ext_options[] = {
 };
 
 static arch_options_t nonstd_z_ext_options[] = {
-  {"zfh", "zfh", false, false, 2, 0},
+  {"zfh", "zfh", false, false, 0, 1},
   {NULL, NULL, false, false, 2, 0}
 };
 
