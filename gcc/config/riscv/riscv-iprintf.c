@@ -53,7 +53,11 @@ public:
 bool
 pass_riscv_iprintf::gate (function*)
 {
+#ifdef TARGET_MCULIB
+  return riscv_iprintf != 0;
+#else
   return riscv_iprintf > 0;
+#endif
 }
 
 static tree
