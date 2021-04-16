@@ -98,7 +98,7 @@ memory accesses to be generated as compressed instructions.  Currently targets
 32-bit integer load/stores.
 
 mriscv-iprintf
-Target Bool Var(riscv_iprintf) Init(1)
+Target Bool Var(riscv_iprintf) Init(0)
 Enable replace printf with iprintf if available.
 
 mcmodel=

@@ -53,7 +53,7 @@ public:
 bool
 pass_riscv_iprintf::gate (function*)
 {
-  return riscv_iprintf;
+  return riscv_iprintf > 0;
 }
 
 static tree
