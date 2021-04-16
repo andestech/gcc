@@ -1901,7 +1901,7 @@ supported since version 4.7.2 and is the default in 4.8.0 and newer.
 
 @item --with-nds32-lib=@var{library}
 Specifies that @var{library} setting is used for building @file{libgcc.a}.
-Currently, the valid @var{library} is @samp{newlib} or @samp{mculib}.
+Currently, the valid @var{library} is 'newlib' or 'mculib'.
 This option is only supported for the NDS32 target.
 
 @item --with-build-time-tools=@var{dir}

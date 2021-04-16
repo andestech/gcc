@@ -31,6 +31,9 @@ struct GTY (()) hwloop_info_d
   /* Next loop in the graph. */
   hwloop_info next;
 
+  /* Outermost loop in the graph.  */
+  hwloop_info outermost;
+
   /* Vector of blocks only within the loop, including those within
      inner loops.  */
   vec<basic_block> blocks;
@@ -90,11 +93,18 @@ struct GTY (()) hwloop_info_d
      This value is valid when the target's optimize function is called.  */
   int depth;
 
+  /* The nesting depth of the loop.  If 3 neseting depth of loop,
+     the depth form outermost to innermost is 1, 2, 3.  */
+  int real_depth;
+
   /* True if we can't optimize this loop.  */
   bool bad;
 
   /* True if we have visited this loop during the optimization phase.  */
   bool visited;
+
+  /* True if we have computed this loop real depth.  */
+  bool computed_depth;
 
   /* The following values are collected before calling the target's optimize
      function and are not valid earlier.  */
@@ -115,7 +125,7 @@ struct GTY (()) hwloop_info_d
 
   /* Hard registers set at any point in the loop, except for the loop counter
      register's set in the doloop_end instruction.  */
-  HARD_REG_SET regs_set_in_loop;
+  regset regs_set_in_loop;
 };
 
 /* A set of hooks to be defined by a target that wants to use the reorg_loops

@@ -57,6 +57,8 @@ dump_hwloops (hwloop_info loops)
 	       loop->head == NULL ? -1 : loop->head->index,
 	       loop->depth, REGNO (loop->iter_reg));
 
+      fprintf (dump_file, " outermost: [%d] ", loop->outermost->loop_no);
+
       fprintf (dump_file, " blocks: [ ");
       for (ix = 0; loop->blocks.iterate (ix, &b); ix++)
 	fprintf (dump_file, "%d ", b->index);
@@ -84,6 +86,7 @@ scan_loop (hwloop_info loop)
 {
   unsigned ix;
   basic_block bb;
+  regset set_this_insn = ALLOC_REG_SET (NULL);
 
   if (loop->bad)
     return;
@@ -120,7 +123,6 @@ scan_loop (hwloop_info loop)
 	   insn = NEXT_INSN (insn))
 	{
 	  df_ref *def_rec;
-	  HARD_REG_SET set_this_insn;
 
 	  if (!NONDEBUG_INSN_P (insn))
 	    continue;
@@ -130,23 +132,45 @@ scan_loop (hwloop_info loop)
 		  || asm_noperands (PATTERN (insn)) >= 0))
 	    loop->has_asm = true;
 
-	  CLEAR_HARD_REG_SET (set_this_insn);
+	  CLEAR_REG_SET (set_this_insn);
 	  for (def_rec = DF_INSN_DEFS (insn); *def_rec; def_rec++)
 	    {
 	      rtx dreg = DF_REF_REG (*def_rec);
+	      unsigned int regno, nregs;
 
 	      if (!REG_P (dreg))
 		continue;
 
-	      add_to_hard_reg_set (&set_this_insn, GET_MODE (dreg),
-				   REGNO (dreg));
+	      regno = REGNO (dreg);
+	      nregs = GET_MODE (dreg) / UNITS_PER_WORD;
+	      bitmap_set_range (set_this_insn, regno, nregs);
 	    }
 
 	  if (insn == loop->loop_end)
-	    CLEAR_HARD_REG_BIT (set_this_insn, REGNO (loop->iter_reg));
+	    CLEAR_REGNO_REG_SET (set_this_insn, REGNO (loop->iter_reg));
 	  else if (reg_mentioned_p (loop->iter_reg, PATTERN (insn)))
 	    loop->iter_reg_used = true;
-	  IOR_HARD_REG_SET (loop->regs_set_in_loop, set_this_insn);
+	  IOR_REG_SET (loop->regs_set_in_loop, set_this_insn);
+	}
+    }
+  FREE_REG_SET (set_this_insn);
+}
+
+/* Get outermost loop for each loop.  */
+static void
+add_outermost (hwloop_info loop)
+{
+  int ix;
+  hwloop_info inner;
+
+  if (!loop->outermost)
+    {
+      loop->outermost = loop;
+
+      for (ix = 0; loop->loops.iterate (ix, &inner); ix++)
+	{
+	  if (loop->loop_no != inner->loop_no)
+	    inner->outermost = loop;
 	}
     }
 }
@@ -404,6 +428,7 @@ discover_loops (bitmap_obstack *loop_stack, struct hw_doloop_hooks *hooks)
       loop->loop_no = nloops++;
       loop->blocks.create (20);
       loop->block_bitmap = BITMAP_ALLOC (loop_stack);
+      loop->regs_set_in_loop = ALLOC_REG_SET (NULL);
 
       if (dump_file)
 	{
@@ -449,6 +474,10 @@ discover_loops (bitmap_obstack *loop_stack, struct hw_doloop_hooks *hooks)
 	}
     }
 
+  /* Get outermost loop for each loop.  */
+  for (loop = loops; loop; loop = loop->next)
+    add_outermost (loop);
+
   if (dump_file)
     dump_hwloops (loops);
 
@@ -466,6 +495,7 @@ free_loops (hwloop_info loops)
       loop->loops.release ();
       loop->blocks.release ();
       BITMAP_FREE (loop->block_bitmap);
+      FREE_REG_SET (loop->regs_set_in_loop);
       XDELETE (loop);
     }
 }
@@ -549,6 +579,32 @@ reorder_loops (hwloop_info loops)
   df_analyze ();
 }
 
+/* Compute real depth for each loop, for example
+   if 3 neseting depth of loop, the depth form
+   outermost to innermost is 1, 2, 3.  */
+static void
+compute_real_depth (hwloop_info loop)
+{
+  int ix;
+  hwloop_info inner;
+  int inner_depth = 0;
+
+  if (loop->computed_depth)
+    return;
+
+  loop->computed_depth = 1;
+
+  for (ix = 0; loop->loops.iterate (ix, &inner); ix++)
+    {
+      compute_real_depth (inner);
+
+      if (inner_depth < inner->real_depth)
+	inner_depth = inner->real_depth;
+    }
+
+  loop->real_depth = inner_depth + 1;
+}
+
 /* Call the OPT function for LOOP and all of its sub-loops.  This is
    done in a depth-first search; innermost loops are visited first.
    OPTIMIZE and FAIL are the functions passed to reorg_loops by the
@@ -585,7 +641,7 @@ optimize_loop (hwloop_info loop, struct hw_doloop_hooks *hooks)
 	inner_depth = inner->depth;
       /* The set of registers may be changed while optimizing the inner
 	 loop.  */
-      IOR_HARD_REG_SET (loop->regs_set_in_loop, inner->regs_set_in_loop);
+      IOR_REG_SET (loop->regs_set_in_loop, inner->regs_set_in_loop);
     }
 
   loop->depth = inner_depth + 1;
@@ -651,6 +707,10 @@ reorg_loops (bool do_reorder, struct hw_doloop_hooks *hooks)
 
   for (loop = loops; loop; loop = loop->next)
     scan_loop (loop);
+
+  /* Compute real depth for each loop.  */
+  for (loop = loops; loop; loop = loop->next)
+    compute_real_depth (loop);
 
   /* Now apply the optimizations.  */
   for (loop = loops; loop; loop = loop->next)

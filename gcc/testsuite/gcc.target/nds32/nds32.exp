@@ -1,5 +1,5 @@
 # Target test cases of Andes NDS32 cpu for GNU compiler
-# Copyright (C) 2012-2014 Free Software Foundation, Inc.
+# Copyright (C) 2012-2015 Free Software Foundation, Inc.
 # Contributed by Andes Technology Corporation.
 #
 # This file is part of GCC.
@@ -38,8 +38,10 @@ if ![info exists DEFAULT_CFLAGS] then {
 dg-init
 
 # Main loop.
-dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/*.\[cS\]]] \
+dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/compile/*.\[cS\]]] \
 	"" $DEFAULT_CFLAGS
+gcc-dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/*.\[cS\]]] \
+	""
 
 # All done.
 dg-finish

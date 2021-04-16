@@ -354,6 +354,8 @@ extern gimple_opt_pass *make_pass_lower_eh_dispatch (gcc::context *ctxt);
 extern gimple_opt_pass *make_pass_lower_resx (gcc::context *ctxt);
 extern gimple_opt_pass *make_pass_build_cfg (gcc::context *ctxt);
 extern gimple_opt_pass *make_pass_early_tree_profile (gcc::context *ctxt);
+extern gimple_opt_pass *make_pass_referenced_ptrargs (gcc::context *ctxt);
+extern gimple_opt_pass *make_pass_reduce_passed_addressof (gcc::context *ctxt);
 extern gimple_opt_pass *make_pass_cleanup_eh (gcc::context *ctxt);
 extern gimple_opt_pass *make_pass_sra (gcc::context *ctxt);
 extern gimple_opt_pass *make_pass_sra_early (gcc::context *ctxt);
@@ -585,6 +587,7 @@ extern gimple_opt_pass *make_pass_early_inline (gcc::context *ctxt);
 extern gimple_opt_pass *make_pass_inline_parameters (gcc::context *ctxt);
 extern gimple_opt_pass *make_pass_update_address_taken (gcc::context *ctxt);
 extern gimple_opt_pass *make_pass_convert_switch (gcc::context *ctxt);
+extern gimple_opt_pass *make_pass_switch_shortcut (gcc::context *ctxt);
 
 /* Current optimization pass.  */
 extern opt_pass *current_pass;

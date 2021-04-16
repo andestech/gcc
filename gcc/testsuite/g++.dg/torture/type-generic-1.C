@@ -4,6 +4,7 @@
 /* { dg-do run } */
 /* { dg-add-options ieee } */
 /* { dg-skip-if "No Inf/NaN support" { spu-*-* } } */
+/* { dg-skip-if "No Denormmalized support" { nds32_ext_fpu } } */
 
 #include "../../gcc.dg/tg-tests.h"
 

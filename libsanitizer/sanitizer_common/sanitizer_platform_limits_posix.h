@@ -75,6 +75,10 @@ namespace __sanitizer {
   const unsigned struct___old_kernel_stat_sz = 0;
   const unsigned struct_kernel_stat_sz = 64;
   const unsigned struct_kernel_stat64_sz = 104;
+#elif defined(__nds32__)
+  const unsigned struct___old_kernel_stat_sz = 32;
+  const unsigned struct_kernel_stat_sz = 64;
+  const unsigned struct_kernel_stat64_sz = 104;
 #endif
   struct __sanitizer_perf_event_attr {
     unsigned type;

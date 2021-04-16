@@ -62,7 +62,7 @@ cygwin_gt_pch_get_address (size_t sz, int fd)
       fatal_error ("can%'t extend PCH file: %m");
   }
 
-  base = mmap (NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+  base = mmap ((void *) 0x60000000, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 
   if (base == MAP_FAILED)
     base = NULL;

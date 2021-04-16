@@ -12710,38 +12710,33 @@ once the handler returns.
 
 These built-in functions are available for the NDS32 target:
 
-@deftypefn {Built-in Function} void __builtin_nds32_isync (int *@var{addr})
+@table @code
+@item void __builtin_nds32_isync (int *@var{addr})
 Insert an ISYNC instruction into the instruction stream where
 @var{addr} is an instruction address for serialization.
-@end deftypefn
 
-@deftypefn {Built-in Function} void __builtin_nds32_isb (void)
+@item void __builtin_nds32_isb (void)
 Insert an ISB instruction into the instruction stream.
-@end deftypefn
 
-@deftypefn {Built-in Function} int __builtin_nds32_mfsr (int @var{sr})
+@item int __builtin_nds32_mfsr (int @var{sr})
 Return the content of a system register which is mapped by @var{sr}.
-@end deftypefn
 
-@deftypefn {Built-in Function} int __builtin_nds32_mfusr (int @var{usr})
+@item int __builtin_nds32_mfusr (int @var{usr})
 Return the content of a user space register which is mapped by @var{usr}.
-@end deftypefn
 
-@deftypefn {Built-in Function} void __builtin_nds32_mtsr (int @var{value}, int @var{sr})
+@item void __builtin_nds32_mtsr (int @var{value}, int @var{sr})
 Move the @var{value} to a system register which is mapped by @var{sr}.
-@end deftypefn
 
-@deftypefn {Built-in Function} void __builtin_nds32_mtusr (int @var{value}, int @var{usr})
+@item void __builtin_nds32_mtusr (int @var{value}, int @var{usr})
 Move the @var{value} to a user space register which is mapped by @var{usr}.
-@end deftypefn
 
-@deftypefn {Built-in Function} void __builtin_nds32_setgie_en (void)
+@item void __builtin_nds32_setgie_en (void)
 Enable global interrupt.
-@end deftypefn
 
-@deftypefn {Built-in Function} void __builtin_nds32_setgie_dis (void)
+@item void __builtin_nds32_setgie_dis (void)
 Disable global interrupt.
-@end deftypefn
+
+@end table
 
 @node picoChip Built-in Functions
 @subsection picoChip Built-in Functions

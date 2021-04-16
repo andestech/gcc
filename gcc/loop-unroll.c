@@ -1539,7 +1539,9 @@ decide_unroll_stupid (struct loop *loop, int flags)
      of mispredicts. 
      TODO: this heuristic needs tunning; call inside the loop body
      is also relatively good reason to not unroll.  */
-  if (num_loop_branches (loop) > 1)
+  unsigned branch_count = PARAM_VALUE (PARAM_MAX_LOOP_UNROLL_BRANCH);
+
+  if (num_loop_branches (loop) > branch_count)
     {
       if (dump_file)
 	fprintf (dump_file, ";; Not unrolling, contains branches\n");
