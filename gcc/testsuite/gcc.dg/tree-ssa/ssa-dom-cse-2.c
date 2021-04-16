@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O3 -fno-tree-fre -fno-tree-pre -fdump-tree-optimized --param sra-max-scalarization-size-Ospeed=32" } */
+/* { dg-additional-options "-mno-ext-dsp" { target { riscv*-*-* } } } */
 /* System Z needs hardware vector support for this to work (the optimization
    gets too complex without it.
    { dg-additional-options "-march=z13" { target { s390x-*-* } } } */

@@ -26,6 +26,7 @@ along with GCC; see the file COPYING3.  If not see
    the unspec enum in riscv.md, subsequent to UNSPEC_ADDRESS_FIRST.  */
 enum riscv_symbol_type {
   SYMBOL_ABSOLUTE,
+  SYMBOL_FORCE_TO_MEM,
   SYMBOL_PCREL,
   SYMBOL_GOT_DISP,
   SYMBOL_TLS,
@@ -55,6 +56,7 @@ extern bool riscv_split_64bit_move_p (rtx, rtx);
 extern void riscv_split_doubleword_move (rtx, rtx);
 extern const char *riscv_output_move (rtx, rtx);
 extern const char *riscv_output_gpr_save (unsigned);
+extern const char *riscv_output_return ();
 #ifdef RTX_CODE
 extern void riscv_expand_int_scc (rtx, enum rtx_code, rtx, rtx);
 extern void riscv_expand_float_scc (rtx, enum rtx_code, rtx, rtx);
@@ -66,10 +68,12 @@ extern bool riscv_expand_block_move (rtx, rtx, rtx);
 extern rtx riscv_return_addr (int, rtx);
 extern HOST_WIDE_INT riscv_initial_elimination_offset (int, int);
 extern void riscv_expand_prologue (void);
-extern void riscv_expand_epilogue (bool);
+extern void riscv_expand_epilogue (int);
+extern bool riscv_epilogue_uses (unsigned int);
 extern bool riscv_can_use_return_insn (void);
 extern rtx riscv_function_value (const_tree, const_tree, enum machine_mode);
 extern unsigned int riscv_hard_regno_nregs (int, enum machine_mode);
+extern bool riscv_indirect_call_referenced_p (const_rtx);
 
 /* Routines implemented in riscv-c.c.  */
 void riscv_cpu_cpp_builtins (cpp_reader *);
@@ -79,5 +83,30 @@ extern void riscv_atomic_assign_expand_fenv (tree *, tree *, tree *);
 extern rtx riscv_expand_builtin (tree, rtx, rtx, enum machine_mode, int);
 extern tree riscv_builtin_decl (unsigned int, bool);
 extern void riscv_init_builtins (void);
+extern void riscv_final_prescan_insn (rtx_insn *);
+
+/* Auxiliary functions to split/output sms pattern.  */
+extern bool riscv_need_split_sms_p (rtx, rtx, rtx, rtx);
+extern const char *riscv_output_sms (rtx, rtx, rtx, rtx);
+extern void riscv_split_sms (rtx, rtx, rtx, rtx, rtx, rtx, rtx);
+
+extern void riscv_asm_output_pool_epilogue (FILE *, const char *,
+					    tree, HOST_WIDE_INT);
+
+extern void riscv_expand_float_hf(rtx, rtx, bool);
+extern bool riscv_modes_tieable_p (machine_mode,
+				   machine_mode);
+
+extern void riscv_split_ashiftdi3 (rtx, rtx, rtx);
+extern void riscv_split_ashiftrtdi3 (rtx, rtx, rtx);
+extern void riscv_split_lshiftrtdi3 (rtx, rtx, rtx);
+extern void riscv_split_shiftrtdi3 (rtx, rtx, rtx);
+
+/* Auxiliary functions for manipulation DI mode.  */
+extern rtx riscv_di_high_part_subreg(rtx);
+extern rtx riscv_di_low_part_subreg(rtx);
+
+extern void riscv_adjust_reg_alloc_order (void);
+extern bool riscv_dsp_64bit_split_p (void);
 
 #endif /* ! GCC_RISCV_PROTOS_H */

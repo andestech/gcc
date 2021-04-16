@@ -12,7 +12,7 @@ int lib_memcmp(const void *a, const void *b, size_t n) asm("memcmp");
 int lib_strncmp(const char *a, const char *b, size_t n) asm("strncmp");
 
 #ifndef NRAND
-#define NRAND 10000
+#define NRAND 1000
 #endif
 #define MAX_SZ 200
 

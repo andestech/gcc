@@ -33,12 +33,19 @@ mabi=
 Target Report RejectNegative Joined Enum(abi_type) Var(riscv_abi) Init(ABI_ILP32)
 Specify integer and floating-point calling convention.
 
+mpreferred-stack-boundary=
+Target RejectNegative Joined UInteger Var(riscv_preferred_stack_boundary_arg)
+Attempt to keep stack aligned to this power of 2.
+
 Enum
 Name(abi_type) Type(enum riscv_abi_type)
 Supported ABIs (for use with the -mabi= option):
 
 EnumValue
 Enum(abi_type) String(ilp32) Value(ABI_ILP32)
+
+EnumValue
+Enum(abi_type) String(ilp32e) Value(ABI_ILP32E)
 
 EnumValue
 Enum(abi_type) String(ilp32f) Value(ABI_ILP32F)
@@ -72,6 +79,10 @@ mtune=
 Target RejectNegative Joined Var(riscv_tune_string)
 -mtune=PROCESSOR	Optimize the output for PROCESSOR.
 
+mcpu=
+Target RejectNegative Joined Alias(mtune=)
+-mcpu=PROCESSOR        Optimize the output for PROCESSOR.
+
 msmall-data-limit=
 Target Joined Separate UInteger Var(g_switch_value) Init(8)
 -msmall-data-limit=N	Put global and static data smaller than <number> bytes into a special section (on some targets).
@@ -98,18 +109,221 @@ Enum(code_model) String(medlow) Value(CM_MEDLOW)
 EnumValue
 Enum(code_model) String(medany) Value(CM_MEDANY)
 
+; Compatible for nds32 toolchain
+EnumValue
+Enum(code_model) String(small) Value(CM_MEDLOW)
+
+EnumValue
+Enum(code_model) String(medium) Value(CM_MEDANY)
+
+EnumValue
+Enum(code_model) String(large) Value(CM_LARGE)
+
 mexplicit-relocs
 Target Report Mask(EXPLICIT_RELOCS)
 Use %reloc() operators, rather than assembly macros, to load addresses.
+
+mrelax
+Target Bool Var(riscv_mrelax) Init(1)
+Take advantage of linker relaxations to reduce the number of instructions
+required to materialize symbol addresses.
+
+merror-on-no-atomic
+Target Report Var(flags_error_on_no_atomic) Init(0)
+Raise an error when generating atomic instruction if atomic ext not enabled.
 
 Mask(64BIT)
 
 Mask(MUL)
 
-Mask(ATOMIC)
+matomic
+Target Report Mask(ATOMIC)
+Use atomic extension instructions.
+
+mbfo
+Target Report Mask(BFO) Undocumented
+Use hardware instructions for bitfields extract: bfos, bfoz.
+
+mbbcs
+Target Report Mask(BBCS) Undocumented
+Use hardware instructions for bit testing branch: bbc, bbs.
+
+mbimm
+Target Report Mask(BIMM) Undocumented
+Use hardware instructions: beqc, bnec.
+
+mlea
+Target Report Mask(LEA) Undocumented
+Use hardware load effective address instructions: lea.
+
+mzfh
+Target Report Mask(ZFH) Undocumented
+Mask(ZFH)
+
+Mask(V5)
+
+mext-dsp
+Target Report Mask(DSP)
+Use hardware DSP instructions.
+
+mb20282
+Target
+Avoid conditional jump erratum
+
+mext-vector
+Target Report Mask(RVV)
+Use vector instructions.
 
 Mask(HARD_FLOAT)
 
 Mask(DOUBLE_FLOAT)
 
 Mask(RVC)
+
+Mask(RVE)
+
+Os1
+Target
+Optimize for size level 1. This option will disable execit optimization to prevent performance drop.
+
+Os2
+Target
+Optimize for size level 2. This option will disable execit optimization for innermost loop to prevent performance drop.
+
+Os3
+Target
+Optimize for size level 3 which mean don't care performance.
+
+mvh
+Target Report Var(riscv_virtual_hosting)
+Enable Virtual Hosting support.
+
+mconfig-mul=
+Target RejectNegative Joined Enum(riscv_mul_type) Var(riscv_mul_config) Init(MUL_TYPE_AUTO)
+Specify configuration of instruction mul.
+
+Enum
+Name(riscv_mul_type) Type(enum riscv_mul_type)
+
+EnumValue
+Enum(riscv_mul_type) String(auto) Value(MUL_TYPE_AUTO)
+
+EnumValue
+Enum(riscv_mul_type) String(fast) Value(MUL_TYPE_FAST)
+
+EnumValue
+Enum(riscv_mul_type) String(fast1) Value(MUL_TYPE_FAST)
+
+EnumValue
+Enum(riscv_mul_type) String(fast2) Value(MUL_TYPE_FAST)
+
+EnumValue
+Enum(riscv_mul_type) String(slow) Value(MUL_TYPE_SLOW)
+
+mmove-bytes-per-loop=
+Target RejectNegative Joined UInteger Var(riscv_movebytes_per_loop) Init(0)
+-mmove-bytes-per-loop=N Set <N> bytes of data movement can be handled per loop iteration.
+
+malways-align
+Target Mask(ALWAYS_ALIGN)
+Always align function entry, jump target and return address.
+
+mict-model=
+Target Report RejectNegative Joined Enum(ict_model) Var(riscv_ict_model) Init(ICT_MODEL_SMALL)
+Specify the address generation strategy for ICT call's code model.
+
+Enum
+Name(ict_model) Type(enum riscv_ict_model_type)
+Known ict model types (for use with the -mict-model= option):
+
+EnumValue
+Enum(ict_model) String(tiny) Value(ICT_MODEL_TINY)
+
+EnumValue
+Enum(ict_model) String(small) Value(ICT_MODEL_SMALL)
+
+EnumValue
+Enum(ict_model) String(large) Value(ICT_MODEL_LARGE)
+
+; ---------------------------------------------------------------
+; The following options are designed for compatibility issue.
+; Hopefully these obsolete options will be removed one day.
+
+mace
+Target RejectNegative
+Compile with Andes ACE.
+
+mace-s2s=
+Target Joined RejectNegative
+Argument for pass to Andes's ACE source-to-source translator.
+
+
+; ---------------------------------------------------------------
+
+mctor-dtor
+Target Report
+Enable constructor/destructor feature.
+
+mno-16-bit
+Target Report RejectNegative
+Do not genearte C extension instructions.
+
+mexecit
+Target Report Var(TARGET_EXECIT)
+Use special directives to guide linker doing execit optimization.
+
+mex9
+Target Report Undocumented
+Use special directives to guide linker doing execit optimization.
+
+minnermost-loop
+Target Report Mask(INNERMOST_LOOP)
+Insert the innermost loop directive.
+
+mgp-insn-relax
+Target Report
+Use special directives to guide linker doing gp insn relax optimization.
+
+mrestrict-even-reg-for-regpair
+Target Report Mask(RESTRICT_EVEN_REG_FOR_REGPAIR)
+Restrict register pair must start with even register number.
+
+mfma
+Target Report Var(TARGET_FMA) Init(1)
+Generating fma instructions.
+
+mext-fpu-fma
+Target Report Undocumented
+Generating fma instructions.
+
+mfp16
+Target Report Mask(FP16) Undocumented
+Supporting __fp16 instructions.
+
+msoft-fp16
+Target Report Mask(SOFT_FP16) Undocumented
+
+mcmov
+Target Mask(CMOV)
+
+mpool-section
+Target Report Var(TARGET_POOL_SECTION) Init(0)
+Seprate constant pool from text section in large code model.
+
+malign-data=
+Target RejectNegative Joined Var(riscv_align_data_type) Enum(riscv_align_data) Init(riscv_align_data_type_xlen)
+Use the given data alignment.
+
+mtarget-combine
+Target Report Mask(COMBINE) Undocumented
+Enable target-combine pass
+
+Enum
+Name(riscv_align_data) Type(enum riscv_align_data)
+Known data alignment choices (for use with the -malign-data= option):
+
+EnumValue
+Enum(riscv_align_data) String(xlen) Value(riscv_align_data_type_xlen)
+
+EnumValue
+Enum(riscv_align_data) String(natural) Value(riscv_align_data_type_natural)

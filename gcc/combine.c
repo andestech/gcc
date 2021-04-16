@@ -7479,7 +7479,7 @@ make_extraction (machine_mode mode, rtx inner, HOST_WIDE_INT pos,
 		     : BITS_PER_UNIT)) == 0
 	      /* We can't do this if we are widening INNER_MODE (it
 		 may not be aligned, for one thing).  */
-	      && GET_MODE_PRECISION (inner_mode) >= GET_MODE_PRECISION (tmode)
+	      && GET_MODE_PRECISION (inner_mode) >= (GET_MODE_PRECISION (tmode) + pos)
 	      && (inner_mode == tmode
 		  || (! mode_dependent_address_p (XEXP (inner, 0),
 						  MEM_ADDR_SPACE (inner))
@@ -8778,7 +8778,10 @@ force_to_mode (rtx x, machine_mode mode, unsigned HOST_WIDE_INT mask,
 	     && INTVAL (XEXP (x, 1)) < GET_MODE_PRECISION (mode))
 	  && ! (GET_MODE (XEXP (x, 1)) != VOIDmode
 		&& (nonzero_bits (XEXP (x, 1), GET_MODE (XEXP (x, 1)))
-		    < (unsigned HOST_WIDE_INT) GET_MODE_PRECISION (mode))))
+		    < (unsigned HOST_WIDE_INT) GET_MODE_PRECISION (mode))
+		&& (SHIFT_COUNT_TRUNCATED
+		    && nonzero_bits (XEXP (x, 1), GET_MODE (XEXP (x, 1)))
+		    < (unsigned HOST_WIDE_INT) GET_MODE_PRECISION (GET_MODE (x)))))
 	break;
 
       /* If the shift count is a constant and we can do arithmetic in

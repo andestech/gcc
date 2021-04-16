@@ -33,12 +33,21 @@ void
 riscv_cpu_cpp_builtins (cpp_reader *pfile)
 {
   builtin_define ("__riscv");
+
+  if (riscv_virtual_hosting)
+    builtin_define ("__riscv_virtual_hosting");
   
   if (TARGET_RVC)
     builtin_define ("__riscv_compressed");
+
+  if (TARGET_RVE)
+    builtin_define ("__riscv_32e");
   
   if (TARGET_ATOMIC)
     builtin_define ("__riscv_atomic");
+
+  if (TARGET_DSP)
+    builtin_define ("__riscv_dsp");
   
   if (TARGET_MUL)
     builtin_define ("__riscv_mul");
@@ -59,6 +68,10 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
   
   switch (riscv_abi)
     {
+    case ABI_ILP32E:
+      builtin_define ("__riscv_abi_rve");
+      gcc_fallthrough ();
+
     case ABI_ILP32:
     case ABI_LP64:
       builtin_define ("__riscv_float_abi_soft");
@@ -84,9 +97,43 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
     case CM_MEDANY:
       builtin_define ("__riscv_cmodel_medany");
       break;
+
+    case CM_LARGE:
+      builtin_define ("__riscv_cmodel_large");
+      break;
   
     case CM_PIC:
       builtin_define ("__riscv_cmodel_pic");
       break;
+
+    default:
+      break;
     }
+
+  if (TARGET_V5)
+    {
+      builtin_define ("__nds_v5");
+      builtin_define ("__nds_execit");
+
+      /* Also define __nds_ex9 for backward compatibility.  */
+      builtin_define ("__nds_ex9");
+    }
+
+  if (TARGET_FP16)
+    builtin_define ("__nds_fp16");
+
+  if (TARGET_SOFT_FP16)
+    builtin_define ("__nds_soft_fp16");
+
+  if (TARGET_ZFH)
+    builtin_define ("__nds_zfh");
+
+  if (TARGET_BFO)
+    builtin_define ("__nds_bfo");
+  if (TARGET_LEA)
+    builtin_define ("__nds_lea");
+  if (TARGET_BBCS)
+    builtin_define ("__nds_bbcs");
+  if (TARGET_BIMM)
+    builtin_define ("__nds_bimm");
 }

@@ -77,6 +77,37 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
 	    }
 	}
     }
+  else if (*p == 'e')
+    {
+      p++;
+
+      *flags |= MASK_RVE;
+      if (*flags & MASK_64BIT)
+	{
+	  error ("E extension only support for RV32");
+	  return;
+	}
+
+      *flags &= ~(MASK_MUL | MASK_DIV);
+      if (*p == 'm')
+	*flags |= (MASK_MUL | MASK_DIV), p++;
+
+      *flags &= ~MASK_ATOMIC;
+      if (*p == 'a')
+	*flags |= MASK_ATOMIC, p++;
+    }
+  else if (strncmp (p, "v5", 2) == 0)
+    {
+      *flags |= MASK_V5 | MASK_BFO | MASK_BBCS | MASK_BIMM | MASK_LEA;
+
+      if (strcmp (p, "v5f") == 0)
+	*flags |= MASK_HARD_FLOAT;
+      else if (strcmp (p, "v5d") == 0)
+	*flags |= MASK_HARD_FLOAT | MASK_DOUBLE_FLOAT;
+      else if (strcmp (p, "v5") != 0)
+	error_at (loc, "-march=%s: invalid ISA string", isa);
+      return;
+    }
   else
     {
       error_at (loc, "-march=%s: invalid ISA string", isa);
@@ -87,11 +118,109 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
   if (*p == 'c')
     *flags |= MASK_RVC, p++;
 
-  if (*p)
+  *flags &= ~MASK_RVV;
+  if (*p == 'v')
+    *flags |= MASK_RVV, p++;
+
+  *flags &= ~MASK_ZFH;
+  if (strncmp(p, "zfh", 3) == 0)
+    {
+      *flags |= MASK_ZFH, p += 3;
+      if (*p)
+        {
+          if (*p != '_')
+            {
+              error_at (loc, "-march=%s: invalid ISA string", isa);
+              return;
+            }
+          else
+            ++p;
+        }
+    }
+
+  // initialize v5 related mask
+  if ((target_flags_explicit & MASK_V5) == 0)
+    *flags &= ~MASK_V5;
+  if ((target_flags_explicit & MASK_BFO) == 0)
+    *flags &= ~MASK_BFO;
+  if ((target_flags_explicit & MASK_BBCS) == 0)
+    *flags &= ~MASK_BBCS;
+  if ((target_flags_explicit & MASK_BIMM) == 0)
+    *flags &= ~MASK_BIMM;
+  if ((target_flags_explicit & MASK_LEA) == 0)
+    *flags &= ~MASK_LEA;
+  if ((target_flags_explicit & MASK_DSP) == 0)
+    *flags &= ~MASK_DSP;
+  if ((target_flags_explicit & MASK_FP16) == 0)
+    *flags &= ~MASK_FP16;
+
+  if (*p == 'x')
+    {
+      p++;
+      if (strncmp (p, "v5", 2) == 0)
+	{
+	  if ((target_flags_explicit & MASK_V5) == 0)
+	    *flags |= MASK_V5;
+	  if ((target_flags_explicit & MASK_BFO) == 0)
+	    *flags |= MASK_BFO;
+	  if ((target_flags_explicit & MASK_BBCS) == 0)
+	    *flags |= MASK_BBCS;
+	  if ((target_flags_explicit & MASK_BIMM) == 0)
+	    *flags |= MASK_BIMM;
+	  if ((target_flags_explicit & MASK_LEA) == 0)
+	    *flags |= MASK_LEA;
+
+	  p += 2;
+	  if (strcmp (p, "_xdsp") == 0
+	      && (target_flags_explicit & MASK_DSP) == 0)
+	    {
+	      *flags |= MASK_DSP;
+	      p+= 4;
+	      if (strcmp (p, "_xefhw") == 0
+		  && (target_flags_explicit & MASK_FP16) == 0)
+		*flags |= MASK_FP16;
+	    }
+	  else if (strcmp (p, "_xefhw") == 0
+		   && (target_flags_explicit & MASK_FP16) == 0)
+	    {
+	      *flags |= MASK_FP16;
+	      p+= 5;
+	      if (strcmp (p, "_xdsp") == 0
+		  && (target_flags_explicit & MASK_DSP) == 0)
+		*flags |= MASK_DSP;
+	    }
+	}
+      else if (strcmp (p, "dsp") == 0)
+	{
+	  if ((target_flags_explicit & MASK_DSP) == 0)
+	    *flags |= MASK_DSP;
+	}
+      else
+	error_at (loc, "-march=%s: unsupported NSE ISA substring %qs", isa, p);
+    }
+  else if (*p)
     {
       error_at (loc, "-march=%s: unsupported ISA substring %qs", isa, p);
       return;
     }
+
+  if (!(*flags | MASK_RVC))
+    TARGET_EXECIT = 0;
+}
+
+static void
+riscv_parse_cpu_string (const char *isa, int *flags)
+{
+  // 45-series cpuss have CALU
+  if (strcmp (isa, "n45") == 0 ||
+      strcmp (isa, "nx45") == 0 ||
+      strcmp (isa, "n45f") == 0 ||
+      strcmp (isa, "nx45f") == 0 ||
+      strcmp (isa, "d45") == 0 ||
+      strcmp (isa, "d45f") == 0 ||
+      strcmp (isa, "a45") == 0 ||
+      strcmp (isa, "ax45") == 0)
+    *flags |= MASK_CMOV;
 }
 
 /* Implement TARGET_HANDLE_OPTION.  */
@@ -108,6 +237,10 @@ riscv_handle_option (struct gcc_options *opts,
       riscv_parse_arch_string (decoded->arg, &opts->x_target_flags, loc);
       return true;
 
+    case OPT_mtune_:
+      riscv_parse_cpu_string (decoded->arg, &opts->x_target_flags);
+      return true;
+
     default:
       return true;
     }
@@ -119,6 +252,15 @@ static const struct default_options riscv_option_optimization_table[] =
     { OPT_LEVELS_1_PLUS, OPT_fsection_anchors, NULL, 1 },
     { OPT_LEVELS_1_PLUS, OPT_fomit_frame_pointer, NULL, 1 },
     { OPT_LEVELS_2_PLUS, OPT_free, NULL, 1 },
+#if TARGET_LINUX_ABI == 0
+  /* Disable -fdelete-null-pointer-checks by default in ELF toolchain.  */
+    { OPT_LEVELS_ALL, OPT_fdelete_null_pointer_checks, NULL, 0 },
+#endif
+    { OPT_LEVELS_SIZE, OPT_msave_restore, NULL, 1 },
+#ifdef TARGET_DEFAULT_ERROR_ON_NO_ATOMIC
+    { OPT_LEVELS_ALL, OPT_merror_on_no_atomic, NULL, 1 },
+#endif
+    { OPT_LEVELS_3_PLUS, OPT_mipa_escape_analysis, NULL, 1 },
     { OPT_LEVELS_NONE, 0, NULL, 0 }
   };
 
