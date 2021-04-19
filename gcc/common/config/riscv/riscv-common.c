@@ -929,7 +929,13 @@ void parse_arch_options(const char *option)
 	if (strncmp(opt->option_name, option, strlen(opt->option_name)) == 0)
 	  {
 	    opt->is_spec = true;
-	    opt->val = val;
+            opt->val = val;
+            if (strncmp(opt->option_name, "ext-vector", strlen(opt->option_name)) == 0) 
+              {
+                arch_options_t *vzfh = ext_options[1];
+                vzfh->is_spec = true;
+                vzfh->val = val;
+              }
 	  }
     }
 }

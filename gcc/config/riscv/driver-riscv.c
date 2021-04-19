@@ -176,6 +176,11 @@ parsing_long_option (const char *long_opt)
 		     strlen (opt->long_option)) == 0))
       {
 	*opt->val = val;
+        if (strncmp(opt->long_option, "ext-vector", strlen (opt->long_option)) == 0) 
+          {
+            opt++;
+            *opt->val = val;
+          }
 	return;
       }
 }
