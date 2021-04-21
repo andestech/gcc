@@ -3,4 +3,4 @@
 int foo()
 {
 }
-/* { dg-final { scan-assembler ".attribute arch, \"rv32i2p0_v1p0\"" } } */
+/* { dg-final { scan-assembler ".attribute arch, \"rv32i2p0_v1p0_zfh0p1\"" } } */
