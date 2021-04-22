@@ -176,14 +176,6 @@ mb20282
 Target
 Avoid conditional jump erratum
 
-mb22827
-Target
-Insert a fclass.x after FDIV.x/FSQRT.x conditionally
-
-mb22827_1
-Target
-Insert a NOP after FSHW conditionally
-
 mext-vector
 Target Report Mask(RVV)
 Use vector instructions.
