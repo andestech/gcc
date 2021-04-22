@@ -91,6 +91,8 @@ extern const char *riscv_rewrite_march (int argc, const char **argv);
     mcmodel=medium|mcmodel=medany:-mcmodel=medany; \
     mcmodel=large:-mcmodel=large}" \
 " %{mb20282:-mb20282}" \
+" %{mb22827:-mb22827}" \
+" %{mb22827_1:-mb22827_1}" \
 " %{mno-16-bit:-mno-16-bit}" \
 " %{mno-workaround:-mno-workaround}"
 
