@@ -102,7 +102,7 @@ arch_options_enabled_p(const arch_options_t *opt, const char *p)
   return false;
 }
 
-static bool arch_options_default_version(const arch_options_t *opt, const char *p,
+static void arch_options_default_version(const arch_options_t *opt, const char *p,
 					 unsigned *major_version,
 					 unsigned *minor_version)
 {
