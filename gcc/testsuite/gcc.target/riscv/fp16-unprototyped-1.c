@@ -1,10 +1,10 @@
 /* Test promotion of __fp16 to double as arguments to unprototyped
    function in another compilation unit.  */
 
-/* { dg-do run } */
+/* { dg-do run { target riscv_zfh_hw } } */
 /* { dg-require-effective-target riscv_hard_fp } */
 /* { dg-require-effective-target riscv_xv5 } */
-/* { dg-options "-mfp16" } */
+/* { dg-options "-mzfh" } */
 /* { dg-additional-sources "fp16-unprototyped-2.c" } */
 
 #include <stdlib.h>

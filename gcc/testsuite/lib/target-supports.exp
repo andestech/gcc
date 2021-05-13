@@ -6283,6 +6283,22 @@ proc check_effective_target_riscv_atomic { } {
     }
 }
 
+# Return 1 if the target supports executing riscv zfh instructions, 0
+# otherwise.  Cache the result.
+
+proc check_riscv_zfh_hw_available {  } {
+    return [check_cached_effective_target riscv_zfh_hw_available {
+	# If this is not the right target then we can skip the test.
+	if { ![istarget riscv*-*-*] } {
+	    expr 0
+	} else {
+	    check_runtime_nocache riscv_zfh_hw_available {
+	        int main() { asm volatile ("fadd.h fa0, fa1, fa2"); return 0;}
+	    } "-mzfh"
+	}
+    }]
+}
+
 # The VxWorks SPARC simulator accepts only EM_SPARC executables and
 # chokes on EM_SPARC32PLUS or EM_SPARCV9 executables.  Return 1 if the
 # test environment appears to run executables on such a simulator.

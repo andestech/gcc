@@ -2,10 +2,10 @@
    Except as otherwise noted, they should behave exactly
    the same as those with float arguments.  */
 
-/* { dg-do run } */
+/* { dg-do run { target riscv_zfh_hw } } */
 /* { dg-require-effective-target riscv_hard_fp } */
 /* { dg-require-effective-target riscv_xv5 } */
-/* { dg-options "-mfp16 -std=gnu99" } */
+/* { dg-options "-mzfh -std=gnu99" } */
 
 #include <stdlib.h>
 #include <math.h>

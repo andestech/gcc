@@ -1,7 +1,7 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target riscv_hard_fp } */
 /* { dg-require-effective-target riscv_xv5 } */
-/* { dg-options "-mfp16" } */
+/* { dg-options "-mzfh" } */
 
 /* Test that __fp16 is supported as a return type.  */
 extern __fp16 f (void);

@@ -1,7 +1,7 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target riscv_hard_fp } */
 /* { dg-require-effective-target riscv_xv5 } */
-/* { dg-options "-mfp16" } */
+/* { dg-options "-mzfh" } */
 
 /* Test generation of VFP __fp16 instructions.  */
 

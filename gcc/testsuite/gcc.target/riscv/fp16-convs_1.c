@@ -1,8 +1,8 @@
-/* { dg-do run } */
+/* { dg-do run { target riscv_zfh_hw } } */
 /* { dg-require-effective-target riscv_hard_fp } */
 /* { dg-require-effective-target riscv_xv5 } */
 /* { dg-options "-O2" } */
-/* { dg-additional-options "-mfp16" } */
+/* { dg-additional-options "-mzfh" } */
 
 extern void abort (void);
 

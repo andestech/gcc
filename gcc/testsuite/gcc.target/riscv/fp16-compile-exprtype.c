@@ -2,7 +2,7 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target riscv_hard_fp } */
 /* { dg-require-effective-target riscv_xv5 } */
-/* { dg-options "-mfp16" } */
+/* { dg-options "-mzfh" } */
 
 /* This produces a diagnostic if EXPR doesn't have type TYPE.  */
 #define CHECK(expr,type)			\

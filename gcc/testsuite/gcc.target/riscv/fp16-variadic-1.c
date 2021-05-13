@@ -1,9 +1,9 @@
 /* Test promotion of __fp16 to double as arguments to variadic function.  */
 
-/* { dg-do run } */
+/* { dg-do run { target riscv_zfh_hw } } */
 /* { dg-require-effective-target riscv_hard_fp } */
 /* { dg-require-effective-target riscv_xv5 } */
-/* { dg-options "-mfp16" } */
+/* { dg-options "-mzfh" } */
 
 #include <stdlib.h>
 #include <stdarg.h>
