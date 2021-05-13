@@ -173,15 +173,15 @@ Target Report Mask(DSP)
 Use hardware DSP instructions.
 
 mb20282
-Target
+Target Report Undocumented
 Avoid conditional jump erratum
 
 mb22827
-Target
+Target Report Undocumented
 Insert a fclass.x after FDIV.x/FSQRT.x conditionally
 
 mb22827.1
-Target
+Target Report Undocumented
 Insert a NOP after FSHW conditionally
 
 mext-vector
@@ -347,5 +347,5 @@ Target Report Var(TARGET_POOL_SECTION) Init(0)
 Seprate constant pool from text section in large code model.
 
 mno-workaround
-Target Report RejectNegative
+Target Report RejectNegative Undocumented
 Do not use workaroud solution.
