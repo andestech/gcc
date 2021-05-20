@@ -5818,7 +5818,7 @@ riscv_option_override (void)
     error ("Only support -mfp16 option on F and D instruction set");
 
   if (TARGET_ZFH && !TARGET_HARD_FLOAT)
-    error ("Only support -mfp16 option on F and D instruction set");
+    error ("Only support -mzfh option on F and D instruction set");
   
   if (TARGET_BF16 && !TARGET_HARD_FLOAT)
     error ("Only support -mbf16 option on F and D instruction set");

@@ -674,6 +674,11 @@ riscv_subset_list::parse_multiletter_ext (const char *p,
 	{
 	  if (!lookup(opt->ext) && opt->is_spec && opt->val)
 	    add (opt->ext, opt->default_major_version, opt->default_minor_version);
+    
+          // Workaround: Implictly enable zfh if (v && (f || d)) is enabled.
+          if (strcmp (opt->ext, "zfh") == 0 && !lookup(opt->ext) && lookup("v") &&
+              (lookup("f") || lookup("d")))
+            add (opt->ext, opt->default_major_version, opt->default_minor_version);
 	}
     }
 
@@ -802,8 +807,13 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
     *flags |= MASK_RVC;
 
   *flags &= ~MASK_RVV;
+  *flags &= ~MASK_ZFH;
   if (subset_list->lookup ("v"))
-    *flags |= MASK_RVV;
+    {
+      *flags |= MASK_RVV;
+      if (subset_list->lookup ("f") || subset_list->lookup ("d"))
+        *flags |= MASK_ZFH;
+    }
 
   *flags &= ~MASK_DSP;
   if (subset_list->lookup ("p"))
@@ -930,12 +940,6 @@ void parse_arch_options(const char *option)
 	  {
 	    opt->is_spec = true;
             opt->val = val;
-            if (strncmp(opt->option_name, "ext-vector", strlen(opt->option_name)) == 0) 
-              {
-                arch_options_t *vzfh = ext_options[1];
-                vzfh->is_spec = true;
-                vzfh->val = val;
-              }
 	  }
     }
 }
