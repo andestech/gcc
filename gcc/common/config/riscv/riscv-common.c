@@ -815,6 +815,9 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
         *flags |= MASK_ZFH;
     }
 
+  if (subset_list->lookup ("zfh"))
+    *flags |= MASK_ZFH;
+
   *flags &= ~MASK_DSP;
   if (subset_list->lookup ("p"))
     *flags |= MASK_DSP;

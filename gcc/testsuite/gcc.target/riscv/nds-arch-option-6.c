@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-march=rv32if -mext-vector -mno-ext-dsp" } */
+/* { dg-options "-march=rv32if -mabi=ilp32f -mext-vector -mno-ext-dsp" } */
 int foo()
 {
 }
