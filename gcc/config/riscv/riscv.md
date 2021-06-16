@@ -416,7 +416,7 @@
 			    (DF "TARGET_DOUBLE_FLOAT")])
 
 ;; Iterator for floating-point modes that can be loaded into X registers.
-(define_mode_iterator SOFTF [SF (DF "TARGET_64BIT")])
+(define_mode_iterator SOFTF [HF BF SF (DF "TARGET_64BIT")])
 
 ;; This attribute gives the length suffix for a sign- or zero-extension
 ;; instruction.
@@ -430,13 +430,13 @@
 (define_mode_attr default_load [(QI "lbu") (HI "lhu") (SI "lw") (DI "ld")])
 
 ;; Mode attribute for FP loads into integer registers.
-(define_mode_attr softload [(SF "lw") (DF "ld")])
+(define_mode_attr softload [(BF "lh") (HF "lh") (SF "lw") (DF "ld")])
 
 ;; Instruction names for stores.
 (define_mode_attr store [(QI "sb") (HI "sh") (SI "sw") (DI "sd") (HF "fsh") (BF "fsh") (SF "fsw") (DF "fsd")])
 
 ;; Instruction names for FP stores from integer registers.
-(define_mode_attr softstore [(SF "sw") (DF "sd")])
+(define_mode_attr softstore [(BF "sh") (HF "sh") (SF "sw") (DF "sd")])
 
 ;; This attribute gives the best constraint to use for registers of
 ;; a given mode.
