@@ -1254,7 +1254,15 @@
   [(set_attr "type" "fcvt")
    (set_attr "mode" "SF")])
 
-(define_insn "truncsfhf2"
+(define_expand "truncsfhf2"
+  [(set (match_operand:HF   0 "register_operand" "")
+	(float_truncate:HF
+	  (match_operand:SF 1 "register_operand" "")))]
+  "TARGET_HARD_FLOAT && (TARGET_FP16 || TARGET_ZFH)"
+{
+})
+
+(define_insn "zfh_truncsfhf2"
   [(set (match_operand:HF   0 "register_operand"  "=f")
 	(float_truncate:HF
 	  (match_operand:SF 1 "register_operand" " f")))]
@@ -1413,7 +1421,15 @@
   [(set_attr "type" "fcvt")
    (set_attr "mode" "DF")])
 
-(define_insn "extendhfsf2"
+(define_expand "extendhfsf2"
+  [(set (match_operand:SF   0 "register_operand" "")
+	(float_extend:SF
+	  (match_operand:HF 1 "register_operand"  "")))]
+  "TARGET_HARD_FLOAT && (TARGET_FP16 || TARGET_ZFH)"
+{
+})
+
+(define_insn "zfh_extendhfsf2"
   [(set (match_operand:SF   0 "register_operand" "=f")
 	(float_extend:SF
 	  (match_operand:HF 1 "register_operand"  " f")))]
