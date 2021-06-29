@@ -256,6 +256,7 @@ proc profopt-get-options { src } {
 	     || ![string compare "dg-final-use-not-autofdo" $cmd] \
 	     || ![string compare "dg-final-use-autofdo" $cmd] \
              || ![string compare "dg-additional-sources" $cmd] \
+             || ![string compare "dg-timeout-factor" $cmd] \
 	     || [string match "dg-require-*" $cmd]  } {
 	    set status [catch "$op" errmsg]
 	    if { $status != 0 } {
