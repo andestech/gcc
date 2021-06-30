@@ -861,18 +861,18 @@ riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
 }
 
 static void
-riscv_parse_cpu_string (const char *isa, int *flags)
+riscv_parse_cpu_string (const char *cpu, int *flags)
 {
   // 45-series cpuss have CALU
-  if (strcmp (isa, "n45") == 0 ||
-      strcmp (isa, "nx45") == 0 ||
-      strcmp (isa, "n45f") == 0 ||
-      strcmp (isa, "nx45f") == 0 ||
-      strcmp (isa, "d45") == 0 ||
-      strcmp (isa, "d45f") == 0 ||
-      strcmp (isa, "a45") == 0 ||
-      strcmp (isa, "ax45") == 0)
-    *flags |= MASK_CMOV;
+  if ((target_flags_explicit & MASK_CMOV) == 0)
+    {
+      *flags &= ~MASK_CMOV;
+      if (strcmp (cpu, "n45") == 0 || strcmp (cpu, "nx45") == 0
+	  || strcmp (cpu, "n45f") == 0 || strcmp (cpu, "nx45f") == 0
+	  || strcmp (cpu, "d45") == 0 || strcmp (cpu, "d45f") == 0
+	  || strcmp (cpu, "a45") == 0 || strcmp (cpu, "ax45") == 0)
+	*flags |= MASK_CMOV;
+    }
 }
 
 /* Implement TARGET_HANDLE_OPTION.  */
