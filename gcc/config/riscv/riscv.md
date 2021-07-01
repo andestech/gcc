@@ -3240,7 +3240,8 @@
 
   if (!reg_or_0_operand (cmp_op1, GET_MODE (cmp_op1)))
     {
-      if (!((code == EQ || code == NE) && TARGET_BIMM))
+      if (!((code == EQ || code == NE) && TARGET_BIMM
+	    && branch_bimm_operand (cmp_op1, GET_MODE (cmp_op1))))
 	cmp_op1 = force_reg (word_mode, cmp_op1);
     }
 
