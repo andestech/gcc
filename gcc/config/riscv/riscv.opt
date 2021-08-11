@@ -349,3 +349,7 @@ Seprate constant pool from text section in large code model.
 mno-workaround
 Target Report RejectNegative Undocumented
 Do not use workaroud solution.
+
+mno-execit-jal
+Target Report RejectNegative Undocumented
+Not use execit for jal.
