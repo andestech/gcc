@@ -1001,6 +1001,11 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"f", &gcc_options::x_target_flags, MASK_HARD_FLOAT},
   {"d", &gcc_options::x_target_flags, MASK_DOUBLE_FLOAT},
   {"c", &gcc_options::x_target_flags, MASK_RVC},
+
+  {"zba",    &gcc_options::x_riscv_zb_subext, MASK_ZBA},
+  {"zbb",    &gcc_options::x_riscv_zb_subext, MASK_ZBB},
+  {"zbc",    &gcc_options::x_riscv_zb_subext, MASK_ZBC},
+  {"zbs",    &gcc_options::x_riscv_zb_subext, MASK_ZBS},
   {NULL, NULL, 0}
 };
 

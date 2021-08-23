@@ -359,3 +359,6 @@ Not use execit for jal.
 mext-rvb
 Target Report Mask(RVB)
 Use hardware RVB instructions.
+
+TargetVariable
+int riscv_zb_subext
