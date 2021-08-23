@@ -270,7 +270,7 @@
 (define_attr "type"
   "unknown,branch,branch_imm,jump,call,load,fpload,store,fpstore,
    mtc,mfc,const,arith,logical,shift,slt,imul,idiv,move,fmove,fadd,fmul,
-   fmadd,fdiv,fcmp,fcvt,fsqrt,multi,auipc,sfb_alu,nop,ghost,
+   fmadd,fdiv,fcmp,fcvt,fsqrt,multi,auipc,sfb_alu,nop,ghost,bitmanip,
    dalu,dalu64,daluround,dcmp,dclip,dmul,dmac,dinsb,dpack,dbpick,dwext"
 
   (cond [(eq_attr "got" "load") (const_string "load")
@@ -1307,11 +1307,16 @@
 
 ;; Extension insns.
 
-(define_insn_and_split "zero_extendsidi2"
+(define_expand "zero_extendsidi2"
+  [(set (match_operand:DI 0 "register_operand")
+	(zero_extend:DI (match_operand:SI 1 "nonimmediate_operand")))]
+  "TARGET_64BIT")
+
+(define_insn_and_split "*zero_extendsidi2_internal"
   [(set (match_operand:DI     0 "register_operand"     "=r,r")
 	(zero_extend:DI
 	   (match_operand:SI 1 "nonimmediate_operand" " r,m")))]
-  "TARGET_64BIT"
+  "TARGET_64BIT && !(TARGET_ZBA || TARGET_ZBB)"
   "@
    bfoz\t%0,%1,31,0
    lwu\t%0,%1"
@@ -3938,6 +3943,7 @@
   "ld\t%0,%1"
   [(set (attr "length") (const_int 8))])
 
+(include "bitmanip.md")
 (include "sync.md")
 (include "peephole.md")
 (include "pic.md")
