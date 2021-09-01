@@ -106,6 +106,11 @@
   if (GET_MODE_SIZE (mode) > UNITS_PER_WORD)
     return false;
 
+  /* Check whether the constant can be loaded in a single
+     instruction with zbs extensions.  */
+  if (TARGET_64BIT && TARGET_ZBS && SINGLE_BIT_MASK_OPERAND (INTVAL (op)))
+    return false;
+
   /* Otherwise check whether the constant can be loaded in a single
      instruction.  */
   return !LUI_OPERAND (INTVAL (op)) && !SMALL_OPERAND (INTVAL (op));
@@ -484,3 +489,20 @@
 (define_predicate "reg_even_or_0_operand"
   (ior (match_operand 0 "const_0_operand")
        (match_operand 0 "register_even_operand")))
+
+;; Predicates for the ZBS extension.
+(define_predicate "single_bit_mask_operand"
+  (and (match_code "const_int")
+       (match_test "pow2p_hwi (INTVAL (op))")))
+
+(define_predicate "not_single_bit_mask_operand"
+  (and (match_code "const_int")
+       (match_test "pow2p_hwi (~INTVAL (op))")))
+
+(define_predicate "const31_operand"
+  (and (match_code "const_int")
+       (match_test "INTVAL (op) == 31")))
+
+(define_predicate "const63_operand"
+  (and (match_code "const_int")
+       (match_test "INTVAL (op) == 63")))

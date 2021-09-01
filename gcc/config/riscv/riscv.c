@@ -1007,6 +1007,13 @@ riscv_build_integer_1 (struct riscv_integer_op codes[RISCV_MAX_INTEGER_OPS],
       codes[0].value = value;
       return 1;
     }
+  if (TARGET_ZBS && SINGLE_BIT_MASK_OPERAND (value))
+    {
+      /* Simply BSETI.  */
+      codes[0].code = UNKNOWN;
+      codes[0].value = value;
+      return 1;
+    }
 
   /* End with ADDI.  When constructing HImode constants, do not generate any
      intermediate value that is not itself a valid HImode constant.  The
@@ -2979,7 +2986,17 @@ riscv_output_move (rtx dest, rtx src)
 	  }
 
       if (src_code == CONST_INT)
-	return "li\t%0,%1";
+	{
+	  if (SMALL_OPERAND (INTVAL (src)) || LUI_OPERAND (INTVAL (src)))
+	    return "li\t%0,%1";
+
+	  if (TARGET_ZBS
+	      && SINGLE_BIT_MASK_OPERAND (INTVAL (src)))
+	    return "bseti\t%0,zero,%S1";
+
+	  /* Should never reach here.  */
+	  abort ();
+	}
 
       if (src_code == HIGH)
 	return "lui\t%0,%h1";
@@ -4426,7 +4443,9 @@ riscv_memmodel_needs_release_fence (enum memmodel model)
    'A'	Print the atomic operation suffix for memory model OP.
    'F'	Print a FENCE if the memory model requires a release.
    'z'	Print x0 if OP is zero, otherwise print OP normally.
-   'i'	Print i if the operand is not a register.  */
+   'i'	Print i if the operand is not a register.
+   'S'	Print shift-index of single-bit mask OP.
+   'T'	Print shift-index of inverted single-bit mask OP.  */
 
 static void
 riscv_print_operand (FILE *file, rtx op, int letter)
@@ -4549,6 +4568,18 @@ riscv_print_operand (FILE *file, rtx op, int letter)
         fputs ("i", file);
       break;
 
+    case 'S':
+      {
+	rtx newop = GEN_INT (ctz_hwi (INTVAL (op)));
+	output_addr_const (file, newop);
+	break;
+      }
+    case 'T':
+      {
+	rtx newop = GEN_INT (ctz_hwi (~INTVAL (op)));
+	output_addr_const (file, newop);
+	break;
+      }
     default:
       switch (code)
 	{
