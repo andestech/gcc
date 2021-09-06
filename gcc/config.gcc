@@ -2489,6 +2489,9 @@ riscv*-*-linux*)
 		rv64v5d )
 			tmake_file="${tmake_file} riscv/t-linux-rv64v5d"
 			;;
+		andes45 )
+			tmake_file="${tmake_file} riscv/t-linux-andes45"
+			;;
 		"" )
 			;;
 		*)
@@ -2538,6 +2541,9 @@ riscv*-*-elf* | riscv*-*-rtems*)
 		  no-fma )
 			  tmake_file="${tmake_file} riscv/t-elf-fma"
 			  ;;
+		  andes45 )
+                          tmake_file="${tmake_file} riscv/t-elf-andes45"
+                          ;;
 		  *)
 			  echo "--with-multilib-list=${riscv_multilib} not supported."
 			  exit 1
