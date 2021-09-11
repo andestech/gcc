@@ -248,6 +248,9 @@ struct riscv_cpu_info {
 
   /* Tuning parameters for this CPU.  */
   const struct riscv_tune_info *tune_info;
+
+  /* Whether the function is available.  */
+  bool (*avail) (void);
 };
 
 /* Global variables for machine-dependent things.  */
@@ -864,44 +867,52 @@ riscv_insert_attributes (tree decl, tree *attributes)
     }
 }
 
+/* Declare an availability predicate for cpu info.  */
+#define AVAIL(NAME, COND)                                                      \
+  static bool riscv_cpu_avail_##NAME##_p (void) { return (COND); }
+
+AVAIL (rv32, !TARGET_64BIT)
+AVAIL (rv64, TARGET_64BIT)
+#undef AVAIL
+
 /* A table describing all the processors GCC knows about.  */
 static const struct riscv_cpu_info riscv_cpu_info_table[] = {
-  { "sifive-3-series", generic, &rocket_tune_info },
-  { "sifive-5-series", generic, &rocket_tune_info },
-  { "sifive-7-series", sifive_7, &sifive_7_tune_info },
-  { "rocket", rocket, &rocket_tune_info },
-  { "size", rocket, &optimize_size_tune_info },
-  { "vicuna", vicuna, &vicuna_tune_info },
-  { "vicuna2", vicuna2, &vicuna_tune_info },
-  { "kavalan", kavalan, &kavalan_tune_info},
-  { "n22", vicuna, &vicuna_tune_info },
-  { "fs02", vicuna, &vicuna_tune_info },
-  { "n25", vicuna, &vicuna_tune_info },
-  { "d25", vicuna, &vicuna_tune_info },
-  { "nx25", vicuna, &vicuna_tune_info },
-  { "n25f", vicuna, &vicuna_tune_info },
-  { "d25f", vicuna, &vicuna_tune_info },
-  { "nx25f", vicuna, &vicuna_tune_info },
-  { "a25", vicuna, &vicuna_tune_info },
-  { "ax25", vicuna, &vicuna_tune_info },
-  { "n45", kavalan, &kavalan_tune_info },
-  { "d45", kavalan, &kavalan_tune_info },
-  { "nx45", kavalan, &kavalan_tune_info },
-  { "n45f", kavalan, &kavalan_tune_info },
-  { "d45f", kavalan, &kavalan_tune_info },
-  { "nx45f", kavalan, &kavalan_tune_info },
-  { "a45", kavalan, &kavalan_tune_info },
-  { "ax45", kavalan, &kavalan_tune_info },
-  { "n27", vicuna, &vicuna_tune_info },
-  { "nx27", vicuna, &vicuna_tune_info },
-  { "nx27v", vicuna, &vicuna_tune_info },
-  { "d27", vicuna, &vicuna_tune_info },
-  { "nx27", vicuna, &vicuna_tune_info },
-  { "n27f", vicuna, &vicuna_tune_info },
-  { "d27f", vicuna, &vicuna_tune_info },
-  { "nx27f", vicuna, &vicuna_tune_info },
-  { "a27", vicuna, &vicuna_tune_info },
-  { "ax27", vicuna, &vicuna_tune_info },
+  {"sifive-3-series", generic, &rocket_tune_info, NULL},
+  {"sifive-5-series", generic, &rocket_tune_info, NULL},
+  {"sifive-7-series", sifive_7, &sifive_7_tune_info, NULL},
+  {"rocket", rocket, &rocket_tune_info, NULL},
+  {"size", rocket, &optimize_size_tune_info, NULL},
+  {"vicuna", vicuna, &vicuna_tune_info, NULL},
+  {"vicuna2", vicuna2, &vicuna_tune_info, NULL},
+  {"kavalan", kavalan, &kavalan_tune_info, NULL},
+  {"n22", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
+  {"fs02", vicuna, &vicuna_tune_info, NULL},
+  {"n25", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
+  {"d25", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
+  {"nx25", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv64_p},
+  {"n25f", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
+  {"d25f", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
+  {"nx25f", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv64_p},
+  {"a25", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
+  {"ax25", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv64_p},
+  {"n45", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv32_p},
+  {"d45", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv32_p},
+  {"nx45", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv64_p},
+  {"n45f", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv32_p},
+  {"d45f", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv32_p},
+  {"nx45f", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv64_p},
+  {"a45", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv32_p},
+  {"ax45", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv64_p},
+  {"n27", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
+  {"nx27", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv64_p},
+  {"nx27v", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv64_p},
+  {"d27", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
+  {"nx27", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv64_p},
+  {"n27f", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
+  {"d27f", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
+  {"nx27f", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv64_p},
+  {"a27", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
+  {"ax27", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv64_p},
 };
 
 /* Return the riscv_cpu_info entry for the given name string.  */
@@ -911,7 +922,11 @@ riscv_parse_cpu (const char *cpu_string)
 {
   for (unsigned i = 0; i < ARRAY_SIZE (riscv_cpu_info_table); i++)
     if (strcmp (riscv_cpu_info_table[i].name, cpu_string) == 0)
-      return riscv_cpu_info_table + i;
+      {
+	if (riscv_cpu_info_table[i].avail && !riscv_cpu_info_table[i].avail ())
+	  break;
+	return riscv_cpu_info_table + i;
+      }
 
   error ("unknown cpu %qs for %<-mtune%>", cpu_string);
   return riscv_cpu_info_table;
