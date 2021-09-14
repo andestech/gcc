@@ -6976,37 +6976,21 @@
   [(set_attr "type"  "dalu")
    (set_attr "mode"  "HI")])
 
-(define_insn "unspec_bswap8"
-  [(set (match_operand:V4QI 0 "register_operand" "=r")
-	(unspec:V4QI [(match_operand:V4QI 1 "register_operand" "r")] UNSPEC_BSWAP))]
+(define_insn "bswap8<mode>2"
+  [(set (match_operand:VQI 0 "register_operand" "=r")
+	(unspec:VQI [(match_operand:VQI 1 "register_operand" "r")] UNSPEC_BSWAP))]
   "TARGET_DSP"
   "swap8\t%0, %1"
   [(set_attr "type"  "dalu")
-   (set_attr "mode"  "V4QI")])
+   (set_attr "mode"  "<MODE>")])
 
-(define_insn "unspec_bswap8_64"
-  [(set (match_operand:V8QI 0 "register_operand" "=r")
-	(unspec:V8QI [(match_operand:V8QI 1 "register_operand" "r")] UNSPEC_BSWAP))]
-  "TARGET_DSP"
-  "swap8\t%0, %1"
-  [(set_attr "type"  "dalu")
-   (set_attr "mode"  "V8QI")])
-
-(define_insn "unspec_bswap16"
-  [(set (match_operand:V2HI 0 "register_operand" "=r")
-	(unspec:V2HI [(match_operand:V2HI 1 "register_operand" "r")] UNSPEC_BSWAP))]
+(define_insn "bswap16<mode>2"
+  [(set (match_operand:VHI 0 "register_operand" "=r")
+	(unspec:VHI [(match_operand:VHI 1 "register_operand" "r")] UNSPEC_BSWAP))]
   "TARGET_DSP"
   "swap16\t%0, %1"
   [(set_attr "type"  "dalu")
-   (set_attr "mode"  "V2HI")])
-
-(define_insn "unspec_bswap16_64"
-  [(set (match_operand:V4HI 0 "register_operand" "=r")
-	(unspec:V4HI [(match_operand:V4HI 1 "register_operand" "r")] UNSPEC_BSWAP))]
-  "TARGET_DSP"
-  "swap16\t%0, %1"
-  [(set_attr "type"  "dalu")
-   (set_attr "mode"  "V4HI")])
+   (set_attr "mode"  "<MODE>")])
 
 (define_insn "riscv_rdov<mode>"
   [(set (match_operand:GPR 0 "register_operand" "=r")
