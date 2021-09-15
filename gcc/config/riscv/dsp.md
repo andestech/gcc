@@ -37,6 +37,12 @@
 
 (define_mode_iterator VD_SI [(SI "!TARGET_64BIT") (V2SI "TARGET_64BIT")])
 
+(define_mode_iterator VHIX [V2HI (V4HI "TARGET_64BIT")
+                            SI (DI "TARGET_64BIT")])
+
+(define_mode_iterator VQIX [V4QI (V8QI "TARGET_64BIT")
+                            SI (DI "TARGET_64BIT")])
+
 ;; Give the number of DSP instructions in the mode
 (define_mode_attr bits [(V8QI "8") (V4QI "8") (QI "8") (V4HI "16") (V2HI "16")
 			(HI "16") (V2SI "32") (DI "64")])
@@ -6976,17 +6982,29 @@
   [(set_attr "type"  "dalu")
    (set_attr "mode"  "HI")])
 
+(define_expand "bswapsi2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(bswap:SI (match_operand:SI 1 "register_operand" "r")))]
+  "TARGET_DSP"
+{
+  rtx tmp = gen_reg_rtx (SImode);
+  emit_insn (gen_bswap8si2 (tmp, operands[1]));
+  emit_insn (gen_bswap16si2 (operands[0], tmp));
+  DONE;
+}
+[(set_attr "type"  "dalu")])
+
 (define_insn "bswap8<mode>2"
-  [(set (match_operand:VQI 0 "register_operand" "=r")
-	(unspec:VQI [(match_operand:VQI 1 "register_operand" "r")] UNSPEC_BSWAP))]
+  [(set (match_operand:VQIX 0 "register_operand" "=r")
+	(unspec:VQIX [(match_operand:VQIX 1 "register_operand" "r")] UNSPEC_BSWAP8))]
   "TARGET_DSP"
   "swap8\t%0, %1"
   [(set_attr "type"  "dalu")
    (set_attr "mode"  "<MODE>")])
 
 (define_insn "bswap16<mode>2"
-  [(set (match_operand:VHI 0 "register_operand" "=r")
-	(unspec:VHI [(match_operand:VHI 1 "register_operand" "r")] UNSPEC_BSWAP))]
+  [(set (match_operand:VHIX 0 "register_operand" "=r")
+	(unspec:VHIX [(match_operand:VHIX 1 "register_operand" "r")] UNSPEC_BSWAP16))]
   "TARGET_DSP"
   "swap16\t%0, %1"
   [(set_attr "type"  "dalu")
