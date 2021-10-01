@@ -1462,7 +1462,7 @@ riscv_valid_lo_sum_p (enum riscv_symbol_type sym_type, machine_mode mode,
 
   /* We may need to split multiword moves, so make sure that each word
      can be accessed without inducing a carry.  */
-  if (size > BITS_PER_WORD
+  if (size > BITS_PER_REG (mode)
       && (!TARGET_STRICT_ALIGN || size > align))
     return false;
 

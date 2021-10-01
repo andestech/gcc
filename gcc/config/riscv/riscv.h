@@ -154,6 +154,10 @@ extern const char *riscv_rewrite_march (int argc, const char **argv);
    ? 0 									\
    : ((riscv_abi == ABI_ILP32F || riscv_abi == ABI_LP64F) ? 4 : 8))
 
+/* Width of register of MODE */
+#define BITS_PER_REG(mode)                                                     \
+  ((GET_MODE_CLASS (mode) == MODE_FLOAT) ? UNITS_PER_FP_REG * 8 : BITS_PER_WORD)
+
 /* Set the sizes of the core types.  */
 #define SHORT_TYPE_SIZE 16
 #define INT_TYPE_SIZE 32
