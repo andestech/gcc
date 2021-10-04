@@ -1747,6 +1747,18 @@
   [(set_attr "type" "dpack")
    (set_attr "mode"  "SI")])
 
+;; TODO: Capture the other cases.
+
+(define_insn "pkbbdi_1"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(ior:DI (ashift:DI (match_operand:DI 2 "register_operand" "r")
+			   (const_int 32))
+		(zero_extend:DI (match_operand:SI 1 "register_operand" "r"))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "pkbb32\t%0, %2, %1"
+  [(set_attr "type" "dpack")
+   (set_attr "mode" "DI")])
+
 (define_expand "pkbt<mode>"
   [(match_operand:VSHI 0 "register_operand")
    (match_operand:VSHI 1 "register_operand")
