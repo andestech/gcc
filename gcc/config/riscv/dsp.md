@@ -1759,6 +1759,17 @@
   [(set_attr "type" "dpack")
    (set_attr "mode" "DI")])
 
+(define_insn "pkbbdi_2"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(ior:DI (and:DI (match_operand:DI 1 "register_operand" "r")
+			(const_int 4294967295))
+		(ashift:DI (match_operand:DI 2 "register_operand" "r")
+			   (const_int 32))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "pkbb32\t%0, %2, %1"
+  [(set_attr "type" "dpack")
+   (set_attr "mode" "DI")])
+
 (define_expand "pkbt<mode>"
   [(match_operand:VSHI 0 "register_operand")
    (match_operand:VSHI 1 "register_operand")
@@ -6344,6 +6355,28 @@
   [(set_attr "type"   "dwext")
    (set_attr "mode"   "SI")])
 
+(define_insn_and_split "wext32_si3"
+  [(set (match_operand:SI 0 "register_operand" "")
+	(rotate:SI
+	  (match_operand:SI 1 "register_operand" "")
+	  (match_operand:SI 2 "imm5u_operand" "")))]
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
+  "#"
+  "&& true"
+  [(const_int 1)]
+{
+  rtx tmp = gen_reg_rtx (DImode);
+  rtx low = riscv_di_low_part_subreg (tmp);
+  rtx high = riscv_di_high_part_subreg (tmp);
+  HOST_WIDE_INT shiftamount = INTVAL (operands[2]);
+
+  emit_move_insn (low, operands[1]);
+  emit_move_insn (high, operands[1]);
+
+  emit_insn (gen_wext (operands[0], tmp, GEN_INT (32 - shiftamount)));
+  DONE;
+})
+
 (define_insn "wext64"
   [(set (match_operand:DI 0 "register_operand"     "=r,  r")
 	(sign_extend:DI
@@ -6357,6 +6390,27 @@
    wexti\t%0, %1, %2"
   [(set_attr "type" "dwext")
    (set_attr "mode" "DI")])
+
+(define_insn_and_split "wext64_si3"
+  [(set (match_operand:DI 0 "register_operand" "")
+	(sign_extend:DI
+	  (subreg:SI
+	    (ior:DI
+	      (subreg:DI (ashift:SI (subreg:SI (match_operand:DI 1 "register_operand" "") 0)
+				    (match_operand:SI 2 "imm5u_operand" "")) 0)
+	      (subreg:DI (lshiftrt:SI (subreg:SI (match_operand:DI 3 "register_operand" "") 0)
+				      (match_operand:SI 4 "imm5u_operand" "")) 0)) 0)))]
+  "TARGET_DSP && TARGET_64BIT && !reload_completed
+   && ((INTVAL (operands[2]) + INTVAL (operands[4])) == 32)"
+  "#"
+  "&& true"
+  [(const_int 1)]
+{
+  rtx tmp = gen_reg_rtx (DImode);
+  emit_insn (gen_pkbbdi_2 (tmp, operands[1], operands[3]));
+  emit_insn (gen_wext64 (operands[0], tmp, operands[4]));
+  DONE;
+})
 
 (define_insn_and_split "wext_<shift>di3"
   [(set (match_operand:DI 0 "register_operand" "")
