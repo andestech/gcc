@@ -1,3 +1,4 @@
+/* { dg-require-effective-target riscv64 } */
 /* { dg-options "-Os -march=rv64imc -mabi=lp64" } */
 
 /* shorten_memrefs should rewrite these load/stores into a compressible

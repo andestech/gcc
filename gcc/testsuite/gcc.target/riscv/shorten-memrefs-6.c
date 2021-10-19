@@ -1,3 +1,4 @@
+/* { dg-require-effective-target riscv64 } */
 /* { dg-options "-Os -march=rv64imc -mabi=lp64" } */
 
 /* These loads cannot be compressed because only one compressed reg is
