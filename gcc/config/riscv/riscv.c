@@ -3749,10 +3749,6 @@ riscv_pass_by_reference (cumulative_args_t cum_v, const function_arg_info &arg)
   struct riscv_arg_info info;
   CUMULATIVE_ARGS *cum = get_cumulative_args (cum_v);
 
-  if ((TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH)
-      && arg.mode == HFmode)
-    return true;
-    
   if ((TARGET_BF16)
       && arg.mode == BFmode)
     return true;
