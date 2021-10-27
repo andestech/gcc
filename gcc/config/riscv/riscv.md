@@ -1316,7 +1316,7 @@
   [(set (match_operand:DI     0 "register_operand"     "=r,r")
 	(zero_extend:DI
 	   (match_operand:SI 1 "nonimmediate_operand" " r,m")))]
-  "TARGET_64BIT && !(TARGET_ZBA || TARGET_ZBB)"
+  "TARGET_64BIT && !TARGET_ZBA"
   "@
    bfoz\t%0,%1,31,0
    lwu\t%0,%1"
