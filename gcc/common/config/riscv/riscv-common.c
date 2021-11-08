@@ -304,7 +304,6 @@ multi_letter_subset_rank (const std::string &subset)
       high_order = 1;
       break;
     case 'z':
-      gcc_assert (subset.length () > 1);
       high_order = 2;
       break;
     case 'x':
