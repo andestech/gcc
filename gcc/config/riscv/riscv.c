@@ -1462,7 +1462,9 @@ riscv_valid_lo_sum_p (enum riscv_symbol_type sym_type, machine_mode mode,
 
   /* We may need to split multiword moves, so make sure that each word
      can be accessed without inducing a carry.  */
-  if (size > BITS_PER_REG (mode)
+  /* The begining address of constant pool should always be aligned.  */
+  if (size > BITS_PER_WORD
+      && !CONSTANT_POOL_ADDRESS_P (x)
       && (!TARGET_STRICT_ALIGN || size > align))
     return false;
 
