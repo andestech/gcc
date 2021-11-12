@@ -28,7 +28,10 @@ along with GCC; see the file COPYING3.  If not see
 NDS32_EX9_SPEC \
 NDS32_GP_RELAX_SPEC \
 BTB_FIXUP_SPEC \
-WORKAROUND_SPEC
+WORKAROUND_SPEC \
+" %{nostdlib|r|nostartfiles:%{mctor-dtor:crtbegin.o%s}}"
+
+#define LINK_GCC_C_SEQUENCE_SPEC "%G %{!nolibc:%L %G} %{nostdlib|r|nostartfiles:%{mctor-dtor:crtend.o%s}}"
 
 /* Link against Newlib libraries, because the ELF backend assumes Newlib.
    Handle the circular dependence between libc and libgloss. */
