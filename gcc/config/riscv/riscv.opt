@@ -362,3 +362,6 @@ Use RVB hardware instructions including Zba, Zbb, Zbc, Zbs.
 
 TargetVariable
 int riscv_zb_subext
+
+TargetVariable
+int riscv_zk_subext
