@@ -259,8 +259,10 @@ extern const char *riscv_rewrite_march (int argc, const char **argv);
    on the full register even if a narrower mode is specified.  */
 #define WORD_REGISTER_OPERATIONS 1
 
-/* RISC-V always sign-extend its value from load by default.  */
-#define LOAD_EXTEND_OP(MODE) SIGN_EXTEND
+/* When in 64-bit mode, move insns will sign extend SImode and CCmode
+   moves.  All other references are zero extended.  */
+#define LOAD_EXTEND_OP(MODE) \
+  (TARGET_64BIT && (MODE) == SImode ? SIGN_EXTEND : ZERO_EXTEND)
 
 /* Define this macro if it is advisable to hold scalars in registers
    in a wider mode than that declared by the program.  In such cases,
