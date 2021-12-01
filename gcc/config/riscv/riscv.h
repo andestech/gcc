@@ -1040,8 +1040,7 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
 
 #define CMODEL_SPEC \
   " %{mcmodel=small:-mcmodel=medlow}" \
-  " %{mcmodel=medium:%{march=rv32*:-mcmodel=medlow}}" \
-  " %{mcmodel=medium:%{march=rv64*:-mcmodel=medany}}" \
+  " %{mcmodel=medium:-mcmodel=medany}" \
   " %{mcmodel=large:%{march=rv32*:-mcmodel=medlow}}"
 
 #define DRIVER_SELF_SPECS \
