@@ -434,9 +434,8 @@ riscv_subset_list::add (const char *subset, int major_version,
 			int minor_version)
 {
   riscv_subset_t *itr;
-  if (strcmp (subset, "xv5") == 0)
+  if (strcmp (subset, "xv") == 0 && major_version == 5)
     {
-      major_version = 5;
       subset = "xandes";
     }
 
@@ -918,20 +917,49 @@ riscv_subset_list::parse_multiletter_ext (const char *p,
       char *subset = xstrdup (p);
       char *q = subset;
       const char *end_of_version;
+      size_t len;
+      size_t end_of_version_pos, i;
+      bool found_any_number = false;
+      bool found_minor_version = false;
 
-      if (strncmp(subset, "xv5", 3) == 0)
-	q += 2;
-
-      while (*++q != '\0' && *q != '_' && !ISDIGIT (*q))
+      /* Parse until end of this extension including version number.  */
+      while (*++q != '\0' && *q != '_')
 	;
 
+      len = q - subset;
+
+      end_of_version_pos = len;
+      /* Find the begin of version string.  */
+      for (i = len -1; i > 0; --i)
+	{
+	  if (ISDIGIT (subset[i]))
+	    {
+	      found_any_number = true;
+	      continue;
+	    }
+	  /* Might be version seperator, but need to check one more char,
+	     we only allow <major>p<minor>, so we could stop parsing if found
+	     any more `p`.  */
+	  if (subset[i] == 'p' &&
+	      !found_minor_version &&
+	      found_any_number && ISDIGIT (subset[i-1]))
+	    {
+	      found_minor_version = true;
+	      continue;
+	    }
+
+	  end_of_version_pos = i + 1;
+	  break;
+	}
+
       end_of_version
-	= parsing_subset_version (q, &major_version, &minor_version,
+	= parsing_subset_version (subset + end_of_version_pos,
+	                          &major_version, &minor_version,
 				  /* default_major_version= */ 2,
 				  /* default_minor_version= */ 0,
 				  /* std_ext_p= */ FALSE);
 
-      *q = '\0';
+      subset[end_of_version_pos] = '\0';
 
       if (strlen (subset) == 1)
 	{
@@ -942,7 +970,7 @@ riscv_subset_list::parse_multiletter_ext (const char *p,
 	}
 
       /* Update version to default one if it doesn't be specified. */
-      if (opt && (q == end_of_version))
+      if (opt && ((subset + end_of_version_pos) == end_of_version))
 	arch_options_default_version(opt, subset, &major_version, &minor_version);
 
       /* Check that non-standard-extension isn't disabled by option. */
