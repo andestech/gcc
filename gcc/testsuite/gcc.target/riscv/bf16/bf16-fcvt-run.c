@@ -1,8 +1,9 @@
 /* Test bf16 conversion intrinsics are working correctly*/
-/* { dg-do run } */
+/* { dg-do run { target riscv_xebfhw_hw } } */
 /* { dg-require-effective-target riscv_hard_fp } */
 /* { dg-require-effective-target riscv_xv5 } */
 /* { dg-options "-mbf16" } */
+
 #include <nds_intrinsic.h>
 #include <stdlib.h>
 
