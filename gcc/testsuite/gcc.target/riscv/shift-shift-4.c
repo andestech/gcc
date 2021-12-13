@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv32 } */
 /* { dg-options "-march=rv32i -mabi=ilp32 -O2" } */
 
 /* One zero-extend shift can be eliminated by modifying the constant in the

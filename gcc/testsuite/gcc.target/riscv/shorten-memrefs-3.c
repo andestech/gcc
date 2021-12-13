@@ -1,3 +1,4 @@
+/* { dg-require-effective-target riscv32 } */
 /* { dg-options "-Os -march=rv32imc -mabi=ilp32" } */
 
 /* These loads cannot be compressed because only one compressed reg is

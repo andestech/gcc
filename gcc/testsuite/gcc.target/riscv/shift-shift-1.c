@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv32 } */
 /* { dg-options "-march=rv32gc -mabi=ilp32 -O" } */
 
 /* Test for lshrsi3_zero_extend_3+1 pattern that uses p2m1_shift_operand.  */

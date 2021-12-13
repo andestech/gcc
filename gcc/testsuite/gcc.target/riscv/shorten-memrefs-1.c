@@ -1,3 +1,4 @@
+/* { dg-require-effective-target riscv32 } */
 /* { dg-options "-Os -march=rv32imc -mabi=ilp32" } */
 
 /* These stores cannot be compressed because x0 is not a compressed reg.

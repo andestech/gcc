@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv32 } */
 /* { dg-options "-march=rv32gc -mabi=ilp32 -O2 -fno-section-anchors" } */
 
 /* Check for %lo overflow.  Adding an offset larger than the alignment can
