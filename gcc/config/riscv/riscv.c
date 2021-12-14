@@ -2231,7 +2231,7 @@ riscv_legitimize_move (machine_mode mode, rtx dest, rtx src)
   if (GET_MODE_CLASS (mode) == MODE_INT
       && GET_MODE_SIZE (mode) < UNITS_PER_WORD
       && can_create_pseudo_p ()
-      && MEM_P (src))
+      && MEM_P (src) && MEM_VOLATILE_P(src))
     {
       rtx temp_reg;
       int zero_extend_p;
