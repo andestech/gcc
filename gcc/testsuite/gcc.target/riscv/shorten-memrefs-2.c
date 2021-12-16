@@ -1,4 +1,3 @@
-/* { dg-require-effective-target riscv32 } */
 /* { dg-options "-Os -march=rv32imc -mabi=ilp32" } */
 
 /* shorten_memrefs should rewrite these load/stores into a compressible

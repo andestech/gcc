@@ -1,5 +1,4 @@
 /* { dg-do compile } */
-/* { dg-require-effective-target riscv32 } */
 /* { dg-options "-march=rv32gc -mabi=ilp32d -O -mcmodel=medlow -mstrict-align" }
  */
 

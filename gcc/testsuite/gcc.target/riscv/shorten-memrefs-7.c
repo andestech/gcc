@@ -1,4 +1,3 @@
-/* { dg-require-effective-target riscv32 } */
 /* { dg-options "-Os -march=rv32imc -mabi=ilp32 -mno-shorten-memrefs" } */
 
 /* Check that these load/stores do not get rewritten into a compressible format
