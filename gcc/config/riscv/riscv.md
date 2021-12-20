@@ -1411,7 +1411,7 @@
 			 - GET_MODE_BITSIZE (<SHORT:MODE>mode));
 }
   [(set_attr "move_type" "shift_shift,load")
-   (set_attr "mode" "SI")])
+   (set_attr "mode" "<SHORT:MODE>")])
 
 (define_insn "extendsfdf2"
   [(set (match_operand:DF     0 "register_operand" "=f")
