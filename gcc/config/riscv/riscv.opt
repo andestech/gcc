@@ -163,7 +163,9 @@ Target Report Mask(LEA) Undocumented
 Use hardware load effective address instructions: lea.
 
 mzfh
-Target Report Mask(ZFH) Undocumented
+Target Report Mask(ZFH)
+Support Zfh half-precision floating-point extension
+
 Mask(ZFH)
 
 Mask(V5)
@@ -336,8 +338,8 @@ msoft-fp16
 Target Report Mask(SOFT_FP16) Undocumented
 
 mbf16
-Target Report Mask(BF16) Undocumented
-Supporting __bf16 instructions.
+Target Report Mask(BF16)
+Support Andes BFLOAT16 Conversion Extension
 
 mcmov
 Target Mask(CMOV)
