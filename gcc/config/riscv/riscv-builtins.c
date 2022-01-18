@@ -2763,6 +2763,11 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (flmismsi, flmismdi, flmism,
 		      RISCV_LONG_FTYPE_ULONG_ULONG, FLMISM),
 
+#undef DIRECT_BUILTIN
+#define DIRECT_BUILTIN(INSN, FUNCTION_TYPE, AVAIL)			\
+  RISCV_BUILTIN (INSN, INSN, #INSN, RISCV_BUILTIN_DIRECT,		\
+		 FUNCTION_TYPE, AVAIL)
+
   #include "riscv-builtins-crypto.def"
 };
 
