@@ -2747,6 +2747,40 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   #include "riscv-builtins-crypto.def"
 };
 
+struct riscv_fcode_avail
+{
+  const char *ext;
+
+  /* Identifies which built-in operation it is.  */
+  enum riscv_builtins fcode;
+
+  /* Whether the function is available.  */
+  unsigned int (*avail) (void);
+};
+
+#define ENTRY_EXT_FCODE_AVAIL(EXT) \
+{ #EXT, RISCV_BUILTIN_crypto_ ## EXT, riscv_builtin_avail_crypto_ ## EXT }
+
+static const struct riscv_fcode_avail riscv_fcode_avail_map[] = {
+ENTRY_EXT_FCODE_AVAIL(zbkb32),
+ENTRY_EXT_FCODE_AVAIL(zbkb64),
+ENTRY_EXT_FCODE_AVAIL(zbkc32),
+ENTRY_EXT_FCODE_AVAIL(zbkc64),
+ENTRY_EXT_FCODE_AVAIL(zbkx32),
+ENTRY_EXT_FCODE_AVAIL(zbkx64),
+ENTRY_EXT_FCODE_AVAIL(zknd32),
+ENTRY_EXT_FCODE_AVAIL(zknd64),
+ENTRY_EXT_FCODE_AVAIL(zkne32),
+ENTRY_EXT_FCODE_AVAIL(zkne64),
+ENTRY_EXT_FCODE_AVAIL(zkne_or_zknd),
+ENTRY_EXT_FCODE_AVAIL(zknh32),
+ENTRY_EXT_FCODE_AVAIL(zknh64),
+ENTRY_EXT_FCODE_AVAIL(zksh32),
+ENTRY_EXT_FCODE_AVAIL(zksh64),
+ENTRY_EXT_FCODE_AVAIL(zksed32),
+ENTRY_EXT_FCODE_AVAIL(zksed64)
+};
+
 /* Index I is the function declaration for riscv_builtins[I], or null if the
    function isn't defined on this target.  */
 static GTY(()) tree riscv_builtin_decls[ARRAY_SIZE (riscv_builtins)];
