@@ -53,7 +53,7 @@ static arch_options_t std_ext_options[] = {
   {"c", "16-bit",     false, false, 2, 0},
   {"v", "ext-vector", false, false, 1, 0},
   {"p",  "ext-dsp",   false, false, 0, 5},
-  {"b", "bitmanip",   false, false, 1, 0},
+  {"b", "ext-rvb",   false, false, 1, 0},
   {NULL, NULL, false, false, 2, 0}
 };
 
