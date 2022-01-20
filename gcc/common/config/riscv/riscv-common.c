@@ -115,16 +115,6 @@ static void arch_options_default_version(const arch_options_t *opt, const char *
       }
 }
 
-/* subset compare
-
-  Returns an integral value indicating the relationship between the subsets:
-  Return value  indicates
-  -1            B has higher order than A.
-  0             A and B are same subset.
-  1             A has higher order than B.
-
-*/
-
 /* Subset info.  */
 struct riscv_subset_t
 {
@@ -213,6 +203,35 @@ static const char *riscv_convert_nds_ext (const char *);
 
 static riscv_subset_list *current_subset_list = NULL;
 
+const riscv_subset_list *riscv_current_subset_list ()
+{
+  return current_subset_list;
+}
+
+riscv_subset_t::riscv_subset_t ()
+  : name (), major_version (0), minor_version (0), next (NULL)
+{
+}
+
+riscv_subset_list::riscv_subset_list (const char *arch, location_t loc)
+  : m_arch (arch), m_loc (loc), m_head (NULL), m_tail (NULL), m_xlen (0)
+{
+}
+
+riscv_subset_list::~riscv_subset_list ()
+{
+  if (!m_head)
+    return;
+
+  riscv_subset_t *item = this->m_head;
+  while (item != NULL)
+    {
+      riscv_subset_t *next = item->next;
+      delete item;
+      item = next;
+    }
+}
+
 /* Get the rank for single-letter subsets, lower value meaning higher
    priority.  */
 
@@ -285,6 +304,16 @@ multi_letter_subset_rank (const std::string &subset)
   return (high_order << 8) + low_order;
 }
 
+/* subset compare
+
+  Returns an integral value indicating the relationship between the subsets:
+  Return value  indicates
+  -1            B has higher order than A.
+  0             A and B are same subset.
+  1             A has higher order than B.
+
+*/
+
 static int
 subset_cmp (const std::string &a, const std::string &b)
 {
@@ -326,37 +355,6 @@ subset_cmp (const std::string &a, const std::string &b)
     }
 }
 
-
-
-const riscv_subset_list *riscv_current_subset_list ()
-{
-  return current_subset_list;
-}
-
-riscv_subset_t::riscv_subset_t ()
-  : name (), major_version (0), minor_version (0), next (NULL)
-{
-}
-
-riscv_subset_list::riscv_subset_list (const char *arch, location_t loc)
-  : m_arch (arch), m_loc (loc), m_head (NULL), m_tail (NULL), m_xlen (0)
-{
-}
-
-riscv_subset_list::~riscv_subset_list ()
-{
-  if (!m_head)
-    return;
-
-  riscv_subset_t *item = this->m_head;
-  while (item != NULL)
-    {
-      riscv_subset_t *next = item->next;
-      delete item;
-      item = next;
-    }
-}
-
 /* Add new subset to list.  */
 
 void
@@ -380,13 +378,13 @@ riscv_subset_list::add (const char *subset, int major_version,
   s->minor_version = minor_version;
   s->next = NULL;
 
- if (m_tail == NULL)
-   {
-     m_tail = s;
-     return;
-   }
+  if (m_tail == NULL)
+    {
+      m_tail = s;
+      return;
+    }
 
- /* e, i or g should be first subext, never come here.  */
+  /* e, i or g should be first subext, never come here.  */
   gcc_assert (subset[0] != 'e'
 	      && subset[0] != 'i'
 	      && subset[0] != 'g');
@@ -401,7 +399,6 @@ riscv_subset_list::add (const char *subset, int major_version,
     }
 
   gcc_assert (m_head->next != NULL);
-
 
   /* Subset list must in canonical order, but implied subset won't
      add in canonical order.  */
@@ -915,12 +912,6 @@ riscv_subset_list::parse (const char *arch, location_t loc)
   if (p == NULL)
     goto fail;
 
-
-  for (itr = subset_list->m_head; itr != NULL; itr = itr->next)
-    {
-      subset_list->handle_implied_ext (itr);
-    }
-
   /* Parsing non-standard extension.  */
   p = subset_list->parse_multiletter_ext (p, "x", "non-standard extension",
 					  nonstd_x_ext_options);
@@ -933,6 +924,11 @@ riscv_subset_list::parse (const char *arch, location_t loc)
       error_at (loc, "%<-march=%s%>: unexpected ISA string at end: %qs",
                arch, p);
       goto fail;
+    }
+
+  for (itr = subset_list->m_head; itr != NULL; itr = itr->next)
+    {
+      subset_list->handle_implied_ext (itr);
     }
 
   return subset_list;
