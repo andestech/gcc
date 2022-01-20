@@ -62,7 +62,10 @@ static arch_options_t nonstd_z_ext_options[] = {
   {"zbb", "ext-zbabcs",  false, false, 1, 0},
   {"zbc", "ext-zbabcs", false, false, 1, 0},
   {"zbs", "ext-zbabcs", false, false, 1, 0},
-  {NULL, NULL, false, false, 0, 5}
+  {"zk",  "ext-rvk", false, false, 1, 0},
+  {"zkn", "ext-rvk", false, false, 1, 0},
+  {"zks", "ext-rvk", false, false, 1, 0},
+  {NULL, NULL, false, false, 2, 0}
 };
 
 static arch_options_t nonstd_x_ext_options[] = {

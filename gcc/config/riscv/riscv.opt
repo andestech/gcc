@@ -363,5 +363,9 @@ Use RVB hardware instructions including Zba, Zbb, Zbc, Zbs.
 TargetVariable
 int riscv_zb_subext
 
+mext-rvk
+Target Report Mask(RVK)
+Use hardware RVK instructions.
+
 TargetVariable
 int riscv_zk_subext
