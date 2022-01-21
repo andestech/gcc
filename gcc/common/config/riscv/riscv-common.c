@@ -59,6 +59,10 @@ static arch_options_t std_ext_options[] = {
 
 static arch_options_t nonstd_z_ext_options[] = {
   {"zfh", "zfh", false, false, 0, 1},
+  {"zba", "zba", false, false, 1, 0},
+  {"zbb", "zba", false, false, 1, 0},
+  {"zbc", "zba", false, false, 1, 0},
+  {"zbs", "zba", false, false, 1, 0},
   {NULL, NULL, false, false, 2, 0}
 };
 
@@ -181,7 +185,7 @@ public:
 
   void add (const char *, int, int);
 
-  void add (const char *, bool);
+  void add (const char *, const char *);
 
   void add (const char *, unsigned, unsigned, const arch_options_t *opt);
 
@@ -754,23 +758,46 @@ riscv_subset_list::handle_implied_ext (riscv_subset_t *ext)
       if (lookup (implied_info->implied_ext))
 	continue;
 
-      /* Version of implied extension will get from current ISA spec
-	 version.  */
-      add (implied_info->implied_ext, true);
+      add (implied_info->implied_ext, implied_info->ext);
     }
 }
 
-/* Add new subset to list, but using default version from ISA spec version.  */
+/* Add new subset to list, but using default version based on the following priority.
+ * 1. subset's predefined default value in different option table.
+ * 2. ext's predefined default value in different option table.
+ */
 
 void
-riscv_subset_list::add (const char *subset, bool implied_p)
+riscv_subset_list::add (const char *subset, const char *ext)
 {
   unsigned int major_version = 0, minor_version = 0;
+  int i;
 
-  arch_options_default_version (std_ext_options, subset, &major_version,
-				&minor_version);
+  for (i = 0; i < NUM_EXTS_KIND; ++i)
+    {
+      arch_options_t *opt = ext_options[i];
+      arch_options_default_version (opt, subset, &major_version,
+				    &minor_version);
 
-  add (subset, major_version, minor_version);
+      if (major_version != 0 || minor_version != 0)
+	{
+	  add (subset, major_version, minor_version);
+	  return;
+	}
+    }
+
+  for (i = 0; i < NUM_EXTS_KIND; ++i)
+    {
+      arch_options_t *opt = ext_options[i];
+      arch_options_default_version (opt, ext, &major_version,
+				    &minor_version);
+
+      if (major_version != 0 || minor_version != 0)
+	{
+	  add (subset, major_version, minor_version);
+	  return;
+	}
+    }
 }
 
 /* Parsing function for multi-letter extensions.
