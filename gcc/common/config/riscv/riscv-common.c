@@ -114,7 +114,7 @@ static void arch_options_default_version(const arch_options_t *opt, const char *
 					 unsigned *minor_version)
 {
   for (; !arch_options_end_p(opt); ++opt)
-    if (strncmp(opt->ext, p, strlen(opt->ext)) == 0)
+    if (strcmp(opt->ext, p) == 0)
       {
 	*major_version = opt->default_major_version;
 	*minor_version = opt->default_minor_version;
