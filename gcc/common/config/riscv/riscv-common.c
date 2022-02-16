@@ -62,14 +62,14 @@ static arch_options_t nonstd_z_ext_options[] = {
   {"zbb", "ext-zbabcs",  false, false, 1, 0},
   {"zbc", "ext-zbabcs", false, false, 1, 0},
   {"zbs", "ext-zbabcs", false, false, 1, 0},
-  {NULL, NULL, false, false, 2, 0}
+  {NULL, NULL, false, false, 0, 5}
 };
 
 static arch_options_t nonstd_x_ext_options[] = {
   {"xandes",    "nds", false, false, 5, 0},
   {"xefhw",    "fp16", false, false, 2, 0},
   {"xebfhw",    "bf16", false, false, 2, 0},
-  {NULL, NULL, false, false, 2, 0}
+  {NULL, NULL, false, false, 0, 5}
 };
 
 static arch_options_t *ext_options[] = {
@@ -760,17 +760,20 @@ riscv_subset_list::handle_implied_ext (riscv_subset_t *ext)
 /* Add new subset to list, but using default version based on the following priority.
  * 1. subset's predefined default value in different option table.
  * 2. ext's predefined default value in different option table.
+ * 3. Use ending entry's default value in according option table.
  */
 
 void
 riscv_subset_list::add (const char *subset, const char *ext)
 {
   unsigned int major_version = 0, minor_version = 0;
+  arch_options_t *opt;
   int i;
 
+  /* Try to find predefined default version for subset. */
   for (i = 0; i < NUM_EXTS_KIND; ++i)
     {
-      arch_options_t *opt = ext_options[i];
+      opt = ext_options[i];
       arch_options_default_version (opt, subset, &major_version,
 				    &minor_version);
 
@@ -781,9 +784,10 @@ riscv_subset_list::add (const char *subset, const char *ext)
 	}
     }
 
+  /* Try to find predefined default version for ext. */
   for (i = 0; i < NUM_EXTS_KIND; ++i)
     {
-      arch_options_t *opt = ext_options[i];
+      opt = ext_options[i];
       arch_options_default_version (opt, ext, &major_version,
 				    &minor_version);
 
@@ -793,6 +797,18 @@ riscv_subset_list::add (const char *subset, const char *ext)
 	  return;
 	}
     }
+
+  if (subset[0] == 'z')
+    opt = nonstd_z_ext_options;
+  else if (subset[0] == 'x')
+    opt = nonstd_x_ext_options;
+  else
+    opt = std_ext_options;
+
+  /* Get the ending entry of related option table. */
+  for (; !arch_options_end_p(opt); ++opt)
+    ;
+  add (subset, opt->default_major_version, opt->default_minor_version);
 }
 
 /* Parsing function for multi-letter extensions.
