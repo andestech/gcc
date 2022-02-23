@@ -506,3 +506,11 @@
 (define_predicate "const63_operand"
   (and (match_code "const_int")
        (match_test "INTVAL (op) == 63")))
+
+(define_predicate "bs_operand"
+  (and (match_code "const_int")
+       (match_test "INTVAL (op) < 4")))
+
+(define_predicate "rnum_operand"
+  (and (match_code "const_int")
+       (match_test "INTVAL (op) < 11")))

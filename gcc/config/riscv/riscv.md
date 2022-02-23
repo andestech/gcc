@@ -3957,6 +3957,7 @@
   [(set (attr "length") (const_int 8))])
 
 (include "bitmanip.md")
+(include "crypto.md")
 (include "sync.md")
 (include "peephole.md")
 (include "pic.md")
