@@ -73,6 +73,15 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
       builtin_define ("__riscv_fsqrt");
     }
 
+  if (TARGET_ZBKB && TARGET_ZBKC && TARGET_ZBKX && TARGET_ZKNE && TARGET_ZKND && TARGET_ZKNH)
+    {
+      builtin_define ("__riscv_zk");
+      builtin_define ("__riscv_zkn");
+    }
+
+  if (TARGET_ZBKB && TARGET_ZBKC && TARGET_ZBKX && TARGET_ZKSED && TARGET_ZKSH)
+      builtin_define ("__riscv_zks");
+
   switch (riscv_abi)
     {
     case ABI_ILP32E:
