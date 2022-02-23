@@ -916,6 +916,31 @@ struct riscv_builtin_description {
   enum riscv_builtins fcode;
 };
 
+AVAIL (crypto_zbkb32, TARGET_ZBKB && !TARGET_64BIT)
+AVAIL (crypto_zbkb64, TARGET_ZBKB && TARGET_64BIT)
+
+AVAIL (crypto_zbkc32, TARGET_ZBKC && !TARGET_64BIT)
+AVAIL (crypto_zbkc64, TARGET_ZBKC && TARGET_64BIT)
+
+AVAIL (crypto_zbkx32, TARGET_ZBKX && !TARGET_64BIT)
+AVAIL (crypto_zbkx64, TARGET_ZBKX && TARGET_64BIT)
+
+AVAIL (crypto_zknd32, TARGET_ZKND && !TARGET_64BIT)
+AVAIL (crypto_zknd64, TARGET_ZKND && TARGET_64BIT)
+
+AVAIL (crypto_zkne32, TARGET_ZKNE && !TARGET_64BIT)
+AVAIL (crypto_zkne64, TARGET_ZKNE && TARGET_64BIT)
+AVAIL (crypto_zkne_or_zknd, (TARGET_ZKNE || TARGET_ZKND) && TARGET_64BIT)
+
+AVAIL (crypto_zknh32, TARGET_ZKNH && !TARGET_64BIT)
+AVAIL (crypto_zknh64, TARGET_ZKNH && TARGET_64BIT)
+
+AVAIL (crypto_zksh32, TARGET_ZKSH && !TARGET_64BIT)
+AVAIL (crypto_zksh64, TARGET_ZKSH && TARGET_64BIT)
+
+AVAIL (crypto_zksed32, TARGET_ZKSED && !TARGET_64BIT)
+AVAIL (crypto_zksed64, TARGET_ZKSED && TARGET_64BIT)
+
 /* Construct a riscv_builtin_description from the given arguments.
 
    INSN is the name of the associated instruction pattern, without the
@@ -962,6 +987,7 @@ struct riscv_builtin_description {
 /* Argument types.  */
 #define RISCV_ATYPE_VOID void_type_node
 #define RISCV_ATYPE_SI intSI_type_node
+#define RISCV_ATYPE_DI intDI_type_node
 #define RISCV_ATYPE_HI intHI_type_node
 #define RISCV_ATYPE_BF riscv_bf16_type_node
 #define RISCV_ATYPE_SF float_type_node
@@ -2708,7 +2734,9 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_DSP_BUILTIN (ffmismsi, ffmismdi, ffmism,
 		      RISCV_LONG_FTYPE_ULONG_ULONG, FFMISM),
   DIRECT_DSP_BUILTIN (flmismsi, flmismdi, flmism,
-		      RISCV_LONG_FTYPE_ULONG_ULONG, FLMISM)
+		      RISCV_LONG_FTYPE_ULONG_ULONG, FLMISM),
+
+  #include "riscv-builtins-crypto.def"
 };
 
 /* Index I is the function declaration for riscv_builtins[I], or null if the
