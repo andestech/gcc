@@ -3962,7 +3962,7 @@ static tree
 riscv_promoted_type (const_tree t)
 {
   /* Promote __fp16/__bf16 to float if fp16/bf16 extension is avariable. */
-  if ((TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_ZFH || TARGET_BF16)
+  if ((TARGET_FP16 || TARGET_SOFT_FP16 || TARGET_BF16)
       && SCALAR_FLOAT_TYPE_P (t)
       && ((TYPE_MAIN_VARIANT (t) == riscv_fp16_type_node) || (TYPE_MAIN_VARIANT (t) == riscv_bf16_type_node)))
     return float_type_node;
