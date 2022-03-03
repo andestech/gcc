@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv_hard_fp } */
 /* { dg-options "-mzfh -O3" } */
 /* { dg-final { scan-assembler "fmadd.h" } } */
 
