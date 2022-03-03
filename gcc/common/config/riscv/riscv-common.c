@@ -53,6 +53,7 @@ static arch_options_t std_ext_options[] = {
   {"c", "16-bit",     false, false, 2, 0},
   {"v", "ext-vector", false, false, 1, 0},
   {"p",  "ext-dsp",   false, false, 0, 5},
+  {"b", "bitmanip",   false, false, 1, 0},
   {NULL, NULL, false, false, 2, 0}
 };
 
@@ -114,6 +115,16 @@ static void arch_options_default_version(const arch_options_t *opt, const char *
       }
 }
 
+/* subset compare
+
+  Returns an integral value indicating the relationship between the subsets:
+  Return value  indicates
+  -1            B has higher order than A.
+  0             A and B are same subset.
+  1             A has higher order than B.
+
+*/
+
 /* Subset info.  */
 struct riscv_subset_t
 {
@@ -136,6 +147,10 @@ struct riscv_implied_info_t
 riscv_implied_info_t riscv_implied_info[] =
 {
   {"d", "f"},
+  {"b", "zba"},
+  {"b", "zbb"},
+  {"b", "zbc"},
+  {"b", "zbs"},
   {NULL, NULL}
 };
 
@@ -169,12 +184,14 @@ private:
 				     const char *,
 				     const arch_options_t *opt = NULL);
 
-  void handle_implied_ext (const char *, int, int);
+  void handle_implied_ext (riscv_subset_t *);
 
 public:
   ~riscv_subset_list ();
 
   void add (const char *, int, int);
+
+  void add (const char *, bool);
 
   void add (const char *, unsigned, unsigned, const arch_options_t *opt);
 
@@ -195,6 +212,121 @@ static const char *riscv_supported_std_ext (void);
 static const char *riscv_convert_nds_ext (const char *);
 
 static riscv_subset_list *current_subset_list = NULL;
+
+/* Get the rank for single-letter subsets, lower value meaning higher
+   priority.  */
+
+static int
+single_letter_subset_rank (char ext)
+{
+  int rank;
+
+  switch (ext)
+    {
+    case 'i':
+      return 0;
+    case 'e':
+      return 1;
+    default:
+      break;
+    }
+
+  const char *all_ext = riscv_supported_std_ext ();
+  const char *ext_pos = strchr (all_ext, ext);
+  if (ext_pos == NULL)
+    /* If got an unknown extension letter, then give it an alphabetical
+       order, but after all known standard extension.  */
+    rank = strlen (all_ext) + ext - 'a';
+  else
+    rank = (int)(ext_pos - all_ext) + 2 /* e and i has higher rank.  */;
+
+  return rank;
+}
+
+/* Get the rank for multi-letter subsets, lower value meaning higher
+   priority.  */
+
+static int
+multi_letter_subset_rank (const std::string &subset)
+{
+  gcc_assert (subset.length () >= 2);
+  int high_order = -1;
+  int low_order = 0;
+  /* The order between multi-char extensions: s -> h -> z -> x.  */
+  char multiletter_class = subset[0];
+  switch (multiletter_class)
+    {
+    case 's':
+      high_order = 0;
+      break;
+    case 'h':
+      high_order = 1;
+      break;
+    case 'z':
+      gcc_assert (subset.length () > 2);
+      high_order = 2;
+      break;
+    case 'x':
+      high_order = 3;
+      break;
+    default:
+      gcc_unreachable ();
+      return -1;
+    }
+
+  if (multiletter_class == 'z')
+    /* Order for z extension on spec: If multiple "Z" extensions are named, they
+       should be ordered first by category, then alphabetically within a
+       category - for example, "Zicsr_Zifencei_Zam". */
+    low_order = single_letter_subset_rank (subset[1]);
+  else
+    low_order = 0;
+
+  return (high_order << 8) + low_order;
+}
+
+static int
+subset_cmp (const std::string &a, const std::string &b)
+{
+  if (a == b)
+    return 0;
+
+  size_t a_len = a.length ();
+  size_t b_len = b.length ();
+
+  /* Single-letter extension always get higher order than
+     multi-letter extension.  */
+  if (a_len == 1 && b_len != 1)
+    return 1;
+
+  if (a_len != 1 && b_len == 1)
+    return -1;
+
+  if (a_len == 1 && b_len == 1)
+    {
+      int rank_a = single_letter_subset_rank (a[0]);
+      int rank_b = single_letter_subset_rank (b[0]);
+
+      if (rank_a < rank_b)
+	return 1;
+      else
+	return -1;
+    }
+  else
+    {
+      int rank_a = multi_letter_subset_rank(a);
+      int rank_b = multi_letter_subset_rank(b);
+
+      /* Using alphabetical/lexicographical order if they have same rank.  */
+      if (rank_a == rank_b)
+	/* The return value of strcmp has opposite meaning.  */
+	return -strcmp (a.c_str (), b.c_str ());
+      else
+	return (rank_a < rank_b) ? 1 : -1;
+    }
+}
+
+
 
 const riscv_subset_list *riscv_current_subset_list ()
 {
@@ -231,6 +363,7 @@ void
 riscv_subset_list::add (const char *subset, int major_version,
 			int minor_version)
 {
+  riscv_subset_t *itr;
   if (strcmp (subset, "xv5") == 0)
     {
       major_version = 5;
@@ -247,9 +380,47 @@ riscv_subset_list::add (const char *subset, int major_version,
   s->minor_version = minor_version;
   s->next = NULL;
 
-  if (m_tail != NULL)
-    m_tail->next = s;
+ if (m_tail == NULL)
+   {
+     m_tail = s;
+     return;
+   }
 
+ /* e, i or g should be first subext, never come here.  */
+  gcc_assert (subset[0] != 'e'
+	      && subset[0] != 'i'
+	      && subset[0] != 'g');
+
+  /* Add second element.  */
+  if (m_tail == m_head)
+    {
+      gcc_assert (m_head->next == NULL);
+      m_head->next = s;
+      m_tail = s;
+      return;
+    }
+
+  gcc_assert (m_head->next != NULL);
+
+
+  /* Subset list must in canonical order, but implied subset won't
+     add in canonical order.  */
+  for (itr = m_head; itr->next != NULL; itr = itr->next)
+    {
+      riscv_subset_t *next = itr->next;
+      int cmp = subset_cmp (s->name, next->name);
+      gcc_assert (cmp != 0);
+
+      if (cmp > 0)
+	{
+	  s->next = next;
+	  itr->next = s;
+	  return;
+	}
+    }
+
+  /* Insert at tail of the list.  */
+  itr->next = s;
   m_tail = s;
 }
 
@@ -552,8 +723,6 @@ riscv_subset_list::parse_std_ext (const char *p)
 	arch_options_default_version (std_ext_options, subset, &major_version,
 				      &minor_version);
 
-      handle_implied_ext (subset, major_version, minor_version);
-
       /* Check that standard extension isn't disabled by option. */
       if (!arch_options_disabled_p(&std_ext_options[0], subset))
 	add (subset, major_version, minor_version);
@@ -572,30 +741,39 @@ riscv_subset_list::parse_std_ext (const char *p)
 }
 
 
-/* Check any implied extensions for EXT with version
-   MAJOR_VERSION.MINOR_VERSION.  */
+/* Check any implied extensions for EXT.  */
 void
-riscv_subset_list::handle_implied_ext (const char *ext,
-				       int major_version,
-				       int minor_version)
+riscv_subset_list::handle_implied_ext (riscv_subset_t *ext)
 {
   riscv_implied_info_t *implied_info;
   for (implied_info = &riscv_implied_info[0];
        implied_info->ext;
        ++implied_info)
     {
-      if (strcmp (ext, implied_info->ext) != 0)
+      if (strcmp (ext->name.c_str (), implied_info->ext) != 0)
 	continue;
 
       /* Skip if implied extension already present.  */
       if (lookup (implied_info->implied_ext))
 	continue;
 
-      /* TODO: Implied extension might use different version.  */
-      if (!arch_options_disabled_p(&std_ext_options[0],
-				   implied_info->implied_ext))
-	add (implied_info->implied_ext, major_version, minor_version);
+      /* Version of implied extension will get from current ISA spec
+	 version.  */
+      add (implied_info->implied_ext, true);
     }
+}
+
+/* Add new subset to list, but using default version from ISA spec version.  */
+
+void
+riscv_subset_list::add (const char *subset, bool implied_p)
+{
+  unsigned int major_version = 0, minor_version = 0;
+
+  arch_options_default_version (std_ext_options, subset, &major_version,
+				&minor_version);
+
+  add (subset, major_version, minor_version);
 }
 
 /* Parsing function for multi-letter extensions.
@@ -691,6 +869,7 @@ riscv_subset_list *
 riscv_subset_list::parse (const char *arch, location_t loc)
 {
   riscv_subset_list *subset_list = new riscv_subset_list (arch, loc);
+  riscv_subset_t *itr;
   const char *p = arch;
   if (strncmp (p, "rv32", 4) == 0)
     {
@@ -733,9 +912,14 @@ riscv_subset_list::parse (const char *arch, location_t loc)
   /* Parsing sub-extensions.  */
   p = subset_list->parse_multiletter_ext (p, "z", "sub-extension",
 					  nonstd_z_ext_options);
-
   if (p == NULL)
     goto fail;
+
+
+  for (itr = subset_list->m_head; itr != NULL; itr = itr->next)
+    {
+      subset_list->handle_implied_ext (itr);
+    }
 
   /* Parsing non-standard extension.  */
   p = subset_list->parse_multiletter_ext (p, "x", "non-standard extension",
@@ -771,10 +955,12 @@ riscv_arch_str (bool version_p)
    dependent mask bits, in case more than one -march string is passed.  */
 
 static void
-riscv_parse_arch_string (const char *isa, int *flags, location_t loc)
+riscv_parse_arch_string (const char *isa, struct gcc_options *opts,
+			 location_t loc)
 {
   riscv_subset_list *subset_list;
   subset_list = riscv_subset_list::parse (isa, loc);
+  int *flags = &opts->x_target_flags;
   if (!subset_list)
     return;
 
@@ -886,7 +1072,7 @@ riscv_handle_option (struct gcc_options *opts,
   switch (decoded->opt_index)
     {
     case OPT_march_:
-      riscv_parse_arch_string (decoded->arg, &opts->x_target_flags, loc);
+      riscv_parse_arch_string (decoded->arg, opts, loc);
       return true;
 
     case OPT_mtune_:

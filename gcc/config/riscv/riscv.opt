@@ -355,3 +355,7 @@ Do not use workaroud solution.
 mno-execit-jal
 Target Report RejectNegative Undocumented
 Not use execit for jal.
+
+mext-rvb
+Target Report Mask(RVB)
+Use hardware RVB instructions.
