@@ -6892,7 +6892,7 @@
   [(set_attr "type" "dalu")
    (set_attr "mode" "DI")])
 
-(define_insn "smaxsi3"
+(define_insn "*smaxsi3"
   [(set (match_operand:SI 0 "register_operand"          "=r")
 	(smax:SI (match_operand:SI 1 "register_operand" " r")
 		 (match_operand:SI 2 "register_operand" " r")))]
@@ -6901,7 +6901,7 @@
   [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
-(define_insn "sminsi3"
+(define_insn "*sminsi3"
   [(set (match_operand:SI 0 "register_operand"          "=r")
 	(smin:SI (match_operand:SI 1 "register_operand" " r")
 		 (match_operand:SI 2 "register_operand" " r")))]
@@ -7069,17 +7069,17 @@
   [(set_attr "type"  "dalu")
    (set_attr "mode"  "HI")])
 
-(define_expand "bswapsi2"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(bswap:SI (match_operand:SI 1 "register_operand" "r")))]
+(define_split
+  [(set (match_operand:SI 0 "register_operand")
+	(bswap:SI (match_operand:SI 1 "register_operand")))]
   "TARGET_DSP"
+  [(const_int 0)]
 {
   rtx tmp = gen_reg_rtx (SImode);
   emit_insn (gen_bswap8si2 (tmp, operands[1]));
   emit_insn (gen_bswap16si2 (operands[0], tmp));
   DONE;
-}
-[(set_attr "type"  "dalu")])
+})
 
 (define_insn "bswap8<mode>2"
   [(set (match_operand:VQIX 0 "register_operand" "=r")
@@ -7603,9 +7603,17 @@
   [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
-(define_insn "<optab>si2"
+(define_insn "clrsbsi2"
   [(set (match_operand:SI 0 "register_operand" "=r")
-        (unop:SI (match_operand:SI 1 "register_operand" "r")))]
+        (clrsb:SI (match_operand:SI 1 "register_operand" "r")))]
+  "TARGET_DSP && !TARGET_64BIT"
+  "<insn>32\t%0, %1"
+  [(set_attr "type" "dalu")
+   (set_attr "mode" "SI")])
+
+(define_insn "*clzsi2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (clz:SI (match_operand:SI 1 "register_operand" "r")))]
   "TARGET_DSP && !TARGET_64BIT"
   "clrs32\t%0, %1"
   [(set_attr "type" "dalu")
