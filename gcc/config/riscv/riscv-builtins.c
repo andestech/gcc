@@ -894,6 +894,14 @@ enum riscv_builtins
   RISCV_BUILTIN_DSP64_END
 };
 
+/* Declare an availability predicate for built-in functions.  */
+#define AVAIL(NAME, COND)		\
+ static unsigned int			\
+ riscv_builtin_avail_##NAME (void)	\
+ {					\
+   return (COND);			\
+ }
+
 /* This structure describes a single built-in function.  */
 struct riscv_builtin_description {
   /* The code of the main .md file instruction.  See riscv_builtin_type
