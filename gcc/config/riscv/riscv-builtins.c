@@ -2768,6 +2768,9 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   RISCV_BUILTIN (INSN, INSN, #INSN, RISCV_BUILTIN_DIRECT,		\
 		 FUNCTION_TYPE, AVAIL)
 
+#define RISCV_BUILTIN_CRYPTO(INSN, NAME, BUILTIN_TYPE,	FUNCTION_TYPE, AVAIL)	\
+  RISCV_BUILTIN (INSN, INSN, NAME, BUILTIN_TYPE, FUNCTION_TYPE, AVAIL)
+
   #include "riscv-builtins-crypto.def"
 };
 
