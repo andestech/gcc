@@ -53,16 +53,15 @@ static arch_options_t std_ext_options[] = {
   {"c", "16-bit",     false, false, 2, 0},
   {"v", "ext-vector", false, false, 1, 0},
   {"p",  "ext-dsp",   false, false, 0, 5},
-  {"b", "ext-zbabcs",   false, false, 1, 0},
   {NULL, NULL, false, false, 2, 0}
 };
 
 static arch_options_t nonstd_z_ext_options[] = {
   {"zfh", "zfh", false, false, 0, 1},
-  {"zba", "zba", false, false, 1, 0},
-  {"zbb", "zba", false, false, 1, 0},
-  {"zbc", "zba", false, false, 1, 0},
-  {"zbs", "zba", false, false, 1, 0},
+  {"zba", "ext-zbabcs", false, false, 1, 0},
+  {"zbb", "ext-zbabcs",  false, false, 1, 0},
+  {"zbc", "ext-zbabcs", false, false, 1, 0},
+  {"zbs", "ext-zbabcs", false, false, 1, 0},
   {NULL, NULL, false, false, 2, 0}
 };
 
@@ -141,10 +140,6 @@ struct riscv_implied_info_t
 riscv_implied_info_t riscv_implied_info[] =
 {
   {"d", "f"},
-  {"b", "zba"},
-  {"b", "zbb"},
-  {"b", "zbc"},
-  {"b", "zbs"},
   {NULL, NULL}
 };
 
