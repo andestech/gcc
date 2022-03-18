@@ -356,9 +356,9 @@ mno-execit-jal
 Target Report RejectNegative Undocumented
 Not use execit for jal.
 
-mext-rvb
-Target Report Mask(RVB)
-Use hardware RVB instructions.
+mext-zbabcs
+Target Report Mask(ZBABCS)
+Use hardware ZB[ABCS] instructions.
 
 TargetVariable
 int riscv_zb_subext
