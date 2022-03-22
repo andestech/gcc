@@ -2876,6 +2876,18 @@ riscv_init_builtins (void)
   for (size_t i = 0; i < ARRAY_SIZE (riscv_builtins); i++)
     {
       const struct riscv_builtin_description *d = &riscv_builtins[i];
+      /* Check AVAIL for crypto builtin */
+      if (d->fcode >= RISCV_BUILTIN_CRYPTO_BEGIN
+	  && d->fcode <= RISCV_BUILTIN_CRYPTO_END)
+	{
+	  unsigned off = d->fcode - RISCV_BUILTIN_CRYPTO_BEGIN;
+	  gcc_assert (riscv_fcode_avail_map[off].fcode == d->fcode
+		      && "The sequence of fcode in riscv_builtins"
+			 " and riscv_fcode_avail_map should be the same");
+	  if (!riscv_fcode_avail_map[off].avail())
+	    continue;
+	}
+
       tree type = riscv_build_function_type (d->prototype);
       riscv_builtin_decls[i]
 	= add_builtin_function (d->name, type, i, BUILT_IN_MD, NULL, NULL);
@@ -3085,20 +3097,6 @@ riscv_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
       && d->fcode > RISCV_BUILTIN_DSP64_BEGIN
       && d->fcode < RISCV_BUILTIN_DSP64_END)
     error ("don't support 64bit DSP extension instructions in RV32");
-
-  if (d->fcode >=RISCV_BUILTIN_CRYPTO_BEGIN and d->fcode <= RISCV_BUILTIN_CRYPTO_END)
-    {
-      unsigned off = d->fcode - RISCV_BUILTIN_CRYPTO_BEGIN;
-      gcc_assert (riscv_fcode_avail_map[off].fcode == d->fcode
-		  && "The sequence of fcode in riscv_builtins"
-		     " and riscv_fcode_avail_map should be the same");
-      if (!riscv_fcode_avail_map[off].avail())
-	{
-	  error ("this builtin function is only available on %s",
-		riscv_fcode_avail_map[off].ext);
-	  return NULL_RTX;
-	}
-    }
 
   switch (d->fcode)
     {
