@@ -43,19 +43,19 @@ static inline int64_t _rvk_asm_rol_64(int64_t rs1, int64_t rs2)
 
 #ifdef RVKINTRIN_RV32
 static inline int32_t _rvk_asm_brev8_32(int32_t rs1)
-	{ int32_t rd; __asm__ ("grevi  %0, %1, %2" : "=r"(rd) : "r"(rs1), "i"(7)); return rd; }
+	{ int32_t rd; __asm__ ("brev8  %0, %1" : "=r"(rd) : "r"(rs1)); return rd; }
 #endif
 
 #ifdef RVKINTRIN_RV64
 static inline int64_t _rvk_asm_brev8_64(int64_t rs1)
-	{ int64_t rd; __asm__ ("grevi  %0, %1, %2" : "=r"(rd) : "r"(rs1), "i"(7)); return rd; }
+	{ int32_t rd; __asm__ ("brev8  %0, %1" : "=r"(rd) : "r"(rs1)); return rd; }
 #endif
 
 #ifdef RVKINTRIN_RV32
 static inline int32_t _rvk_asm_zip_32(int32_t rs1)
-	{ int32_t rd; __asm__ ("shfli  %0, %1, %2" : "=r"(rd) : "r"(rs1), "i"(15)); return rd; }
+	{ int32_t rd; __asm__ ("zip    %0, %1" : "=r"(rd) : "r"(rs1)); return rd; }
 static inline int32_t _rvk_asm_unzip_32(int32_t rs1)
-	{ int32_t rd; __asm__ ("unshfli	 %0, %1, %2" : "=r"(rd) : "r"(rs1), "i"(15)); return rd; }
+	{ int32_t rd; __asm__ ("unzip  %0, %1" : "=r"(rd) : "r"(rs1)); return rd; }
 #endif
 
 //	=== (inline)	Zbkc:	Carry-less multiply instructions
