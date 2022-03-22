@@ -7,5 +7,5 @@ unsigned byteswap(unsigned x) {
     return x;
 }
 
-/* { dg-final { scan-assembler-times "swap8" 1 } } */
-/* { dg-final { scan-assembler-times "swap16" 1 } } */
+/* { dg-final { scan-assembler-times "swap8" 0 } } */
+/* { dg-final { scan-assembler-times "swap16" 0 } } */
