@@ -21,7 +21,9 @@
 (define_c_enum "unspec" [
     ;;ZBKB unspecs
     UNSPEC_ROR
+    UNSPEC_RORW
     UNSPEC_ROL
+    UNSPEC_ROLW
     UNSPEC_BREV8
     UNSPEC_BSWAP
     UNSPEC_ZIP
@@ -83,6 +85,14 @@
   "TARGET_ZBKB"
   "ror\t%0,%1,%2")
 
+(define_insn "riscv_rorw"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+                   (match_operand:SI 2 "register_operand" "r")]
+                   UNSPEC_RORW))]
+  "TARGET_ZBKB && TARGET_64BIT"
+  "rorw\t%0,%1,%2")
+
 (define_insn "riscv_rol_<mode>"
   [(set (match_operand:X 0 "register_operand" "=r")
         (unspec:X [(match_operand:X 1 "register_operand" "r")
@@ -90,6 +100,14 @@
                   UNSPEC_ROL))]
   "TARGET_ZBKB"
   "rol\t%0,%1,%2")
+
+(define_insn "riscv_rolw"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+                   (match_operand:SI 2 "register_operand" "r")]
+                   UNSPEC_ROLW))]
+  "TARGET_ZBKB && TARGET_64BIT"
+  "rolw\t%0,%1,%2")
 
 (define_insn "riscv_brev8_<mode>"
   [(set (match_operand:X 0 "register_operand" "=r")
