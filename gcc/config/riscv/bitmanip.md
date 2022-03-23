@@ -19,9 +19,13 @@
 
 (define_code_iterator bitmanip_bitwise [and ior])
 
-(define_code_iterator bitmanip_minmax [smin umin smax umax])
+(define_code_iterator bitmanip_uminmax [umin umax])
+
+(define_code_iterator bitmanip_sminmax [smin smax])
 
 (define_code_iterator clz_ctz_pcnt [clz ctz popcount])
+
+(define_code_iterator ctz_pcnt [ctz popcount])
 
 (define_code_attr bitmanip_optab [(smin "smin")
 				  (smax "smax")
@@ -39,6 +43,9 @@
 				 (clz "clz")
 				 (ctz "ctz")
 				 (popcount "cpop")])
+
+(define_code_attr dsp_insn [(smin "minw")
+			    (smax "maxw")])
 
 (define_mode_attr shiftm1 [(SI "const31_operand") (DI "const63_operand")])
 
@@ -122,9 +129,22 @@
 
 (define_insn "<bitmanip_optab>si2"
   [(set (match_operand:SI 0 "register_operand" "=r")
-        (clz_ctz_pcnt:SI (match_operand:SI 1 "register_operand" "r")))]
+        (ctz_pcnt:SI (match_operand:SI 1 "register_operand" "r")))]
   "TARGET_ZBB"
   { return TARGET_64BIT ? "<bitmanip_insn>w\t%0,%1" : "<bitmanip_insn>\t%0,%1"; }
+  [(set_attr "type" "bitmanip")
+   (set_attr "mode" "SI")])
+
+(define_insn "clzsi2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (clz:SI (match_operand:SI 1 "register_operand" "r")))]
+  "TARGET_ZBB || (TARGET_DSP && !TARGET_64BIT)"
+  {
+    if (TARGET_ZBB)
+      return TARGET_64BIT ? "<bitmanip_insn>w\t%0,%1" : "<bitmanip_insn>\t%0,%1";
+    else
+      return "clrs32\t%0, %1";
+  }
   [(set_attr "type" "bitmanip")
    (set_attr "mode" "SI")])
 
@@ -225,20 +245,64 @@
   "rolw\t%0,%1,%2"
   [(set_attr "type" "bitmanip")])
 
-(define_insn "bswap<mode>2"
-  [(set (match_operand:X 0 "register_operand" "=r")
-        (bswap:X (match_operand:X 1 "register_operand" "r")))]
-  "TARGET_64BIT && TARGET_ZBB"
+(define_insn "bswapdi2"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+        (bswap:DI (match_operand:DI 1 "register_operand" "r")))]
+  "TARGET_ZBB && TARGET_64BIT"
   "rev8\t%0,%1"
+  [(set_attr "type" "bitmanip")
+   (set_attr "mode" "DI")])
+
+(define_insn "*bswapsi2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (bswap:SI (match_operand:SI 1 "register_operand" "r")))]
+  "TARGET_ZBB && !TARGET_64BIT"
+  "rev8\t%0,%1"
+  [(set_attr "type" "bitmanip")
+   (set_attr "mode" "SI")])
+
+(define_expand "bswapsi2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (bswap:SI (match_operand:SI 1 "register_operand" "r")))]
+  "(TARGET_ZBB && !TARGET_64BIT) || TARGET_DSP"
+  {
+    if (TARGET_DSP)
+      {
+	rtx tmp = gen_reg_rtx (SImode);
+	emit_insn (gen_bswap8si2 (tmp, operands[1]));
+	emit_insn (gen_bswap16si2 (operands[0], tmp));
+        DONE;
+      }
+  }
   [(set_attr "type" "bitmanip")])
+
 
 (define_insn "<bitmanip_optab><mode>3"
   [(set (match_operand:X 0 "register_operand" "=r")
-        (bitmanip_minmax:X (match_operand:X 1 "register_operand" "r")
-			   (match_operand:X 2 "register_operand" "r")))]
+        (bitmanip_uminmax:X (match_operand:X 1 "register_operand" "r")
+			    (match_operand:X 2 "register_operand" "r")))]
   "TARGET_ZBB"
   "<bitmanip_insn>\t%0,%1,%2"
   [(set_attr "type" "bitmanip")])
+
+;; DSP
+(define_insn "<bitmanip_optab>di3"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+        (bitmanip_sminmax:DI (match_operand:DI 1 "register_operand" "r")
+			     (match_operand:DI 2 "register_operand" "r")))]
+  "TARGET_ZBB && TARGET_64BIT"
+  "<bitmanip_insn>\t%0,%1,%2"
+  [(set_attr "type" "bitmanip")
+   (set_attr "mode" "DI")])
+
+(define_insn "<bitmanip_optab>si3"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (bitmanip_sminmax:SI (match_operand:SI 1 "register_operand" "r")
+			     (match_operand:SI 2 "register_operand" "r")))]
+  "(TARGET_ZBB && !TARGET_64BIT) || TARGET_DSP"
+  { return TARGET_ZBB ? "<bitmanip_insn>\t%0,%1,%2" : "<dsp_insn>\t%0,%1,%2"; }
+  [(set_attr "type" "bitmanip")
+   (set_attr "mode" "SI")])
 
 ;; ZBS extension.
 
