@@ -1,4 +1,4 @@
-/* { dg-do compile } */
+/* { dg-do compile { target { riscv64*-*-* } } } */
 /* { dg-options "-march=rv64gc_zbb -mabi=lp64 -O2" } */
 
 long
