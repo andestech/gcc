@@ -7576,7 +7576,7 @@
   [(set (match_operand:SI 0 "register_operand" "=r")
         (clrsb:SI (match_operand:SI 1 "register_operand" "r")))]
   "TARGET_DSP && !TARGET_64BIT"
-  "<insn>32\t%0, %1"
+  "clrs32\t%0, %1"
   [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
