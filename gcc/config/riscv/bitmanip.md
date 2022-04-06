@@ -300,7 +300,7 @@
         (bitmanip_sminmax:SI (match_operand:SI 1 "register_operand" "r")
 			     (match_operand:SI 2 "register_operand" "r")))]
   "(TARGET_ZBB && !TARGET_64BIT) || TARGET_DSP"
-  { return TARGET_ZBB ? "<bitmanip_insn>\t%0,%1,%2" : "<dsp_insn>\t%0,%1,%2"; }
+  { return TARGET_DSP ? "<dsp_insn>\t%0,%1,%2" : "<bitmanip_insn>\t%0,%1,%2"; }
   [(set_attr "type" "bitmanip")
    (set_attr "mode" "SI")])
 
