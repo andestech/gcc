@@ -141,7 +141,7 @@
   "TARGET_ZBB || (TARGET_DSP && !TARGET_64BIT)"
   {
     if (TARGET_ZBB)
-      return TARGET_64BIT ? "<bitmanip_insn>w\t%0,%1" : "<bitmanip_insn>\t%0,%1";
+      return TARGET_64BIT ? "clzw\t%0,%1" : "clz\t%0,%1";
     else
       return "clz32\t%0, %1";
   }
