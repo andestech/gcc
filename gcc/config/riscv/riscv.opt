@@ -358,7 +358,7 @@ Not use execit for jal.
 
 mext-zbabcs
 Target Report Mask(ZBABCS)
-Use hardware ZB[ABCS] instructions.
+Use RVB hardware instructions including Zba, Zbb, Zbc, Zbs.
 
 TargetVariable
 int riscv_zb_subext
