@@ -1,6 +1,6 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target riscv64 } */
-/* { dg-options "-march=rv64gc -mabi=lp64 -O" } */
+/* { dg-options "-march=rv64gc -mabi=lp64 -O -mno-ext-zbabcs" } */
 
 /* Test for lshrsi3_zero_extend_3+2 pattern that uses
    high_mask_shift_operand.  */
