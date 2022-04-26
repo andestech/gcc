@@ -1,5 +1,6 @@
 
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv64 } */
 /* { dg-options "-O2 -march=rv64gc_zksed -mabi=lp64" } */
 /* { dg-skip-if "" { *-*-* } { "-g" "-flto"} } */
 #include"riscv_crypto.h"
