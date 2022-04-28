@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv32 } */
 /* { dg-options "-O2 -march=rv32gc_zknh -mabi=ilp32" } */
 /* { dg-skip-if "" { *-*-* } { "-g" "-flto"} } */
 #include"riscv_crypto.h"
