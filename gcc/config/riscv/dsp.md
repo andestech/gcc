@@ -197,10 +197,10 @@
 
 (define_insn "<uk>sub<mode>3"
   [(set (match_operand:VECI 0 "register_operand"                  "=r")
-	(all_minus:VECI (match_operand:VECI 1 "register_operand" " r")
+	(all_minus:VECI (match_operand:VECI 1 "reg_or_0_operand" " rJ")
 			(match_operand:VECI 2 "register_operand" " r")))]
   "TARGET_DSP"
-  "<uk>sub<bits> %0, %1, %2"
+  "<uk>sub<bits> %0, %z1, %2"
   [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
@@ -217,11 +217,11 @@
   [(set (match_operand:VECI 0 "register_operand"                                   "=r")
 	(truncate:VECI
 	  (ashiftrt:<VEXT>
-	    (minus:<VEXT> (sign_extend:<VEXT> (match_operand:VECI 1 "register_operand" " r"))
+	    (minus:<VEXT> (sign_extend:<VEXT> (match_operand:VECI 1 "reg_or_0_operand" " rJ"))
 			  (sign_extend:<VEXT> (match_operand:VECI 2 "register_operand" " r")))
 	    (const_int 1))))]
   "TARGET_DSP"
-  "rsub<bits>\t%0, %1, %2"
+  "rsub<bits>\t%0, %z1, %2"
   [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
@@ -229,11 +229,11 @@
   [(set (match_operand:VECI 0 "register_operand"                                   "=r")
 	(truncate:VECI
 	  (ashiftrt:<VEXT>
-	    (minus:<VEXT> (zero_extend:<VEXT> (match_operand:VECI 1 "register_operand" " r"))
+	    (minus:<VEXT> (zero_extend:<VEXT> (match_operand:VECI 1 "reg_or_0_operand" " rJ"))
 			  (zero_extend:<VEXT> (match_operand:VECI 2 "register_operand" " r")))
 	    (const_int 1))))]
   "TARGET_DSP"
-  "ursub<bits>\t%0, %1, %2"
+  "ursub<bits>\t%0, %z1, %2"
   [(set_attr "type" "dalu")
    (set_attr "mode" "<MODE>")])
 
@@ -1193,51 +1193,51 @@
 
 (define_insn "cmpeq<mode>"
   [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
-	(unspec:VQIHI [(eq:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
-				 (match_operand:VQIHI 2 "register_operand" " r"))]
+	(unspec:VQIHI [(eq:VQIHI (match_operand:VQIHI 1 "reg_or_0_operand" " rJ")
+				 (match_operand:VQIHI 2 "reg_or_0_operand" " rJ"))]
 		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
-  "cmpeq<bits>\t%0, %1, %2"
+  "cmpeq<bits>\t%0, %z1, %z2"
   [(set_attr "type" "dcmp")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "scmplt<mode>"
   [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
-	(unspec:VQIHI [(lt:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
-				 (match_operand:VQIHI 2 "register_operand" " r"))]
+	(unspec:VQIHI [(lt:VQIHI (match_operand:VQIHI 1 "reg_or_0_operand" " rJ")
+				 (match_operand:VQIHI 2 "reg_or_0_operand" " rJ"))]
 		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
-  "scmplt<bits>\t%0, %1, %2"
+  "scmplt<bits>\t%0, %z1, %z2"
   [(set_attr "type" "dcmp")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "scmple<mode>"
   [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
-	(unspec:VQIHI [(le:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
-				 (match_operand:VQIHI 2 "register_operand" " r"))]
+	(unspec:VQIHI [(le:VQIHI (match_operand:VQIHI 1 "reg_or_0_operand" " rJ")
+				 (match_operand:VQIHI 2 "reg_or_0_operand" " rJ"))]
 		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
-  "scmple<bits>\t%0, %1, %2"
+  "scmple<bits>\t%0, %z1, %z2"
   [(set_attr "type" "dcmp")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "ucmplt<mode>"
   [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
-	(unspec:VQIHI [(ltu:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
-				  (match_operand:VQIHI 2 "register_operand" " r"))]
+	(unspec:VQIHI [(ltu:VQIHI (match_operand:VQIHI 1 "reg_or_0_operand" " rJ")
+				  (match_operand:VQIHI 2 "reg_or_0_operand" " rJ"))]
 		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
-  "ucmplt<bits>\t%0, %1, %2"
+  "ucmplt<bits>\t%0, %z1, %z2"
   [(set_attr "type" "dcmp")
    (set_attr "mode" "SI")])
 
 (define_insn "ucmple<mode>"
   [(set (match_operand:VQIHI 0 "register_operand"                          "=r")
-	(unspec:VQIHI [(leu:VQIHI (match_operand:VQIHI 1 "register_operand" " r")
-				  (match_operand:VQIHI 2 "register_operand" " r"))]
+	(unspec:VQIHI [(leu:VQIHI (match_operand:VQIHI 1 "reg_or_0_operand" " rJ")
+				  (match_operand:VQIHI 2 "reg_or_0_operand" " rJ"))]
 		       UNSPEC_VEC_COMPARE))]
   "TARGET_DSP"
-  "ucmple<bits>\t%0, %1, %2"
+  "ucmple<bits>\t%0, %z1, %z2"
   [(set_attr "type" "dcmp")
    (set_attr "mode" "<MODE>")])
 
@@ -1283,41 +1283,41 @@
 
 (define_insn "khm16<mode>"
   [(set (match_operand:VHI 0 "register_operand"              "=r")
-	(unspec:VHI [(match_operand:VHI 1 "register_operand" " r")
-		     (match_operand:VHI 2 "register_operand" " r")]
+	(unspec:VHI [(match_operand:VHI 1 "reg_or_0_operand" " rJ")
+		     (match_operand:VHI 2 "reg_or_0_operand" " rJ")]
 		     UNSPEC_KHM))]
   "TARGET_DSP"
-  "khm16\t%0, %1, %2"
+  "khm16\t%0, %z1, %z2"
   [(set_attr "type"   "dmul")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "khmx16<mode>"
   [(set (match_operand:VHI 0 "register_operand"              "=r")
-	(unspec:VHI [(match_operand:VHI 1 "register_operand" " r")
-		     (match_operand:VHI 2 "register_operand" " r")]
+	(unspec:VHI [(match_operand:VHI 1 "reg_or_0_operand" " rJ")
+		     (match_operand:VHI 2 "reg_or_0_operand" " rJ")]
 		     UNSPEC_KHMX))]
   "TARGET_DSP"
-  "khmx16\t%0, %1, %2"
+  "khmx16\t%0, %z1, %z2"
   [(set_attr "type"   "dmul")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "khm8<mode>"
   [(set (match_operand:VQI 0 "register_operand"              "=r")
-	(unspec:VQI [(match_operand:VQI 1 "register_operand" " r")
-		     (match_operand:VQI 2 "register_operand" " r")]
+	(unspec:VQI [(match_operand:VQI 1 "reg_or_0_operand" " rJ")
+		     (match_operand:VQI 2 "reg_or_0_operand" " rJ")]
 		     UNSPEC_KHM))]
   "TARGET_DSP"
-  "khm8\t%0, %1, %2"
+  "khm8\t%0, %z1, %z2"
   [(set_attr "type"   "dmul")
    (set_attr "mode" "<MODE>")])
 
 (define_insn "khmx8<mode>"
   [(set (match_operand:VQI 0 "register_operand"              "=r")
-	(unspec:VQI [(match_operand:VQI 1 "register_operand" " r")
-		     (match_operand:VQI 2 "register_operand" " r")]
+	(unspec:VQI [(match_operand:VQI 1 "reg_or_0_operand" " rJ")
+		     (match_operand:VQI 2 "reg_or_0_operand" " rJ")]
 		     UNSPEC_KHMX))]
   "TARGET_DSP"
-  "khmx8\t%0, %1, %2"
+  "khmx8\t%0, %z1, %z2"
   [(set_attr "type"   "dmul")
    (set_attr "mode" "<MODE>")])
 
