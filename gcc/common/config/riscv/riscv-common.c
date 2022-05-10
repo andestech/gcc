@@ -65,6 +65,12 @@ static arch_options_t nonstd_z_ext_options[] = {
   {"zk",  "ext-zk", false, false, 1, 0},
   {"zkn", "ext-zkn", false, false, 1, 0},
   {"zks", "ext-zks", false, false, 1, 0},
+  {"zk",  "ext-rvk", false, false, 1, 0},
+  {"zkn", "ext-rvk", false, false, 1, 0},
+  {"zks", "ext-rvk", false, false, 1, 0},
+  {"zicboz",  "zicboz",   false, false, 1, 0},
+  {"zicbom",  "zicbom",   false, false, 1, 0},
+  {"zicbop",  "zicbop",   false, false, 1, 0},
   {NULL, NULL, false, false, 2, 0}
 };
 
@@ -1045,6 +1051,10 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"zksed",  &gcc_options::x_riscv_zk_subext, MASK_ZKSED},
   {"zksh",   &gcc_options::x_riscv_zk_subext, MASK_ZKSH},
   {"zkt",    &gcc_options::x_riscv_zk_subext, MASK_ZKT},
+
+  {"zicboz", &gcc_options::x_riscv_zicmo_subext, MASK_ZICBOZ},
+  {"zicbom", &gcc_options::x_riscv_zicmo_subext, MASK_ZICBOM},
+  {"zicbop", &gcc_options::x_riscv_zicmo_subext, MASK_ZICBOP},
 
   {NULL, NULL, 0}
 };

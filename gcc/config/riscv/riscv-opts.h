@@ -108,4 +108,12 @@ extern enum riscv_ict_model_type riscv_ict_model;
 #define TARGET_ZKSH   ((riscv_zk_subext & MASK_ZKSH) != 0)
 #define TARGET_ZKT    ((riscv_zk_subext & MASK_ZKT) != 0)
 
+#define MASK_ZICBOZ   (1 << 0)
+#define MASK_ZICBOM   (1 << 1)
+#define MASK_ZICBOP   (1 << 2)
+
+#define TARGET_ZICBOZ ((riscv_zicmo_subext & MASK_ZICBOZ) != 0)
+#define TARGET_ZICBOM ((riscv_zicmo_subext & MASK_ZICBOM) != 0)
+#define TARGET_ZICBOP ((riscv_zicmo_subext & MASK_ZICBOP) != 0)
+
 #endif /* ! GCC_RISCV_OPTS_H */

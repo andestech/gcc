@@ -377,3 +377,6 @@ Enable ShangMi Algorithm Suite.
 
 TargetVariable
 int riscv_zk_subext
+
+TargetVariable
+int riscv_zicmo_subext
