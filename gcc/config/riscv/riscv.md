@@ -160,6 +160,13 @@
   UNSPECV_BLOCKAGE
   UNSPECV_FENCE
   UNSPECV_FENCE_I
+
+  ;; CMO instructions.
+  UNSPECV_CLEAN
+  UNSPECV_FLUSH
+  UNSPECV_INVAL
+  UNSPECV_ZERO
+  UNSPECV_PREI
 ])
 
 (define_constants
@@ -3955,6 +3962,56 @@
   "TARGET_64BIT && riscv_cmodel == CM_LARGE"
   "ld\t%0,%1"
   [(set (attr "length") (const_int 8))])
+
+(define_insn "riscv_clean_<mode>"
+  [(unspec_volatile:X [(match_operand:X 0 "register_operand" "r")]
+    UNSPECV_CLEAN)]
+  "TARGET_ZICBOM"
+  "cbo.clean\t%a0"
+)
+
+(define_insn "riscv_flush_<mode>"
+  [(unspec_volatile:X [(match_operand:X 0 "register_operand" "r")]
+    UNSPECV_FLUSH)]
+  "TARGET_ZICBOM"
+  "cbo.flush\t%a0"
+)
+
+(define_insn "riscv_inval_<mode>"
+  [(unspec_volatile:X [(match_operand:X 0 "register_operand" "r")]
+    UNSPECV_INVAL)]
+  "TARGET_ZICBOM"
+  "cbo.inval\t%a0"
+)
+
+(define_insn "riscv_zero_<mode>"
+  [(unspec_volatile:X [(match_operand:X 0 "register_operand" "r")]
+    UNSPECV_ZERO)]
+  "TARGET_ZICBOZ"
+  "cbo.zero\t%a0"
+)
+
+(define_insn "prefetch"
+  [(prefetch (match_operand 0 "address_operand" "p")
+             (match_operand 1 "imm5_operand" "i")
+             (match_operand 2 "const_int_operand" "n"))]
+  "TARGET_ZICBOP"
+{
+  switch (INTVAL (operands[1]))
+  {
+    case 0: return "prefetch.r\t%a0";
+    case 1: return "prefetch.w\t%a0";
+    default: gcc_unreachable ();
+  }
+})
+
+(define_insn "riscv_prefetchi_<mode>"
+  [(unspec_volatile:X [(match_operand:X 0 "address_operand" "p")
+              (match_operand:X 1 "imm5_operand" "i")]
+              UNSPECV_PREI)]
+  "TARGET_ZICBOP"
+  "prefetch.i\t%a0"
+)
 
 (include "bitmanip.md")
 (include "crypto.md")

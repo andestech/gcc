@@ -507,6 +507,10 @@
   (and (match_code "const_int")
        (match_test "INTVAL (op) == 63")))
 
+(define_predicate "imm5_operand"
+  (and (match_code "const_int")
+       (match_test "INTVAL (op) < 5")))
+
 (define_predicate "bs_operand"
   (and (match_code "const_int")
        (match_test "INTVAL (op) < 4")))
