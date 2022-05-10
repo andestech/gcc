@@ -2,14 +2,13 @@
 
 (define_cpu_unit "kavalan_pipe0" "kavalan")
 (define_cpu_unit "kavalan_pipe1" "kavalan")
-(define_cpu_unit "kavalan_fpu_pipe" "kavalan")
 
 (define_cpu_unit "kavalan_mdu,kavalan_alu0,kavalan_alu1,kavalan_bru0,kavalan_bru1,kavalan_lsu" "kavalan")
 (define_cpu_unit "kavalan_dsp" "kavalan")
-(define_cpu_unit "kavalan_fpu_eu" "kavalan")
+(define_cpu_unit "kavalan_fpu_fmac,kavalan_fpu_fdiv,kavalan_fpu_fmis,kavalan_fpu_fmv" "kavalan")
 
 (define_reservation "kavalan_fpu_arith"
- "kavalan_fpu_pipe, kavalan_fpu_eu * 2")
+ "kavalan_pipe0+kavalan_fpu_fmac | kavalan_pipe1+kavalan_fpu_fmac")
 
 (define_insn_reservation "kavalan_alu_insn_s" 1
   (and (eq_attr "tune" "kavalan")
@@ -120,52 +119,73 @@
        (eq_attr "type" "dwext"))
   "kavalan_pipe0 + kavalan_dsp | kavalan_pipe1 + kavalan_dsp")
 
-(define_insn_reservation "kavalan_fpu_alu" 5
+(define_insn_reservation "kavalan_fpu_alu_s" 3
   (and (eq_attr "tune" "kavalan")
-       (eq_attr "type" "fadd"))
+       (and (eq_attr "type" "fadd")
+            (eq_attr "mode" "SF")))
   "kavalan_fpu_arith")
 
-(define_insn_reservation "kavalan_fpu_mul" 5
+(define_insn_reservation "kavalan_fpu_alu_d" 4
   (and (eq_attr "tune" "kavalan")
-       (eq_attr "type" "fmul"))
+       (and (eq_attr "type" "fadd")
+            (eq_attr "mode" "DF")))
   "kavalan_fpu_arith")
 
-(define_insn_reservation "kavalan_fpu_mac" 5
+(define_insn_reservation "kavalan_fpu_mul_s" 3
   (and (eq_attr "tune" "kavalan")
-       (eq_attr "type" "fmadd"))
+       (and (eq_attr "type" "fmul")
+            (eq_attr "mode" "SF")))
   "kavalan_fpu_arith")
+
+(define_insn_reservation "kavalan_fpu_mul_d" 4
+  (and (eq_attr "tune" "kavalan")
+       (and (eq_attr "type" "fmul")
+            (eq_attr "mode" "DF")))
+  "kavalan_fpu_arith")
+
+(define_insn_reservation "kavalan_fpu_mac_s" 3
+  (and (eq_attr "tune" "kavalan")
+       (and (eq_attr "type" "fmadd")
+            (eq_attr "mode" "SF")))
+  "kavalan_pipe1+kavalan_fpu_fmac")
+
+(define_insn_reservation "kavalan_fpu_mac_d" 4
+  (and (eq_attr "tune" "kavalan")
+       (and (eq_attr "type" "fmadd")
+            (eq_attr "mode" "DF")))
+  "kavalan_pipe1+kavalan_fpu_fmac")
 
 (define_insn_reservation "kavalan_fpu_div" 33
   (and (eq_attr "tune" "kavalan")
        (eq_attr "type" "fdiv"))
-  "kavalan_fpu_arith, kavalan_fpu_eu * 27")
+  "kavalan_pipe0+kavalan_fpu_fdiv | kavalan_pipe1+kavalan_fpu_fdiv, kavalan_fpu_fdiv * 27")
 
 (define_insn_reservation "kavalan_fpu_sqrt" 33
   (and (eq_attr "tune" "kavalan")
        (eq_attr "type" "fsqrt"))
-  "kavalan_fpu_arith, kavalan_fpu_eu * 27")
+  "kavalan_pipe0+kavalan_fpu_fdiv | kavalan_pipe1+kavalan_fpu_fdiv, kavalan_fpu_fdiv * 27")
 
-(define_insn_reservation "kavalan_fpu_move" 3
+(define_insn_reservation "kavalan_fpu_move" 1
   (and (eq_attr "tune" "kavalan")
        (eq_attr "type" "fmove,mtc,mfc"))
-  "kavalan_fpu_pipe")
+  "kavalan_pipe0+kavalan_fpu_fmv | kavalan_pipe1+kavalan_fpu_fmv")
 
-(define_insn_reservation "kavalan_fpu_cmp" 3
+(define_insn_reservation "kavalan_fpu_cmp" 2
   (and (eq_attr "tune" "kavalan")
        (eq_attr "type" "fcmp"))
-  "kavalan_fpu_pipe")
+  "kavalan_pipe0+kavalan_fpu_fmis | kavalan_pipe1+kavalan_fpu_fmis")
 
-(define_insn_reservation "kavalan_fpu_cvt" 6
+(define_insn_reservation "kavalan_fpu_cvt" 2
   (and (eq_attr "tune" "kavalan")
        (eq_attr "type" "fcvt"))
-  "kavalan_fpu_arith, kavalan_fpu_eu")
+  "kavalan_pipe0+kavalan_fpu_fmis | kavalan_pipe1+kavalan_fpu_fmis")
 
 (define_insn_reservation "kavalan_fpu_load" 3
   (and (eq_attr "tune" "kavalan")
        (eq_attr "type" "fpload"))
-  "kavalan_fpu_pipe")
+  "kavalan_pipe0 + kavalan_lsu | kavalan_pipe1 + kavalan_lsu")
 
 (define_insn_reservation "kavalan_fpu_store" 0
   (and (eq_attr "tune" "kavalan")
        (eq_attr "type" "fpstore"))
-  "kavalan_fpu_pipe")
+  "kavalan_pipe0 + kavalan_lsu | kavalan_pipe1 + kavalan_lsu")
