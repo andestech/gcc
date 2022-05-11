@@ -194,6 +194,11 @@
        (eq_attr "type" "dwext"))
   "vicuna_pipe")
 
+(define_insn_reservation "vicuna_bitmanip" 1
+  (and (eq_attr "tune" "vicuna")
+       (eq_attr "type" "bitmanip"))
+  "vicuna_pipe")
+
 ;; Load-to-DSP has 2 bubbles.
 (define_bypass 3
   "vicuna_load_wd, vicuna_load_bh"
