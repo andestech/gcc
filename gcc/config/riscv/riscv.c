@@ -1121,7 +1121,7 @@ riscv_build_integer (struct riscv_integer_op *codes, HOST_WIDE_INT value,
   int cost = riscv_build_integer_1 (codes, value, mode);
 
   /* Eliminate leading zeros and end with SRLI.  */
-  if (value > 0 && cost > 2)
+  if (value > 0 && cost >= 2)
     {
       struct riscv_integer_op alt_codes[RISCV_MAX_INTEGER_OPS];
       int alt_cost, shift = clz_hwi (value);
@@ -1130,7 +1130,8 @@ riscv_build_integer (struct riscv_integer_op *codes, HOST_WIDE_INT value,
       /* Try filling trailing bits with 1s.  */
       shifted_val = (value << shift) | ((((HOST_WIDE_INT) 1) << shift) - 1);
       alt_cost = 1 + riscv_build_integer_1 (alt_codes, shifted_val, mode);
-      if (alt_cost < cost)
+      /* Use SRLI even the cost is equal, because it may can use c-type.  */
+      if (alt_cost <= cost)
 	{
 	  alt_codes[alt_cost-1].code = LSHIFTRT;
 	  alt_codes[alt_cost-1].value = shift;
@@ -1141,7 +1142,7 @@ riscv_build_integer (struct riscv_integer_op *codes, HOST_WIDE_INT value,
       /* Try filling trailing bits with 0s.  */
       shifted_val = value << shift;
       alt_cost = 1 + riscv_build_integer_1 (alt_codes, shifted_val, mode);
-      if (alt_cost < cost)
+      if (alt_cost <= cost)
 	{
 	  alt_codes[alt_cost-1].code = LSHIFTRT;
 	  alt_codes[alt_cost-1].value = shift;
