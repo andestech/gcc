@@ -363,9 +363,17 @@ Use RVB hardware instructions including Zba, Zbb, Zbc, Zbs.
 TargetVariable
 int riscv_zb_subext
 
-mext-rvk
-Target Report Mask(RVK)
-Use hardware RVK instructions.
+mext-zk
+Target Report RejectNegative Mask(ZK)
+Enable standard scalar cryptography extension.
+
+mext-zkn
+Target Report RejectNegative Mask(ZKN)
+Enable NIST Algorithm Suite.
+
+mext-zks
+Target Report RejectNegative Mask(ZKS)
+Enable ShangMi Algorithm Suite.
 
 TargetVariable
 int riscv_zk_subext
