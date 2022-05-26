@@ -1220,7 +1220,7 @@ void parse_arch_options(const char *option)
     {
       arch_options_t *opt = ext_options[i];
       for (; !arch_options_end_p(opt); ++opt)
-	if (strncmp(opt->option_name, option, strlen(opt->option_name)) == 0)
+	if (strcmp(opt->option_name, option) == 0)
 	  {
 	    opt->is_spec = true;
             opt->val = val;
