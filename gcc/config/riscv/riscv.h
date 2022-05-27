@@ -82,6 +82,10 @@ extern const char *riscv_rewrite_march (int argc, const char **argv);
 				%{mext-zk} \
 				%{mext-zkn} \
 				%{mext-zks} \
+				%{mext-rvk} \
+				%{mno-ext-rvk} \
+				%{mext-cbo} \
+				%{mno-ext-cbo} \
 				%{mfp16})"
 
 #undef ASM_SPEC
