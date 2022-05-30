@@ -1072,8 +1072,6 @@ AVAIL (prefetchi64, TARGET_ZICBOP && TARGET_64BIT)
   RISCV_ATYPE_##E, RISCV_ATYPE_##F, RISCV_ATYPE_##G, RISCV_ATYPE_##H
 
 static const struct riscv_builtin_description riscv_builtins[] = {
-  #include "riscv-cmo.def"
-  
   DIRECT_BUILTIN (frflags, frflags, frflags_fenv,
 		  RISCV_USI_FTYPE, FRFLAGS_FENV),
   DIRECT_NO_TARGET_BUILTIN (fsflags, fsflags, fsflags_fenv,
@@ -2778,6 +2776,11 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   RISCV_BUILTIN (INSN, INSN, NAME, BUILTIN_TYPE, FUNCTION_TYPE, AVAIL)
 
   #include "riscv-builtins-crypto.def"
+
+#define RISCV_BUILTIN_CMO(INSN, NAME, BUILTIN_TYPE, FUNCTION_TYPE, AVAIL)	\
+  RISCV_BUILTIN (INSN, INSN, NAME, BUILTIN_TYPE, FUNCTION_TYPE, AVAIL)
+
+  #include "riscv-cmo.def"
 };
 
 struct riscv_fcode_avail
