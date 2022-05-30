@@ -1770,6 +1770,16 @@
   [(set_attr "type" "dpack")
    (set_attr "mode" "DI")])
 
+(define_insn "pkbbdi_3"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(ior:DI (match_operand:SI 1 "register_operand" "r")
+		(ashift:DI (match_operand:SI 2 "register_operand" "r")
+			   (const_int 32))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "pkbb32\t%0, %2, %1"
+  [(set_attr "type" "dpack")
+   (set_attr "mode" "DI")])
+
 (define_expand "pkbt<mode>"
   [(match_operand:VSHI 0 "register_operand")
    (match_operand:VSHI 1 "register_operand")
@@ -6409,6 +6419,18 @@
   "@
    wext\t%0, %1, %2
    wexti\t%0, %1, %2"
+  [(set_attr "type" "dwext")
+   (set_attr "mode" "DI")])
+
+(define_insn "wext64_i"
+  [(set (match_operand:DI 0 "register_operand"     "=r")
+	(sign_extend:DI
+	  (truncate:SI
+	    (ashiftrt:DI
+	      (match_operand:DI 1 "register_operand" " r")
+	      (match_operand:QI 2 "imm5u_operand"    " u05")))))]
+  "TARGET_DSP && TARGET_64BIT"
+  "wexti\t%0, %1, %2"
   [(set_attr "type" "dwext")
    (set_attr "mode" "DI")])
 

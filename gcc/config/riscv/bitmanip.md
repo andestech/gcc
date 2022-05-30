@@ -221,12 +221,38 @@
   "rorw\t%0,%1,%2"
   [(set_attr "type" "bitmanip")])
 
-(define_insn "rotlsi3"
+(define_insn "*rotlsi3"
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(rotate:SI (match_operand:SI 1 "register_operand" "r")
 		   (match_operand:QI 2 "register_operand" "r")))]
   "TARGET_ZBB"
   { return TARGET_64BIT ? "rolw\t%0,%1,%2" : "rol\t%0,%1,%2"; }
+  [(set_attr "type" "bitmanip")])
+
+(define_expand "rotlsi3"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(rotate:SI (match_operand:SI 1 "register_operand")
+		   (match_operand:QI 2 "rimm5u_operand")))]
+  "TARGET_ZBB || (TARGET_64BIT && TARGET_DSP)"
+  {
+    if (imm5u_operand (operands[2], QImode))
+    {
+      if (!TARGET_ZBB && TARGET_DSP)
+      {
+	rtx tmp = gen_reg_rtx (DImode);
+	rtx output = gen_reg_rtx (SImode);
+	emit_insn (gen_pkbbdi_3 (tmp, operands[1], operands[1]));
+	emit_insn (gen_wext64_i (tmp, tmp, GEN_INT (32 - INTVAL (operands[2]))));
+        output =  lowpart_subreg (SImode, tmp, DImode);
+	emit_move_insn (operands[0], output);
+	DONE;
+      }
+      else
+	FAIL;
+    }
+    else if (!TARGET_ZBB)
+      FAIL;
+  }
   [(set_attr "type" "bitmanip")])
 
 (define_insn "rotldi3"
