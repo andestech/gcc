@@ -902,7 +902,19 @@ enum riscv_builtins
   RISCV_BUILTIN_crypto_zksh64,
   RISCV_BUILTIN_crypto_zksed32,
   RISCV_BUILTIN_crypto_zksed64,
-  RISCV_BUILTIN_CRYPTO_END = RISCV_BUILTIN_crypto_zksed64
+  RISCV_BUILTIN_CRYPTO_END = RISCV_BUILTIN_crypto_zksed64,
+  RISCV_BUILTIN_CMO_BEGIN,
+  RISCV_BUILTIN_clean32 = RISCV_BUILTIN_CMO_BEGIN,
+  RISCV_BUILTIN_clean64,
+  RISCV_BUILTIN_flush32,
+  RISCV_BUILTIN_flush64,
+  RISCV_BUILTIN_inval32,
+  RISCV_BUILTIN_inval64,
+  RISCV_BUILTIN_zero32,
+  RISCV_BUILTIN_zero64,
+  RISCV_BUILTIN_prefetchi32,
+  RISCV_BUILTIN_prefetchi64,
+  RISCV_BUILTIN_CMO_END = RISCV_BUILTIN_prefetchi64
 };
 
 /* Declare an availability predicate for built-in functions.  */
@@ -2817,6 +2829,22 @@ ENTRY_EXT_FCODE_AVAIL(zksed32),
 ENTRY_EXT_FCODE_AVAIL(zksed64)
 };
 
+#define ENTRY_EXT_CMO_FCODE_AVAIL(EXT) \
+{ #EXT, RISCV_BUILTIN_ ## EXT, riscv_builtin_avail_ ## EXT }
+
+static const struct riscv_fcode_avail riscv_cmo_fcode_avail_map[] = {
+ENTRY_EXT_CMO_FCODE_AVAIL(clean32),
+ENTRY_EXT_CMO_FCODE_AVAIL(clean64),
+ENTRY_EXT_CMO_FCODE_AVAIL(flush32),
+ENTRY_EXT_CMO_FCODE_AVAIL(flush64),
+ENTRY_EXT_CMO_FCODE_AVAIL(inval32),
+ENTRY_EXT_CMO_FCODE_AVAIL(inval64),
+ENTRY_EXT_CMO_FCODE_AVAIL(zero32),
+ENTRY_EXT_CMO_FCODE_AVAIL(zero64),
+ENTRY_EXT_CMO_FCODE_AVAIL(prefetchi32),
+ENTRY_EXT_CMO_FCODE_AVAIL(prefetchi64)
+};
+
 /* Index I is the function declaration for riscv_builtins[I], or null if the
    function isn't defined on this target.  */
 static GTY(()) tree riscv_builtin_decls[ARRAY_SIZE (riscv_builtins)];
@@ -2902,6 +2930,18 @@ riscv_init_builtins (void)
 		      && "The sequence of fcode in riscv_builtins"
 			 " and riscv_fcode_avail_map should be the same");
 	  if (!riscv_fcode_avail_map[off].avail())
+	    continue;
+	}
+
+      /* Check AVAIL for CMO builtin */
+      if (d->fcode >= RISCV_BUILTIN_CMO_BEGIN
+	  && d->fcode <= RISCV_BUILTIN_CMO_END)
+	{
+	  unsigned off = d->fcode - RISCV_BUILTIN_CMO_BEGIN;
+	  gcc_assert (riscv_cmo_fcode_avail_map[off].fcode == d->fcode
+		      && "The sequence of fcode in riscv_builtins"
+			 " and riscv_cmo_fcode_avail_map should be the same");
+	  if (!riscv_cmo_fcode_avail_map[off].avail ())
 	    continue;
 	}
 
