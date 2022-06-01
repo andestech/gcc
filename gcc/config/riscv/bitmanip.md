@@ -197,7 +197,39 @@
   [(set_attr "type" "bitmanip,load")
    (set_attr "mode" "HI")])
 
-(define_insn "rotrsi3"
+(define_expand "rotrsi3"
+  [(set (match_operand:SI 0 "register_operand")
+	(rotatert:SI (match_operand:SI 1 "register_operand")
+		     (match_operand:QI 2 "rimm5u_operand")))]
+  "TARGET_ZBB || (TARGET_64BIT && TARGET_DSP)"
+  {
+    if (imm5u_operand (operands[2], QImode))
+      {
+	if (!TARGET_ZBB && TARGET_DSP)
+	  {
+	    rtx tmp = gen_reg_rtx (DImode);
+	    rtx output = gen_reg_rtx (SImode);
+	    emit_insn (gen_pkbbdi_3 (tmp, operands[1], operands[1]));
+	    emit_insn (gen_wext64_i (tmp, tmp, operands[2]));
+	    output =  lowpart_subreg (SImode, tmp, DImode);
+	    emit_move_insn (operands[0], output);
+	    DONE;
+	  }
+      }
+    else if (!TARGET_ZBB && TARGET_DSP)
+      {
+	rtx tmp = gen_reg_rtx (DImode);
+	rtx output = gen_reg_rtx (SImode);
+	emit_insn (gen_pkbbdi_3 (tmp, operands[1], operands[1]));
+	emit_insn (gen_wext64_r (tmp, tmp, operands[2]));
+        output =  lowpart_subreg (SImode, tmp, DImode);
+	emit_move_insn (operands[0], output);
+	DONE;
+      }
+  }
+  [(set_attr "type" "bitmanip")])
+
+(define_insn "*rotrsi3"
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(rotatert:SI (match_operand:SI 1 "register_operand" "r")
 		     (match_operand:QI 2 "arith_operand" "rI")))]

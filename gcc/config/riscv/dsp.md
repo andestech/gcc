@@ -6434,6 +6434,18 @@
   [(set_attr "type" "dwext")
    (set_attr "mode" "DI")])
 
+(define_insn "wext64_r"
+  [(set (match_operand:DI 0 "register_operand"     "=r")
+	(sign_extend:DI
+	  (subreg:SI
+	    (ashiftrt:DI
+	      (match_operand:DI 1 "register_operand" " r")
+	      (match_operand:QI 2 "register_operand" " r")) 0)))]
+  "TARGET_DSP && TARGET_64BIT"
+  "wext\t%0, %1, %2"
+  [(set_attr "type" "dwext")
+   (set_attr "mode" "DI")])
+
 (define_insn_and_split "wext64_si3"
   [(set (match_operand:DI 0 "register_operand" "")
 	(sign_extend:DI
