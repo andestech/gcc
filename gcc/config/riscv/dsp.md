@@ -6370,7 +6370,7 @@
 	(rotate:SI
 	  (match_operand:SI 1 "register_operand" "")
 	  (match_operand:SI 2 "imm5u_operand" "")))]
-  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed && !TARGET_ZBB"
   "#"
   "&& true"
   [(const_int 1)]
@@ -6392,7 +6392,7 @@
 	(rotatert:SI
 	  (match_operand:SI 1 "register_operand" "")
 	  (match_operand:SI 2 "imm5u_operand" "")))]
-  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed && !TARGET_ZBB"
   "#"
   "&& true"
   [(const_int 1)]
