@@ -1033,7 +1033,7 @@ riscv_build_integer_1 (struct riscv_integer_op codes[RISCV_MAX_INTEGER_OPS],
     }
 
   /* End with XORI.  */
-  if (cost > 2 && (low_part < 0 || mode == HImode))
+  if (cost > 2 && (low_part < 0 || mode == HImode) && low_part != 0)
     {
       alt_cost = 1 + riscv_build_integer_1 (alt_codes, value ^ low_part, mode);
       if (alt_cost < cost)
@@ -1121,7 +1121,7 @@ riscv_build_integer (struct riscv_integer_op *codes, HOST_WIDE_INT value,
   int cost = riscv_build_integer_1 (codes, value, mode);
 
   /* Eliminate leading zeros and end with SRLI.  */
-  if (value > 0 && cost >= 2)
+  if (value > 0 && (cost > 2 || (cost == 2  && mode == VOIDmode)))
     {
       struct riscv_integer_op alt_codes[RISCV_MAX_INTEGER_OPS];
       int alt_cost, shift = clz_hwi (value);
