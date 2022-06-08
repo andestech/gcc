@@ -1029,6 +1029,7 @@ AVAIL (prefetchi64, TARGET_ZICBOP && TARGET_64BIT)
 /* Argument types.  */
 #define RISCV_ATYPE_VOID void_type_node
 #define RISCV_ATYPE_VOID_PTR ptr_type_node
+#define RISCV_ATYPE_CONST_VOID_PTR const_ptr_type_node
 #define RISCV_ATYPE_SI intSI_type_node
 #define RISCV_ATYPE_DI intDI_type_node
 #define RISCV_ATYPE_HI intHI_type_node

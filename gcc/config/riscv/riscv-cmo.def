@@ -13,5 +13,5 @@ RISCV_BUILTIN_CMO (zero_si, "zicboz_cbo_zero", RISCV_BUILTIN_DIRECT_NO_TARGET, R
 RISCV_BUILTIN_CMO (zero_di, "zicboz_cbo_zero", RISCV_BUILTIN_DIRECT_NO_TARGET, RISCV_VOID_FTYPE_VOID_PTR, zero64),
 
 // zicbop
-RISCV_BUILTIN_CMO (prefetchi_si, "zicbop_cbo_prefetchi", RISCV_BUILTIN_DIRECT, RISCV_SI_FTYPE_SI, prefetchi32),
-RISCV_BUILTIN_CMO (prefetchi_di, "zicbop_cbo_prefetchi", RISCV_BUILTIN_DIRECT, RISCV_DI_FTYPE_DI, prefetchi64),
+RISCV_BUILTIN_CMO (prefetchi_si, "zicbop_cbo_prefetchi", RISCV_BUILTIN_DIRECT_NO_TARGET, RISCV_VOID_FTYPE_CONST_VOID_PTR, prefetchi32),
+RISCV_BUILTIN_CMO (prefetchi_di, "zicbop_cbo_prefetchi", RISCV_BUILTIN_DIRECT_NO_TARGET, RISCV_VOID_FTYPE_CONST_VOID_PTR, prefetchi64),
