@@ -518,3 +518,7 @@
 (define_predicate "rnum_operand"
   (and (match_code "const_int")
        (match_test "INTVAL (op) < 11")))
+
+(define_predicate "prefetch_address_operand"
+  (and (match_operand 0 "address_operand")
+       (match_code "reg, plus")))

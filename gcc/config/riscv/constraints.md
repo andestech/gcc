@@ -174,3 +174,7 @@
   "Constant value 16"
   (and (match_code "const_int")
        (match_test "ival == 16")))
+
+(define_address_constraint "Zpf05"
+  "An address valid for a prefetch instruction."
+ (match_test "riscv_address_valid_for_prefetch_p (op)"))

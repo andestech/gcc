@@ -1252,6 +1252,36 @@ riscv_indirect_call_referenced_p (const_rtx x)
   return false;
 }
 
+/* Return true if op is a valid address for prefetch.  */
+bool
+riscv_address_valid_for_prefetch_p (rtx op)
+{
+  enum rtx_code code = GET_CODE (op);
+
+  switch (code)
+    {
+    case REG:
+    case SUBREG:
+      return true;
+
+    case PLUS:
+      {
+	rtx op0 = XEXP (op, 0);
+	rtx op1 = XEXP (op, 1);
+	poly_int64 offset;
+
+	/* Prefetch requires imm[4:0] == 0. */
+	if (REG_P (op0) && poly_int_rtx_p (op1, &offset) && !(offset & 0b11111))
+	  return true;
+
+	return false;
+      }
+
+    default:
+      return false;
+    }
+}
+
 /* Return the method that should be used to access SYMBOL_REF or
    LABEL_REF X.  */
 
