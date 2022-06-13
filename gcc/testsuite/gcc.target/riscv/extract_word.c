@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-O3 -mext-dsp -mno-ext-zbabcs" } */
+/* { dg-options "-O3 -mext-dsp -mno-ext-zbabcs -mno-bfo" } */
 
 unsigned extract_word(const unsigned src) {
     return (src >> 13) | (src << (32 - 13));
