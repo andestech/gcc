@@ -1772,7 +1772,7 @@
 
 (define_insn "pkbbdi_3"
   [(set (match_operand:DI 0 "register_operand" "=r")
-	(ior:DI (match_operand:SI 1 "register_operand" "r")
+	(ior:DI (zero_extend:DI (match_operand:SI 1 "register_operand" "r"))
 		(ashift:DI (match_operand:SI 2 "register_operand" "r")
 			   (const_int 32))))]
   "TARGET_DSP && TARGET_64BIT"
