@@ -1281,6 +1281,23 @@ enum riscv_order
 #define __nds_fcvt_bf16_s(a) \
   (__builtin_riscv_fcvt_bf16_s ((a)))
 
+/* intrinsic has the same vector argument types on RV32 and RV64. */
+#define __nds__v_smul16(a, b) \
+  (__builtin_riscv_v_smul16 ((a), (b)))
+#define __nds__v_smulx16(a, b) \
+  (__builtin_riscv_v_smulx16 ((a), (b)))
+#define __nds__v_umul16(a, b) \
+  (__builtin_riscv_v_umul16 ((a), (b)))
+#define __nds__v_umulx16(a, b) \
+  (__builtin_riscv_v_umulx16 ((a), (b)))
+#define __nds__v_smul8(a, b) \
+  (__builtin_riscv_v_smul8 ((a), (b)))
+#define __nds__v_smulx8(a, b) \
+  (__builtin_riscv_v_smulx8 ((a), (b)))
+#define __nds__v_umul8(a, b) \
+  (__builtin_riscv_v_umul8 ((a), (b)))
+#define __nds__v_umulx8(a, b) \
+  (__builtin_riscv_v_umulx8 ((a), (b)))
 
 #if __riscv_xlen == 32
 #define __nds__v_uadd16(a, b) \
@@ -1441,22 +1458,6 @@ enum riscv_order
   (__builtin_riscv_v_khmx8 ((a), (b)))
 #define __nds__v_kabs16(a) \
   (__builtin_riscv_v_kabs16 ((a)))
-#define __nds__v_smul16(a, b) \
-  (__builtin_riscv_v_smul16 ((a), (b)))
-#define __nds__v_smulx16(a, b) \
-  (__builtin_riscv_v_smulx16 ((a), (b)))
-#define __nds__v_umul16(a, b) \
-  (__builtin_riscv_v_umul16 ((a), (b)))
-#define __nds__v_umulx16(a, b) \
-  (__builtin_riscv_v_umulx16 ((a), (b)))
-#define __nds__v_smul8(a, b) \
-  (__builtin_riscv_v_smul8 ((a), (b)))
-#define __nds__v_smulx8(a, b) \
-  (__builtin_riscv_v_smulx8 ((a), (b)))
-#define __nds__v_umul8(a, b) \
-  (__builtin_riscv_v_umul8 ((a), (b)))
-#define __nds__v_umulx8(a, b) \
-  (__builtin_riscv_v_umulx8 ((a), (b)))
 #define __nds__v_smin8(a, b) \
   (__builtin_riscv_v_smin8 ((a), (b)))
 #define __nds__v_umin8(a, b) \
@@ -1650,22 +1651,6 @@ enum riscv_order
 #define __nds__v_pbsada(acc, a, b) \
   (__builtin_riscv_v_pbsada ((acc), (a), (b)))
 #else
-#define __nds__v_smul16(a, b) \
-  (__builtin_riscv_v_smul16 ((a), (b)))
-#define __nds__v_umul16(a, b) \
-  (__builtin_riscv_v_umul16 ((a), (b)))
-#define __nds__v_smul8(a, b) \
-  (__builtin_riscv_v_smul8 ((a), (b)))
-#define __nds__v_umul8(a, b) \
-  (__builtin_riscv_v_umul8 ((a), (b)))
-#define __nds__v_smulx16(a, b) \
-  (__builtin_riscv_v_smulx16 ((a), (b)))
-#define __nds__v_smulx8(a, b) \
-  (__builtin_riscv_v_smulx8 ((a), (b)))
-#define __nds__v_umulx16(a, b) \
-  (__builtin_riscv_v_umulx16 ((a), (b)))
-#define __nds__v_umulx8(a, b) \
-  (__builtin_riscv_v_umulx8 ((a), (b)))
 #define __nds__v_uadd16(a, b) \
   (__builtin_riscv_v64_uadd16 ((a), (b)))
 #define __nds__v_sadd16(a, b) \
@@ -1824,22 +1809,6 @@ enum riscv_order
   (__builtin_riscv_v64_khmx8 ((a), (b)))
 #define __nds__v_kabs16(a) \
   (__builtin_riscv_v64_kabs16 ((a)))
-#define __nds__v_smul16(a, b) \
-  (__builtin_riscv_v_smul16 ((a), (b)))
-#define __nds__v_smulx16(a, b) \
-  (__builtin_riscv_v_smulx16 ((a), (b)))
-#define __nds__v_umul16(a, b) \
-  (__builtin_riscv_v_umul16 ((a), (b)))
-#define __nds__v_umulx16(a, b) \
-  (__builtin_riscv_v_umulx16 ((a), (b)))
-#define __nds__v_smul8(a, b) \
-  (__builtin_riscv_v_smul8 ((a), (b)))
-#define __nds__v_smulx8(a, b) \
-  (__builtin_riscv_v_smulx8 ((a), (b)))
-#define __nds__v_umul8(a, b) \
-  (__builtin_riscv_v_umul8 ((a), (b)))
-#define __nds__v_umulx8(a, b) \
-  (__builtin_riscv_v_umulx8 ((a), (b)))
 #define __nds__v_smin8(a, b) \
   (__builtin_riscv_v64_smin8 ((a), (b)))
 #define __nds__v_umin8(a, b) \
