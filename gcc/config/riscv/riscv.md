@@ -3967,28 +3967,28 @@
   [(unspec_volatile:X [(match_operand:X 0 "register_operand" "r")]
     UNSPECV_CLEAN)]
   "TARGET_ZICBOM"
-  "cbo.clean\t%a0"
+  "cbo.clean\t%0"
 )
 
 (define_insn "riscv_flush_<mode>"
   [(unspec_volatile:X [(match_operand:X 0 "register_operand" "r")]
     UNSPECV_FLUSH)]
   "TARGET_ZICBOM"
-  "cbo.flush\t%a0"
+  "cbo.flush\t%0"
 )
 
 (define_insn "riscv_inval_<mode>"
   [(unspec_volatile:X [(match_operand:X 0 "register_operand" "r")]
     UNSPECV_INVAL)]
   "TARGET_ZICBOM"
-  "cbo.inval\t%a0"
+  "cbo.inval\t%0"
 )
 
 (define_insn "riscv_zero_<mode>"
   [(unspec_volatile:X [(match_operand:X 0 "register_operand" "r")]
     UNSPECV_ZERO)]
   "TARGET_ZICBOZ"
-  "cbo.zero\t%a0"
+  "cbo.zero\t%0"
 )
 
 (define_insn "prefetch"
