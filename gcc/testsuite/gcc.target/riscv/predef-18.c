@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-march=rv64i_zbkb_zbkc_zbkx_zknd_zkne_zknh_zksed_zksh -mabi=lp64 -mcmodel=medlow -misa-spec=2.2" } */
+/* { dg-options "-march=rv64i_zbkb_zbkc_zbkx_zknd_zkne_zknh_zksed_zksh -mabi=lp64 -mcmodel=medlow" } */
 
 int main () {
 
@@ -13,18 +13,6 @@ int main () {
 
 #if !defined(__riscv_i)
 #error "__riscv_i"
-#endif
-
-#if !defined(__riscv_zk)
-#error "__riscv_zk"
-#endif
-
-#if !defined(__riscv_zkn)
-#error "__riscv_zkn"
-#endif
-
-#if !defined(__riscv_zks)
-#error "__riscv_zks"
 #endif
 
 #if !defined(__riscv_zbkb)
