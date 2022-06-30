@@ -2,7 +2,7 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target riscv_hard_fp } */
 /* { dg-require-effective-target riscv_xv5 } */
-/* { dg-options "-mzfh" } */
+/* { dg-options "-mzfh -Wno-incompatible-pointer-types" } */
 
 /* This produces a diagnostic if EXPR doesn't have type TYPE.  */
 #define CHECK(expr,type)			\
@@ -25,7 +25,3 @@ main (void)
   CHECK ((__fp16)99.99, __fp16);
   CHECK ((f1+f2, f1), __fp16);
 }
-
-
-
-

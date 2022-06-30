@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-march=rv32if -mext-vector" } */
+/* { dg-options "-march=rv32if -mext-vector -mabi=ilp32f" } */
 int main () {
 
 #ifndef __riscv_arch_test
