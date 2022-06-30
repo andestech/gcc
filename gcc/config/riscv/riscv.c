@@ -796,8 +796,9 @@ static const struct riscv_csr_data csr_data_list[] = {
   {"icount", 0x7A1},
   {"itrigger", 0x7A1},
   {"etrigger", 0x7A1},
-  {"textra32", 0x7A3},
-  {"textra64", 0x7A3},
+  /* Both of textra32/64 translate to trigger data3 register(tdata3) */
+  // {"textra32", 0x7A3},
+  // {"textra64", 0x7A3},
   {"tinfo", 0x7A4},
   {"tcontrol", 0x7A5},
   {"mcontext", 0x7A8},
