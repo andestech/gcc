@@ -1109,7 +1109,7 @@ static const struct riscv_builtin_description riscv_builtins[] = {
   DIRECT_NO_TARGET_BUILTIN (fwrmsi, fwrmdi, fwrm,
 			    RISCV_VOID_FTYPE_ULONG, FWRM),
   DIRECT_BUILTIN (frflagssi, frflagsdi, frflags,
-		  RISCV_ULONG_FTYPE_VOID, FRFLAGS),
+		  RISCV_ULONG_FTYPE, FRFLAGS),
   DIRECT_BUILTIN (fsflagssi, fsflagsdi, fsflags,
 		  RISCV_ULONG_FTYPE_ULONG, FSFLAGS),
   DIRECT_NO_TARGET_BUILTIN (fwflagssi, fwflagsdi, fwflags,
