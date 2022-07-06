@@ -6365,49 +6365,6 @@
   [(set_attr "type"   "dwext")
    (set_attr "mode"   "SI")])
 
-(define_insn_and_split "wext32_si3_1"
-  [(set (match_operand:SI 0 "register_operand" "")
-	(rotate:SI
-	  (match_operand:SI 1 "register_operand" "")
-	  (match_operand:SI 2 "imm5u_operand" "")))]
-  "TARGET_DSP && !TARGET_64BIT && !reload_completed && !TARGET_ZBB"
-  "#"
-  "&& true"
-  [(const_int 1)]
-{
-  rtx tmp = gen_reg_rtx (DImode);
-  rtx low = riscv_di_low_part_subreg (tmp);
-  rtx high = riscv_di_high_part_subreg (tmp);
-  HOST_WIDE_INT shiftamount = INTVAL (operands[2]);
-
-  emit_move_insn (low, operands[1]);
-  emit_move_insn (high, operands[1]);
-
-  emit_insn (gen_wext (operands[0], tmp, GEN_INT (32 - shiftamount)));
-  DONE;
-})
-
-(define_insn_and_split "wext32_si3_2"
-  [(set (match_operand:SI 0 "register_operand" "")
-	(rotatert:SI
-	  (match_operand:SI 1 "register_operand" "")
-	  (match_operand:SI 2 "imm5u_operand" "")))]
-  "TARGET_DSP && !TARGET_64BIT && !reload_completed && !TARGET_ZBB"
-  "#"
-  "&& true"
-  [(const_int 1)]
-{
-  rtx tmp = gen_reg_rtx (DImode);
-  rtx low = riscv_di_low_part_subreg (tmp);
-  rtx high = riscv_di_high_part_subreg (tmp);
-
-  emit_move_insn (low, operands[1]);
-  emit_move_insn (high, operands[1]);
-
-  emit_insn (gen_wext (operands[0], tmp, operands[2]));
-  DONE;
-})
-
 (define_insn "wext64"
   [(set (match_operand:DI 0 "register_operand"     "=r,  r")
 	(sign_extend:DI
