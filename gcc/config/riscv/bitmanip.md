@@ -353,7 +353,7 @@
 (define_expand "bswapsi2"
   [(set (match_operand:SI 0 "register_operand" "=r")
         (bswap:SI (match_operand:SI 1 "register_operand" "r")))]
-  "(TARGET_ZBB && !TARGET_64BIT) || TARGET_DSP"
+  "TARGET_ZBB || TARGET_DSP"
   {
     if (TARGET_DSP)
       {
@@ -361,6 +361,17 @@
 	emit_insn (gen_bswap8si2 (tmp, operands[1]));
 	emit_insn (gen_bswap16si2 (operands[0], tmp));
         DONE;
+      }
+    if (TARGET_ZBB && TARGET_64BIT)
+      {
+	rtx tmp = gen_reg_rtx (DImode);
+	rtx input = gen_reg_rtx (DImode);
+	rtx output = gen_reg_rtx (DImode);
+	emit_move_insn (riscv_di_low_part_subreg (input), operands[1]);
+	emit_insn (gen_bswapdi2 (tmp, input));
+	emit_insn (gen_lshrdi3 (output, tmp, GEN_INT(32)));
+	emit_move_insn (operands[0], riscv_di_low_part_subreg (output));
+	DONE;
       }
   }
   [(set_attr "type" "bitmanip")])
