@@ -7090,6 +7090,14 @@ riscv_split_shiftrtdi3 (rtx dst, rtx src, rtx shiftamount, bool logic_shift_p)
 				  shiftamount));
 	}
     }
+  else if (INTVAL (shiftamount) == 32)
+    {
+      emit_move_insn (dst_low_part, src_high_part);
+      if (logic_shift_p)
+	emit_move_insn (dst_high_part, const0_rtx);
+      else
+	emit_insn (gen_ashrsi3 (dst_high_part, src_high_part, GEN_INT (31)));
+    }
   else
     {
       rtx new_shift_amout = gen_int_mode(INTVAL (shiftamount) - 32, SImode);
@@ -7128,6 +7136,11 @@ riscv_split_ashiftdi3 (rtx dst, rtx src, rtx shiftamount)
       ext_start = gen_int_mode(32 - INTVAL (shiftamount), SImode);
       emit_insn (gen_wext (dst_high_part, src, ext_start));
       emit_insn (gen_ashlsi3 (dst_low_part, src_low_part, shiftamount));
+    }
+  else if (INTVAL (shiftamount) == 32)
+    {
+      emit_move_insn (dst_high_part, src_low_part);
+      emit_move_insn (dst_low_part, GEN_INT (0));
     }
   else
     {
