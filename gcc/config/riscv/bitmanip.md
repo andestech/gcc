@@ -25,6 +25,8 @@
 
 (define_code_iterator clz_ctz_pcnt [clz ctz popcount])
 
+(define_code_iterator clz_ctz [clz ctz])
+
 (define_code_iterator ctz_pcnt [ctz popcount])
 
 (define_code_attr bitmanip_optab [(smin "smin")
@@ -159,9 +161,31 @@
 
 (define_insn "<bitmanip_optab>di2"
   [(set (match_operand:DI 0 "register_operand" "=r")
-        (clz_ctz_pcnt:DI (match_operand:DI 1 "register_operand" "r")))]
+        (clz_ctz:DI (match_operand:DI 1 "register_operand" "r")))]
   "TARGET_64BIT && TARGET_ZBB"
   "<bitmanip_insn>\t%0,%1"
+  [(set_attr "type" "bitmanip")
+   (set_attr "mode" "DI")])
+
+(define_insn_and_split "popcountdi2"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+        (popcount:DI (match_operand:DI 1 "register_operand" "r")))]
+  "TARGET_ZBB"
+  "cpop\t%0,%1"
+  "TARGET_ZBB && !TARGET_64BIT && !reload_completed"
+  [(const_int 1)]
+  {
+    rtx high = gen_reg_rtx (SImode);
+    rtx low = gen_reg_rtx (SImode);
+    rtx op0 = gen_reg_rtx (SImode);
+    rtx op1 = gen_reg_rtx (SImode);
+    high = gen_highpart (SImode, operands[1]);
+    low = gen_lowpart (SImode, operands[1]);
+    emit_insn (gen_popcountsi2 (op0, low));
+    emit_insn (gen_popcountsi2 (op1, high));
+    emit_insn (gen_addsi3 (gen_lowpart (SImode, operands[0]), op0, op1));
+    DONE;
+  }
   [(set_attr "type" "bitmanip")
    (set_attr "mode" "DI")])
 
