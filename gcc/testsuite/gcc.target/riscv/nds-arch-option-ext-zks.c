@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-mriscv-attribute -march=rv32i -mabi=ilp32 -mext-zks" } */
+/* { dg-options "-mriscv-attribute -march=rv32i -mabi=ilp32 -mext-zks -mno-ext-dsp -mno-ext-zbabcs" } */
 int foo()
 {
 }
