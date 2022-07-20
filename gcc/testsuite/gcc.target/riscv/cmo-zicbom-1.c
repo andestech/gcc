@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv64 } */
 /* { dg-options "-march=rv64gc_zicbom -mabi=lp64" } */
 
 int var;
