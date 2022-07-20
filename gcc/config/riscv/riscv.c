@@ -938,6 +938,7 @@ static const struct riscv_cpu_info riscv_cpu_info_table[] = {
   {"andes-25-series", vicuna, &vicuna_tune_info, NULL},
   {"andes-27-series", vicuna, &vicuna_tune_info, NULL},
   {"andes-45-series", kavalan, &kavalan_tune_info, NULL},
+  {"andes-65-series", kavalan, &kavalan_tune_info, NULL},
   {"rocket", rocket, &rocket_tune_info, NULL},
   {"size", rocket, &optimize_size_tune_info, NULL},
   {"vicuna", vicuna, &vicuna_tune_info, NULL},
@@ -956,6 +957,7 @@ static const struct riscv_cpu_info riscv_cpu_info_table[] = {
   {"n45", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv32_p},
   {"d45", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv32_p},
   {"nx45", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv64_p},
+  {"nx45v", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv64_p},
   {"n45f", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv32_p},
   {"d45f", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv32_p},
   {"nx45f", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv64_p},
@@ -971,6 +973,7 @@ static const struct riscv_cpu_info riscv_cpu_info_table[] = {
   {"nx27f", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv64_p},
   {"a27", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
   {"ax27", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv64_p},
+  {"ax65", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv64_p},
 };
 
 /* Return the riscv_cpu_info entry for the given name string.  */
