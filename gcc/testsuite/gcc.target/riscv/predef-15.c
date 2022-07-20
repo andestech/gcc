@@ -6,7 +6,7 @@ int main () {
 #error "__riscv_arch_test"
 #endif
 
-#if !defined(__riscv_zfh) || (__riscv_zfh != (1 * 1000))
+#if !defined(__riscv_zfh) || (__riscv_zfh != (1 * 1000000))
 #error "__riscv_zfh"
 #endif
 
