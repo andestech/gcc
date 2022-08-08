@@ -16,7 +16,7 @@ typedef unsigned short uint16x8_t __attribute__((vector_size (16)));
 typedef unsigned int uint32x2_t __attribute__((vector_size(8)));
 typedef unsigned int uint32x4_t __attribute__((vector_size(16)));
 
-enum riscv_csrs
+enum riscv_csrs 
 {
   /* User Trap Setup */
   NDS_USTATUS = 0x000,
@@ -110,6 +110,9 @@ enum riscv_csrs
   NDS_STVEC = 0x105,
   NDS_SCOUNTEREN = 0x106,
 
+  /* Supervisor Configuration */
+  NDS_SENVCFG = 0x10A,
+
   /* SUPERVISOR TRAP HANDLING */
   NDS_SSCRATCH = 0x140,
   NDS_SEPC = 0x141,
@@ -122,11 +125,15 @@ enum riscv_csrs
   NDS_SATP = 0x180,
   NDS_SPTBR = 0x180, /* alias NDS_SPTBR */
 
+  /* Counter related CSRs */
+  NDS_SCOUNTOVF  = 0xDA0,
+
   /* Machine Information Registers */
   NDS_MVENDORID = 0xF11,
   NDS_MARCHID = 0xF12,
   NDS_MIMPID = 0xF13,
   NDS_MHARTID = 0xF14,
+  NDS_MCONFIGPTR   = 0xF15,
 
   /* Machine Trap Setup */
   NDS_MSTATUS = 0x300,
@@ -143,6 +150,12 @@ enum riscv_csrs
   NDS_MCAUSE = 0x342,
   NDS_MTVAL = 0x343,
   NDS_MIP = 0x344,
+
+  /* Machine Configuration */
+  NDS_MENVCFG = 0x30A,
+  NDS_MENVCFGH     = 0x31A,
+  NDS_MSECCFG   = 0x747,
+  NDS_MSECCFGH    = 0x757,
 
   /* Machine Protection and Translation */
   NDS_PMPCFG0 = 0x3A0,

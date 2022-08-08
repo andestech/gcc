@@ -465,6 +465,9 @@ static const struct riscv_csr_data csr_data_list[] = {
   {"stvec", 0x105},
   {"scounteren", 0x106},
 
+  /* Supervisor Configuration */
+  {"senvcfg", 0x10A},
+
   /* Supervisor Trap Handling */
   {"sscratch", 0x140},
   {"sepc", 0x141},
@@ -475,11 +478,15 @@ static const struct riscv_csr_data csr_data_list[] = {
   /* Supervisor Protection and Translation */
   {"satp", 0x180},
 
+  /* Counter related CSRs */
+  {"scountovf", 0xDA0},
+
   /* Machine Information Registers */
   {"mvendorid", 0xF11},
   {"marchid", 0xF12},
   {"mimpid", 0xF13},
   {"mhartid", 0xF14},
+  {"mconfigptr", 0xF15},
 
   /* Machine Trap Setup */
   {"mstatus", 0x300},
@@ -496,6 +503,12 @@ static const struct riscv_csr_data csr_data_list[] = {
   {"mcause", 0x342},
   {"mtval", 0x343},
   {"mip", 0x344},
+
+  /* Machine Configuration */
+  {"menvcfg", 0x30A},
+  {"menvcfgh", 0x31A},
+  {"mseccfg", 0x747},
+  {"mseccfgh", 0x757},
 
   /* Machine Protection and Translation */
   {"pmpcfg0", 0x3A0},
