@@ -1256,6 +1256,9 @@ riscv_rewrite_march(int argc, const char **argv)
       if (strncmp(argv[i], "march=", 6) == 0)
 	{
 	  subset_list = riscv_subset_list::parse (argv[i] + 6, location_t());
+	  /* if subset_list is NULL, return original march string. */
+	  if (!subset_list)
+	    return argv[i] + 6;
 	  break;
 	}
     }
