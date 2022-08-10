@@ -1056,6 +1056,7 @@ eliminate_regs_in_insn (rtx_insn *insn, bool replace_p, bool first_p,
 	reg2 = SUBREG_REG (reg2);
       if (REG_P (reg1) && REG_P (reg2)
 	  && REGNO (reg1) < FIRST_PSEUDO_REGISTER
+	  && REGNO (reg1) != FRAME_POINTER_REGNUM
 	  && REGNO (reg2) >= FIRST_PSEUDO_REGISTER
 	  && GET_MODE (reg1) == Pmode
 	  && !have_addptr3_insn (lra_pmode_pseudo, reg1,

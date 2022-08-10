@@ -2355,12 +2355,6 @@ transform_to_exit_first_loop_alt (class loop *loop,
   tree control = gimple_cond_lhs (cond_stmt);
   edge e;
 
-  /* Rewriting virtuals into loop-closed ssa normal form makes this
-     transformation simpler.  It also ensures that the virtuals are in
-     loop-closed ssa normal from after the transformation, which is required by
-     create_parallel_loop.  */
-  rewrite_virtuals_into_loop_closed_ssa (loop);
-
   /* Create the new_header block.  */
   basic_block new_header = split_block_before_cond_jump (exit->src);
   edge edge_at_split = single_pred_edge (new_header);
@@ -3070,7 +3064,7 @@ gen_parallel_loop (class loop *loop,
 	= force_gimple_operand (many_iterations_cond, &stmts, false, NULL_TREE);
       if (stmts)
 	gsi_insert_seq_on_edge_immediate (loop_preheader_edge (loop), stmts);
-      if (!is_gimple_condexpr (many_iterations_cond))
+      if (!is_gimple_condexpr_for_cond (many_iterations_cond))
 	{
 	  many_iterations_cond
 	    = force_gimple_operand (many_iterations_cond, &stmts,
@@ -3232,6 +3226,9 @@ build_new_reduction (reduction_info_table_type *reduction_list,
   /* Check for OpenMP supported reduction.  */
   switch (reduction_code)
     {
+    case MINUS_EXPR:
+      reduction_code = PLUS_EXPR;
+      /* Fallthru.  */
     case PLUS_EXPR:
     case MULT_EXPR:
     case MAX_EXPR:
@@ -4220,7 +4217,9 @@ pass_parallelize_loops::execute (function *fun)
 
       checking_verify_loop_structure ();
 
-      todo |= TODO_update_ssa;
+      update_ssa (TODO_update_ssa);
+      if (in_loop_pipeline)
+	rewrite_into_loop_closed_ssa (NULL, 0);
     }
 
   if (!in_loop_pipeline)

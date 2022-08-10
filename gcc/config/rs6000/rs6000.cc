@@ -58,8 +58,8 @@
 #include "reload.h"
 #include "sched-int.h"
 #include "gimplify.h"
-#include "gimple-fold.h"
 #include "gimple-iterator.h"
+#include "gimple-fold.h"
 #include "gimple-walk.h"
 #include "ssa.h"
 #include "tree-vectorizer.h"
@@ -20184,7 +20184,11 @@ rs6000_mangle_type (const_tree type)
 
   if (SCALAR_FLOAT_TYPE_P (type) && FLOAT128_IBM_P (TYPE_MODE (type)))
     return "g";
-  if (SCALAR_FLOAT_TYPE_P (type) && FLOAT128_IEEE_P (TYPE_MODE (type)))
+  if (SCALAR_FLOAT_TYPE_P (type)
+      && FLOAT128_IEEE_P (TYPE_MODE (type))
+      /* _Float128 should mangle as DF128_ (done in generic code)
+	 rather than u9__ieee128 (used for __ieee128 and __float128).  */
+      && type != float128_type_node)
     return "u9__ieee128";
 
   if (type == vector_pair_type_node)
@@ -23296,9 +23300,13 @@ rs6000_expand_vec_perm_const_1 (rtx target, rtx op0, rtx op1,
 /* Implement TARGET_VECTORIZE_VEC_PERM_CONST.  */
 
 static bool
-rs6000_vectorize_vec_perm_const (machine_mode vmode, rtx target, rtx op0,
-				 rtx op1, const vec_perm_indices &sel)
+rs6000_vectorize_vec_perm_const (machine_mode vmode, machine_mode op_mode,
+				 rtx target, rtx op0, rtx op1,
+				 const vec_perm_indices &sel)
 {
+  if (vmode != op_mode)
+    return false;
+
   bool testing_p = !target;
 
   /* AltiVec (and thus VSX) can handle arbitrary permutations.  */

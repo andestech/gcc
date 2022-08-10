@@ -489,6 +489,34 @@ commutative_op (id_base *id)
       case CFN_FNMS:
 	return 0;
 
+      case CFN_COND_ADD:
+      case CFN_COND_MUL:
+      case CFN_COND_MIN:
+      case CFN_COND_MAX:
+      case CFN_COND_FMIN:
+      case CFN_COND_FMAX:
+      case CFN_COND_AND:
+      case CFN_COND_IOR:
+      case CFN_COND_XOR:
+      case CFN_COND_FMA:
+      case CFN_COND_FMS:
+      case CFN_COND_FNMA:
+      case CFN_COND_FNMS:
+      case CFN_COND_LEN_ADD:
+      case CFN_COND_LEN_MUL:
+      case CFN_COND_LEN_MIN:
+      case CFN_COND_LEN_MAX:
+      case CFN_COND_LEN_FMIN:
+      case CFN_COND_LEN_FMAX:
+      case CFN_COND_LEN_AND:
+      case CFN_COND_LEN_IOR:
+      case CFN_COND_LEN_XOR:
+      case CFN_COND_LEN_FMA:
+      case CFN_COND_LEN_FMS:
+      case CFN_COND_LEN_FNMA:
+      case CFN_COND_LEN_FNMS:
+	return 1;
+
       default:
 	return -1;
       }

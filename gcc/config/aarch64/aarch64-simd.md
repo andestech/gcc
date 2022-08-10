@@ -4428,7 +4428,7 @@
   [(set_attr "type" "neon_<ADDSUB:optab>_long")]
 )
 
-(define_expand "vec_widen_<su>addl_lo_<mode>"
+(define_expand "vec_widen_<su>add_lo_<mode>"
   [(match_operand:<VWIDE> 0 "register_operand")
    (ANY_EXTEND:<VWIDE> (match_operand:VQW 1 "register_operand"))
    (ANY_EXTEND:<VWIDE> (match_operand:VQW 2 "register_operand"))]
@@ -4440,7 +4440,7 @@
   DONE;
 })
 
-(define_expand "vec_widen_<su>addl_hi_<mode>"
+(define_expand "vec_widen_<su>add_hi_<mode>"
   [(match_operand:<VWIDE> 0 "register_operand")
    (ANY_EXTEND:<VWIDE> (match_operand:VQW 1 "register_operand"))
    (ANY_EXTEND:<VWIDE> (match_operand:VQW 2 "register_operand"))]
@@ -4452,7 +4452,7 @@
   DONE;
 })
 
-(define_expand "vec_widen_<su>subl_lo_<mode>"
+(define_expand "vec_widen_<su>sub_lo_<mode>"
   [(match_operand:<VWIDE> 0 "register_operand")
    (ANY_EXTEND:<VWIDE> (match_operand:VQW 1 "register_operand"))
    (ANY_EXTEND:<VWIDE> (match_operand:VQW 2 "register_operand"))]
@@ -4464,7 +4464,7 @@
   DONE;
 })
 
-(define_expand "vec_widen_<su>subl_hi_<mode>"
+(define_expand "vec_widen_<su>sub_hi_<mode>"
   [(match_operand:<VWIDE> 0 "register_operand")
    (ANY_EXTEND:<VWIDE> (match_operand:VQW 1 "register_operand"))
    (ANY_EXTEND:<VWIDE> (match_operand:VQW 2 "register_operand"))]

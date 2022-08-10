@@ -1,4 +1,5 @@
 /* { dg-options "-march=rv64imc -mabi=lp64" } */
+/* { dg-require-effective-target rv64 } */
 /* { dg-skip-if "" { *-*-* } { "-O0" "-g" } } */
 
 /* These stores cannot be compressed because x0 is not a compressed reg.

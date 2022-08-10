@@ -42,10 +42,10 @@ along with GCC; see the file COPYING3.  If not see
 #include "varasm.h"
 #include "stmt.h"
 #include "expr.h"
+#include "gimple-iterator.h"
 #include "gimple-fold.h"
 #include "tree-eh.h"
 #include "gimplify.h"
-#include "gimple-iterator.h"
 #include "stor-layout.h"
 #include "print-tree.h"
 #include "tree-iterator.h"
@@ -4257,14 +4257,14 @@ gimplify_pure_cond_expr (tree *expr_p, gimple_seq *pre_p)
     TREE_SET_CODE (cond, TRUTH_AND_EXPR);
   else if (code == TRUTH_ORIF_EXPR)
     TREE_SET_CODE (cond, TRUTH_OR_EXPR);
-  ret = gimplify_expr (&cond, pre_p, NULL, is_gimple_condexpr, fb_rvalue);
+  ret = gimplify_expr (&cond, pre_p, NULL, is_gimple_val, fb_rvalue);
   COND_EXPR_COND (*expr_p) = cond;
 
   tret = gimplify_expr (&COND_EXPR_THEN (expr), pre_p, NULL,
-				   is_gimple_val, fb_rvalue);
+			is_gimple_val, fb_rvalue);
   ret = MIN (ret, tret);
   tret = gimplify_expr (&COND_EXPR_ELSE (expr), pre_p, NULL,
-				   is_gimple_val, fb_rvalue);
+			is_gimple_val, fb_rvalue);
 
   return MIN (ret, tret);
 }
@@ -8624,7 +8624,8 @@ gimplify_omp_depend (tree *list_p, gimple_seq *pre_p)
 	      }
 	    if (error_operand_p (TREE_VALUE (t)))
 	      return 2;
-	    TREE_VALUE (t) = build_fold_addr_expr (TREE_VALUE (t));
+	    if (TREE_VALUE (t) != null_pointer_node)
+	      TREE_VALUE (t) = build_fold_addr_expr (TREE_VALUE (t));
 	    r = build4 (ARRAY_REF, ptr_type_node, array, cnts[i],
 			NULL_TREE, NULL_TREE);
 	    tem = build2_loc (OMP_CLAUSE_LOCATION (c), MODIFY_EXPR,
@@ -8651,7 +8652,8 @@ gimplify_omp_depend (tree *list_p, gimple_seq *pre_p)
 	      }
 	    if (error_operand_p (OMP_CLAUSE_DECL (c)))
 	      return 2;
-	    OMP_CLAUSE_DECL (c) = build_fold_addr_expr (OMP_CLAUSE_DECL (c));
+	    if (OMP_CLAUSE_DECL (c) != null_pointer_node)
+	      OMP_CLAUSE_DECL (c) = build_fold_addr_expr (OMP_CLAUSE_DECL (c));
 	    if (gimplify_expr (&OMP_CLAUSE_DECL (c), pre_p, NULL,
 			       is_gimple_val, fb_rvalue) == GS_ERROR)
 	      return 2;
@@ -10347,12 +10349,15 @@ gimplify_scan_omp_clauses (tree *list_p, gimple_seq *pre_p,
 	      remove = true;
 	      break;
 	    }
-	  OMP_CLAUSE_DECL (c) = build_fold_addr_expr (OMP_CLAUSE_DECL (c));
-	  if (gimplify_expr (&OMP_CLAUSE_DECL (c), pre_p, NULL,
-			     is_gimple_val, fb_rvalue) == GS_ERROR)
+	  if (OMP_CLAUSE_DECL (c) != null_pointer_node)
 	    {
-	      remove = true;
-	      break;
+	      OMP_CLAUSE_DECL (c) = build_fold_addr_expr (OMP_CLAUSE_DECL (c));
+	      if (gimplify_expr (&OMP_CLAUSE_DECL (c), pre_p, NULL,
+				 is_gimple_val, fb_rvalue) == GS_ERROR)
+		{
+		  remove = true;
+		  break;
+		}
 	    }
 	  if (code == OMP_TASK)
 	    ctx->has_depend = true;
@@ -14934,7 +14939,6 @@ gimplify_expr (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p,
     gcc_assert (fallback & (fb_rvalue | fb_lvalue));
   else if (gimple_test_f == is_gimple_val
            || gimple_test_f == is_gimple_call_addr
-           || gimple_test_f == is_gimple_condexpr
 	   || gimple_test_f == is_gimple_condexpr_for_cond
            || gimple_test_f == is_gimple_mem_rhs
            || gimple_test_f == is_gimple_mem_rhs_or_call

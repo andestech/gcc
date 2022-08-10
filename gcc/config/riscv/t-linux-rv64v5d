@@ -1,0 +1,1 @@
+MULTILIB_REQUIRED += march=rv64imafdc_xandes/mabi=lp64d

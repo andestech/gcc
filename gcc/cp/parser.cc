@@ -1050,6 +1050,7 @@ cp_keyword_starts_decl_specifier_p (enum rid keyword)
     case RID_UNSIGNED:
     case RID_FLOAT:
     case RID_DOUBLE:
+    CASE_RID_FLOATN_NX:
     case RID_VOID:
       /* CV qualifiers.  */
     case RID_CONST:
@@ -5875,6 +5876,14 @@ cp_parser_primary_expression (cp_parser *parser,
 	case RID_AT_PROTOCOL:
 	case RID_AT_SELECTOR:
 	  return cp_parser_objc_expression (parser);
+
+	case RID_OMP_ALL_MEMORY:
+	  gcc_assert (flag_openmp);
+	  cp_lexer_consume_token (parser->lexer);
+	  error_at (token->location,
+		    "%<omp_all_memory%> may only be used in OpenMP "
+		    "%<depend%> clause");
+	  return error_mark_node;
 
 	case RID_TEMPLATE:
 	  if (parser->in_function_body
@@ -19563,6 +19572,14 @@ cp_parser_simple_type_specifier (cp_parser* parser,
       break;
     case RID_DOUBLE:
       type = double_type_node;
+      break;
+    CASE_RID_FLOATN_NX:
+      type = FLOATN_NX_TYPE_NODE (token->keyword - RID_FLOATN_NX_FIRST);
+      if (type == NULL_TREE)
+	error ("%<_Float%d%s%> is not supported on this target",
+	       floatn_nx_types[token->keyword - RID_FLOATN_NX_FIRST].n,
+	       floatn_nx_types[token->keyword - RID_FLOATN_NX_FIRST].extended
+	       ? "x" : "");
       break;
     case RID_VOID:
       type = void_type_node;
@@ -36598,6 +36615,15 @@ cp_parser_omp_var_list_no_open (cp_parser *parser, enum omp_clause_code kind,
 	  cp_id_kind idk;
 	  decl = cp_parser_primary_expression (parser, false, false, false,
 					       &idk);
+	}
+      else if (kind == OMP_CLAUSE_DEPEND
+	       && cp_parser_is_keyword (token, RID_OMP_ALL_MEMORY)
+	       && (cp_lexer_nth_token_is (parser->lexer, 2, CPP_COMMA)
+		   || cp_lexer_nth_token_is (parser->lexer, 2,
+					     CPP_CLOSE_PAREN)))
+	{
+	  decl = ridpointers[RID_OMP_ALL_MEMORY];
+	  cp_lexer_consume_token (parser->lexer);
 	}
       else
 	{

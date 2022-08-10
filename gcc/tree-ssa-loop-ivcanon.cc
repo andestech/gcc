@@ -48,9 +48,9 @@ along with GCC; see the file COPYING3.  If not see
 #include "gimple-pretty-print.h"
 #include "fold-const.h"
 #include "profile.h"
+#include "gimple-iterator.h"
 #include "gimple-fold.h"
 #include "tree-eh.h"
-#include "gimple-iterator.h"
 #include "tree-cfg.h"
 #include "tree-ssa-loop-manip.h"
 #include "tree-ssa-loop-niter.h"
@@ -113,7 +113,7 @@ create_canonical_iv (class loop *loop, edge exit, tree niter,
 		       niter,
 		       build_int_cst (type, 1));
   incr_at = gsi_last_bb (in->src);
-  create_iv (niter,
+  create_iv (niter, PLUS_EXPR,
 	     build_int_cst (type, -1),
 	     NULL_TREE, loop,
 	     &incr_at, false, var_before, &var);

@@ -737,6 +737,10 @@ Maximum number of arguments in a PHI supported by TREE if-conversion unless the 
 Common Joined UInteger Var(param_max_unroll_times) Init(8) Param Optimization
 The maximum number of unrollings of a single loop.
 
+-param=max-unroll-loop-branch=
+Common Joined UInteger Var(param_max_unroll_loop_branch) Init(1) IntegerRange(1, 20) Param Optimization
+Maximum number of loop branch count.
+
 -param=max-unrolled-insns=
 Common Joined UInteger Var(param_max_unrolled_insns) Init(200) Param Optimization
 The maximum number of instructions to consider to unroll in a loop.
@@ -744,10 +748,6 @@ The maximum number of instructions to consider to unroll in a loop.
 -param=max-unswitch-insns=
 Common Joined UInteger Var(param_max_unswitch_insns) Init(50) Param Optimization
 The maximum number of insns of an unswitched loop.
-
--param=max-unswitch-level=
-Common Joined UInteger Var(param_max_unswitch_level) Init(3) Param Optimization
-The maximum number of unswitchings in a single loop.
 
 -param=max-variable-expansions-in-unroller=
 Common Joined UInteger Var(param_max_variable_expansions) Init(1) Param Optimization
@@ -884,6 +884,10 @@ Min. ratio of insns to mem ops to enable prefetching in a loop.
 -param=prefetch-minimum-stride=
 Common Joined UInteger Var(param_prefetch_minimum_stride) Init(-1) Param Optimization
 The minimum constant stride beyond which we should use prefetch hints for.
+
+-param=prefetch-writes=
+Common Joined UInteger Var(param_prefetch_writes) Init(1) IntegerRange(0, 1) Param Optimization
+Whether software prefetch hints should be issued for write memory accesses.
 
 -param=profile-func-internal-id=
 Common Joined UInteger Var(param_profile_func_internal_id) IntegerRange(0, 1) Param
@@ -1159,6 +1163,10 @@ Whether to use canonical types.
 -param=vect-epilogues-nomask=
 Common Joined UInteger Var(param_vect_epilogues_nomask) Init(1) IntegerRange(0, 1) Param Optimization
 Enable loop epilogue vectorization using smaller vector size.
+
+-param=vect-max-layout-candidates=
+Common Joined UInteger Var(param_vect_max_layout_candidates) Init(32) Param Optimization
+Maximum number of possible vector layouts (such as permutations) to consider when optimizing to-be-vectorized code.
 
 -param=vect-max-peeling-for-alignment=
 Common Joined UInteger Var(param_vect_max_peeling_for_alignment) Init(-1) IntegerRange(0, 64) Param Optimization

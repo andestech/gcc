@@ -1,6 +1,6 @@
 /* PR middle-end/79538 - missing -Wformat-overflow with %s and non-member array arguments
    { dg-do compile }
-   { dg-options "-O2 -Wformat-overflow" } */
+   { dg-options "-O2 -Wformat-overflow -mno-riscv-iprintf" } */
 
 char a3[3];
 char a4[4];

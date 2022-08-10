@@ -17,20 +17,60 @@ You should have received a copy of the GNU General Public License
 along with GCC; see the file COPYING3.  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#define TARGET_LINUX_ABI 0
+
 #define LINK_SPEC "\
 -melf" XLEN_SPEC DEFAULT_ENDIAN_SPEC "riscv \
 %{mno-relax:--no-relax} \
 %{mbig-endian:-EB} \
 %{mlittle-endian:-EL} \
-%{shared}"
+%{mno-execit-jal:--mno-execit-jal} \
+%{mnexecitop:--mnexecitop} \
+%{minnermost-loop:--mexecit-loop-aware} \
+%{mno-zcmt:--mno-opt-table-jump} \
+%{shared}" \
+NDS32_EX9_SPEC \
+NDS32_GP_RELAX_SPEC \
+BTB_FIXUP_SPEC \
+WORKAROUND_SPEC \
+" %{nostdlib|r|nostartfiles:%{mctor-dtor:crtbegin.o%s}}"
+
+#define LINK_GCC_C_SEQUENCE_SPEC "%G %{!nolibc:%L %G} %{nostdlib|r|nostartfiles:%{mctor-dtor:crtend.o%s}}"
 
 /* Link against Newlib libraries, because the ELF backend assumes Newlib.
    Handle the circular dependence between libc and libgloss. */
 #undef  LIB_SPEC
-#define LIB_SPEC "--start-group -lc %{!specs=nosys.specs:-lgloss} --end-group"
+#define LIB_SPEC \
+  "--start-group -lc %{!specs=nosys.specs:%{mvh:-lgloss_vh;:-lgloss}} --end-group " \
+  "%{!nostartfiles:%{!nodefaultlibs:%{!nolibc:%{!nostdlib:%:riscv_multi_lib_check()}}}}"
+
+#ifdef TARGET_MCULIB
+
+#undef  STARTFILE_SPEC
+#define STARTFILE_SPEC \
+    " %{mctor-dtor|coverage:crt1.o%s;:crt0.o%s}" \
+    " %{mctor-dtor|coverage:crtbegin.o%s}"
+
+#undef  ENDFILE_SPEC
+#define ENDFILE_SPEC " %{mctor-dtor|coverage:crtend.o%s}"
+
+#define STARTFILE_CXX_SPEC \
+  " %{!mno-ctor-dtor:crt1.o%s;:crt0.o%s}" \
+  " %{!mno-ctor-dtor:crtbegin.o%s}"
+
+#define ENDFILE_CXX_SPEC \
+  " %{!mno-ctor-dtor:crtend.o%s}"
+#else
 
 #undef  STARTFILE_SPEC
 #define STARTFILE_SPEC "crt0%O%s crtbegin%O%s"
 
 #undef  ENDFILE_SPEC
 #define ENDFILE_SPEC "crtend%O%s"
+
+#endif /* TARGET_MCULIB */
+
+#define RISCV_USE_CUSTOMISED_MULTI_LIB select_by_abi_arch_cmodel
+
+#undef TARGET_LIBC_HAS_FUNCTION
+#define TARGET_LIBC_HAS_FUNCTION riscv_libc_has_function

@@ -3875,16 +3875,24 @@ vect_gather_scatter_fn_p (vec_info *vinfo, bool read_p, bool masked_p,
     return false;
 
   /* Work out which function we need.  */
-  internal_fn ifn, alt_ifn;
+  internal_fn ifn, alt_ifn, alt_ifn2;
   if (read_p)
     {
       ifn = masked_p ? IFN_MASK_GATHER_LOAD : IFN_GATHER_LOAD;
       alt_ifn = IFN_MASK_GATHER_LOAD;
+      /* When target supports MASK_LEN_GATHER_LOAD, we always
+	 use MASK_LEN_GATHER_LOAD regardless whether len and
+	 mask are valid or not.  */
+      alt_ifn2 = IFN_MASK_LEN_GATHER_LOAD;
     }
   else
     {
       ifn = masked_p ? IFN_MASK_SCATTER_STORE : IFN_SCATTER_STORE;
       alt_ifn = IFN_MASK_SCATTER_STORE;
+      /* When target supports MASK_LEN_SCATTER_STORE, we always
+	 use MASK_LEN_SCATTER_STORE regardless whether len and
+	 mask are valid or not.  */
+      alt_ifn2 = IFN_MASK_LEN_SCATTER_STORE;
     }
 
   for (;;)
@@ -3908,6 +3916,14 @@ vect_gather_scatter_fn_p (vec_info *vinfo, bool read_p, bool masked_p,
 							  scale))
 	{
 	  *ifn_out = alt_ifn;
+	  *offset_vectype_out = offset_vectype;
+	  return true;
+	}
+      else if (internal_gather_scatter_fn_supported_p (alt_ifn2, vectype,
+						       memory_type,
+						       offset_vectype, scale))
+	{
+	  *ifn_out = alt_ifn2;
 	  *offset_vectype_out = offset_vectype;
 	  return true;
 	}
@@ -4301,7 +4317,8 @@ vect_find_stmt_data_reference (loop_p loop, gimple *stmt,
       free_data_ref (dr);
       return opt_result::failure_at (stmt,
 				     "not vectorized:"
-				     " statement is bitfield access %G", stmt);
+				     " statement is an unsupported"
+				     " bitfield access %G", stmt);
     }
 
   if (DR_BASE_ADDRESS (dr)
@@ -5092,7 +5109,7 @@ vect_create_data_ref_ptr (vec_info *vinfo, stmt_vec_info stmt_info,
 
       standard_iv_increment_position (loop, &incr_gsi, &insert_after);
 
-      create_iv (aggr_ptr_init,
+      create_iv (aggr_ptr_init, PLUS_EXPR,
 		 fold_convert (aggr_ptr_type, iv_step),
 		 aggr_ptr, loop, &incr_gsi, insert_after,
 		 &indx_before_incr, &indx_after_incr);
@@ -5122,9 +5139,9 @@ vect_create_data_ref_ptr (vec_info *vinfo, stmt_vec_info stmt_info,
     {
       standard_iv_increment_position (containing_loop, &incr_gsi,
 				      &insert_after);
-      create_iv (aptr, fold_convert (aggr_ptr_type, DR_STEP (dr)), aggr_ptr,
-		 containing_loop, &incr_gsi, insert_after, &indx_before_incr,
-		 &indx_after_incr);
+      create_iv (aptr, PLUS_EXPR, fold_convert (aggr_ptr_type, DR_STEP (dr)),
+		 aggr_ptr, containing_loop, &incr_gsi, insert_after,
+		 &indx_before_incr, &indx_after_incr);
       incr = gsi_stmt (incr_gsi);
 
       /* Copy the points-to information if it exists. */
@@ -5347,7 +5364,7 @@ vect_grouped_store_supported (tree vectype, unsigned HOST_WIDE_INT count)
 		    sel[3 * i + nelt2] = 0;
 		}
 	      indices.new_vector (sel, 2, nelt);
-	      if (!can_vec_perm_const_p (mode, indices))
+	      if (!can_vec_perm_const_p (mode, mode, indices))
 		{
 		  if (dump_enabled_p ())
 		    dump_printf (MSG_MISSED_OPTIMIZATION,
@@ -5365,7 +5382,7 @@ vect_grouped_store_supported (tree vectype, unsigned HOST_WIDE_INT count)
 		    sel[3 * i + nelt2] = nelt + j2++;
 		}
 	      indices.new_vector (sel, 2, nelt);
-	      if (!can_vec_perm_const_p (mode, indices))
+	      if (!can_vec_perm_const_p (mode, mode, indices))
 		{
 		  if (dump_enabled_p ())
 		    dump_printf (MSG_MISSED_OPTIMIZATION,
@@ -5382,6 +5399,8 @@ vect_grouped_store_supported (tree vectype, unsigned HOST_WIDE_INT count)
 	  poly_uint64 nelt = GET_MODE_NUNITS (mode);
 
 	  /* The encoding has 2 interleaved stepped patterns.  */
+	  if(!multiple_p (nelt, 2))
+	    return false;
 	  vec_perm_builder sel (nelt, 2, 3);
 	  sel.quick_grow (6);
 	  for (i = 0; i < 3; i++)
@@ -5390,12 +5409,12 @@ vect_grouped_store_supported (tree vectype, unsigned HOST_WIDE_INT count)
 	      sel[i * 2 + 1] = i + nelt;
 	    }
 	  vec_perm_indices indices (sel, 2, nelt);
-	  if (can_vec_perm_const_p (mode, indices))
+	  if (can_vec_perm_const_p (mode, mode, indices))
 	    {
 	      for (i = 0; i < 6; i++)
 		sel[i] += exact_div (nelt, 2);
 	      indices.new_vector (sel, 2, nelt);
-	      if (can_vec_perm_const_p (mode, indices))
+	      if (can_vec_perm_const_p (mode, mode, indices))
 		return true;
 	    }
 	}
@@ -5963,7 +5982,7 @@ vect_grouped_load_supported (tree vectype, bool single_element_p,
 		else
 		  sel[i] = 0;
 	      indices.new_vector (sel, 2, nelt);
-	      if (!can_vec_perm_const_p (mode, indices))
+	      if (!can_vec_perm_const_p (mode, mode, indices))
 		{
 		  if (dump_enabled_p ())
 		    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
@@ -5977,7 +5996,7 @@ vect_grouped_load_supported (tree vectype, bool single_element_p,
 		else
 		  sel[i] = nelt + ((nelt + k) % 3) + 3 * (j++);
 	      indices.new_vector (sel, 2, nelt);
-	      if (!can_vec_perm_const_p (mode, indices))
+	      if (!can_vec_perm_const_p (mode, mode, indices))
 		{
 		  if (dump_enabled_p ())
 		    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
@@ -6000,12 +6019,12 @@ vect_grouped_load_supported (tree vectype, bool single_element_p,
 	  for (i = 0; i < 3; i++)
 	    sel[i] = i * 2;
 	  vec_perm_indices indices (sel, 2, nelt);
-	  if (can_vec_perm_const_p (mode, indices))
+	  if (can_vec_perm_const_p (mode, mode, indices))
 	    {
 	      for (i = 0; i < 3; i++)
 		sel[i] = i * 2 + 1;
 	      indices.new_vector (sel, 2, nelt);
-	      if (can_vec_perm_const_p (mode, indices))
+	      if (can_vec_perm_const_p (mode, mode, indices))
 		return true;
 	    }
         }
@@ -6327,6 +6346,7 @@ vect_shift_permute_load_chain (vec_info *vinfo, vec<tree> dr_chain,
   gimple *perm_stmt;
 
   tree vectype = STMT_VINFO_VECTYPE (stmt_info);
+  machine_mode vmode = TYPE_MODE (vectype);
   unsigned int i;
   loop_vec_info loop_vinfo = dyn_cast <loop_vec_info> (vinfo);
 
@@ -6351,7 +6371,7 @@ vect_shift_permute_load_chain (vec_info *vinfo, vec<tree> dr_chain,
       for (i = 0; i < nelt / 2; ++i)
 	sel[nelt / 2 + i] = i * 2 + 1;
       vec_perm_indices indices (sel, 2, nelt);
-      if (!can_vec_perm_const_p (TYPE_MODE (vectype), indices))
+      if (!can_vec_perm_const_p (vmode, vmode, indices))
 	{
 	  if (dump_enabled_p ())
 	    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
@@ -6366,7 +6386,7 @@ vect_shift_permute_load_chain (vec_info *vinfo, vec<tree> dr_chain,
       for (i = 0; i < nelt / 2; ++i)
 	sel[nelt / 2 + i] = i * 2;
       indices.new_vector (sel, 2, nelt);
-      if (!can_vec_perm_const_p (TYPE_MODE (vectype), indices))
+      if (!can_vec_perm_const_p (vmode, vmode, indices))
 	{
 	  if (dump_enabled_p ())
 	    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
@@ -6381,7 +6401,7 @@ vect_shift_permute_load_chain (vec_info *vinfo, vec<tree> dr_chain,
       for (i = 0; i < nelt; i++)
 	sel[i] = nelt / 2 + i;
       indices.new_vector (sel, 2, nelt);
-      if (!can_vec_perm_const_p (TYPE_MODE (vectype), indices))
+      if (!can_vec_perm_const_p (vmode, vmode, indices))
 	{
 	  if (dump_enabled_p ())
 	    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
@@ -6397,7 +6417,7 @@ vect_shift_permute_load_chain (vec_info *vinfo, vec<tree> dr_chain,
       for (i = nelt / 2; i < nelt; i++)
 	sel[i] = nelt + i;
       indices.new_vector (sel, 2, nelt);
-      if (!can_vec_perm_const_p (TYPE_MODE (vectype), indices))
+      if (!can_vec_perm_const_p (vmode, vmode, indices))
 	{
 	  if (dump_enabled_p ())
 	    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
@@ -6461,7 +6481,7 @@ vect_shift_permute_load_chain (vec_info *vinfo, vec<tree> dr_chain,
 	  k++;
 	}
       vec_perm_indices indices (sel, 2, nelt);
-      if (!can_vec_perm_const_p (TYPE_MODE (vectype), indices))
+      if (!can_vec_perm_const_p (vmode, vmode, indices))
 	{
 	  if (dump_enabled_p ())
 	    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
@@ -6476,7 +6496,7 @@ vect_shift_permute_load_chain (vec_info *vinfo, vec<tree> dr_chain,
       for (i = 0; i < nelt; i++)
 	sel[i] = 2 * (nelt / 3) + (nelt % 3) + i;
       indices.new_vector (sel, 2, nelt);
-      if (!can_vec_perm_const_p (TYPE_MODE (vectype), indices))
+      if (!can_vec_perm_const_p (vmode, vmode, indices))
 	{
 	  if (dump_enabled_p ())
 	    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
@@ -6490,7 +6510,7 @@ vect_shift_permute_load_chain (vec_info *vinfo, vec<tree> dr_chain,
       for (i = 0; i < nelt; i++)
 	sel[i] = 2 * (nelt / 3) + 1 + i;
       indices.new_vector (sel, 2, nelt);
-      if (!can_vec_perm_const_p (TYPE_MODE (vectype), indices))
+      if (!can_vec_perm_const_p (vmode, vmode, indices))
 	{
 	  if (dump_enabled_p ())
 	    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
@@ -6504,7 +6524,7 @@ vect_shift_permute_load_chain (vec_info *vinfo, vec<tree> dr_chain,
       for (i = 0; i < nelt; i++)
 	sel[i] = (nelt / 3) + (nelt % 3) / 2 + i;
       indices.new_vector (sel, 2, nelt);
-      if (!can_vec_perm_const_p (TYPE_MODE (vectype), indices))
+      if (!can_vec_perm_const_p (vmode, vmode, indices))
 	{
 	  if (dump_enabled_p ())
 	    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,
@@ -6518,7 +6538,7 @@ vect_shift_permute_load_chain (vec_info *vinfo, vec<tree> dr_chain,
       for (i = 0; i < nelt; i++)
 	sel[i] = 2 * (nelt / 3) + (nelt % 3) / 2 + i;
       indices.new_vector (sel, 2, nelt);
-      if (!can_vec_perm_const_p (TYPE_MODE (vectype), indices))
+      if (!can_vec_perm_const_p (vmode, vmode, indices))
 	{
 	  if (dump_enabled_p ())
 	    dump_printf_loc (MSG_MISSED_OPTIMIZATION, vect_location,

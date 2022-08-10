@@ -684,7 +684,7 @@ static const struct default_options default_options_table[] =
     { OPT_LEVELS_3_PLUS, OPT__param_max_inline_insns_auto_, NULL, 30 },
     { OPT_LEVELS_3_PLUS, OPT__param_early_inlining_insns_, NULL, 14 },
     { OPT_LEVELS_3_PLUS, OPT__param_inline_heuristics_hint_percent_, NULL, 600 },
-    { OPT_LEVELS_3_PLUS, OPT__param_inline_min_speedup_, NULL, 15 },
+    { OPT_LEVELS_3_PLUS, OPT__param_inline_min_speedup_, NULL, 8 },
     { OPT_LEVELS_3_PLUS, OPT__param_max_inline_insns_single_, NULL, 200 },
 
     /* -Ofast adds optimizations to -O3.  */
@@ -2591,7 +2591,7 @@ common_handle_option (struct gcc_options *opts,
 	break;
 
       target_option_override_hook ();
-      print_specific_help (CL_TARGET, 0, 0, opts, lang_mask);
+      print_specific_help (CL_TARGET, CL_UNDOCUMENTED, 0, opts, lang_mask);
       opts->x_exit_after_options = true;
       break;
 

@@ -4964,6 +4964,7 @@ initializer_constant_valid_p_1 (tree value, tree endtype, tree *cache)
       if (cache && cache[0] == value)
 	return cache[1];
       if (! INTEGRAL_TYPE_P (endtype)
+	  || ! INTEGRAL_TYPE_P (TREE_TYPE (value))
 	  || TYPE_PRECISION (endtype) >= TYPE_PRECISION (TREE_TYPE (value)))
 	{
 	  tree ncache[4] = { NULL_TREE, NULL_TREE, NULL_TREE, NULL_TREE };
@@ -5000,6 +5001,7 @@ initializer_constant_valid_p_1 (tree value, tree endtype, tree *cache)
       if (cache && cache[0] == value)
 	return cache[1];
       if (! INTEGRAL_TYPE_P (endtype)
+	  || ! INTEGRAL_TYPE_P (TREE_TYPE (value))
 	  || TYPE_PRECISION (endtype) >= TYPE_PRECISION (TREE_TYPE (value)))
 	{
 	  tree ncache[4] = { NULL_TREE, NULL_TREE, NULL_TREE, NULL_TREE };

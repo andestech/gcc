@@ -91,7 +91,7 @@ along with GCC; see the file COPYING3.  If not see
 
 /* Comparison ratio of stmt cost between inner/outer loops.  Loops won't
    be interchanged if outer loop has too many stmts.  */
-#define STMT_COST_RATIO     (3)
+#define STMT_COST_RATIO     (4)
 
 /* Vector of strides that DR accesses in each level loop of a loop nest.  */
 #define DR_ACCESS_STRIDE(dr) ((vec<tree> *) dr->aux)
@@ -897,7 +897,9 @@ loop_cand::undo_simple_reduction (reduction_p re, bitmap dce_seeds)
       /* Init new_var to MEM_REF or CONST depending on if it is the first
 	 iteration.  */
       induction_p iv = m_inductions[0];
-      cond = fold_build2 (NE_EXPR, boolean_type_node, iv->var, iv->init_val);
+      cond = make_ssa_name (boolean_type_node);
+      stmt = gimple_build_assign (cond, NE_EXPR, iv->var, iv->init_val);
+      gimple_seq_add_stmt_without_update (&stmts, stmt);
       new_var = copy_ssa_name (re->var);
       stmt = gimple_build_assign (new_var, COND_EXPR, cond, tmp, re->init);
       gimple_seq_add_stmt_without_update (&stmts, stmt);
@@ -1183,7 +1185,7 @@ tree_loop_interchange::map_inductions_to_loop (loop_cand &src, loop_cand &tgt)
 	  tree var_before, var_after;
 	  tree base = unshare_expr (iv->init_expr);
 	  tree step = unshare_expr (iv->step);
-	  create_iv (base, step, SSA_NAME_VAR (iv->var),
+	  create_iv (base, PLUS_EXPR, step, SSA_NAME_VAR (iv->var),
 		     tgt.m_loop, &incr_pos, false, &var_before, &var_after);
 	  bitmap_set_bit (m_dce_seeds, SSA_NAME_VERSION (var_before));
 	  bitmap_set_bit (m_dce_seeds, SSA_NAME_VERSION (var_after));

@@ -45,6 +45,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "ipa-modref.h"
 #include "target.h"
 #include "tree-ssa-loop-niter.h"
+#include "internal-fn.h"
 
 /* This file implements dead store elimination.
 
@@ -93,7 +94,9 @@ static bitmap need_eh_cleanup;
 static bitmap need_ab_cleanup;
 
 /* STMT is a statement that may write into memory.  Analyze it and
-   initialize WRITE to describe how STMT affects memory.
+   initialize WRITE to describe how STMT affects memory.  When
+   MAY_DEF_OK is true then the function initializes WRITE to what
+   the stmt may define.
 
    Return TRUE if the statement was analyzed, FALSE otherwise.
 
@@ -101,7 +104,7 @@ static bitmap need_ab_cleanup;
    can be achieved by analyzing more statements.  */
 
 static bool
-initialize_ao_ref_for_dse (gimple *stmt, ao_ref *write)
+initialize_ao_ref_for_dse (gimple *stmt, ao_ref *write, bool may_def_ok = false)
 {
   /* It's advantageous to handle certain mem* functions.  */
   if (gimple_call_builtin_p (stmt, BUILT_IN_NORMAL))
@@ -146,9 +149,50 @@ initialize_ao_ref_for_dse (gimple *stmt, ao_ref *write)
 	  break;
 	}
     }
+  else if (is_gimple_call (stmt)
+	   && gimple_call_internal_p (stmt))
+    {
+      switch (gimple_call_internal_fn (stmt))
+	{
+	case IFN_LEN_STORE:
+	case IFN_MASK_STORE:
+	case IFN_MASK_LEN_STORE:
+	  {
+	    internal_fn ifn = gimple_call_internal_fn (stmt);
+	    int stored_value_index = internal_fn_stored_value_index (ifn);
+	    int len_index = internal_fn_len_index (ifn);
+	    if (ifn == IFN_LEN_STORE)
+	      {
+		tree len = gimple_call_arg (stmt, len_index);
+		tree bias = gimple_call_arg (stmt, len_index + 1);
+		if (tree_fits_uhwi_p (len))
+		  {
+		    ao_ref_init_from_ptr_and_size (write,
+						   gimple_call_arg (stmt, 0),
+						   int_const_binop (MINUS_EXPR,
+								    len, bias));
+		    return true;
+		  }
+	      }
+	    /* We cannot initialize a must-def ao_ref (in all cases) but we
+	       can provide a may-def variant.  */
+	    if (may_def_ok)
+	      {
+		ao_ref_init_from_ptr_and_size (
+		  write, gimple_call_arg (stmt, 0),
+		  TYPE_SIZE_UNIT (
+		    TREE_TYPE (gimple_call_arg (stmt, stored_value_index))));
+		return true;
+	      }
+	    break;
+	  }
+	default:;
+	}
+    }
   else if (tree lhs = gimple_get_lhs (stmt))
     {
-      if (TREE_CODE (lhs) != SSA_NAME)
+      if (TREE_CODE (lhs) != SSA_NAME
+	  && (may_def_ok || !stmt_could_throw_p (cfun, stmt)))
 	{
 	  ao_ref_init (write, lhs);
 	  return true;
@@ -898,6 +942,17 @@ dse_optimize_redundant_stores (gimple *stmt)
     }
 }
 
+/* Return whether PHI contains ARG as an argument.  */
+
+static bool
+contains_phi_arg (gphi *phi, tree arg)
+{
+  for (unsigned i = 0; i < gimple_phi_num_args (phi); ++i)
+    if (gimple_phi_arg_def (phi, i) == arg)
+      return true;
+  return false;
+}
+
 /* A helper of dse_optimize_stmt.
    Given a GIMPLE_ASSIGN in STMT that writes to REF, classify it
    according to downstream uses and defs.  Sets *BY_CLOBBER_P to true
@@ -949,8 +1004,8 @@ dse_classify_store (ao_ref *ref, gimple *stmt,
 	return DSE_STORE_LIVE;
 
       auto_vec<gimple *, 10> defs;
-      gimple *first_phi_def = NULL;
-      gimple *last_phi_def = NULL;
+      gphi *first_phi_def = NULL;
+      gphi *last_phi_def = NULL;
       FOR_EACH_IMM_USE_STMT (use_stmt, ui, defvar)
 	{
 	  /* Limit stmt walking.  */
@@ -973,8 +1028,8 @@ dse_classify_store (ao_ref *ref, gimple *stmt,
 		{
 		  defs.safe_push (use_stmt);
 		  if (!first_phi_def)
-		    first_phi_def = use_stmt;
-		  last_phi_def = use_stmt;
+		    first_phi_def = as_a <gphi *> (use_stmt);
+		  last_phi_def = as_a <gphi *> (use_stmt);
 		}
 	    }
 	  /* If the statement is a use the store is not dead.  */
@@ -1046,6 +1101,7 @@ dse_classify_store (ao_ref *ref, gimple *stmt,
 	  use_operand_p use_p;
 	  tree vdef = (gimple_code (def) == GIMPLE_PHI
 		       ? gimple_phi_result (def) : gimple_vdef (def));
+	  gphi *phi_def;
 	  /* If the path to check starts with a kill we do not need to
 	     process it further.
 	     ???  With byte tracking we need only kill the bytes currently
@@ -1079,7 +1135,31 @@ dse_classify_store (ao_ref *ref, gimple *stmt,
 			   && bitmap_bit_p (visited,
 					    SSA_NAME_VERSION
 					      (PHI_RESULT (use_stmt))))))
-	    defs.unordered_remove (i);
+	    {
+	      defs.unordered_remove (i);
+	      if (def == first_phi_def)
+		first_phi_def = NULL;
+	      else if (def == last_phi_def)
+		last_phi_def = NULL;
+	    }
+	  /* If def is a PHI and one of its arguments is another PHI node still
+	     in consideration we can defer processing it.  */
+	  else if ((phi_def = dyn_cast <gphi *> (def))
+		   && ((last_phi_def
+			&& phi_def != last_phi_def
+			&& contains_phi_arg (phi_def,
+					     gimple_phi_result (last_phi_def)))
+		       || (first_phi_def
+			   && phi_def != first_phi_def
+			   && contains_phi_arg
+				(phi_def, gimple_phi_result (first_phi_def)))))
+	    {
+	      defs.unordered_remove (i);
+	      if (phi_def == first_phi_def)
+		first_phi_def = NULL;
+	      else if (phi_def == last_phi_def)
+		last_phi_def = NULL;
+	    }
 	  else
 	    ++i;
 	}
@@ -1292,8 +1372,10 @@ dse_optimize_stmt (function *fun, gimple_stmt_iterator *gsi, sbitmap live_bytes)
 
   ao_ref ref;
   /* If this is not a store we can still remove dead call using
-     modref summary.  */
-  if (!initialize_ao_ref_for_dse (stmt, &ref))
+     modref summary.  Note we specifically allow ref to be initialized
+     to a conservative may-def since we are looking for followup stores
+     to kill all of it.  */
+  if (!initialize_ao_ref_for_dse (stmt, &ref, true))
     {
       dse_optimize_call (gsi, live_bytes);
       return;
@@ -1360,6 +1442,24 @@ dse_optimize_stmt (function *fun, gimple_stmt_iterator *gsi, sbitmap live_bytes)
 
 	default:
 	  return;
+	}
+    }
+  else if (is_gimple_call (stmt)
+	   && gimple_call_internal_p (stmt))
+    {
+      switch (gimple_call_internal_fn (stmt))
+	{
+	case IFN_LEN_STORE:
+	case IFN_MASK_STORE:
+	case IFN_MASK_LEN_STORE:
+	  {
+	    enum dse_store_status store_status;
+	    store_status = dse_classify_store (&ref, stmt, false, live_bytes);
+	    if (store_status == DSE_STORE_DEAD)
+	      delete_dead_or_redundant_call (gsi, "dead");
+	    return;
+	  }
+	default:;
 	}
     }
 

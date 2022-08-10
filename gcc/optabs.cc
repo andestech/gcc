@@ -1314,7 +1314,17 @@ commutative_optab_p (optab binoptab)
 	  || binoptab == smul_widen_optab
 	  || binoptab == umul_widen_optab
 	  || binoptab == smul_highpart_optab
-	  || binoptab == umul_highpart_optab);
+	  || binoptab == umul_highpart_optab
+	  || binoptab == vec_widen_sadd_optab
+	  || binoptab == vec_widen_uadd_optab
+	  || binoptab == vec_widen_sadd_hi_optab
+	  || binoptab == vec_widen_sadd_lo_optab
+	  || binoptab == vec_widen_uadd_hi_optab
+	  || binoptab == vec_widen_uadd_lo_optab
+	  || binoptab == vec_widen_sadd_even_optab
+	  || binoptab == vec_widen_sadd_odd_optab
+	  || binoptab == vec_widen_uadd_even_optab
+	  || binoptab == vec_widen_uadd_odd_optab);
 }
 
 /* X is to be used in mode MODE as operand OPN to BINOPTAB.  If we're
@@ -4357,6 +4367,30 @@ can_vec_set_var_idx_p (machine_mode vec_mode)
 	 && insn_operand_matches (icode, 2, reg3);
 }
 
+/* Return whether the backend can emit a vec_extract instruction with
+   a non-constant index.  */
+bool
+can_vec_extract_var_idx_p (machine_mode vec_mode, machine_mode extr_mode)
+{
+  if (!VECTOR_MODE_P (vec_mode))
+    return false;
+
+  rtx reg1 = alloca_raw_REG (extr_mode, LAST_VIRTUAL_REGISTER + 1);
+  rtx reg2 = alloca_raw_REG (vec_mode, LAST_VIRTUAL_REGISTER + 2);
+
+  enum insn_code icode = convert_optab_handler (vec_extract_optab,
+						vec_mode, extr_mode);
+
+  const struct insn_data_d *data = &insn_data[icode];
+  machine_mode idx_mode = data->operand[2].mode;
+
+  rtx reg3 = alloca_raw_REG (idx_mode, LAST_VIRTUAL_REGISTER + 3);
+
+  return icode != CODE_FOR_nothing && insn_operand_matches (icode, 0, reg1)
+	 && insn_operand_matches (icode, 1, reg2)
+	 && insn_operand_matches (icode, 2, reg3);
+}
+
 /* This function is called when we are going to emit a compare instruction that
    compares the values found in X and Y, using the rtl operator COMPARISON.
 
@@ -4386,7 +4420,6 @@ prepare_cmp_insn (rtx x, rtx y, enum rtx_code comparison, rtx size,
   machine_mode mode = *pmode;
   rtx libfunc, test;
   machine_mode cmp_mode;
-  enum mode_class mclass;
 
   /* The other methods are not needed.  */
   gcc_assert (methods == OPTAB_DIRECT || methods == OPTAB_WIDEN
@@ -4492,9 +4525,8 @@ prepare_cmp_insn (rtx x, rtx y, enum rtx_code comparison, rtx size,
       return;
     }
 
-  mclass = GET_MODE_CLASS (mode);
   test = gen_rtx_fmt_ee (comparison, VOIDmode, x, y);
-  FOR_EACH_MODE_FROM (cmp_mode, mode)
+  FOR_EACH_WIDER_MODE_FROM (cmp_mode, mode)
     {
       enum insn_code icode;
       icode = optab_handler (cbranch_optab, cmp_mode);
@@ -4517,7 +4549,7 @@ prepare_cmp_insn (rtx x, rtx y, enum rtx_code comparison, rtx size,
 	  delete_insns_since (last);
 	}
 
-      if (methods == OPTAB_DIRECT || !CLASS_HAS_WIDER_MODES_P (mclass))
+      if (methods == OPTAB_DIRECT)
 	break;
     }
 
@@ -4713,7 +4745,7 @@ prepare_float_lib_cmp (rtx x, rtx y, enum rtx_code comparison,
   bool reversed_p = false;
   scalar_int_mode cmp_mode = targetm.libgcc_cmp_return_mode ();
 
-  FOR_EACH_MODE_FROM (mode, orig_mode)
+  FOR_EACH_WIDER_MODE_FROM (mode, orig_mode)
     {
       if (code_to_optab (comparison)
 	  && (libfunc = optab_libfunc (code_to_optab (comparison), mode)))
@@ -6250,7 +6282,10 @@ expand_vec_perm_const (machine_mode mode, rtx v0, rtx v1,
       if (single_arg_p)
 	v1 = v0;
 
-      if (targetm.vectorize.vec_perm_const (mode, target, v0, v1, indices))
+      gcc_checking_assert (GET_MODE (v0) == GET_MODE (v1));
+      machine_mode op_mode = GET_MODE (v0);
+      if (targetm.vectorize.vec_perm_const (mode, op_mode, target, v0, v1,
+					    indices))
 	return target;
     }
 
@@ -6264,7 +6299,7 @@ expand_vec_perm_const (machine_mode mode, rtx v0, rtx v1,
       v0_qi = gen_lowpart (qimode, v0);
       v1_qi = gen_lowpart (qimode, v1);
       if (targetm.vectorize.vec_perm_const != NULL
-	  && targetm.vectorize.vec_perm_const (qimode, target_qi, v0_qi,
+	  && targetm.vectorize.vec_perm_const (qimode, qimode, target_qi, v0_qi,
 					       v1_qi, qimode_indices))
 	return gen_lowpart (mode, target_qi);
     }
@@ -7983,6 +8018,16 @@ maybe_gen_insn (enum insn_code icode, unsigned int nops,
       return GEN_FCN (icode) (ops[0].value, ops[1].value, ops[2].value,
 			      ops[3].value, ops[4].value, ops[5].value,
 			      ops[6].value, ops[7].value, ops[8].value);
+    case 10:
+      return GEN_FCN (icode) (ops[0].value, ops[1].value, ops[2].value,
+			      ops[3].value, ops[4].value, ops[5].value,
+			      ops[6].value, ops[7].value, ops[8].value,
+			      ops[9].value);
+    case 11:
+      return GEN_FCN (icode) (ops[0].value, ops[1].value, ops[2].value,
+			      ops[3].value, ops[4].value, ops[5].value,
+			      ops[6].value, ops[7].value, ops[8].value,
+			      ops[9].value, ops[10].value);
     }
   gcc_unreachable ();
 }

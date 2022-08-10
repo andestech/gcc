@@ -1,4 +1,5 @@
 /* { dg-options "-O2 -fno-early-inlining -fdump-ipa-profile-optimized -fdump-tree-einline-optimized" } */
+/* { dg-skip-if "" { "riscv*-*-*" } } */
 volatile int one;
 static int
 add1 (int val)

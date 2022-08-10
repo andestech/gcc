@@ -126,6 +126,8 @@ BDESC_VERIFYS (IX86_BUILTIN_MAX,
 static GTY(()) tree ix86_builtin_type_tab[(int) IX86_BT_LAST_CPTR + 1];
 
 tree ix86_float16_type_node = NULL_TREE;
+tree ix86_bf16_ptr_type_node = NULL_TREE;
+
 /* Retrieve an element from the above table, building some of
    the types lazily.  */
 
@@ -1365,6 +1367,24 @@ ix86_register_float16_builtin_type (void)
 }
 
 static void
+ix86_register_bf16_builtin_type (void)
+{
+  if (bfloat16_type_node == NULL_TREE)
+    {
+      bfloat16_type_node = make_node (REAL_TYPE);
+      TYPE_PRECISION (bfloat16_type_node) = 16;
+      SET_TYPE_MODE (bfloat16_type_node, BFmode);
+      layout_type (bfloat16_type_node);
+    }
+
+  if (!maybe_get_identifier ("__bf16") && TARGET_SSE2)
+    {
+      lang_hooks.types.register_builtin_type (bfloat16_type_node, "__bf16");
+      ix86_bf16_ptr_type_node = build_pointer_type (bfloat16_type_node);
+    }
+}
+
+static void
 ix86_init_builtin_types (void)
 {
   tree float80_type_node, const_string_type_node;
@@ -1388,11 +1408,22 @@ ix86_init_builtin_types (void)
   lang_hooks.types.register_builtin_type (float80_type_node, "__float80");
 
   /* The __float128 type.  The node has already been created as
-     _Float128, so we only need to register the __float128 name for
-     it.  */
-  lang_hooks.types.register_builtin_type (float128_type_node, "__float128");
+     _Float128, so for C we only need to register the __float128 name for
+     it.  For C++, we create a distinct type which will mangle differently
+     (g) vs. _Float128 (DF128_) and behave backwards compatibly.  */
+  if (float128t_type_node == NULL_TREE)
+    {
+      float128t_type_node = make_node (REAL_TYPE);
+      TYPE_PRECISION (float128t_type_node)
+	= TYPE_PRECISION (float128_type_node);
+      SET_TYPE_MODE (float128t_type_node, TYPE_MODE (float128_type_node));
+      layout_type (float128t_type_node);
+    }
+  lang_hooks.types.register_builtin_type (float128t_type_node, "__float128");
 
   ix86_register_float16_builtin_type ();
+
+  ix86_register_bf16_builtin_type ();
 
   const_string_type_node
     = build_pointer_type (build_qualified_type

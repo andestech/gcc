@@ -67,13 +67,13 @@ along with GCC; see the file COPYING3.  If not see
 #include "asan.h"
 #include "internal-fn.h"
 #include "case-cfn-macros.h"
+#include "gimple-iterator.h"
 #include "gimple-fold.h"
 #include "intl.h"
 #include "file-prefix-map.h" /* remap_macro_filename()  */
 #include "gomp-constants.h"
 #include "omp-general.h"
 #include "tree-dfa.h"
-#include "gimple-iterator.h"
 #include "gimple-ssa.h"
 #include "tree-ssa-live.h"
 #include "tree-outof-ssa.h"
@@ -6031,8 +6031,8 @@ expand_ifn_atomic_compare_exchange_into_call (gcall *call, machine_mode mode)
       if (GET_MODE (boolret) != mode)
 	boolret = convert_modes (mode, GET_MODE (boolret), boolret, 1);
       x = force_reg (mode, x);
-      write_complex_part (target, boolret, true);
-      write_complex_part (target, x, false);
+      write_complex_part (target, boolret, true, true);
+      write_complex_part (target, x, false, false);
     }
 }
 
@@ -6087,8 +6087,8 @@ expand_ifn_atomic_compare_exchange (gcall *call)
       rtx target = expand_expr (lhs, NULL_RTX, VOIDmode, EXPAND_WRITE);
       if (GET_MODE (boolret) != mode)
 	boolret = convert_modes (mode, GET_MODE (boolret), boolret, 1);
-      write_complex_part (target, boolret, true);
-      write_complex_part (target, oldval, false);
+      write_complex_part (target, boolret, true, true);
+      write_complex_part (target, oldval, false, false);
     }
 }
 

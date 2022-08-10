@@ -1,0 +1,25 @@
+MULTILIB_REQUIRED += march=rv32imac_xandes/mabi=ilp32/mtune=andes-45-series
+MULTILIB_REQUIRED += march=rv32imafdc_xandes/mabi=ilp32d/mtune=andes-45-series
+MULTILIB_REQUIRED += march=rv64imac_xandes/mabi=lp64/mtune=andes-45-series
+MULTILIB_REQUIRED += march=rv64imafdc_xandes/mabi=lp64d/mtune=andes-45-series
+
+andes_45_cpus := a45 ax45 n45 n45f nx45 nx45f d45 d45f dx45
+MULTILIB_MATCHES += mtune?andes-45-series=mcpu?andes-45-series
+MULTILIB_MATCHES += $(foreach CPU, $(andes_45_cpus), \
+                      mtune?andes-45-series=mtune?$(CPU))
+MULTILIB_MATCHES += $(foreach CPU, $(andes_45_cpus), \
+                      mtune?andes-45-series=mcpu?$(CPU))
+
+MULTILIB_MATCHES += mtune?andes-45-series=mcpu?andes-45-series
+
+# andes-60-series reuse andes-45-series multilibs
+andes_60_cpus := ax65
+MULTILIB_MATCHES += mtune?andes-45-series=mcpu?andes-60-series
+MULTILIB_MATCHES += mtune?andes-45-series=mtune?andes-60-series
+MULTILIB_MATCHES += $(foreach CPU, $(andes_60_cpus), \
+                      mtune?andes-45-series=mtune?$(CPU))
+MULTILIB_MATCHES += $(foreach CPU, $(andes_60_cpus), \
+                      mtune?andes-45-series=mcpu?$(CPU))
+
+# Only use one mtune/mcpu at a time.
+MULTILIB_EXCEPTIONS += *mtune=andes-45-series/*mtune=*

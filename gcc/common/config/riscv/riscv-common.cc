@@ -18,6 +18,7 @@ along with GCC; see the file COPYING3.  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <sstream>
+#include <vector>
 
 #define INCLUDE_STRING
 #include "config.h"
@@ -37,6 +38,323 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_DEFAULT_TARGET_FLAGS (MASK_BIG_ENDIAN)
 #endif
 
+#define NUM_EXTS_KIND (sizeof(ext_options)/sizeof(ext_options[0]))
+
+struct arch_options_t
+{
+  const char *ext;
+  const char *option_name;
+  bool is_spec;	/* is -m[no-]option_name specified by user ? */
+  bool val; /* specified value */
+};
+
+static arch_options_t std_ext_options[] = {
+  {"a", "atomic", false, false},
+  {"c", "16-bit", false, false},
+  {"p", "ext-dsp", false, false},
+  {NULL, NULL, false, false}
+};
+
+static arch_options_t nonstd_z_ext_options[] = {
+  {"zfh", "zfh", false, false},
+  {"zfbfmin", "ext-bf16min", false, false},
+  {"zve64d", "ext-vector", false, false},
+  {"zve32f", "ext-vector", false, false},
+  {"zve64x", "ext-vector", false, false},
+  {"zve32x", "ext-vector", false, false},
+  {"zvfh", "ext-vector", false, false},
+  {"zvfbfmin", "ext-vector", false, false},
+  {"zvfbfwma", "ext-vector", false, false},
+  {"zve64d", "=zve64d", false, false},
+  {"zve64f", "=zve64f", false, false},
+  {"zve32f", "=zve32f", false, false},
+  {"zba", "ext-zbabcs", false, false},
+  {"zbb", "ext-zbabcs", false, false},
+  {"zbc", "ext-zbabcs", false, false},
+  {"zbs", "ext-zbabcs", false, false},
+  /* Let handle_conflict_ext() to solve the conflicts in Zc. */
+  {"zca", "ext-zc", false, false},
+  {"zcb", "ext-zc", false, false},
+  {"zcf", "ext-zc", false, false},
+  {"zcmp", "ext-zc", false, false},
+  {"zcmt", "ext-zc", false, false},
+  {"zcmp", "zcmp", false, false},
+  {"zcmt", "zcmt", false, false},
+  /* -mno-16-bit disables all zc extensions. */
+  {"zca", "16-bit", false, false},
+  {"zcb", "16-bit", false, false},
+  {"zcd", "16-bit", false, false},
+  {"zcf", "16-bit", false, false},
+  {"zcmp", "16-bit", false, false},
+  {"zcmt", "16-bit", false, false},
+  /* -mext-zc implies -mext-zbabcs */
+  {"zba", "ext-zc", false, false},
+  {"zbb", "ext-zc", false, false},
+  {"zbc", "ext-zc", false, false},
+  {"zbs", "ext-zc", false, false},
+  {"zkn", "ext-zkn", false, false},
+  {"zks", "ext-zks", false, false},
+  {"zkn", "ext-zkns", false, false},
+  {"zks", "ext-zkns", false, false},
+  {"zicboz", "ext-cmo", false, false},
+  {"zicbom", "ext-cmo", false, false},
+  {"zicbop", "ext-cmo", false, false},
+  {"zvl128b", "=zvl128b", false, false},
+  {"zvfh", "zvfh", false, false},
+  {"zve64x", "=zve64x", false, false},
+  {"zve32x", "=zve32x", false, false},
+  {NULL, NULL, false, false}
+};
+
+static arch_options_t *p_entry_zfh = &nonstd_z_ext_options[0];
+static arch_options_t *p_entry_zfbfmin = &nonstd_z_ext_options[1];
+static arch_options_t *p_entry_zve64d = &nonstd_z_ext_options[2];
+static arch_options_t *p_entry_zve32f = &nonstd_z_ext_options[3];
+static arch_options_t *p_entry_zve64x = &nonstd_z_ext_options[4];
+static arch_options_t *p_entry_zve32x = &nonstd_z_ext_options[5];
+static arch_options_t *p_entry_zvfh = &nonstd_z_ext_options[6];
+static arch_options_t *p_entry_zvfbfmin = &nonstd_z_ext_options[7];
+static arch_options_t *p_entry_zvfbfwma = &nonstd_z_ext_options[8];
+static arch_options_t *p_entry_val_zve64d = &nonstd_z_ext_options[9];
+static arch_options_t *p_entry_val_zve64f = &nonstd_z_ext_options[10];
+static arch_options_t *p_entry_val_zve32f = &nonstd_z_ext_options[11];
+
+static arch_options_t nonstd_x_ext_options[] = {
+  {"xebfhw", "bf16", false, false},
+  {NULL, NULL, false, false}
+};
+
+static arch_options_t nonstd_s_ext_options[] = {
+  {"svinval", "ext-svinval", false, false},
+  {NULL, NULL, false, false}
+};
+
+static arch_options_t *ext_options[] = {
+  std_ext_options,
+  nonstd_z_ext_options,
+  nonstd_x_ext_options,
+  nonstd_s_ext_options
+};
+
+static bool
+arch_options_end_p (const arch_options_t * opt)
+{
+  return (opt->ext == NULL) && (opt->option_name == NULL);
+}
+
+static void
+nds_get_isa_info (location_t loc, const char *isa, int &xlen,
+		  bool &has_f, bool &has_d)
+{
+  const char *p = isa;
+
+  if (startswith (p, "rv32"))
+    xlen = 32;
+  else if (startswith (p, "rv64"))
+    xlen = 64;
+  else
+    {
+      error_at (loc, "%<-march=%s%>: ISA string must begin with rv32 or rv64",
+		isa);
+      return;
+    }
+
+  p += 4;
+
+  if (*p == 'g')
+    {
+      has_f = true;
+      has_d = true;
+      return;
+    }
+
+  while (*p)
+    {
+      if (*p == 'x' || *p == 's' || *p == 'h' || *p == 'z')
+	break;
+
+      if (*p == 'f')
+	{
+	  has_f = true;
+	  p++;
+	}
+
+      if (*p == 'd')
+	{
+	  has_d = true;
+	  break;
+	}
+
+      p++;
+    }
+}
+
+/* Helper function to set some options to be validated later
+   by reusing entry of "ext-vector".  */
+
+static void
+set_opt_to_be_validated (arch_options_t *entry_zvfh,
+			 arch_options_t *entry_zvfbfmin,
+			 arch_options_t *entry_zvfbfwma)
+{
+  entry_zvfh->is_spec = true;
+  entry_zvfh->val = true;
+
+  entry_zvfbfmin->is_spec = true;
+  entry_zvfbfmin->val = true;
+
+  entry_zvfbfwma->is_spec = true;
+  entry_zvfbfwma->val = true;
+}
+
+static void
+validate_arch_options (const char *isa, location_t loc)
+{
+  int xlen = 0;
+  int expected_elen = 0;
+  bool has_f = false;
+  bool has_d = false;
+  bool has_zfh = false;
+  bool has_zfbfmin = false;
+  arch_options_t *opt = NULL;
+
+  /* get f/d info from isa string */
+  nds_get_isa_info (loc, isa, xlen, has_f, has_d);
+
+  /* Validate option -mzfh.  */
+  opt = p_entry_zfh;
+  gcc_assert (strcmp (opt->option_name, "zfh") == 0
+	      && strcmp (opt->ext, "zfh") == 0);
+  if (opt->is_spec && opt->val)
+    {
+      if (!has_f && !has_d)
+	error_at (loc, "Only support %<-mzfh%> option on F and D instruction set");
+      else
+	has_zfh = true;
+    }
+
+  /* Validate option -mext-bf16min.  */
+  opt = p_entry_zfbfmin;
+  gcc_assert (strcmp (opt->option_name, "ext-bf16min") == 0
+	      && strcmp (opt->ext, "zfbfmin") == 0);
+  if (opt->is_spec && opt->val)
+    {
+      if (!has_f && !has_d)
+	error_at (loc, "Only support %<-mext-bf16min%> option on F and D instruction set");
+      else
+	has_zfbfmin = true;
+    }
+
+  /* Validate option -mext-vector=XXX  */
+  opt = p_entry_val_zve64d;
+  gcc_assert (strcmp (opt->ext, "zve64d") == 0);
+  if (opt->is_spec && opt->val)
+    {
+      if (!has_d)
+	error_at (loc, "Only support %<-mext-vector=zve64d%> option on D instruction set");
+
+      set_opt_to_be_validated (p_entry_zvfh, p_entry_zvfbfmin, p_entry_zvfbfwma);
+    }
+
+  opt = p_entry_val_zve64f;
+  gcc_assert (strcmp (opt->ext, "zve64f") == 0);
+  if (opt->is_spec && opt->val)
+    {
+      if (!has_f && !has_d)
+	error_at (loc, "Only support %<-mext-vector=zve64f%> option on F or D instruction set");
+
+      set_opt_to_be_validated (p_entry_zvfh, p_entry_zvfbfmin, p_entry_zvfbfwma);
+    }
+
+  opt = p_entry_val_zve32f;
+  gcc_assert (strcmp (opt->ext, "zve32f") == 0);
+  if (opt->is_spec && opt->val)
+    {
+      if (!has_f && !has_d)
+	error_at (loc, "Only support %<-mext-vector=zve32f%> option on F or D instruction set");
+
+      set_opt_to_be_validated (p_entry_zvfh, p_entry_zvfbfmin, p_entry_zvfbfwma);
+    }
+
+  /* Validate option -mext-vector.  */
+  opt = p_entry_zve64d;
+  gcc_assert (strcmp (opt->ext, "zve64d") == 0);
+  /* Enable zve64d only if -mext-vecotr is given and extension 'D' is enabled.  */
+  opt->is_spec = opt->is_spec && has_d;
+
+  opt = p_entry_zve32f;
+  gcc_assert (strcmp (opt->ext, "zve32f") == 0);
+  /* Enable zve32f only if -mext-vecotr is given and extension 'F' is enabled.  */
+  opt->is_spec = opt->is_spec && has_f;
+
+  expected_elen = xlen;
+  if (has_f && !has_d)
+    expected_elen = 32;
+
+  opt = p_entry_zve64x;
+  gcc_assert (strcmp (opt->ext, "zve64x") == 0);
+  /* Enable zve64x only if -mext-vecotr is given and expected_elen is 64.  */
+  opt->is_spec = opt->is_spec && (expected_elen == 64);
+
+  opt = p_entry_zve32x;
+  gcc_assert (strcmp (opt->ext, "zve32x") == 0);
+  /* Enable zve32x only if -mext-vecotr is given and expected_elen is 32.  */
+  opt->is_spec = opt->is_spec && (expected_elen == 32);
+
+  opt = p_entry_zvfh;
+  gcc_assert (strcmp (opt->ext, "zvfh") == 0);
+  /* Enable zvfh only if -mext-vecotr is given and extension 'ZFH' is enabled.  */
+  opt->is_spec = opt->is_spec && has_zfh;
+
+  opt = p_entry_zvfbfmin;
+  gcc_assert (strcmp (opt->ext, "zvfbfmin") == 0);
+  /* Enable zvfbfmin only if -mext-bf16min and -mext-vecotr are both given.  */
+  opt->is_spec = opt->is_spec && has_zfbfmin;
+
+  opt = p_entry_zvfbfwma;
+  gcc_assert (strcmp (opt->ext, "zvfbfwma") == 0);
+  /* Enable zvfbfwma only if -mext-bf16min and -mext-vecotr are both given.  */
+  opt->is_spec = opt->is_spec && has_zfbfmin;
+}
+
+static char expanded_arch_str[20];
+
+static const char *
+riscv_convert_nds_ext (const char *isa)
+{
+  const char *str = NULL;
+  const char *p = isa + 4;
+
+  strncpy (expanded_arch_str, isa, 4);
+
+  if (strncmp (p, "v5f", 3) == 0)
+    str = "imafcxandes";
+  else if (strncmp (p, "v5d", 3) == 0)
+    str = "imafdcxandes";
+  else if (strncmp (p, "v5", 2) == 0)
+    str = "imacxandes";
+
+  if (str != NULL)
+    {
+      strcpy (expanded_arch_str + 4, str);
+      return expanded_arch_str;
+    }
+
+  return isa;
+}
+
+static const char *
+nds_preprocess_arch_string (const char *isa, location_t loc)
+{
+  /* Convert nds string to standard extension.  */
+  isa = riscv_convert_nds_ext (isa);
+
+  /* Validate arch options based on standard extension.  */
+  validate_arch_options (isa, loc);
+
+  return isa;
+}
+
 /* Type for implied ISA info.  */
 struct riscv_implied_info_t
 {
@@ -50,6 +368,13 @@ static const riscv_implied_info_t riscv_implied_info[] =
   {"d", "f"},
   {"f", "zicsr"},
   {"d", "zicsr"},
+
+  {"zcb", "zca"},
+  {"zcd", "zca"},
+  {"zcf", "zca"},
+  {"zcmp", "zca"},
+  {"zcmt", "zca"},
+
   {"zk", "zkn"},
   {"zk", "zkr"},
   {"zk", "zkt"},
@@ -95,6 +420,45 @@ static const riscv_implied_info_t riscv_implied_info[] =
   {"zvl16384b", "zvl8192b"},
   {"zvl32768b", "zvl16384b"},
   {"zvl65536b", "zvl32768b"},
+
+  {"zvkn", "zvkned"},
+  {"zvkn", "zvknhb"},
+  {"zvkn", "zvbb"},
+  {"zvkn", "zvkt"},
+  {"zvknc", "zvkn"},
+  {"zvknc", "zvbc"},
+  {"zvkng", "zvkn"},
+  {"zvkng", "zvkg"},
+  {"zvks", "zvksed"},
+  {"zvks", "zvksh"},
+  {"zvks", "zvbb"},
+  {"zvks", "zvkt"},
+  {"zvksc", "zvks"},
+  {"zvksc", "zvbc"},
+  {"zvksg", "zvks"},
+  {"zvksg", "zvkg"},
+
+  {"zfh", "zfhmin"},
+  {"zfhmin", "f"},
+  {"zvfhmin", "zve32f"},
+  {"zvfh", "zve32f"},
+  {"zvfh", "zfhmin"},
+
+  {NULL, NULL}
+};
+
+/* Conflict ISA info, if ext exists, remove implied_ext.  */
+riscv_implied_info_t riscv_conflict_info[] =
+{
+  {"zca", "c"},
+  {"zcb", "c"},
+  {"zcd", "c"},
+  {"zcf", "c"},
+  {"zcmp", "c"},
+  {"zcmt", "c"},
+
+  {"zcmp", "zcd"},
+  {"zcmt", "zcd"},
 
   {NULL, NULL}
 };
@@ -143,6 +507,8 @@ static const struct riscv_ext_version riscv_ext_version_table[] =
 
   {"v",       ISA_SPEC_CLASS_NONE, 1, 0},
 
+  {"p",       ISA_SPEC_CLASS_NONE, 0, 5},
+
   {"zicsr", ISA_SPEC_CLASS_20191213, 2, 0},
   {"zicsr", ISA_SPEC_CLASS_20190608, 2, 0},
 
@@ -153,6 +519,13 @@ static const struct riscv_ext_version riscv_ext_version_table[] =
   {"zbb", ISA_SPEC_CLASS_NONE, 1, 0},
   {"zbc", ISA_SPEC_CLASS_NONE, 1, 0},
   {"zbs", ISA_SPEC_CLASS_NONE, 1, 0},
+
+  {"zca", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zcb", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zcd", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zcf", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zcmp", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zcmt", ISA_SPEC_CLASS_NONE, 1, 0},
 
   {"zbkb",  ISA_SPEC_CLASS_NONE, 1, 0},
   {"zbkc",  ISA_SPEC_CLASS_NONE, 1, 0},
@@ -165,6 +538,10 @@ static const struct riscv_ext_version riscv_ext_version_table[] =
   {"zksh",  ISA_SPEC_CLASS_NONE, 1, 0},
   {"zkt",   ISA_SPEC_CLASS_NONE, 1, 0},
 
+  {"zicboz",ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zicbom",ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zicbop",ISA_SPEC_CLASS_NONE, 1, 0},
+
   {"zk",    ISA_SPEC_CLASS_NONE, 1, 0},
   {"zkn",   ISA_SPEC_CLASS_NONE, 1, 0},
   {"zks",   ISA_SPEC_CLASS_NONE, 1, 0},
@@ -175,6 +552,22 @@ static const struct riscv_ext_version riscv_ext_version_table[] =
   {"zve64x", ISA_SPEC_CLASS_NONE, 1, 0},
   {"zve64f", ISA_SPEC_CLASS_NONE, 1, 0},
   {"zve64d", ISA_SPEC_CLASS_NONE, 1, 0},
+
+  {"zvbb", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvbc", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvkg", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvkned", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvknha", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvknhb", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvksed", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvksh", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvkn", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvknc", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvkng", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvks", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvksc", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvksg", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvkt", ISA_SPEC_CLASS_NONE, 1, 0},
 
   {"zvl32b", ISA_SPEC_CLASS_NONE, 1, 0},
   {"zvl64b", ISA_SPEC_CLASS_NONE, 1, 0},
@@ -189,6 +582,21 @@ static const struct riscv_ext_version riscv_ext_version_table[] =
   {"zvl32768b", ISA_SPEC_CLASS_NONE, 1, 0},
   {"zvl65536b", ISA_SPEC_CLASS_NONE, 1, 0},
 
+  {"zfh",       ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zfhmin",    ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvfhmin",   ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvfh",      ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zfbfmin",   ISA_SPEC_CLASS_NONE, 0, 8},
+  {"zvfbfmin",  ISA_SPEC_CLASS_NONE, 0, 8},
+  {"zvfbfwma",  ISA_SPEC_CLASS_NONE, 0, 8},
+
+  {"svinval", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"svnapot", ISA_SPEC_CLASS_NONE, 1, 0},
+
+  /* Andes defined.  */
+  {"xandes", ISA_SPEC_CLASS_NONE, 5, 0},
+  {"xebfhw", ISA_SPEC_CLASS_NONE, 1, 0},
+
   /* Terminate the list.  */
   {NULL, ISA_SPEC_CLASS_NONE, 0, 0}
 };
@@ -199,6 +607,12 @@ static const struct riscv_ext_version riscv_combine_info[] =
   {"zk",  ISA_SPEC_CLASS_NONE, 1, 0},
   {"zkn",  ISA_SPEC_CLASS_NONE, 1, 0},
   {"zks",  ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvkn", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvknc", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvkng", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvks", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvksc", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvksg", ISA_SPEC_CLASS_NONE, 1, 0},
   /* Terminate the list.  */
   {NULL, ISA_SPEC_CLASS_NONE, 0, 0}
 };
@@ -219,6 +633,26 @@ const riscv_subset_list *riscv_current_subset_list ()
 {
   return current_subset_list;
 }
+
+/* struct for recording multi-lib info.  */
+struct riscv_multi_lib_info_t {
+  std::string path;
+  std::string arch_str;
+  std::string abi_str;
+  std::vector<std::string> conds;
+  riscv_subset_list *subset_list;
+
+  static bool parse (struct riscv_multi_lib_info_t *,
+		     const std::string &,
+		     const std::vector<std::string> &);
+};
+
+/* Flag for checking if there is no suitable multi-lib found.  */
+static bool riscv_no_matched_multi_lib;
+
+/* Used for record value of -march and -mabi.  */
+static std::string riscv_current_arch_str;
+static std::string riscv_current_abi_str;
 
 riscv_subset_t::riscv_subset_t ()
   : name (), major_version (0), minor_version (0), next (NULL),
@@ -243,6 +677,29 @@ riscv_subset_list::~riscv_subset_list ()
       delete item;
       item = next;
     }
+}
+
+/* Compute the match score of two arch string, return 0 if incompatible.  */
+int
+riscv_subset_list::match_score (riscv_subset_list *list) const
+{
+  riscv_subset_t *s;
+  int score = 0;
+
+  /* Impossible to match if XLEN is different.  */
+  if (list->m_xlen != this->m_xlen)
+    return 0;
+
+  /* list must be subset of current this list, otherwise it not safe to
+     link.
+     TODO: We might give different weight for each extension, but the rule could
+	   be complicated.
+     TODO: We might consider the version of each extension.  */
+  for (s = list->m_head; s != NULL; s = s->next)
+    if (this->lookup (s->name.c_str ()) != NULL)
+      score++;
+
+  return score;
 }
 
 /* Get the rank for single-letter subsets, lower value meaning higher
@@ -284,17 +741,18 @@ multi_letter_subset_rank (const std::string &subset)
   gcc_assert (subset.length () >= 2);
   int high_order = -1;
   int low_order = 0;
-  /* The order between multi-char extensions: s -> h -> z -> x.  */
+  /* Unprivileged std ext > privileged std ext > non-std ext.
+     The order between multi-char extensions: z -> s -> h -> x  */
   char multiletter_class = subset[0];
   switch (multiletter_class)
     {
-    case 's':
+    case 'z':
       high_order = 0;
       break;
-    case 'h':
+    case 's':
       high_order = 1;
       break;
-    case 'z':
+    case 'h':
       high_order = 2;
       break;
     case 'x':
@@ -367,6 +825,40 @@ subset_cmp (const std::string &a, const std::string &b)
     }
 }
 
+static bool
+arch_options_disabled_p (const char *p)
+{
+  arch_options_t *opt;
+
+  for (unsigned int i = 0; i < NUM_EXTS_KIND; ++i)
+    {
+      opt = ext_options[i];
+      for (; !arch_options_end_p(opt); ++opt)
+	if (strncmp(opt->ext, p, strlen(opt->ext)) == 0 &&
+	    opt->is_spec && !opt->val)
+	  return true;
+    }
+
+  return false;
+}
+
+static bool
+arch_options_enabled_p (const char *p)
+{
+  arch_options_t *opt;
+
+  for (unsigned int i = 0; i < NUM_EXTS_KIND; ++i)
+    {
+      opt = ext_options[i];
+      for (; !arch_options_end_p(opt); ++opt)
+	if (strncmp(opt->ext, p, strlen(opt->ext)) == 0 &&
+	    opt->is_spec && opt->val)
+	  return true;
+    }
+
+  return false;
+}
+
 /* Add new subset to list.  */
 
 void
@@ -374,6 +866,10 @@ riscv_subset_list::add (const char *subset, int major_version,
 			int minor_version, bool explicit_version_p,
 			bool implied_p)
 {
+
+  if (arch_options_disabled_p (subset))
+    return;
+
   riscv_subset_t *ext = lookup (subset);
 
   if (ext)
@@ -486,6 +982,35 @@ riscv_subset_list::add (const char *subset, bool implied_p)
   get_default_version (subset, &major_version, &minor_version);
 
   add (subset, major_version, minor_version, false, implied_p);
+}
+
+/* Remove the subset from list. */
+void
+riscv_subset_list::remove (const char *subset)
+{
+  if (m_head == NULL)
+    return;
+
+  riscv_subset_t *itr;
+  riscv_subset_t *prev = NULL;
+  for (itr = m_head; itr != NULL; itr = itr->next)
+    {
+      if (strcasecmp (itr->name.c_str (), subset) == 0)
+	{
+	  /* Detach and free the matched element.  */
+	  if (m_tail == itr)
+	    m_tail = prev;
+
+	  if (!prev)
+	    m_head = itr->next;
+	  else
+	    prev->next = itr->next;
+
+	  delete itr;
+	  return;
+	}
+      prev = itr;
+    }
 }
 
 /* Convert subset info to string with explicit version info,
@@ -766,7 +1291,15 @@ riscv_subset_list::parse_std_ext (const char *p)
 
       /* Checking canonical order.  */
       while (*std_exts && std_ext != *std_exts)
-	std_exts++;
+	{
+	  /* During reaching to the next matching std-ext letter, if a
+	   * std-ext is enabled via nds's option, add it.
+	   * ex: -march=rv32ic -matomic => enable a during i -> c  */
+	  subset[0] = *std_exts;
+	  if (arch_options_enabled_p(subset))
+	    add (subset, false);
+	  std_exts++;
+	}
 
       if (std_ext != *std_exts)
 	{
@@ -790,20 +1323,27 @@ riscv_subset_list::parse_std_ext (const char *p)
 
       add (subset, major_version, minor_version, explicit_version_p, false);
     }
+  /* Check the reminding standard extension is enabled by option. */
+  while (*std_exts)
+    {
+      char subset[2] = {*std_exts, 0};
+
+      if (arch_options_enabled_p(subset))
+	add (subset, false);
+      std_exts++;
+    }
   return p;
 }
 
 
 /* Check any implied extensions for EXT.  */
 void
-riscv_subset_list::handle_implied_ext (riscv_subset_t *ext)
+riscv_subset_list::handle_implied_ext (const char *ext)
 {
   const riscv_implied_info_t *implied_info;
-  for (implied_info = &riscv_implied_info[0];
-       implied_info->ext;
-       ++implied_info)
+  for (implied_info = &riscv_implied_info[0]; implied_info->ext; ++implied_info)
     {
-      if (strcmp (ext->name.c_str (), implied_info->ext) != 0)
+      if (strcmp (ext, implied_info->ext) != 0)
 	continue;
 
       /* Skip if implied extension already present.  */
@@ -813,6 +1353,9 @@ riscv_subset_list::handle_implied_ext (riscv_subset_t *ext)
       /* Version of implied extension will get from current ISA spec
 	 version.  */
       add (implied_info->implied_ext, true);
+
+      /* Recursively add implied extension by implied_info->implied_ext.  */
+      handle_implied_ext (implied_info->implied_ext);
     }
 
   /* For RISC-V ISA version 2.2 or earlier version, zicsr and zifence is
@@ -825,6 +1368,46 @@ riscv_subset_list::handle_implied_ext (riscv_subset_t *ext)
       if (lookup ("zifencei") == NULL)
 	add ("zifencei", true);
     }
+}
+
+/* Remove conflict ext.  */
+void
+riscv_subset_list::handle_conflict_ext ()
+{
+  riscv_implied_info_t *conflict_info;
+  for (conflict_info = &riscv_conflict_info[0]; conflict_info->ext;
+       ++conflict_info)
+    {
+      if (lookup (conflict_info->ext) && lookup (conflict_info->implied_ext))
+	remove (conflict_info->implied_ext);
+    }
+
+  /* Workaround: Zcf is only available on rv32. */
+  if (m_xlen == 64 || !lookup ("f"))
+     remove ("zcf");
+  if (!lookup ("d"))
+    remove ("zcd");
+}
+
+/* Check that all implied extensions are included.  */
+bool
+riscv_subset_list::check_implied_ext ()
+{
+  riscv_subset_t *itr;
+  for (itr = m_head; itr != NULL; itr = itr->next)
+    {
+      const riscv_implied_info_t *implied_info;
+      for (implied_info = &riscv_implied_info[0]; implied_info->ext;
+	   ++implied_info)
+	{
+	  if (strcmp (itr->name.c_str(), implied_info->ext) != 0)
+	    continue;
+
+	  if (!lookup (implied_info->implied_ext))
+	    return false;
+	}
+    }
+  return true;
 }
 
 /* Check any combine extensions for EXT.  */
@@ -968,7 +1551,10 @@ riscv_subset_list::parse_multiletter_ext (const char *p,
 	  return NULL;
 	}
 
-      add (subset, major_version, minor_version, explicit_version_p, false);
+      /* Check if this multi-letter extension is disabled explicitly by nds's option
+       * before adding it. */
+      if (!arch_options_disabled_p(subset))
+	add (subset, major_version, minor_version, explicit_version_p, false);
       p += end_of_version - subset;
       free (subset);
 
@@ -977,6 +1563,24 @@ riscv_subset_list::parse_multiletter_ext (const char *p,
 	  error_at (m_loc, "%<-march=%s%>: %s must separate with %<_%>",
 		    m_arch, ext_type_str);
 	  return NULL;
+	}
+    }
+
+  for (unsigned int i = 0; i < NUM_EXTS_KIND; ++i)
+    {
+      arch_options_t *opt = ext_options[i];
+
+      for (; !arch_options_end_p(opt); ++opt)
+	{
+	  /* Use the first letter of the first entry in each extension option table
+	   * to find matched extension option table.  */
+	  if (strncmp (opt->ext, ext_type, 1))
+	    break;
+
+	  /* Do lookup first to check if the same extension has been added because of
+	   * specification in march string.  */
+	  if (!lookup(opt->ext) && opt->is_spec && opt->val)
+	    add (opt->ext, false);
 	}
     }
 
@@ -1014,6 +1618,12 @@ riscv_subset_list::parse (const char *arch, location_t loc)
   if (p == NULL)
     goto fail;
 
+  /* Parsing sub-extensions.  */
+  p = subset_list->parse_multiletter_ext (p, "z", "sub-extension");
+
+  if (p == NULL)
+    goto fail;
+
   /* Parsing supervisor extension.  */
   p = subset_list->parse_multiletter_ext (p, "s", "supervisor extension");
 
@@ -1022,12 +1632,6 @@ riscv_subset_list::parse (const char *arch, location_t loc)
 
   /* Parsing hypervisor extension.  */
   p = subset_list->parse_multiletter_ext (p, "h", "hypervisor extension");
-
-  if (p == NULL)
-    goto fail;
-
-  /* Parsing sub-extensions.  */
-  p = subset_list->parse_multiletter_ext (p, "z", "sub-extension");
 
   if (p == NULL)
     goto fail;
@@ -1047,10 +1651,15 @@ riscv_subset_list::parse (const char *arch, location_t loc)
 
   for (itr = subset_list->m_head; itr != NULL; itr = itr->next)
     {
-      subset_list->handle_implied_ext (itr);
+      subset_list->handle_implied_ext (itr->name.c_str ());
     }
 
+  /* Make sure all implied extensions are included. */
+  gcc_assert (subset_list->check_implied_ext ());
+
   subset_list->handle_combine_ext ();
+
+  subset_list->handle_conflict_ext ();
 
   return subset_list;
 
@@ -1089,6 +1698,7 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"f", &gcc_options::x_target_flags, MASK_HARD_FLOAT},
   {"d", &gcc_options::x_target_flags, MASK_DOUBLE_FLOAT},
   {"c", &gcc_options::x_target_flags, MASK_RVC},
+  {"v", &gcc_options::x_target_flags, MASK_FULL_V},
   {"v", &gcc_options::x_target_flags, MASK_VECTOR},
 
   {"zicsr",    &gcc_options::x_riscv_zi_subext, MASK_ZICSR},
@@ -1098,6 +1708,13 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"zbb",    &gcc_options::x_riscv_zb_subext, MASK_ZBB},
   {"zbc",    &gcc_options::x_riscv_zb_subext, MASK_ZBC},
   {"zbs",    &gcc_options::x_riscv_zb_subext, MASK_ZBS},
+
+  {"zca",    &gcc_options::x_riscv_zc_subext, MASK_ZCA},
+  {"zcb",    &gcc_options::x_riscv_zc_subext, MASK_ZCB},
+  {"zcd",    &gcc_options::x_riscv_zc_subext, MASK_ZCD},
+  {"zcf",    &gcc_options::x_riscv_zc_subext, MASK_ZCF},
+  {"zcmp",   &gcc_options::x_riscv_zc_subext, MASK_ZCMP},
+  {"zcmt",   &gcc_options::x_riscv_zc_subext, MASK_ZCMT},
 
   {"zbkb",   &gcc_options::x_riscv_zk_subext, MASK_ZBKB},
   {"zbkc",   &gcc_options::x_riscv_zk_subext, MASK_ZBKC},
@@ -1109,6 +1726,10 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"zksed",  &gcc_options::x_riscv_zk_subext, MASK_ZKSED},
   {"zksh",   &gcc_options::x_riscv_zk_subext, MASK_ZKSH},
   {"zkt",    &gcc_options::x_riscv_zk_subext, MASK_ZKT},
+
+  {"zicboz", &gcc_options::x_riscv_zicmo_subext, MASK_ZICBOZ},
+  {"zicbom", &gcc_options::x_riscv_zicmo_subext, MASK_ZICBOM},
+  {"zicbop", &gcc_options::x_riscv_zicmo_subext, MASK_ZICBOP},
 
   {"zve32x",   &gcc_options::x_target_flags, MASK_VECTOR},
   {"zve32f",   &gcc_options::x_target_flags, MASK_VECTOR},
@@ -1126,6 +1747,24 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"zve64x",   &gcc_options::x_riscv_vector_elen_flags, MASK_VECTOR_ELEN_64},
   {"zve64f",   &gcc_options::x_riscv_vector_elen_flags, MASK_VECTOR_ELEN_FP_32},
   {"zve64d",   &gcc_options::x_riscv_vector_elen_flags, MASK_VECTOR_ELEN_FP_64},
+  {"zvfhmin",  &gcc_options::x_riscv_vector_elen_flags, MASK_VECTOR_ELEN_FP_16},
+  {"zvfh",     &gcc_options::x_riscv_vector_elen_flags, MASK_VECTOR_ELEN_FP_16},
+
+  {"zvbb",     &gcc_options::x_riscv_zvb_subext, MASK_ZVBB},
+  {"zvbc",     &gcc_options::x_riscv_zvb_subext, MASK_ZVBC},
+  {"zvkg",     &gcc_options::x_riscv_zvk_subext, MASK_ZVKG},
+  {"zvkned",   &gcc_options::x_riscv_zvk_subext, MASK_ZVKNED},
+  {"zvknha",   &gcc_options::x_riscv_zvk_subext, MASK_ZVKNHA},
+  {"zvknhb",   &gcc_options::x_riscv_zvk_subext, MASK_ZVKNHB},
+  {"zvksed",   &gcc_options::x_riscv_zvk_subext, MASK_ZVKSED},
+  {"zvksh",    &gcc_options::x_riscv_zvk_subext, MASK_ZVKSH},
+  {"zvkn",     &gcc_options::x_riscv_zvk_subext, MASK_ZVKN},
+  {"zvknc",    &gcc_options::x_riscv_zvk_subext, MASK_ZVKNC},
+  {"zvkng",    &gcc_options::x_riscv_zvk_subext, MASK_ZVKNG},
+  {"zvks",     &gcc_options::x_riscv_zvk_subext, MASK_ZVKS},
+  {"zvksc",    &gcc_options::x_riscv_zvk_subext, MASK_ZVKSC},
+  {"zvksg",    &gcc_options::x_riscv_zvk_subext, MASK_ZVKSG},
+  {"zvkt",     &gcc_options::x_riscv_zvk_subext, MASK_ZVKT},
 
   {"zvl32b",    &gcc_options::x_riscv_zvl_flags, MASK_ZVL32B},
   {"zvl64b",    &gcc_options::x_riscv_zvl_flags, MASK_ZVL64B},
@@ -1140,6 +1779,18 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"zvl32768b", &gcc_options::x_riscv_zvl_flags, MASK_ZVL32768B},
   {"zvl65536b", &gcc_options::x_riscv_zvl_flags, MASK_ZVL65536B},
 
+  {"zfhmin",    &gcc_options::x_riscv_zf_subext, MASK_ZFHMIN},
+  {"zfh",       &gcc_options::x_riscv_zf_subext, MASK_ZFH},
+  {"zvfhmin",   &gcc_options::x_riscv_zf_subext, MASK_ZVFHMIN},
+  {"zvfh",      &gcc_options::x_riscv_zf_subext, MASK_ZVFH},
+  {"zfbfmin",   &gcc_options::x_riscv_zf_subext, MASK_ZFBFMIN},
+  {"zvfbfmin",  &gcc_options::x_riscv_zf_subext, MASK_ZVFBFMIN},
+  {"zvfbfwma",  &gcc_options::x_riscv_zf_subext, MASK_ZVFBFWMA},
+
+  {"svinval", &gcc_options::x_riscv_sv_subext, MASK_SVINVAL},
+  {"svnapot", &gcc_options::x_riscv_sv_subext, MASK_SVNAPOT},
+
+  {"xebfhw", &gcc_options::x_riscv_xnds_subext, MASK_BF16},
 
   {NULL, NULL, 0}
 };
@@ -1147,7 +1798,7 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
 /* Parse a RISC-V ISA string into an option mask.  Must clear or set all arch
    dependent mask bits, in case more than one -march string is passed.  */
 
-static void
+void
 riscv_parse_arch_string (const char *isa,
 			 struct gcc_options *opts,
 			 location_t loc)
@@ -1179,8 +1830,37 @@ riscv_parse_arch_string (const char *isa,
 	  if (subset_list->lookup (arch_ext_flag_tab->ext))
 	    opts->*arch_ext_flag_tab->var_ref |= arch_ext_flag_tab->mask;
 	}
-    }
 
+      opts->x_target_flags &= ~MASK_DSP;
+      if (subset_list->lookup ("p"))
+	opts->x_target_flags |= MASK_DSP;
+
+      // initialize v5 related mask
+      if ((target_flags_explicit & MASK_V5) == 0)
+	opts->x_target_flags &= ~MASK_V5;
+      if ((target_flags_explicit & MASK_BFO) == 0)
+	opts->x_target_flags &= ~MASK_BFO;
+      if ((target_flags_explicit & MASK_BBCS) == 0)
+	opts->x_target_flags &= ~MASK_BBCS;
+      if ((target_flags_explicit & MASK_BIMM) == 0)
+	opts->x_target_flags &= ~MASK_BIMM;
+      if ((target_flags_explicit & MASK_LEA) == 0)
+	opts->x_target_flags &= ~MASK_LEA;
+
+      if (subset_list->lookup ("xandes"))
+	{
+	  if ((target_flags_explicit & MASK_V5) == 0)
+	    opts->x_target_flags |= MASK_V5;
+	  if ((target_flags_explicit & MASK_BFO) == 0)
+	    opts->x_target_flags |= MASK_BFO;
+	  if ((target_flags_explicit & MASK_BBCS) == 0)
+	    opts->x_target_flags |= MASK_BBCS;
+	  if ((target_flags_explicit & MASK_BIMM) == 0)
+	    opts->x_target_flags |= MASK_BIMM;
+	  if ((target_flags_explicit & MASK_LEA) == 0)
+	    opts->x_target_flags |= MASK_LEA;
+	}
+    }
   if (current_subset_list)
     delete current_subset_list;
 
@@ -1202,6 +1882,62 @@ riscv_find_cpu (const char *cpu)
   return NULL;
 }
 
+void
+enable_ext_options (const char *option, bool val)
+{
+  unsigned int i;
+  for (i = 0; i < NUM_EXTS_KIND; ++i)
+    {
+      arch_options_t *opt = ext_options[i];
+      for (; !arch_options_end_p (opt); ++opt)
+      if (strcmp (opt->option_name, option) == 0)
+	{
+	  opt->is_spec = true;
+	  opt->val = val;
+	}
+    }
+}
+
+void
+enable_andes_cpu_features (const char *cpu, bool from_mtune)
+{
+  if(from_mtune)
+    {
+      if (strcmp (cpu, "andes-23-series") == 0)
+	{
+	  enable_ext_options("ext-zbabcs", true);
+	  enable_ext_options("ext-zc", true);
+	}
+      else if (strcmp (cpu, "andes-60-series") == 0)
+	{
+	  enable_ext_options("ext-zbabcs", true);
+	  enable_ext_options("ext-zkns", true);
+	  enable_ext_options("ext-svinval", true);
+	}
+    }
+}
+
+static void
+riscv_parse_cpu_string (const char *cpu, int *flags)
+{
+  bool hasCALU = false;
+  /* 45-series cpuss have CALU  */
+  if (strcmp (cpu, "andes-45-series") == 0)
+    hasCALU = true;
+  // 60-series cpus have CALU
+  else if (strcmp (cpu, "andes-60-series") == 0 )
+    hasCALU = true;
+  else
+    hasCALU = false;
+
+  if ((target_flags_explicit & MASK_CMOV) == 0)
+    {
+      *flags &= ~MASK_CMOV;
+      if (hasCALU) 
+       *flags |= MASK_CMOV;
+    }
+}
+
 /* Implement TARGET_HANDLE_OPTION.  */
 
 static bool
@@ -1210,10 +1946,13 @@ riscv_handle_option (struct gcc_options *opts,
 		     const struct cl_decoded_option *decoded,
 		     location_t loc)
 {
+  const char *arch_str;
+
   switch (decoded->opt_index)
     {
     case OPT_march_:
-      riscv_parse_arch_string (decoded->arg, opts, loc);
+      arch_str = nds_preprocess_arch_string (decoded->arg, loc);
+      riscv_parse_arch_string (arch_str, opts, loc);
       return true;
 
     case OPT_mcpu_:
@@ -1222,21 +1961,132 @@ riscv_handle_option (struct gcc_options *opts,
 		  decoded->arg);
       return true;
 
+    case OPT_mtune_:
+      riscv_parse_cpu_string (decoded->arg, &opts->x_target_flags);
+      return true;
+
     default:
       return true;
+    }
+}
+
+/* Traverse all input arch options and set its value */
+
+void
+parse_arch_options (const char *option)
+{
+  bool val = true;
+  if (strncmp (option, "mno-", 4) == 0)
+    {
+      val = false;
+      option += 4;
+    }
+  else if (strncmp(option, "misa-spec=", 10) == 0)
+    {
+      const char *spec = option + 10;
+      if (strcmp (spec, "20191213") == 0)
+	riscv_isa_spec = ISA_SPEC_CLASS_20191213;
+      else if (strcmp (spec, "20190608") == 0)
+	riscv_isa_spec = ISA_SPEC_CLASS_20190608;
+      else if (strcmp (spec, "2.2") == 0)
+	riscv_isa_spec = ISA_SPEC_CLASS_2P2;
+      return ;
+    }
+  else
+    option += 1;
+
+  enable_ext_options (option, val);
+
+}
+
+void
+parse_cpu_options (const char *option)
+{
+  if (strncmp(option, "mcpu=", 5) == 0)
+    {
+      const char *cpu_name = option + 5;
+      enable_andes_cpu_features (cpu_name, 0);
+    }
+  else if (strncmp(option, "mtune=", 6) == 0)
+    {
+      const char *cpu_name = option + 6;
+      enable_andes_cpu_features (cpu_name, 1);
+    }
+
+  return;
+}
+
+void
+parse_mext_vector_options (int argc, const char **argv)
+{
+  int i;
+  bool mext_vec_p = false;
+
+  for (i = argc - 1; i >= 0; --i)
+    {
+      if (strncmp(argv[i], "mext-vector", 11) == 0)
+	{
+	  const char *c = argv[i] + 11;
+	  if (*c == '\0')
+	    {
+	      /* Option 'mext-vector' has lower priority than 'mext-vector=',
+		 so cannot handle this until checking all options.  */
+	      mext_vec_p = true;
+	      continue;
+	    }
+	  else if (*c == '=')
+	    {
+	      /* When multiple mext-vector= are given, use the last one.  */
+	      enable_ext_options (argv[i]+11, true);
+	      enable_ext_options ("=zvl128b", true);
+	      mext_vec_p = false;
+	      break;
+	    }
+	}
+    }
+
+  if (mext_vec_p == true)
+    {
+      enable_ext_options ("ext-vector", true);
+      enable_ext_options ("=zvl128b", true);
     }
 }
 
 /* Expand arch string with implied extensions.  */
 
 const char *
-riscv_expand_arch (int argc ATTRIBUTE_UNUSED,
-		   const char **argv)
+riscv_expand_arch (int argc, const char **argv)
 {
-  gcc_assert (argc == 1);
+  int i;
   location_t loc = UNKNOWN_LOCATION;
-  riscv_parse_arch_string (argv[0], NULL, loc);
-  const std::string arch = riscv_arch_str (false);
+
+  for (i = 0; i < argc; ++i)
+    {
+      parse_cpu_options(argv[i]);
+    }
+
+  /* Separate parsing of arg mext-vector  */
+  parse_mext_vector_options (argc, argv);
+
+  for (i = 0; i < argc; ++i)
+    {
+      /* Option mext-vector has been parsed, so skip it.  */
+      if (strncmp(argv[i], "mext-vector", 11) == 0)
+	continue;
+
+      parse_arch_options(argv[i]);
+    }
+
+  for (i = argc - 1; i >= 0; --i)
+    {
+      if (strncmp(argv[i], "march=", 6) == 0)
+	{
+	  const char *isa = nds_preprocess_arch_string (argv[i] + 6, loc);
+	  riscv_parse_arch_string (isa, NULL, loc);
+	}
+    }
+
+  const std::string arch = riscv_arch_str (true);
   if (arch.length())
     return xasprintf ("-march=%s", arch.c_str());
   else
@@ -1284,17 +2134,389 @@ riscv_expand_arch_from_cpu (int argc ATTRIBUTE_UNUSED,
 
   location_t loc = UNKNOWN_LOCATION;
 
+  arch_str = nds_preprocess_arch_string (arch_str, loc);
   riscv_parse_arch_string (arch_str, NULL, loc);
   const std::string arch = riscv_arch_str (false);
   return xasprintf ("-march=%s", arch.c_str());
 }
 
+/* Report error if not found suitable multilib.  */
+const char *
+riscv_multi_lib_check (int argc ATTRIBUTE_UNUSED,
+		       const char **argv ATTRIBUTE_UNUSED)
+{
+  if (riscv_no_matched_multi_lib)
+    fatal_error (
+      input_location,
+      "Cannot find suitable multilib set for %<-march=%s%>/%<-mabi=%s%>",
+      riscv_current_arch_str.c_str (),
+      riscv_current_abi_str.c_str ());
+
+  return "";
+}
+
+/* Find last switch with the prefix, options are take last one in general,
+   return NULL if not found, and return the option value if found, it could
+   return empty string if the option has no value.  */
+
+static const char *
+find_last_appear_switch (
+  const struct switchstr *switches,
+  int n_switches,
+  const char *prefix)
+{
+  int i;
+  size_t len = strlen (prefix);
+
+  for (i = 0; i < n_switches; ++i)
+    {
+      const struct switchstr *this_switch = &switches[n_switches - i - 1];
+
+      if (this_switch->live_cond & SWITCH_FALSE)
+	continue;
+
+      if (strncmp (this_switch->part1, prefix, len) == 0)
+	return this_switch->part1 + len;
+    }
+
+  return NULL;
+}
+
+/* Utils functions to check STR is start with PREFIX or not.  */
+
+static bool
+prefixed_with (const std::string &str, const char *prefix)
+{
+  return strncmp (prefix, str.c_str (), strlen (prefix)) == 0;
+}
+
+/* Parse the path and cond string into riscv_multi_lib_info_t, return false
+   if parsing failed. */
+
+bool
+riscv_multi_lib_info_t::parse (
+  struct riscv_multi_lib_info_t *multi_lib_info,
+  const std::string &path,
+  const std::vector<std::string> &conds)
+{
+  const char *default_arch_str = STRINGIZING (TARGET_RISCV_DEFAULT_ARCH);
+  const char *default_abi_str = STRINGIZING (TARGET_RISCV_DEFAULT_ABI);
+  multi_lib_info->conds = conds;
+  if (path == ".")
+    {
+      multi_lib_info->arch_str = default_arch_str;
+      multi_lib_info->abi_str = default_abi_str;
+    }
+  else
+    {
+      std::vector<std::string>::const_iterator itr;
+      for (itr = conds.begin (); itr != conds.end (); ++itr)
+	if (prefixed_with (*itr, "march="))
+	  multi_lib_info->arch_str = itr->c_str () + strlen ("march=");
+	else if (prefixed_with (*itr, "mabi="))
+	  multi_lib_info->abi_str = itr->c_str () + strlen ("mabi=");
+
+	/* Skip this multi-lib if this configuration is exactly same as
+	   default multi-lib settings.  */
+      if (multi_lib_info->arch_str == default_arch_str
+	  && multi_lib_info->abi_str == default_abi_str)
+	return false;
+    }
+
+  multi_lib_info->subset_list =
+    riscv_subset_list::parse (multi_lib_info->arch_str.c_str (), input_location);
+
+  return true;
+}
+
+/* Checking ARG is not appeared in SWITCHES if NOT_ARG is set or
+   ARG is appeared if NOT_ARG is not set.  */
+
+static bool
+riscv_check_cond (
+  const struct switchstr *switches,
+  int n_switches,
+  const std::string &arg,
+  bool not_arg)
+{
+  int i;
+  for (i = 0; i < n_switches; ++i)
+    {
+      const struct switchstr *this_switch = &switches[n_switches - i - 1];
+
+      if ((this_switch->live_cond & SWITCH_IGNORE) != 0)
+	continue;
+
+      if (this_switch->live_cond & SWITCH_FALSE)
+	continue;
+
+      /* ARG should not appear if NOT_ARG is set.  */
+      if (arg == this_switch->part1)
+	return not_arg ? false : true;
+    }
+
+  /* Not found ARG? that's ok if NOT_ARG is not set.  */
+  return not_arg ? true : false;
+}
+
+/* Check the other cond is found or not, return -1 if we should reject this
+   multi-lib option set, otherwise return updated MATCH_SCORE.   */
+
+static int
+riscv_check_conds (
+  const struct switchstr *switches,
+  int n_switches,
+  int match_score,
+  const std::vector<std::string> &conds)
+{
+  bool not_arg;
+  bool ok;
+  int ok_count = 0;
+  std::vector<std::string>::const_iterator itr;
+  const char *checking_arg;
+
+  if (match_score == 0)
+    return 0;
+
+  for (itr = conds.begin (); itr != conds.end (); ++itr)
+    {
+      /* We'll check march= and mabi= in ohter place.  */
+      if (prefixed_with (*itr, "march=") || prefixed_with (*itr, "mabi="))
+	continue;
+
+      checking_arg = itr->c_str ();
+      if (checking_arg[0] == '!')
+	{
+	  not_arg = true;
+	  /* Skip '!'. */
+	  checking_arg = checking_arg + 1;
+	}
+      else
+	not_arg = false;
+
+      ok = riscv_check_cond (switches, n_switches, checking_arg, not_arg);
+
+      if (!ok)
+	return -1;
+
+      ok_count++;
+    }
+
+  /* 100 is magic number, it's just used for make sure this multi-lib has
+     higher priority if we found any some option is listed in the option check
+     list. */
+  return match_score + ok_count * 100;
+}
+
+static const char *
+riscv_select_multilib_by_abi (
+  const std::string &riscv_current_abi_str,
+  const std::vector<riscv_multi_lib_info_t> &multilib_infos)
+{
+  for (size_t i = 0; i < multilib_infos.size (); ++i)
+    if (riscv_current_abi_str == multilib_infos[i].abi_str)
+      return xstrdup (multilib_infos[i].path.c_str ());
+
+  return NULL;
+}
+
+static const char *
+riscv_select_multilib (
+  const std::string &riscv_current_abi_str,
+  const riscv_subset_list *subset_list, const struct switchstr *switches,
+  int n_switches, const std::vector<riscv_multi_lib_info_t> &multilib_infos)
+{
+  int match_score = 0;
+  int max_match_score = 0;
+  int best_match_multi_lib = -1;
+  /* Try to decision which set we should used.  */
+  /* We have 3 level decision tree here, ABI, check input arch/ABI must
+     be superset of multi-lib arch, and other rest option checking.  */
+  for (size_t i = 0; i < multilib_infos.size (); ++i)
+    {
+      /* Check ABI is same first.  */
+      if (riscv_current_abi_str != multilib_infos[i].abi_str)
+	continue;
+
+      /* Found a potential compatible multi-lib setting!
+	 Calculate the match score.  */
+      match_score = subset_list->match_score (multilib_infos[i].subset_list);
+
+      /* Checking other cond in the multi-lib setting.  */
+      match_score = riscv_check_conds (switches, n_switches, match_score,
+				       multilib_infos[i].conds);
+
+      /* Record highest match score multi-lib setting.  */
+      if (match_score > max_match_score)
+	{
+	  best_match_multi_lib = i;
+	  max_match_score = match_score;
+	}
+    }
+
+  if (best_match_multi_lib == -1)
+    {
+      riscv_no_matched_multi_lib = true;
+      return NULL;
+    }
+  else
+    return xstrdup (multilib_infos[best_match_multi_lib].path.c_str ());
+}
+
+#ifndef RISCV_USE_CUSTOMISED_MULTI_LIB
+#define RISCV_USE_CUSTOMISED_MULTI_LIB select_by_builtin
+#endif
+
+/* Implement TARGET_COMPUTE_MULTILIB.  */
+static const char *
+riscv_compute_multilib (
+  const struct switchstr *switches,
+  int n_switches,
+  const char *multilib_dir,
+  const char *multilib_defaults ATTRIBUTE_UNUSED,
+  const char *multilib_select,
+  const char *multilib_matches ATTRIBUTE_UNUSED,
+  const char *multilib_exclusions ATTRIBUTE_UNUSED,
+  const char *multilib_reuse ATTRIBUTE_UNUSED)
+{
+  enum riscv_multilib_select_kind select_kind = RISCV_USE_CUSTOMISED_MULTI_LIB;
+
+  if (select_kind == select_by_builtin)
+    return multilib_dir;
+
+  const char *p;
+  const char *this_path;
+  size_t this_path_len;
+  bool result;
+  riscv_no_matched_multi_lib = false;
+  riscv_subset_list *subset_list = NULL;
+
+  std::vector<riscv_multi_lib_info_t> multilib_infos;
+  std::vector<std::string> option_conds;
+  std::string option_cond;
+  riscv_multi_lib_info_t multilib_info;
+
+  /* Already found suitable, multi-lib, just use that.  */
+  if (multilib_dir != NULL)
+    return multilib_dir;
+
+  /* Find march.  */
+  riscv_current_arch_str =
+    find_last_appear_switch (switches, n_switches, "march=");
+  /* Find mabi.  */
+  riscv_current_abi_str =
+    find_last_appear_switch (switches, n_switches, "mabi=");
+
+  /* Failed to find -march or -mabi, but it should not happened since we have
+     set both in OPTION_DEFAULT_SPECS.  */
+  if (riscv_current_arch_str.empty () || riscv_current_abi_str.empty ())
+    return multilib_dir;
+
+  subset_list = riscv_subset_list::parse (riscv_current_arch_str.c_str (),
+					  input_location);
+
+  /* Failed to parse -march, fallback to using what gcc use.  */
+  if (subset_list == NULL)
+    return multilib_dir;
+
+  /* Parsing MULTILIB_SELECT, ignore MULTILIB_REUSE here, we have our own rules.
+     TODO: most codes are grab from gcc.c, maybe we should refine that?  */
+  p = multilib_select;
+
+  while (*p != '\0')
+    {
+      /* Ignore newlines.  */
+      if (*p == '\n')
+	{
+	  ++p;
+	  continue;
+	}
+
+      /* Format of each multilib:
+	 <path> <opt1> <opt2> ... <optN>;  */
+      /* Get the path.  */
+      this_path = p;
+      while (*p != ' ')
+	{
+	  if (*p == '\0')
+	    {
+	      fatal_error (input_location, "multilib select %qs %qs is invalid",
+			   multilib_select, multilib_reuse);
+	    }
+	  ++p;
+	}
+
+      this_path_len = p - this_path;
+      const char *multi_os_dir_pos
+	= (const char *) memchr (this_path, ':', this_path_len);
+      if (multi_os_dir_pos)
+	multilib_info.path
+	  = std::string (this_path, multi_os_dir_pos - this_path);
+      else
+	multilib_info.path = std::string (this_path, this_path_len);
+
+      option_conds.clear ();
+      /* Pasrse option check list into vector<string>.
+	 e.g. "march=rv64imafd mabi=lp64 !mcmodel=medany" to
+	      ["march=rv64imafd", "mabi=lp64", "!mcmodel=medany"].  */
+      while (*p != ';')
+	{
+	  option_cond = "";
+	  /* Skip space.  */
+	  while (*p == ' ') p++;
+
+	  while (*p && *p != ' ' && *p != ';')
+	      option_cond.push_back (*p++);
+
+	  /* Ignore `!march=` and `!mabi=`, we will handle march and mabi
+	     later. */
+	  if (option_cond.size ()
+	      && !prefixed_with (option_cond, "!march=")
+	      && !prefixed_with (option_cond, "!mabi="))
+	    option_conds.push_back (option_cond);
+	}
+
+      result =
+	riscv_multi_lib_info_t::parse (
+	  &multilib_info,
+	  std::string (this_path, this_path_len),
+	  option_conds);
+
+      if (result)
+	multilib_infos.push_back (multilib_info);
+
+      p++;
+    }
+
+  switch (select_kind)
+    {
+    case select_by_abi:
+      return riscv_select_multilib_by_abi (riscv_current_abi_str,
+					   multilib_infos);
+    case select_by_abi_arch_cmodel:
+      return riscv_select_multilib (riscv_current_abi_str, subset_list,
+				    switches, n_switches, multilib_infos);
+    case select_by_builtin:
+      gcc_unreachable ();
+    default:
+      gcc_unreachable ();
+    }
+}
+
+#undef TARGET_COMPUTE_MULTILIB
+#define TARGET_COMPUTE_MULTILIB riscv_compute_multilib
 
 /* Implement TARGET_OPTION_OPTIMIZATION_TABLE.  */
 static const struct default_options riscv_option_optimization_table[] =
   {
     { OPT_LEVELS_1_PLUS, OPT_fsection_anchors, NULL, 1 },
     { OPT_LEVELS_2_PLUS, OPT_free, NULL, 1 },
+    { OPT_LEVELS_SIZE, OPT_msave_restore, NULL, 1 },
+#if TARGET_LINUX_ABI == 0
+    /* Disable -fdelete-null-pointer-checks by default in ELF toolchain.  */
+    { OPT_LEVELS_ALL, OPT_fdelete_null_pointer_checks, NULL, 0 },
+#endif
+    { OPT_LEVELS_3_PLUS, OPT_mipa_escape_analysis, NULL, 1 },
     { OPT_LEVELS_NONE, 0, NULL, 0 }
   };
 

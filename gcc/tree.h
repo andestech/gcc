@@ -75,6 +75,76 @@ as_internal_fn (combined_fn code)
   return internal_fn (int (code) - int (END_BUILTINS));
 }
 
+/* Helper to transparently allow tree codes and builtin function codes
+   exist in one storage entity.  */
+class code_helper
+{
+public:
+  code_helper () {}
+  code_helper (tree_code code) : rep ((int) code) {}
+  code_helper (combined_fn fn) : rep (-(int) fn) {}
+  code_helper (internal_fn fn) : rep (-(int) as_combined_fn (fn)) {}
+  explicit operator tree_code () const { return (tree_code) rep; }
+  explicit operator combined_fn () const { return (combined_fn) -rep; }
+  explicit operator internal_fn () const;
+  explicit operator built_in_function () const;
+  bool is_tree_code () const { return rep > 0; }
+  bool is_fn_code () const { return rep < 0; }
+  bool is_internal_fn () const;
+  bool is_builtin_fn () const;
+  int get_rep () const { return rep; }
+  tree_code safe_as_tree_code () const;
+  combined_fn safe_as_fn_code () const;
+  bool operator== (const code_helper &other) { return rep == other.rep; }
+  bool operator!= (const code_helper &other) { return rep != other.rep; }
+  bool operator== (tree_code c) { return rep == code_helper (c).rep; }
+  bool operator!= (tree_code c) { return rep != code_helper (c).rep; }
+
+private:
+  int rep;
+};
+
+/* Helper function that returns the tree_code representation of THIS
+   code_helper if it is a tree_code and MAX_TREE_CODES otherwise.  This is
+   useful when passing a code_helper to a tree_code only check.  */
+
+inline tree_code
+code_helper::safe_as_tree_code () const
+{
+  return is_tree_code () ? (tree_code) *this : MAX_TREE_CODES;
+}
+
+/* Helper function that returns the combined_fn representation of THIS
+   code_helper if it is a fn_code and CFN_LAST otherwise.  This is useful when
+   passing a code_helper to a combined_fn only check.  */
+
+inline combined_fn
+code_helper::safe_as_fn_code () const {
+  return is_fn_code () ? (combined_fn) *this : CFN_LAST;
+}
+
+inline code_helper::operator internal_fn () const
+{
+  return as_internal_fn (combined_fn (*this));
+}
+
+inline code_helper::operator built_in_function () const
+{
+  return as_builtin_fn (combined_fn (*this));
+}
+
+inline bool
+code_helper::is_internal_fn () const
+{
+  return is_fn_code () && internal_fn_p (combined_fn (*this));
+}
+
+inline bool
+code_helper::is_builtin_fn () const
+{
+  return is_fn_code () && builtin_fn_p (combined_fn (*this));
+}
+
 /* Macros for initializing `tree_contains_struct'.  */
 #define MARK_TS_BASE(C)					\
   (tree_contains_struct[C][TS_BASE] = true)
@@ -722,6 +792,12 @@ extern void omp_clause_range_check_failed (const_tree, const char *, int,
    component parts cannot be accessed directly.  This is used to suppress
    normal GNU extensions for target-specific vector types.  */
 #define TYPE_INDIVISIBLE_P(NODE) (TYPE_CHECK (NODE)->type_common.indivisible_p)
+
+/* True if this is a stdarg function with no named arguments (C2x
+   (...) prototype, where arguments can be accessed with va_start and
+   va_arg), as opposed to an unprototyped function.  */
+#define TYPE_NO_NAMED_ARGS_STDARG_P(NODE) \
+  (TYPE_CHECK (NODE)->type_common.no_named_args_stdarg_p)
 
 /* In an IDENTIFIER_NODE, this means that assemble_name was called with
    this string as an argument.  */
@@ -2090,7 +2166,9 @@ class auto_suppress_location_wrappers
 #define TYPE_SIZE_UNIT(NODE) (TYPE_CHECK (NODE)->type_common.size_unit)
 #define TYPE_POINTER_TO(NODE) (TYPE_CHECK (NODE)->type_common.pointer_to)
 #define TYPE_REFERENCE_TO(NODE) (TYPE_CHECK (NODE)->type_common.reference_to)
-#define TYPE_PRECISION(NODE) (TYPE_CHECK (NODE)->type_common.precision)
+#define TYPE_PRECISION(NODE) \
+  (TREE_NOT_CHECK (TYPE_CHECK (NODE), VECTOR_TYPE)->type_common.precision)
+#define TYPE_PRECISION_RAW(NODE) (TYPE_CHECK (NODE)->type_common.precision)
 #define TYPE_NAME(NODE) (TYPE_CHECK (NODE)->type_common.name)
 #define TYPE_NEXT_VARIANT(NODE) (TYPE_CHECK (NODE)->type_common.next_variant)
 #define TYPE_MAIN_VARIANT(NODE) (TYPE_CHECK (NODE)->type_common.main_variant)
@@ -2941,6 +3019,12 @@ extern void decl_value_expr_insert (tree, tree);
 /* Used in a FIELD_DECL to indicate that this field is padding.  */
 #define DECL_PADDING_P(NODE) \
   (FIELD_DECL_CHECK (NODE)->decl_common.decl_flag_3)
+
+/* Used in a FIELD_DECL to indicate whether this field is not a flexible
+   array member. This is only valid for the last array type field of a
+   structure.  */
+#define DECL_NOT_FLEXARRAY(NODE) \
+  (FIELD_DECL_CHECK (NODE)->decl_common.decl_not_flexarray)
 
 /* A numeric unique identifier for a LABEL_DECL.  The UID allocation is
    dense, unique within any one function, and may be used to index arrays.
@@ -4222,6 +4306,7 @@ tree_strip_any_location_wrapper (tree exp)
 #define float_type_node			global_trees[TI_FLOAT_TYPE]
 #define double_type_node		global_trees[TI_DOUBLE_TYPE]
 #define long_double_type_node		global_trees[TI_LONG_DOUBLE_TYPE]
+#define bfloat16_type_node		global_trees[TI_BFLOAT16_TYPE]
 
 /* Nodes for particular _FloatN and _FloatNx types in sequence.  */
 #define FLOATN_TYPE_NODE(IDX)		global_trees[TI_FLOATN_TYPE_FIRST + (IDX)]
@@ -4238,6 +4323,10 @@ tree_strip_any_location_wrapper (tree exp)
 #define float32x_type_node		global_trees[TI_FLOAT32X_TYPE]
 #define float64x_type_node		global_trees[TI_FLOAT64X_TYPE]
 #define float128x_type_node		global_trees[TI_FLOAT128X_TYPE]
+
+/* Type used by certain backends for __float128, which in C++ should be
+   distinct type from _Float128 for backwards compatibility reasons.  */
+#define float128t_type_node		global_trees[TI_FLOAT128T_TYPE]
 
 #define float_ptr_type_node		global_trees[TI_FLOAT_PTR_TYPE]
 #define double_ptr_type_node		global_trees[TI_DOUBLE_PTR_TYPE]
@@ -4585,6 +4674,8 @@ extern tree build_one_cst (tree);
 extern tree build_minus_one_cst (tree);
 extern tree build_all_ones_cst (tree);
 extern tree build_zero_cst (tree);
+extern tree build_replicated_int_cst (tree, unsigned, HOST_WIDE_INT);
+extern tree sign_mask_for (tree);
 extern tree build_string (unsigned, const char * = NULL);
 extern tree build_poly_int_cst (tree, const poly_wide_int_ref &);
 extern tree build_tree_list (tree, tree CXX_MEM_STAT_INFO);
@@ -4641,7 +4732,7 @@ extern tree build_array_type_1 (tree, tree, bool, bool, bool);
 extern tree build_array_type (tree, tree, bool = false);
 extern tree build_nonshared_array_type (tree, tree);
 extern tree build_array_type_nelts (tree, poly_uint64);
-extern tree build_function_type (tree, tree);
+extern tree build_function_type (tree, tree, bool = false);
 extern tree build_function_type_list (tree, ...);
 extern tree build_varargs_function_type_list (tree, ...);
 extern tree build_function_type_array (tree, int, tree *);
@@ -5468,10 +5559,10 @@ extern tree component_ref_field_offset (tree);
    returns null.  */
 enum struct special_array_member
   {
-   none,      /* Not a special array member.  */
-   int_0,     /* Interior array member with size zero.  */
-   trail_0,   /* Trailing array member with size zero.  */
-   trail_1    /* Trailing array member with one element.  */
+    none,	/* Not a special array member.  */
+    int_0,	/* Interior array member with size zero.  */
+    trail_0,	/* Trailing array member with size zero.  */
+    trail_1	/* Trailing array member with one element.  */
   };
 
 /* Return the size of the member referenced by the COMPONENT_REF, using
@@ -6283,7 +6374,9 @@ namespace wi
 
   wide_int min_value (const_tree);
   wide_int max_value (const_tree);
+#ifndef GENERATOR_FILE
   wide_int from_mpz (const_tree, mpz_t, bool);
+#endif
 }
 
 template <typename T>

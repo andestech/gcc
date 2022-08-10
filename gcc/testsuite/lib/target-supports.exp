@@ -1689,6 +1689,67 @@ proc check_linker_plugin_available { } {
   } "-flto -fuse-linker-plugin"]
 }
 
+# Return 1 if the target has RISC-V vector extension, 0 otherwise.
+# Cache the result.
+
+proc check_effective_target_riscv_vector { } {
+    # Check that we are compiling for v by checking the __riscv_v marco.
+    return [check_no_compiler_messages riscv_vector assembly {
+       #if !defined(__riscv_v)
+       #error "__riscv_v not defined!"
+       #endif
+    }]
+}
+
+# Return 1 if the we can build a vector example with proper -march flags
+# and the current target can execute it, 0 otherwise.  Cache the result.
+
+proc check_effective_target_riscv_vector_hw { } {
+
+    return [check_runtime riscv_vector_hw32 {
+        int main (void)
+        {
+            asm ("vsetivli zero,8,e16,m1,ta,ma");
+            asm ("vadd.vv v8,v8,v16" : : : "v8");
+            return 0;
+        }
+    } "-march=rv32gcv -mabi=ilp32d"] || [check_runtime riscv_vector_hw64 {
+        int main (void)
+        {
+            asm ("vsetivli zero,8,e16,m1,ta,ma");
+            asm ("vadd.vv v8,v8,v16" : : : "v8");
+            return 0;
+        }
+    } "-march=rv64gcv -mabi=lp64d"]
+}
+
+# Return 1 if the we can build a Zvfh vector example with proper -march flags
+# and the current target can execute it, 0 otherwise.  Cache the result.
+
+proc check_effective_target_riscv_zvfh_hw { } {
+    if ![check_effective_target_riscv_vector_hw] then {
+        return 0
+    }
+
+    return [check_runtime riscv_zvfh_hw32 {
+        int main (void)
+        {
+            asm ("vsetivli zero,8,e16,m1,ta,ma");
+            asm ("vfadd.vv v8,v8,v16" : : : "v8");
+            return 0;
+        }
+    } "-march=rv32gcv_zvfh -mabi=ilp32d"]
+    || [check_runtime riscv_zvfh_hw64 {
+        int main (void)
+        {
+            asm ("vsetivli zero,8,e16,m1,ta,ma");
+            asm ("vfadd.vv v8,v8,v16" : : : "v8");
+            return 0;
+        }
+    } "-march=rv64gcv_zvfh -mabi=lp64d"]
+}
+
+
 # Return 1 if the target is RV32, 0 otherwise.  Cache the result.
 
 proc check_effective_target_rv32 { } {
@@ -3367,6 +3428,22 @@ proc check_effective_target_base_quadfloat_support { } {
 	return [check_vsx_hw_available]
     }
     return 1
+}
+
+# Return 1 if the target supports the __bf16 type, 0 otherwise.
+
+proc check_effective_target_bfloat16 {} {
+    return [check_no_compiler_messages_nocache bfloat16 object {
+	__bf16 foo (__bf16 x) { return x + x; }
+    } [add_options_for_bfloat16 ""]]
+}
+
+proc check_effective_target_bfloat16_runtime {} {
+    return [check_effective_target_bfloat16]
+}
+
+proc add_options_for_bfloat16 { flags } {
+    return "$flags"
 }
 
 # Return 1 if the target supports all four forms of fused multiply-add
@@ -6706,6 +6783,34 @@ proc check_effective_target_powerpc_elfv2 { } {
     }
 }
 
+# Return true if the target is a 32-bit RISC-V target.
+
+proc check_effective_target_riscv32 { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages riscv32 object {
+	#if __riscv_xlen == 32
+	int dummy;
+	#else
+	#error not 32-bit RISC-V target
+	#endif
+	}]
+    }
+}
+
+# Return true if the riscv target supports hard floating-point unit.
+
+proc check_effective_target_riscv_hard_fp { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages hard_fp object {
+	    #if defined __riscv_flen
+	    int dummy;
+	    #else
+	    #error no support fpu
+	    #endif
+	}]
+    }
+}
+
 # Return 1 if this is a PowerPC target supporting -mrop-protect
 
 proc check_effective_target_rop_ok { } {
@@ -6795,6 +6900,7 @@ proc check_effective_target_vect_var_shift { } {
     return [check_cached_effective_target_indexed vect_var_shift {
       expr {(([istarget i?86-*-*] || [istarget x86_64-*-*])
 	     && [check_avx2_available])
+	    || [istarget aarch64*-*-*]
       }}]
 }
 

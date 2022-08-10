@@ -198,7 +198,7 @@ in the following sections.
 @item C Language Options
 @xref{C Dialect Options,,Options Controlling C Dialect}.
 @gccoptlist{-ansi  -std=@var{standard}  -aux-info @var{filename} @gol
--fallow-parameterless-variadic-functions  -fno-asm  @gol
+-fno-asm  @gol
 -fno-builtin  -fno-builtin-@var{function}  -fcond-mismatch @gol
 -ffreestanding  -fgimple  -fgnu-tm  -fgnu89-inline  -fhosted @gol
 -flax-vector-conversions  -fms-extensions @gol
@@ -207,7 +207,8 @@ in the following sections.
 -fopenmp  -fopenmp-simd @gol
 -fpermitted-flt-eval-methods=@var{standard} @gol
 -fplan9-extensions  -fsigned-bitfields  -funsigned-bitfields @gol
--fsigned-char  -funsigned-char  -fsso-struct=@var{endianness}}
+-fsigned-char  -funsigned-char -fstrict-flex-arrays[=@var{n}] @gol
+-fsso-struct=@var{endianness}}
 
 @item C++ Language Options
 @xref{C++ Dialect Options,,Options Controlling C++ Dialect}.
@@ -1210,7 +1211,8 @@ See RS/6000 and PowerPC Options.
 -malign-data=@var{type} @gol
 -mbig-endian  -mlittle-endian @gol
 -mstack-protector-guard=@var{guard} -mstack-protector-guard-reg=@var{reg} @gol
--mstack-protector-guard-offset=@var{offset}}
+-mstack-protector-guard-offset=@var{offset}
+-minline-atomics  -mno-inline-atomics}
 
 @emph{RL78 Options}
 @gccoptlist{-msim  -mmul=none  -mmul=g13  -mmul=g14  -mallregs @gol
@@ -2502,14 +2504,6 @@ character).  In the case of function definitions, a K&R-style list of
 arguments followed by their declarations is also provided, inside
 comments, after the declaration.
 
-@item -fallow-parameterless-variadic-functions
-@opindex fallow-parameterless-variadic-functions
-Accept variadic functions without named parameters.
-
-Although it is possible to define such a function, this is not very
-useful as it is not possible to read the arguments.  This is only
-supported for C as this construct is allowed by C++.
-
 @item -fno-asm
 @opindex fno-asm
 @opindex fasm
@@ -2816,6 +2810,31 @@ make such a program work with the opposite default.
 The type @code{char} is always a distinct type from each of
 @code{signed char} or @code{unsigned char}, even though its behavior
 is always just like one of those two.
+
+@item -fstrict-flex-arrays
+@opindex fstrict-flex-arrays
+@opindex fno-strict-flex-arrays
+Control when to treat the trailing array of a structure as a flexible array
+member for the purpose of accessing the elements of such an array.
+The positive form is equivalent to @option{-fstrict-flex-arrays=3}, which is the
+strictest.  A trailing array is treated as a flexible array member only when it
+is declared as a flexible array member per C99 standard onwards.
+The negative form is equivalent to @option{-fstrict-flex-arrays=0}, which is the
+least strict.  All trailing arrays of structures are treated as flexible array
+members.
+
+@item -fstrict-flex-arrays=@var{level}
+@opindex fstrict-flex-arrays=@var{level}
+Control when to treat the trailing array of a structure as a flexible array
+member for the purpose of accessing the elements of such an array.  The value
+of @var{level} controls the level of strictness.
+
+The possible values of @var{level} are the same as for the
+@code{strict_flex_array} attribute (@pxref{Variable Attributes}).
+
+You can control this behavior for a specific trailing array field of a
+structure by using the variable attribute @code{strict_flex_array} attribute
+(@pxref{Variable Attributes}).
 
 @item -fsso-struct=@var{endianness}
 @opindex fsso-struct
@@ -12365,7 +12384,8 @@ disclosure and use.
 GCC still considers an automatic variable that doesn't have an explicit
 initializer as uninitialized, @option{-Wuninitialized} and
 @option{-Wanalyzer-use-of-uninitialized-value} will still report
-warning messages on such automatic variables.
+warning messages on such automatic variables and the compiler will
+perform optimization as if the variable were uninitialized.
 With this option, GCC will also initialize any padding of automatic variables
 that have structure or union types to zeroes.
 However, the current implementation cannot initialize automatic variables that
@@ -14117,9 +14137,6 @@ The maximum depth of a loop nest suitable for complete peeling.
 @item max-unswitch-insns
 The maximum number of insns of an unswitched loop.
 
-@item max-unswitch-level
-The maximum number of branches unswitched in a single loop.
-
 @item lim-expensive
 The minimum cost of an expensive expression in the loop invariant motion.
 
@@ -14166,6 +14183,10 @@ Complex expressions slow the analyzer.
 @item max-tree-if-conversion-phi-args
 Maximum number of arguments in a PHI supported by TREE if conversion
 unless the loop is marked with simd pragma.
+
+@item vect-max-layout-candidates
+The maximum number of possible vector layouts (such as permutations)
+to consider when optimizing to-be-vectorized code.
 
 @item vect-max-version-for-alignment-checks
 The maximum number of run-time checks that can be performed when
@@ -28026,6 +28047,13 @@ Put global and static data smaller than @var{n} bytes into a special section
 Do or don't use smaller but slower prologue and epilogue code that uses
 library function calls.  The default is to use fast inline prologues and
 epilogues.
+
+@opindex minline-atomics
+@item -minline-atomics
+@itemx -mno-inline-atomics
+Do or don't use smaller but slower subword atomic emulation code that uses
+libatomic function calls.  The default is to use fast inline subword atomics
+that do not require libatomic.
 
 @item -mshorten-memrefs
 @itemx -mno-shorten-memrefs

@@ -421,7 +421,8 @@ remove_pseudos (rtx *loc, rtx_insn *insn)
   if (*loc == NULL_RTX)
     return res;
   code = GET_CODE (*loc);
-  if (code == SUBREG && REG_P (SUBREG_REG (*loc)))
+  if (code == SUBREG && REG_P (SUBREG_REG (*loc))
+      && flag_lra_mem_subreg_simplify)
     {
       /* Try to remove memory subregs to simplify LRA job
          and avoid LRA cycling in case of subreg memory reload.  */

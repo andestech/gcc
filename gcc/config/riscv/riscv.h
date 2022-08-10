@@ -50,11 +50,44 @@ along with GCC; see the file COPYING3.  If not see
 extern const char *riscv_expand_arch (int argc, const char **argv);
 extern const char *riscv_expand_arch_from_cpu (int argc, const char **argv);
 extern const char *riscv_default_mtune (int argc, const char **argv);
+extern const char *riscv_multi_lib_check (int argc, const char **argv);
 
 # define EXTRA_SPEC_FUNCTIONS						\
   { "riscv_expand_arch", riscv_expand_arch },				\
-  { "riscv_expand_arch_from_cpu", riscv_expand_arch_from_cpu },		\
-  { "riscv_default_mtune", riscv_default_mtune },
+  { "riscv_default_mtune", riscv_default_mtune },			\
+  { "riscv_multi_lib_check", riscv_multi_lib_check },
+
+#define MARCH_POST_PROC_SPEC \
+  "%:riscv_expand_arch(%{march=*} \
+		       %{matomic} \
+		       %{mno-atomic} \
+		       %{mno-16-bit} \
+		       %{mext-dsp} \
+		       %{mno-ext-dsp} \
+		       %{mext-vector} \
+		       %{mext-vector=*} \
+		       %{mzfh} \
+		       %{mno-zfh} \
+		       %{mno-zvfh} \
+		       %{mbf16} \
+		       %{mno-bf16} \
+		       %{mext-zbabcs} \
+		       %{mno-ext-zbabcs} \
+		       %{mext-zc} \
+		       %{mno-zcmp} \
+		       %{mno-zcmt} \
+		       %{mext-zkn} \
+		       %{mext-zks} \
+		       %{mext-zkns} \
+		       %{mext-cmo} \
+		       %{mno-ext-cmo} \
+		       %{mext-svinval} \
+		       %{mno-ext-svinval} \
+		       %{mext-bf16min} \
+		       %{mno-ext-bf16min} \
+		       %{mcpu=*} \
+		       %{mtune=*} \
+		       %{misa-spec=*})"
 
 /* Support for a compile-time default CPU, et cetera.  The rules are:
    --with-arch is ignored if -march or -mcpu is specified.
@@ -67,10 +100,8 @@ extern const char *riscv_default_mtune (int argc, const char **argv);
   {"tune", "%{!mtune=*:"						\
 	   "  %{!mcpu=*:-mtune=%(VALUE)}"				\
 	   "  %{mcpu=*:-mtune=%:riscv_default_mtune(%* %(VALUE))}}" },	\
-  {"arch", "%{!march=*:"						\
-	   "  %{!mcpu=*:-march=%(VALUE)}"				\
-	   "  %{mcpu=*:%:riscv_expand_arch_from_cpu(%* %(VALUE))}}" },	\
-  {"abi", "%{!mabi=*:-mabi=%(VALUE)}" }, \
+  {"arch", "%{!march=*:-march=%(VALUE)}" }, \
+  {"abi", "%{!mabi=*:%{march=rv32v5*:-mabi=ilp32%*;:%{march=rv64v5*:-mabi=lp64%*;:-mabi=%(VALUE)}}}" }, \
   {"isa_spec", "%{!misa-spec=*:-misa-spec=%(VALUE)}" }, \
 
 #ifdef IN_LIBGCC2
@@ -92,26 +123,93 @@ extern const char *riscv_default_mtune (int argc, const char **argv);
 
 #define MULTILIB_DEFAULTS \
   {"march=" STRINGIZING (TARGET_RISCV_DEFAULT_ARCH), \
-   "mabi=" STRINGIZING (TARGET_RISCV_DEFAULT_ABI) }
+   "mabi=" STRINGIZING (TARGET_RISCV_DEFAULT_ABI), \
+   TARGET_DEFAULT_CMODEL_STR }
+
+#undef  CC1_SPEC
+#define CC1_SPEC \
+  " %{Os1:-Os -mno-save-restore}" \
+  " %{Os2:-Os}" \
+  " %{Os3:-Os}" \
+  " %{mtune=andes-60-series|mtune=ax65*:-fno-lra-mem-subreg-simplify}" \
+  " %{mtune=andes-45-series|mtune=n45*|mtune=nx45*|mtune=d45*|mtune=a45*|mtune=ax45*:-fno-lra-mem-subreg-simplify}"
 
 #undef ASM_SPEC
 #define ASM_SPEC "\
 %(subtarget_asm_debugging_spec) \
 %{" FPIE_OR_FPIC_SPEC ":-fpic} \
-%{march=*} \
+%{march=*:" MARCH_POST_PROC_SPEC "} \
 %{mabi=*} \
 %{mno-relax} \
 %{mbig-endian} \
 %{mlittle-endian} \
 %(subtarget_asm_spec)" \
-ASM_MISA_SPEC
+ASM_MISA_SPEC \
+" %{mno-16-bit}" \
+" %{O|O1|O2|O3|Ofast:-O1;:-Os}" \
+" %{mcmodel=small|mcmodel=medlow:-mcmodel=medlow; \
+    mcmodel=medium|mcmodel=medany:-mcmodel=medany; \
+    mcmodel=large:-mcmodel=large}" \
+" %{mb20282:-mb20282}" \
+" %{mno-b20282:-mno-b20282}" \
+" %{mb22827:-mb22827}" \
+" %{mno-b22827:-mno-b22827}" \
+" %{mb22827.1:-mb22827.1}" \
+" %{mno-b22827.1:-mno-b22827.1}" \
+" %{mb19758:-mb19758}" \
+" %{mno-b19758:-mno-b19758}" \
+" %{mb25057:-mb25057}" \
+" %{mno-b25057:-mno-b25057}" \
+" %{mtune=andes-25-series|mtune=n25*|mtune=nx25*|mtune=d25*|mtune=a25*|mtune=ax25*:;:-mno-b19758}" \
+" %{mtune=andes-45-series|mtune=n45*|mtune=nx45*|mtune=d45*|mtune=a45*|mtune=ax45*:;:-mno-b25057}" \
+" %{mno-workaround:-mno-workaround}"
+
+#define NDS_OPT_COMPAT_SPEC \
+  " %{mex9:-mexecit}" \
+  " %{mno-ex9:-mno-execit}" \
+  " %{mext-fpu-fma:-mfma}" \
+  " %{mno-ext-fpu-fma:-mno-fma}"
+
+#ifdef TARGET_OS_DEFAULT_EX9
+#define NDS32_EX9_SPEC " %{Os3|Os|mexecit:%{!mno-execit:%{!mtune=ax65:%{!mtune=andes-60-series:--mexecit}}}}" \
+		       " %{mtune=andes-23-series:--mnexecitop}"
+#define NDS32_EX9_DRIVER_SPEC " %{Os2|Os3|Os:%{!mno-execit:%{!mtune=ax65:%{!mtune=andes-60-series:-mexecit}}}}"
+#else
+#define NDS32_EX9_SPEC " %{mexecit:--mexecit}"
+#define NDS32_EX9_DRIVER_SPEC ""
+#endif
+
+#define NDS_DRIVER_SPEC \
+  " %{frepo:-fuse-ld=bfd}" \
+  " %{fdata-sections:-fno-section-anchors}" \
+  " %{Os2:%{!mno-innermost-loop:-minnermost-loop}}" \
+  " %{mtune=andes-23-series:-mext-zc}" \
+  " %{mtune=andes-45-series:%{!mno-ext-zvlsseg:-mext-zvlsseg}}"
+
+#define CMODEL_SPEC \
+  " %{mcmodel=small:-mcmodel=medlow}" \
+  " %{mcmodel=medium:%{march=rv32*:-mcmodel=medlow}}" \
+  " %{mcmodel=medium:%{march=rv64*:-mcmodel=medany}}" \
+  " %{mcmodel=large:%{march=rv32*:-mcmodel=medlow}}"
 
 #undef DRIVER_SELF_SPECS
 #define DRIVER_SELF_SPECS					\
-"%{march=*:%:riscv_expand_arch(%*)} "				\
-"%{!march=*:%{mcpu=*:%:riscv_expand_arch_from_cpu(%*)}} "
+"%{march=*:" MARCH_POST_PROC_SPEC "} "				\
+  NDS_OPT_COMPAT_SPEC \
+  NDS32_EX9_DRIVER_SPEC \
+  NDS_DRIVER_SPEC \
+  CMODEL_SPEC
 
+#ifndef TARGET_DEFAULT_MEDLOW
+#error "TARGET_DEFAULT_MEDLOW undefined!"
+#endif
+#if TARGET_DEFAULT_MEDLOW == 1
 #define TARGET_DEFAULT_CMODEL CM_MEDLOW
+#define TARGET_DEFAULT_CMODEL_STR "mcmodel=medlow"
+#else
+#define TARGET_DEFAULT_CMODEL CM_MEDANY
+#define TARGET_DEFAULT_CMODEL_STR "mcmodel=medany"
+#endif
 
 #define LOCAL_LABEL_PREFIX	"."
 #define USER_LABEL_PREFIX	""
@@ -122,8 +220,15 @@ ASM_MISA_SPEC
 #define DWARF_CIE_DATA_ALIGNMENT -4
 
 /* The mapping from gcc register number to DWARF 2 CFA column number.  */
-#define DWARF_FRAME_REGNUM(REGNO) \
-  (GP_REG_P (REGNO) || FP_REG_P (REGNO) ? REGNO : INVALID_REGNUM)
+#define DWARF_FRAME_REGNUM(REGNO)                                              \
+  (FRM_REG_P (REGNO)	? RISCV_DWARF_FRM                                      \
+   : VXRM_REG_P (REGNO) ? RISCV_DWARF_VXRM                                     \
+   : VL_REG_P (REGNO)	? RISCV_DWARF_VL                                       \
+   : VTYPE_REG_P (REGNO)                                                       \
+     ? RISCV_DWARF_VTYPE                                                       \
+     : (GP_REG_P (REGNO) || FP_REG_P (REGNO) || V_REG_P (REGNO)                \
+	  ? REGNO                                                              \
+	  : INVALID_REGNUM))
 
 /* The DWARF 2 CFA column which tracks the return address.  */
 #define DWARF_FRAME_RETURN_COLUMN RETURN_ADDR_REGNUM
@@ -145,6 +250,7 @@ ASM_MISA_SPEC
 
 /* Width of a word, in units (bytes).  */
 #define UNITS_PER_WORD (TARGET_64BIT ? 8 : 4)
+#define BITS_PER_WORD (BITS_PER_UNIT * UNITS_PER_WORD)
 #ifndef IN_LIBGCC2
 #define MIN_UNITS_PER_WORD 4
 #endif
@@ -155,6 +261,8 @@ ASM_MISA_SPEC
 
 /* The `Q' extension is not yet supported.  */
 #define UNITS_PER_FP_REG (TARGET_DOUBLE_FLOAT ? 8 : 4)
+/* Size per vector register. For VLEN = 32, size = poly (4, 4). Otherwise, size = poly (8, 8). */
+#define UNITS_PER_V_REG (riscv_vector_chunks * riscv_bytes_per_vector_chunk)
 
 /* The largest type that can be passed in floating-point registers.  */
 #define UNITS_PER_FP_ARG						\
@@ -162,6 +270,10 @@ ASM_MISA_SPEC
     || riscv_abi == ABI_LP64)						\
    ? 0 									\
    : ((riscv_abi == ABI_ILP32F || riscv_abi == ABI_LP64F) ? 4 : 8))
+
+/* Width of register of MODE */
+#define BITS_PER_REG(mode)                                                     \
+  ((GET_MODE_CLASS (mode) == MODE_FLOAT) ? UNITS_PER_FP_REG * 8 : BITS_PER_WORD)
 
 /* Set the sizes of the core types.  */
 #define SHORT_TYPE_SIZE 16
@@ -177,8 +289,18 @@ ASM_MISA_SPEC
 /* Allocation boundary (in *bits*) for storing arguments in argument list.  */
 #define PARM_BOUNDARY BITS_PER_WORD
 
+#define TARGET_NEED_ALIGN \
+  (!(TARGET_RVC || TARGET_ZCA) || !optimize_size || TARGET_ALWAYS_ALIGN)
+
 /* Allocation boundary (in *bits*) for the code of a function.  */
-#define FUNCTION_BOUNDARY (TARGET_RVC ? 16 : 32)
+#define FUNCTION_BOUNDARY (TARGET_NEED_ALIGN ? 32 : 16)
+
+#define JUMP_ALIGN(x) \
+  (align_jumps.levels[0].log ? align_jumps : (TARGET_NEED_ALIGN ? 2 : 1))
+#define LOOP_ALIGN(x) \
+  (align_loops.levels[0].log ? align_loops : (TARGET_NEED_ALIGN ? 2 : 1))
+#define LABEL_ALIGN(x) \
+  (align_labels.levels[0].log ? align_labels : (TARGET_NEED_ALIGN ? 2 : 1))
 
 /* The smallest supported stack boundary the calling convention supports.  */
 #define STACK_BOUNDARY \
@@ -188,7 +310,7 @@ ASM_MISA_SPEC
 #define ABI_STACK_BOUNDARY (riscv_abi == ABI_ILP32E ? BITS_PER_WORD : 128)
 
 /* There is no point aligning anything to a rounder boundary than this.  */
-#define BIGGEST_ALIGNMENT 128
+#define BIGGEST_ALIGNMENT (riscv_abi == ABI_ILP32E ? BITS_PER_WORD : 128)
 
 /* The user-level ISA permits unaligned accesses, but they are not required
    of the privileged architecture.  */
@@ -221,11 +343,13 @@ ASM_MISA_SPEC
 #define MAX_FIXED_MODE_SIZE GET_MODE_BITSIZE (TARGET_64BIT ? TImode : DImode)
 
 /* DATA_ALIGNMENT and LOCAL_ALIGNMENT common definition.  */
-#define RISCV_EXPAND_ALIGNMENT(COND, TYPE, ALIGN)			\
-  (((COND) && ((ALIGN) < BITS_PER_WORD)					\
-    && (TREE_CODE (TYPE) == ARRAY_TYPE					\
-	|| TREE_CODE (TYPE) == UNION_TYPE				\
-	|| TREE_CODE (TYPE) == RECORD_TYPE)) ? BITS_PER_WORD : (ALIGN))
+#define RISCV_EXPAND_ALIGNMENT(COND, TYPE, ALIGN)                            \
+  ((COND) ? ((((ALIGN) < BITS_PER_WORD)                                      \
+             && (TREE_CODE (TYPE) == ARRAY_TYPE                              \
+                 || TREE_CODE (TYPE) == UNION_TYPE                           \
+                 || TREE_CODE (TYPE) == RECORD_TYPE)) ? BITS_PER_WORD        \
+                                                      : ((ALIGN) <= 32) ? 32 : ALIGN) \
+          : ALIGN)
 
 /* If defined, a C expression to compute the alignment for a static
    variable.  TYPE is the data type, and ALIGN is the alignment that
@@ -289,9 +413,13 @@ ASM_MISA_SPEC
    - 32 floating point registers
    - 2 fake registers:
 	- ARG_POINTER_REGNUM
-	- FRAME_POINTER_REGNUM */
+	- FRAME_POINTER_REGNUM
+   - 1 vl register
+   - 1 vtype register
+   - 30 unused registers for future expansion
+   - 32 vector registers  */
 
-#define FIRST_PSEUDO_REGISTER 66
+#define FIRST_PSEUDO_REGISTER 128
 
 /* x0, sp, gp, and tp are fixed.  */
 
@@ -303,7 +431,11 @@ ASM_MISA_SPEC
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,			\
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,			\
   /* Others.  */							\
-  1, 1									\
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,			\
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,			\
+  /* Vector registers.  */						\
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,			\
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0			\
 }
 
 /* a0-a7, t0-t6, fa0-fa7, and ft0-ft11 are volatile across calls.
@@ -317,7 +449,11 @@ ASM_MISA_SPEC
   1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,			\
   1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1,			\
   /* Others.  */							\
-  1, 1									\
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,			\
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,			\
+  /* Vector registers.  */						\
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,			\
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1			\
 }
 
 /* Select a register mode required for caller save of hard regno REGNO.
@@ -337,6 +473,10 @@ ASM_MISA_SPEC
 #define FP_REG_LAST  63
 #define FP_REG_NUM   (FP_REG_LAST - FP_REG_FIRST + 1)
 
+#define V_REG_FIRST 96
+#define V_REG_LAST  127
+#define V_REG_NUM   (V_REG_LAST - V_REG_FIRST + 1)
+
 /* The DWARF 2 CFA column which tracks the return address from a
    signal handler context.  This means that to maintain backwards
    compatibility, no hard register can be assigned this column if it
@@ -347,6 +487,12 @@ ASM_MISA_SPEC
   ((unsigned int) ((int) (REGNO) - GP_REG_FIRST) < GP_REG_NUM)
 #define FP_REG_P(REGNO)  \
   ((unsigned int) ((int) (REGNO) - FP_REG_FIRST) < FP_REG_NUM)
+#define V_REG_P(REGNO)  \
+  ((unsigned int) ((int) (REGNO) - V_REG_FIRST) < V_REG_NUM)
+#define VL_REG_P(REGNO) ((REGNO) == VL_REGNUM)
+#define VTYPE_REG_P(REGNO) ((REGNO) == VTYPE_REGNUM)
+#define VXRM_REG_P(REGNO) ((REGNO) == VXRM_REGNUM)
+#define FRM_REG_P(REGNO) ((REGNO) == FRM_REGNUM)
 
 /* True when REGNO is in SIBCALL_REGS set.  */
 #define SIBCALL_REG_P(REGNO)	\
@@ -358,11 +504,19 @@ ASM_MISA_SPEC
 #define HARD_FRAME_POINTER_REGNUM 8
 #define STACK_POINTER_REGNUM 2
 #define THREAD_POINTER_REGNUM 4
+#define RETURN_VALUE_REGNUM 10
 
 /* These two registers don't really exist: they get eliminated to either
    the stack or hard frame pointer.  */
 #define ARG_POINTER_REGNUM 64
 #define FRAME_POINTER_REGNUM 65
+
+/* Define Dwarf for RVV.  */
+#define RISCV_DWARF_FRM (4096 + 0x003)
+#define RISCV_DWARF_VXRM (4096 + 0x00a)
+#define RISCV_DWARF_VL (4096 + 0xc20)
+#define RISCV_DWARF_VTYPE (4096 + 0xc21)
+#define RISCV_DWARF_VLENB (4096 + 0xc22)
 
 /* Register in which static-chain is passed to a function.  */
 #define STATIC_CHAIN_REGNUM (GP_TEMP_FIRST + 2)
@@ -376,6 +530,8 @@ ASM_MISA_SPEC
 
 #define RISCV_PROLOGUE_TEMP_REGNUM (GP_TEMP_FIRST)
 #define RISCV_PROLOGUE_TEMP(MODE) gen_rtx_REG (MODE, RISCV_PROLOGUE_TEMP_REGNUM)
+#define RISCV_PROLOGUE_TEMP2_REGNUM (GP_TEMP_FIRST + 1)
+#define RISCV_PROLOGUE_TEMP2(MODE) gen_rtx_REG (MODE, RISCV_PROLOGUE_TEMP2_REGNUM)
 
 #define RISCV_CALL_ADDRESS_TEMP_REGNUM (GP_TEMP_FIRST + 1)
 #define RISCV_CALL_ADDRESS_TEMP(MODE) \
@@ -430,6 +586,13 @@ enum reg_class
   GR_REGS,			/* integer registers */
   FP_REGS,			/* floating-point registers */
   FRAME_REGS,			/* arg pointer and frame pointer */
+  T0_REG,			/* T0 register */
+  A7_REG,			/* A7 register */
+  VL_REGS,			/* vl register */
+  VTYPE_REGS,			/* vtype register */
+  VM_REGS,			/* v0.t registers */
+  VD_REGS,			/* vector registers except v0.t */
+  V_REGS,			/* vector registers */
   ALL_REGS,			/* all registers */
   LIM_REG_CLASSES		/* max value + 1 */
 };
@@ -450,6 +613,13 @@ enum reg_class
   "GR_REGS",								\
   "FP_REGS",								\
   "FRAME_REGS",								\
+  "T0_REG",								\
+  "A7_REG",								\
+  "VL_REGS",								\
+  "VTYPE_REGS",								\
+  "VM_REGS",								\
+  "VD_REGS",								\
+  "V_REGS",								\
   "ALL_REGS"								\
 }
 
@@ -466,13 +636,20 @@ enum reg_class
 
 #define REG_CLASS_CONTENTS						\
 {									\
-  { 0x00000000, 0x00000000, 0x00000000 },	/* NO_REGS */		\
-  { 0xf003fcc0, 0x00000000, 0x00000000 },	/* SIBCALL_REGS */	\
-  { 0xffffffc0, 0x00000000, 0x00000000 },	/* JALR_REGS */		\
-  { 0xffffffff, 0x00000000, 0x00000000 },	/* GR_REGS */		\
-  { 0x00000000, 0xffffffff, 0x00000000 },	/* FP_REGS */		\
-  { 0x00000000, 0x00000000, 0x00000003 },	/* FRAME_REGS */	\
-  { 0xffffffff, 0xffffffff, 0x00000003 }	/* ALL_REGS */		\
+  { 0x00000000, 0x00000000, 0x00000000, 0x00000000 },	/* NO_REGS */		\
+  { 0xf003fcc0, 0x00000000, 0x00000000, 0x00000000 },	/* SIBCALL_REGS */	\
+  { 0xffffffc0, 0x00000000, 0x00000000, 0x00000000 },	/* JALR_REGS */		\
+  { 0xffffffff, 0x00000000, 0x00000000, 0x00000000 },	/* GR_REGS */		\
+  { 0x00000000, 0xffffffff, 0x00000000, 0x00000000 },	/* FP_REGS */		\
+  { 0x00000000, 0x00000000, 0x00000003, 0x00000000 },	/* FRAME_REGS */	\
+  { 0x00000020, 0x00000000, 0x00000000, 0x00000000 },	/* T0_REG */		\
+  { 0x00020000, 0x00000000, 0x00000000, 0x00000000 },	/* A7_REG */		\
+  { 0x00000000, 0x00000000, 0x00000004, 0x00000000 },	/* VL_REGS */		\
+  { 0x00000000, 0x00000000, 0x00000008, 0x00000000 },	/* VTYPE_REGS */	\
+  { 0x00000000, 0x00000000, 0x00000000, 0x00000001 },	/* V0_REGS */		\
+  { 0x00000000, 0x00000000, 0x00000000, 0xfffffffe },	/* VNoV0_REGS */	\
+  { 0x00000000, 0x00000000, 0x00000000, 0xffffffff },	/* V_REGS */		\
+  { 0xffffffff, 0xffffffff, 0x0000000f, 0xffffffff }	/* ALL_REGS */		\
 }
 
 /* A C expression whose value is a register class containing hard
@@ -512,16 +689,28 @@ enum reg_class
   60, 61, 62, 63,							\
   /* Call-saved FPRs.  */						\
   40, 41, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,			\
+  /* v1 ~ v31 vector registers.  */					\
+  97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110,	\
+  111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123,	\
+  124, 125, 126, 127,							\
+  /* The vector mask register.  */					\
+  96,									\
   /* None of the remaining classes have defined call-saved		\
      registers.  */							\
-  64, 65								\
+  64, 65, 66, 67							\
 }
+
+#define ADJUST_REG_ALLOC_ORDER riscv_adjust_reg_alloc_order()
 
 /* True if VALUE is a signed 12-bit number.  */
 
 #define SMALL_OPERAND(VALUE) \
   ((unsigned HOST_WIDE_INT) (VALUE) + IMM_REACH/2 < IMM_REACH)
 
+#define POLY_SMALL_OPERAND_P(POLY_VALUE)		\
+  (POLY_VALUE.is_constant () ?				\
+     SMALL_OPERAND (POLY_VALUE.to_constant ()) : false)
+     
 /* True if VALUE can be loaded into a register using LUI.  */
 
 #define LUI_OPERAND(VALUE)						\
@@ -531,7 +720,17 @@ enum reg_class
 /* If this is a single bit mask, then we can load it with bseti.  Special
    handling of SImode 0x80000000 on RV64 is done in riscv_build_integer_1. */
 #define SINGLE_BIT_MASK_OPERAND(VALUE)					\
-  (pow2p_hwi (VALUE))
+  (pow2p_hwi (TARGET_64BIT						\
+		? (VALUE)						\
+		: ((VALUE) & ((HOST_WIDE_INT_1U << 32)-1))))
+
+/* True if VALUE can be represented as an immediate with 1 extra bit
+   set: we check that it is not a SMALL_OPERAND (as this would be true
+   for all small operands) unmodified and turns into a small operand
+   once we clear the top bit. */
+#define UIMM_EXTRA_BIT_OPERAND(VALUE)                                  \
+  (!SMALL_OPERAND (VALUE)                                              \
+   && SMALL_OPERAND (VALUE & ~(HOST_WIDE_INT_1U << floor_log2 (VALUE))))
 
 /* Stack layout; function entry, exit and calling.  */
 
@@ -609,6 +808,8 @@ typedef struct {
 
   /* Number of floating-point registers used so far, likewise.  */
   unsigned int num_fprs;
+
+  int rvv_psabi_warning;
 } CUMULATIVE_ARGS;
 
 /* Initialize a variable CUM of type CUMULATIVE_ARGS
@@ -616,7 +817,8 @@ typedef struct {
    For a library call, FNTYPE is 0.  */
 
 #define INIT_CUMULATIVE_ARGS(CUM, FNTYPE, LIBNAME, INDIRECT, N_NAMED_ARGS) \
-  memset (&(CUM), 0, sizeof (CUM))
+  riscv_init_cumulative_args (&(CUM), (FNTYPE), (LIBNAME), (INDIRECT),     \
+			(N_NAMED_ARGS) != -1)
 
 #define EPILOGUE_USES(REGNO)	riscv_epilogue_uses (REGNO)
 
@@ -758,14 +960,16 @@ typedef struct {
    may contain character constants, extra white space, comments, etc.  */
 
 #ifndef ASM_APP_ON
-#define ASM_APP_ON " #APP\n"
+#define ASM_APP_ON (riscv_cmodel == CM_LARGE ?				\
+		    "#APP\n\t.option cmodel_large\n" : "#APP\n")
 #endif
 
 /* Output to assembler file text saying following lines
    no longer contain unusual constructs.  */
 
 #ifndef ASM_APP_OFF
-#define ASM_APP_OFF " #NO_APP\n"
+#define ASM_APP_OFF (riscv_cmodel == CM_LARGE ?				\
+		     "#NO_APP\n\t.option cmodel_medany\n" : "#NO_APP\n")
 #endif
 
 #define REGISTER_NAMES						\
@@ -777,7 +981,14 @@ typedef struct {
   "fs0", "fs1", "fa0", "fa1", "fa2", "fa3", "fa4", "fa5",	\
   "fa6", "fa7", "fs2", "fs3", "fs4", "fs5", "fs6", "fs7",	\
   "fs8", "fs9", "fs10","fs11","ft8", "ft9", "ft10","ft11",	\
-  "arg", "frame", }
+  "arg", "frame", "vl", "vtype", "vxrm", "frm", "N/A", "N/A",   \
+  "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A",	\
+  "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A",	\
+  "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A",	\
+  "v0",  "v1",  "v2",  "v3",  "v4",  "v5",  "v6",  "v7",	\
+  "v8",  "v9",  "v10", "v11", "v12", "v13", "v14", "v15",	\
+  "v16", "v17", "v18", "v19", "v20", "v21", "v22", "v23",	\
+  "v24", "v25", "v26", "v27", "v28", "v29", "v30", "v31",}
 
 #define ADDITIONAL_REGISTER_NAMES					\
 {									\
@@ -919,12 +1130,19 @@ while (0)
 
 /* The maximum number of bytes copied by one iteration of a cpymemsi loop.  */
 
-#define RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER (UNITS_PER_WORD * 4)
+#define RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER 		\
+  ((riscv_movebytes_per_loop < UNITS_PER_WORD)		\
+	? UNITS_PER_WORD				\
+	: riscv_movebytes_per_loop)
 
 /* The maximum number of bytes that can be copied by a straight-line
    cpymemsi implementation.  */
 
 #define RISCV_MAX_MOVE_BYTES_STRAIGHT (RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER * 3)
+
+/* The base cost of a memcpy call, for MOVE_RATIO and friends. */
+
+#define RISCV_CALL_RATIO 6
 
 /* If a memory-to-memory move would take MOVE_RATIO or more simple
    move-instruction pairs, we will do a cpymem or libcall instead.
@@ -932,10 +1150,10 @@ while (0)
    in effect but the target has slow unaligned accesses; in this
    case, cpymem or libcall is more efficient.  */
 
-#define MOVE_RATIO(speed)						\
-  (!STRICT_ALIGNMENT && riscv_slow_unaligned_access_p ? 1 :		\
-   (speed) ? RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER / UNITS_PER_WORD :	\
-   CLEAR_RATIO (speed) / 2)
+#define MOVE_RATIO(speed)				\
+  ((HAVE_cpymemsi && !optimize_size)                    \
+	? RISCV_MAX_MOVE_BYTES_PER_LOOP_ITER / MOVE_MAX \
+	: RISCV_CALL_RATIO / 2)
 
 /* For CLEAR_RATIO, when optimizing for size, give a better estimate
    of the length of a memset call, but use the default otherwise.  */
@@ -952,6 +1170,15 @@ while (0)
 extern const enum reg_class riscv_regno_to_class[];
 extern bool riscv_slow_unaligned_access_p;
 extern unsigned riscv_stack_boundary;
+extern unsigned riscv_bytes_per_vector_chunk;
+extern poly_uint16 riscv_vector_chunks;
+extern poly_int64 riscv_v_adjust_nunits (enum machine_mode, int);
+extern poly_int64 riscv_v_adjust_nunits (machine_mode, bool, int, int);
+extern poly_int64 riscv_v_adjust_precision (enum machine_mode, int);
+extern poly_int64 riscv_v_adjust_bytesize (enum machine_mode, int);
+/* The number of bits and bytes in a RVV vector.  */
+#define BITS_PER_RISCV_VECTOR (poly_uint16 (riscv_vector_chunks * riscv_bytes_per_vector_chunk * 8))
+#define BYTES_PER_RISCV_VECTOR (poly_uint16 (riscv_vector_chunks * riscv_bytes_per_vector_chunk))
 #endif
 
 #define ASM_PREFERRED_EH_DATA_FORMAT(CODE,GLOBAL) \
@@ -1001,9 +1228,62 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
 
 #define HARD_REGNO_RENAME_OK(FROM, TO) riscv_hard_regno_rename_ok (FROM, TO)
 
+#define RISCV_ZCE_PUSH_POP_MASK 0x0ffc0302u
+#define RISCV_ZCMPE_PUSH_POP_MASK 0x302u
+
 #define CLZ_DEFINED_VALUE_AT_ZERO(MODE, VALUE) \
   ((VALUE) = GET_MODE_UNIT_BITSIZE (MODE), 2)
 #define CTZ_DEFINED_VALUE_AT_ZERO(MODE, VALUE) \
   ((VALUE) = GET_MODE_UNIT_BITSIZE (MODE), 2)
+
+#define TARGET_SUPPORTS_WIDE_INT 1
+
+#ifdef TARGET_DEFAULT_GP_RELAX
+#define NDS32_GP_RELAX_DEFAULT_SPEC " %{!mno-gp-insn-relax:--mgp-insn-relax}"
+#else
+#define NDS32_GP_RELAX_DEFAULT_SPEC ""
+#endif
+
+#define NDS32_GP_RELAX_SPEC \
+  NDS32_GP_RELAX_DEFAULT_SPEC \
+  " %{mgp-insn-relax:--mgp-insn-relax}" \
+  " %{mno-gp-insn-relax:--mno-gp-insn-relax}"
+
+#define BTB_FIXUP_SPEC \
+  " %{Os3|Os:--mno-avoid-btb-miss}"
+
+#define ASM_OUTPUT_POOL_EPILOGUE riscv_asm_output_pool_epilogue
+
+#define WORKAROUND_SPEC \
+  " %{mno-workaround:--mno-workaround}"
+
+#define ICT_VERSION 1
+
+/* Do not emit .note.GNU-stack by default.  */
+#ifndef NEED_INDICATE_EXEC_STACK
+#define NEED_INDICATE_EXEC_STACK        0
+#endif
+
+#define CLEAR_INSN_CACHE(beg, end) asm volatile("fence.i" ::: "memory")
+
+#define REGISTER_TARGET_PRAGMAS() riscv_register_pragmas ()
+
+#define REGMODE_NATURAL_SIZE(MODE) riscv_regmode_natural_size (MODE)
+
+#define RISCV_DWARF_VLENB (4096 + 0xc22)
+
+#define DWARF_FRAME_REGISTERS (FIRST_PSEUDO_REGISTER + 1 /* VLENB */)
+
+#define DWARF_REG_TO_UNWIND_COLUMN(REGNO) \
+  ((REGNO == RISCV_DWARF_VLENB) ? (FIRST_PSEUDO_REGISTER + 1) : REGNO)
+
+/* Like s390, riscv also defined this macro for the vector comparision.  Then
+   the simplify-rtx relational_result will canonicalize the result to the
+   CONST1_RTX for the simplification.  */
+#define VECTOR_STORE_FLAG_VALUE(MODE) CONSTM1_RTX (GET_MODE_INNER (MODE))
+
+/* Mode switching (Lazy code motion) for RVV rounding mode instructions.  */
+#define OPTIMIZE_MODE_SWITCHING(ENTITY) (TARGET_VECTOR && TARGET_HARD_FLOAT)
+#define NUM_MODES_FOR_MODE_SWITCHING {VXRM_MODE_NONE, riscv_vector::FRM_NONE}
 
 #endif /* ! GCC_RISCV_H */

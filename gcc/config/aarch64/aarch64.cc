@@ -19862,7 +19862,8 @@ aarch64_setup_incoming_varargs (cumulative_args_t cum_v,
      argument.  Advance a local copy of CUM past the last "real" named
      argument, to find out how many registers are left over.  */
   local_cum = *cum;
-  aarch64_function_arg_advance (pack_cumulative_args(&local_cum), arg);
+  if (!TYPE_NO_NAMED_ARGS_STDARG_P (TREE_TYPE (current_function_decl)))
+    aarch64_function_arg_advance (pack_cumulative_args(&local_cum), arg);
 
   /* Found out how many registers we need to save.
      Honor tree-stdvar analysis results.  */
@@ -24141,9 +24142,13 @@ aarch64_expand_vec_perm_const_1 (struct expand_vec_perm_d *d)
 /* Implement TARGET_VECTORIZE_VEC_PERM_CONST.  */
 
 static bool
-aarch64_vectorize_vec_perm_const (machine_mode vmode, rtx target, rtx op0,
-				  rtx op1, const vec_perm_indices &sel)
+aarch64_vectorize_vec_perm_const (machine_mode vmode, machine_mode op_mode,
+				  rtx target, rtx op0, rtx op1,
+				  const vec_perm_indices &sel)
 {
+  if (vmode != op_mode)
+    return false;
+
   struct expand_vec_perm_d d;
 
   /* Check whether the mask can be applied to a single vector.  */

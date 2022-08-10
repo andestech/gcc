@@ -1,4 +1,5 @@
 /* { dg-options "-march=rv64imc -mabi=lp64" } */
+/* { dg-require-effective-target rv64 } */
 /* { dg-skip-if "" { *-*-* } { "*" } { "-Os" } } */
 
 /* These loads cannot be compressed because only one compressed reg is

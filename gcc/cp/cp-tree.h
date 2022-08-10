@@ -186,9 +186,6 @@ enum cp_tree_index
     CPTI_NOEXCEPT_FALSE_SPEC,
     CPTI_NOEXCEPT_DEFERRED_SPEC,
 
-    CPTI_NULLPTR,
-    CPTI_NULLPTR_TYPE,
-
     CPTI_ANY_TARG,
 
     CPTI_MODULE_HWM,
@@ -253,8 +250,6 @@ extern GTY(()) tree cp_global_trees[CPTI_MAX];
 #define conv_op_marker			cp_global_trees[CPTI_CONV_OP_MARKER]
 #define abort_fndecl			cp_global_trees[CPTI_ABORT_FNDECL]
 #define current_aggr			cp_global_trees[CPTI_AGGR_TAG]
-#define nullptr_node			cp_global_trees[CPTI_NULLPTR]
-#define nullptr_type_node		cp_global_trees[CPTI_NULLPTR_TYPE]
 /* std::align_val_t */
 #define align_type_node			cp_global_trees[CPTI_ALIGN_TYPE]
 
@@ -4420,9 +4415,6 @@ get_vec_init_expr (tree t)
    || TREE_CODE (TYPE) == REAL_TYPE \
    || TREE_CODE (TYPE) == COMPLEX_TYPE)
 
-/* True iff TYPE is cv decltype(nullptr).  */
-#define NULLPTR_TYPE_P(TYPE) (TREE_CODE (TYPE) == NULLPTR_TYPE)
-
 /* [basic.types]
 
    Arithmetic types, enumeration types, pointer types,
@@ -7951,6 +7943,7 @@ extern tree require_complete_type_sfinae	(tree, tsubst_flags_t);
 extern tree complete_type			(tree);
 extern tree complete_type_or_else		(tree, tree);
 extern tree complete_type_or_maybe_complain	(tree, tree, tsubst_flags_t);
+extern int cp_compare_floating_point_conversion_ranks (tree, tree);
 inline bool type_unknown_p			(const_tree);
 enum { ce_derived, ce_type, ce_normal, ce_exact };
 extern bool comp_except_specs			(const_tree, const_tree, int);
@@ -8689,6 +8682,20 @@ struct push_access_scope_guard
       pop_access_scope (decl);
   }
 };
+
+/* True if TYPE is an extended floating-point type.  */
+
+inline bool
+extended_float_type_p (tree type)
+{
+  type = TYPE_MAIN_VARIANT (type);
+  for (int i = 0; i < NUM_FLOATN_NX_TYPES; ++i)
+    if (type == FLOATN_TYPE_NODE (i))
+      return true;
+  if (type == bfloat16_type_node)
+    return true;
+  return false;
+}
 
 #if CHECKING_P
 namespace selftest {

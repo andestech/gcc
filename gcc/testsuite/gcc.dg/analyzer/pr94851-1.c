@@ -1,4 +1,4 @@
-/* { dg-additional-options "-O2" } */
+/* { dg-additional-options "-O2 -Wno-analyzer-null-dereference" } */
 
 #include <stdio.h>
 #include <stdlib.h>

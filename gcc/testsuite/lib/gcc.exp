@@ -144,11 +144,39 @@ proc gcc_target_compile { source dest type options } {
 	lappend options "ldflags=$TEST_EXTRA_LIBS"
     }
 
+    set checks_output 0
+    if { [string equal $type "assembly"] || \
+         [string equal $type "precompiled_header"] } {
+        set checks_output 1
+    }
+
+    foreach option [split $options] {
+	switch -glob -- $option {
+	    -Dwith_PCH { set checks_output 1 }
+	    -save-temps { set checks_output 1 }
+	    --save-temps { set checks_output 1 }
+	    -fdump* { set checks_output 1 }
+	}
+    }
+
+
+    if [string equal $type "executable"] {
+        set checks_output 0
+    }
+
     # TEST_ALWAYS_FLAGS are flags that should be passed to every
     # compilation.  They are passed first to allow individual
     # tests to override them.
     if [info exists TEST_ALWAYS_FLAGS] {
-	set options [concat "{additional_flags=$TEST_ALWAYS_FLAGS}" $options]
+        set NEW_TEST_ALWAYS_FLAGS $TEST_ALWAYS_FLAGS
+        # Remove extra appended options from TEST_ALWAYS_FLAGS,
+        # if the test appears to be checking assembly or dump output.
+        if { $checks_output } {
+            regsub -all -- "-mext-\[^ \]*" $NEW_TEST_ALWAYS_FLAGS "" NEW_TEST_ALWAYS_FLAGS
+            regsub -all -- "-mtune=\[^ \]*" $NEW_TEST_ALWAYS_FLAGS "" NEW_TEST_ALWAYS_FLAGS
+	}
+
+	set options [concat "{additional_flags=$NEW_TEST_ALWAYS_FLAGS}" $options]
     }
 
     # TOOL_OPTIONS must come first, so that it doesn't override testcase

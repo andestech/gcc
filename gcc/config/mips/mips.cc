@@ -6684,7 +6684,8 @@ mips_setup_incoming_varargs (cumulative_args_t cum,
      argument.  Advance a local copy of CUM past the last "real" named
      argument, to find out how many registers are left over.  */
   local_cum = *get_cumulative_args (cum);
-  mips_function_arg_advance (pack_cumulative_args (&local_cum), arg);
+  if (!TYPE_NO_NAMED_ARGS_STDARG_P (TREE_TYPE (current_function_decl)))
+    mips_function_arg_advance (pack_cumulative_args (&local_cum), arg);
 
   /* Found out how many registers we need to save.  */
   gp_saved = MAX_ARGS_IN_REGISTERS - local_cum.num_gprs;
@@ -21790,9 +21791,13 @@ mips_expand_vec_perm_const_1 (struct expand_vec_perm_d *d)
 /* Implement TARGET_VECTORIZE_VEC_PERM_CONST.  */
 
 static bool
-mips_vectorize_vec_perm_const (machine_mode vmode, rtx target, rtx op0,
-			       rtx op1, const vec_perm_indices &sel)
+mips_vectorize_vec_perm_const (machine_mode vmode, machine_mode op_mode,
+			       rtx target, rtx op0, rtx op1,
+			       const vec_perm_indices &sel)
 {
+  if (vmode != op_mode)
+    return false;
+
   struct expand_vec_perm_d d;
   int i, nelt, which;
   unsigned char orig_perm[MAX_VECT_LEN];

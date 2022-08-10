@@ -2438,6 +2438,7 @@ get_mem_type_for_internal_fn (gcall *call, tree *op_p)
     case IFN_MASK_LOAD:
     case IFN_MASK_LOAD_LANES:
     case IFN_LEN_LOAD:
+    case IFN_MASK_LEN_LOAD:
       if (op_p == gimple_call_arg_ptr (call, 0))
 	return TREE_TYPE (gimple_call_lhs (call));
       return NULL_TREE;
@@ -2445,9 +2446,16 @@ get_mem_type_for_internal_fn (gcall *call, tree *op_p)
     case IFN_MASK_STORE:
     case IFN_MASK_STORE_LANES:
     case IFN_LEN_STORE:
-      if (op_p == gimple_call_arg_ptr (call, 0))
-	return TREE_TYPE (gimple_call_arg (call, 3));
-      return NULL_TREE;
+    case IFN_MASK_LEN_STORE:
+      {
+	if (op_p == gimple_call_arg_ptr (call, 0))
+	  {
+	    internal_fn ifn = gimple_call_internal_fn (call);
+	    int index = internal_fn_stored_value_index (ifn);
+	    return TREE_TYPE (gimple_call_arg (call, index));
+	  }
+	return NULL_TREE;
+      }
 
     default:
       return NULL_TREE;
@@ -7371,7 +7379,7 @@ create_new_iv (struct ivopts_data *data, struct iv_cand *cand)
 
   base = unshare_expr (cand->iv->base);
 
-  create_iv (base, unshare_expr (cand->iv->step),
+  create_iv (base, PLUS_EXPR, unshare_expr (cand->iv->step),
 	     cand->var_before, data->current_loop,
 	     &incr_pos, after, &cand->var_before, &cand->var_after);
 }
@@ -7659,6 +7667,8 @@ get_alias_ptr_type_for_ptr_address (iv_use *use)
     case IFN_MASK_STORE_LANES:
     case IFN_LEN_LOAD:
     case IFN_LEN_STORE:
+    case IFN_MASK_LEN_LOAD:
+    case IFN_MASK_LEN_STORE:
       /* The second argument contains the correct alias type.  */
       gcc_assert (use->op_p = gimple_call_arg_ptr (call, 0));
       return TREE_TYPE (gimple_call_arg (call, 1));
@@ -7821,10 +7831,11 @@ rewrite_groups (struct ivopts_data *data)
 /* Removes the ivs that are not used after rewriting.  */
 
 static void
-remove_unused_ivs (struct ivopts_data *data, bitmap toremove)
+remove_unused_ivs (struct ivopts_data *data)
 {
   unsigned j;
   bitmap_iterator bi;
+  bitmap toremove = BITMAP_ALLOC (NULL);
 
   /* Figure out an order in which to release SSA DEFs so that we don't
      release something that we'd have to propagate into a debug stmt
@@ -7949,6 +7960,10 @@ remove_unused_ivs (struct ivopts_data *data, bitmap toremove)
 	    }
 	}
     }
+
+  release_defs_bitset (toremove);
+
+  BITMAP_FREE (toremove);
 }
 
 /* Frees memory occupied by class tree_niter_desc in *VALUE. Callback
@@ -8210,8 +8225,7 @@ analyze_and_mark_doloop_use (struct ivopts_data *data)
 /* Optimizes the LOOP.  Returns true if anything changed.  */
 
 static bool
-tree_ssa_iv_optimize_loop (struct ivopts_data *data, class loop *loop,
-			   bitmap toremove)
+tree_ssa_iv_optimize_loop (struct ivopts_data *data, struct loop *loop)
 {
   bool changed = false;
   class iv_ca *iv_ca;
@@ -8290,7 +8304,12 @@ tree_ssa_iv_optimize_loop (struct ivopts_data *data, class loop *loop,
   rewrite_groups (data);
 
   /* Remove the ivs that are unused after rewriting.  */
-  remove_unused_ivs (data, toremove);
+  remove_unused_ivs (data);
+
+  /* We have changed the structure of induction variables; it might happen
+     that definitions in the scev database refer to some of them that were
+     eliminated.  */
+  scev_reset ();
 
 finish:
   free (body);
@@ -8305,7 +8324,6 @@ void
 tree_ssa_iv_optimize (void)
 {
   struct ivopts_data data;
-  auto_bitmap toremove;
 
   tree_ssa_iv_optimize_init (&data);
   mark_ssa_maybe_undefs ();
@@ -8319,18 +8337,8 @@ tree_ssa_iv_optimize (void)
       if (dump_file && (dump_flags & TDF_DETAILS))
 	flow_loop_dump (loop, dump_file, NULL, 1);
 
-      tree_ssa_iv_optimize_loop (&data, loop, toremove);
+      tree_ssa_iv_optimize_loop (&data, loop);
     }
-
-  /* Remove eliminated IV defs.  */
-  release_defs_bitset (toremove);
-
-  /* We have changed the structure of induction variables; it might happen
-     that definitions in the scev database refer to some of them that were
-     eliminated.  */
-  scev_reset_htab ();
-  /* Likewise niter and control-IV information.  */
-  free_numbers_of_iterations_estimates (cfun);
 
   tree_ssa_iv_optimize_finalize (&data);
 }

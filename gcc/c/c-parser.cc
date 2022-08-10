@@ -119,6 +119,8 @@ c_parse_init (void)
   mask |= D_CXXONLY;
   if (!flag_isoc99)
     mask |= D_C99;
+  if (!flag_isoc2x)
+    mask |= D_C2X;
   if (flag_no_asm)
     {
       mask |= D_ASM | D_EXT;
@@ -164,6 +166,14 @@ c_parse_init (void)
       id = get_identifier (name);
       C_SET_RID_CODE (id, RID_FIRST_INT_N + i);
       C_IS_RESERVED_WORD (id) = 1;
+    }
+
+  if (flag_openmp)
+    {
+      id = get_identifier ("omp_all_memory");
+      C_SET_RID_CODE (id, RID_OMP_ALL_MEMORY);
+      C_IS_RESERVED_WORD (id) = 1;
+      ridpointers [RID_OMP_ALL_MEMORY] = id;
     }
 }
 
@@ -3975,7 +3985,8 @@ c_parser_direct_declarator (c_parser *parser, bool type_seen_p, c_dtr_syn kind,
       if (kind != C_DTR_NORMAL
 	  && (c_parser_next_token_starts_declspecs (parser)
 	      || (!have_gnu_attrs
-		  && c_parser_nth_token_starts_std_attributes (parser, 1))
+		  && (c_parser_nth_token_starts_std_attributes (parser, 1)
+		      || c_parser_next_token_is (parser, CPP_ELLIPSIS)))
 	      || c_parser_next_token_is (parser, CPP_CLOSE_PAREN)))
 	{
 	  struct c_arg_info *args
@@ -4251,25 +4262,18 @@ c_parser_parms_list_declarator (c_parser *parser, tree attrs, tree expr,
       c_parser_consume_token (parser);
       return ret;
     }
-  if (c_parser_next_token_is (parser, CPP_ELLIPSIS))
+  if (c_parser_next_token_is (parser, CPP_ELLIPSIS) && !have_gnu_attrs)
     {
       struct c_arg_info *ret = build_arg_info ();
 
-      if (flag_allow_parameterless_variadic_functions)
-        {
-          /* F (...) is allowed.  */
-          ret->types = NULL_TREE;
-        }
-      else
-        {
-          /* Suppress -Wold-style-definition for this case.  */
-          ret->types = error_mark_node;
-          error_at (c_parser_peek_token (parser)->location,
-                    "ISO C requires a named argument before %<...%>");
-        }
+      ret->types = NULL_TREE;
+      pedwarn_c11 (c_parser_peek_token (parser)->location, OPT_Wpedantic,
+		   "ISO C requires a named argument before %<...%> "
+		   "before C2X");
       c_parser_consume_token (parser);
       if (c_parser_next_token_is (parser, CPP_CLOSE_PAREN))
 	{
+	  ret->no_named_args_stdarg_p = true;
 	  c_parser_consume_token (parser);
 	  return ret;
 	}
@@ -10202,6 +10206,21 @@ c_parser_postfix_expression (c_parser *parser)
 	case RID_GENERIC:
 	  expr = c_parser_generic_selection (parser);
 	  break;
+	case RID_OMP_ALL_MEMORY:
+	  gcc_assert (flag_openmp);
+	  c_parser_consume_token (parser);
+	  error_at (loc, "%<omp_all_memory%> may only be used in OpenMP "
+			 "%<depend%> clause");
+	  expr.set_error ();
+	  break;
+	/* C23 'nullptr' literal.  */
+	case RID_NULLPTR:
+	  c_parser_consume_token (parser);
+	  expr.value = nullptr_node;
+	  set_c_expr_source_range (&expr, tok_range);
+	  pedwarn_c11 (loc, OPT_Wpedantic,
+		       "ISO C does not support %qs before C2X", "nullptr");
+	  break;
 	default:
 	  c_parser_error (parser, "expected expression");
 	  expr.set_error ();
@@ -13026,7 +13045,19 @@ c_parser_omp_variable_list (c_parser *parser,
 	  if (c_parser_next_token_is_not (parser, CPP_NAME)
 	      || c_parser_peek_token (parser)->id_kind != C_ID_ID)
 	    {
-	      struct c_expr expr = c_parser_expr_no_commas (parser, NULL);
+	      struct c_expr expr;
+	      if (kind == OMP_CLAUSE_DEPEND
+		  && c_parser_next_token_is_keyword (parser,
+						     RID_OMP_ALL_MEMORY)
+		  && (c_parser_peek_2nd_token (parser)->type == CPP_COMMA
+		      || (c_parser_peek_2nd_token (parser)->type
+			  == CPP_CLOSE_PAREN)))
+		{
+		  expr.value = ridpointers[RID_OMP_ALL_MEMORY];
+		  c_parser_consume_token (parser);
+		}
+	      else
+		expr = c_parser_expr_no_commas (parser, NULL);
 	      if (expr.value != error_mark_node)
 		{
 		  tree u = build_omp_clause (clause_loc, kind);

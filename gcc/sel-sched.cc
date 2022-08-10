@@ -450,6 +450,8 @@ int sched_emulate_haifa_p;
    scheduling window.  */
 int global_level;
 
+static int always_av = false;
+
 /* Current fences.  */
 flist_t fences;
 
@@ -2718,6 +2720,60 @@ is_ineligible_successor (insn_t insn, ilist_t p)
     return false;
 }
 
+/* Invalidate the SETP if the definition register in INSN is same as
+   any other SETP definition register.  */
+
+static void
+dep_av_set_invalidate (av_set_t *setp, insn_t insn, blist_t bnds)
+{
+  expr_t expr;
+  av_set_iterator i;
+  rtx x, dest;
+
+  if (!INSN_P (insn) || GET_CODE(PATTERN(insn)) != SET)
+    return;
+
+  x = PATTERN (insn);
+  dest = XEXP (x, 0);
+
+  gcc_assert (dest);
+  if (dest == 0)
+    return;
+
+  if (REG_P (dest))
+    {
+      int regno = REGNO (dest);
+      machine_mode mode = GET_MODE (dest);
+      int nreg;
+      insn_t expr_insn;
+      int expr_regno;
+      rtx expr_rtx;
+      if (regno < FIRST_PSEUDO_REGISTER)
+	{
+	  nreg = hard_regno_nregs (regno, mode);
+	  FOR_EACH_EXPR_1 (expr, i, setp)
+	    {
+	      expr_insn = EXPR_INSN_RTX (expr);
+	      if (insn == expr_insn || !INSN_P (expr_insn)
+		  || GET_CODE(PATTERN(expr_insn)) != SET)
+		continue;
+	      expr_rtx = PATTERN (expr_insn);
+	      if (!REG_P (XEXP (expr_rtx, 0)))
+		continue;
+	      expr_regno = REGNO (XEXP (expr_rtx, 0));
+	      for (int j = regno; j < nreg + regno; j++)
+		{
+		  if (expr_regno == j)
+		    {
+		      always_av = true;
+		      return;
+		    }
+		}
+	    }
+	}
+    }
+}
+
 /* Computes the av_set below the last bb insn INSN, doing all the 'dirty work'
    of handling multiple successors and properly merging its av_sets.  P is
    the current path traversed.  WS is the size of lookahead window.
@@ -2885,7 +2941,7 @@ compute_av_set_inside_bb (insn_t first_insn, ilist_t p, int ws,
     }
 
   /* If insn already has valid av(insn) computed, just return it.  */
-  if (AV_SET_VALID_P (first_insn))
+  if (AV_SET_VALID_P (first_insn) && !always_av)
     {
       av_set_t av_set;
 
@@ -5580,6 +5636,7 @@ fill_insns (fence_t fence, int seqno, ilist_t **scheduled_insns_tailpp)
 	  if (last_insn_was_debug)
 	    was_debug_bb_end_p = (insn == BND_TO (bnd) && sel_bb_end_p (insn));
           update_fence_and_insn (fence, insn, need_stall);
+	  always_av = false;
           bnds_tailp = update_boundaries (fence, bnd, insn, bndsp, bnds_tailp);
 
 	  /* Add insn to the list of scheduled on this cycle instructions.  */
@@ -5588,6 +5645,7 @@ fill_insns (fence_t fence, int seqno, ilist_t **scheduled_insns_tailpp)
         }
       while (*bndsp != *bnds_tailp1);
 
+      dep_av_set_invalidate (&av_vliw, insn, bnds);
       av_set_clear (&av_vliw);
       if (!last_insn_was_debug)
 	scheduled_insns++;

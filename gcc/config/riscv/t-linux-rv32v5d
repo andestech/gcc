@@ -1,0 +1,2 @@
+MULTILIB_REQUIRED += march=rv32imafdc_xandes/mabi=ilp32d
+

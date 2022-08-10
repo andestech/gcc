@@ -32,8 +32,8 @@ along with GCC; see the file COPYING3.  If not see
 #include "fold-const.h"
 #include "calls.h"
 #include "cfganal.h"
-#include "gimple-fold.h"
 #include "gimple-iterator.h"
+#include "gimple-fold.h"
 #include "tree-cfg.h"
 #include "tree-ssa-loop-niter.h"
 #include "tree-ssa-loop.h"
@@ -4289,7 +4289,10 @@ simplify_using_ranges::simplify (gimple_stmt_iterator *gsi)
 	     in divide by zero, new_rhs1 / new_rhs will be NULL_TREE.  */
 	  if (new_rhs1 && new_rhs2)
 	    {
-	      tree cond = build2 (EQ_EXPR, boolean_type_node, cmp_var, val1);
+	      tree cond = gimple_build (gsi, true, GSI_SAME_STMT,
+					UNKNOWN_LOCATION,
+					EQ_EXPR, boolean_type_node,
+					cmp_var, val1);
 	      gimple_assign_set_rhs_with_ops (gsi,
 					      COND_EXPR, cond,
 					      new_rhs1,

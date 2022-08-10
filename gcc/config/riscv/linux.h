@@ -17,12 +17,17 @@ You should have received a copy of the GNU General Public License
 along with GCC; see the file COPYING3.  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#define TARGET_LINUX_ABI 1
+
 #define TARGET_OS_CPP_BUILTINS()				\
   do {								\
     GNU_USER_TARGET_OS_CPP_BUILTINS();				\
   } while (0)
 
-#define GLIBC_DYNAMIC_LINKER "/lib/ld-linux-riscv" XLEN_SPEC "-" ABI_SPEC ".so.1"
+#define MTUNE \
+    "%{mtune=andes-45-series:_andes-45-series}"
+
+#define GLIBC_DYNAMIC_LINKER "/lib/ld-linux-riscv" XLEN_SPEC "-" ABI_SPEC MTUNE ".so.1"
 
 #define MUSL_ABI_SUFFIX \
   "%{mabi=ilp32:-sf}" \
@@ -62,12 +67,22 @@ along with GCC; see the file COPYING3.  If not see
 %{mno-relax:--no-relax} \
 %{mbig-endian:-EB} \
 %{mlittle-endian:-EL} \
+%{mno-execit-jal:--mno-execit-jal} \
+%{mnexecitop:--mnexecitop} \
+%{minnermost-loop:--mexecit-loop-aware} \
+%{mno-zcmt:--mno-opt-table-jump} \
 %{shared} \
   %{!shared: \
     %{!static: \
       %{rdynamic:-export-dynamic} \
       -dynamic-linker " GNU_USER_DYNAMIC_LINKER "} \
-    %{static:-static}}"
+    %{static:-static}}" \
+NDS32_GP_RELAX_SPEC \
+BTB_FIXUP_SPEC \
+WORKAROUND_SPEC
+
+#undef NEED_INDICATE_EXEC_STACK
+#define NEED_INDICATE_EXEC_STACK 1
 
 #define TARGET_ASM_FILE_END file_end_indicate_exec_stack
 
@@ -76,3 +91,5 @@ along with GCC; see the file COPYING3.  If not see
    "/usr/lib" XLEN_SPEC "/" ABI_SPEC "/ "	\
    "/lib/ "					\
    "/usr/lib/ "
+
+#define RISCV_USE_CUSTOMISED_MULTI_LIB select_by_abi

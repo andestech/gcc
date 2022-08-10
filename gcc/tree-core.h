@@ -662,6 +662,9 @@ enum tree_index {
   TI_DOUBLE_TYPE,
   TI_LONG_DOUBLE_TYPE,
 
+  /* __bf16 type if supported (used in C++ as std::bfloat16_t).  */
+  TI_BFLOAT16_TYPE,
+
   /* The _FloatN and _FloatNx types must be consecutive, and in the
      same sequence as the corresponding complex types, which must also
      be consecutive; _FloatN must come before _FloatNx; the order must
@@ -686,6 +689,10 @@ enum tree_index {
 #define NUM_FLOATN_NX_TYPES (TI_FLOATN_NX_TYPE_LAST		\
 			     - TI_FLOATN_NX_TYPE_FIRST		\
 			     + 1)
+
+  /* Type used by certain backends for __float128, which in C++ should be
+     distinct type from _Float128 for backwards compatibility reasons.  */
+  TI_FLOAT128T_TYPE,
 
   /* Put the complex types after their component types, so that in (sequential)
      tree streaming we can assert that their component types have already been
@@ -1669,18 +1676,9 @@ struct GTY(()) tree_type_common {
   tree attributes;
   unsigned int uid;
 
-  unsigned int precision : 10;
-  unsigned no_force_blk_flag : 1;
-  unsigned needs_constructing_flag : 1;
-  unsigned transparent_aggr_flag : 1;
-  unsigned restrict_flag : 1;
-  unsigned contains_placeholder_bits : 2;
+  ENUM_BITFIELD(machine_mode) mode : MACHINE_MODE_BITSIZE;
 
-  ENUM_BITFIELD(machine_mode) mode : 8;
-
-  /* TYPE_STRING_FLAG for INTEGER_TYPE and ARRAY_TYPE.
-     TYPE_CXX_ODR_P for RECORD_TYPE and UNION_TYPE.  */
-  unsigned string_flag : 1;
+  unsigned int precision : 16;
   unsigned lang_flag_0 : 1;
   unsigned lang_flag_1 : 1;
   unsigned lang_flag_2 : 1;
@@ -1696,11 +1694,22 @@ struct GTY(()) tree_type_common {
      so we need to store the value 32 (not 31, as we need the zero
      as well), hence six bits.  */
   unsigned align : 6;
+  /* TYPE_STRING_FLAG for INTEGER_TYPE and ARRAY_TYPE.
+     TYPE_CXX_ODR_P for RECORD_TYPE and UNION_TYPE.  */
+  unsigned string_flag : 1;
+  unsigned no_force_blk_flag : 1;
+
   unsigned warn_if_not_align : 6;
+  unsigned needs_constructing_flag : 1;
+  unsigned transparent_aggr_flag : 1;
+
+  unsigned contains_placeholder_bits : 2;
+  unsigned restrict_flag : 1;
   unsigned typeless_storage : 1;
   unsigned empty_flag : 1;
   unsigned indivisible_p : 1;
-  unsigned spare : 16;
+  unsigned no_named_args_stdarg_p : 1;
+  unsigned spare : 1;
 
   alias_set_type alias_set;
   tree pointer_to;
@@ -1758,7 +1767,7 @@ struct GTY(()) tree_decl_common {
   struct tree_decl_minimal common;
   tree size;
 
-  ENUM_BITFIELD(machine_mode) mode : 8;
+  ENUM_BITFIELD(machine_mode) mode : MACHINE_MODE_BITSIZE;
 
   unsigned nonlocal_flag : 1;
   unsigned virtual_flag : 1;
@@ -1813,7 +1822,10 @@ struct GTY(()) tree_decl_common {
      TYPE_WARN_IF_NOT_ALIGN.  */
   unsigned int warn_if_not_align : 6;
 
-  /* 14 bits unused.  */
+  /* In FIELD_DECL, this is DECL_NOT_FLEXARRAY.  */
+  unsigned int decl_not_flexarray : 1;
+
+  /* 5 bits unused.  */
 
   /* UID for points-to sets, stable over copying from inlining.  */
   unsigned int pt_uid;

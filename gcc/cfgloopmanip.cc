@@ -827,7 +827,7 @@ create_empty_loop_on_edge (edge entry_edge,
     }
 
   gsi = gsi_last_bb (loop_header);
-  create_iv (initial_value, stride, iv, loop, &gsi, false,
+  create_iv (initial_value, PLUS_EXPR, stride, iv, loop, &gsi, false,
 	     iv_before, iv_after);
 
   /* Insert loop exit condition.  */
@@ -1351,7 +1351,6 @@ duplicate_loop_body_to_header_edge (class loop *loop, edge e,
       unsigned j;
 
       bb = bbs[i];
-      bb->aux = 0;
 
       auto_vec<basic_block> dom_bbs = get_dominated_by (CDI_DOMINATORS, bb);
       FOR_EACH_VEC_ELT (dom_bbs, j, dominated)

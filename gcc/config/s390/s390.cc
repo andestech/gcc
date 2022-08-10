@@ -70,6 +70,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "debug.h"
 #include "langhooks.h"
 #include "internal-fn.h"
+#include "gimple-iterator.h"
 #include "gimple-fold.h"
 #include "tree-eh.h"
 #include "gimplify.h"
@@ -17174,9 +17175,13 @@ vectorize_vec_perm_const_1 (const struct expand_vec_perm_d &d)
    hook is supposed to emit the required INSNs.  */
 
 bool
-s390_vectorize_vec_perm_const (machine_mode vmode, rtx target, rtx op0, rtx op1,
+s390_vectorize_vec_perm_const (machine_mode vmode, machine_mode op_mode,
+			       rtx target, rtx op0, rtx op1,
 			       const vec_perm_indices &sel)
 {
+  if (vmode != op_mode)
+    return false;
+
   struct expand_vec_perm_d d;
   unsigned int i, nelt;
 
