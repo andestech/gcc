@@ -322,8 +322,10 @@ static bool nonnull_check_p (tree, unsigned HOST_WIDE_INT);
    if they match the mask.
 
    Masks for languages:
-   C --std=c89: D_C99 | D_CXXONLY | D_OBJC | D_CXX_OBJC
-   C --std=c99: D_CXXONLY | D_OBJC
+   C --std=c89: D_C99 | D_C2X | D_CXXONLY | D_OBJC | D_CXX_OBJC
+   C --std=c99: D_C2X | D_CXXONLY | D_OBJC
+   C --std=c17: D_C2X | D_CXXONLY | D_OBJC
+   C --std=c2x: D_CXXONLY | D_OBJC
    ObjC is like C except that D_OBJC and D_CXX_OBJC are not set
    C++ --std=c++98: D_CONLY | D_CXX11 | D_CXX20 | D_OBJC
    C++ --std=c++11: D_CONLY | D_CXX20 | D_OBJC
@@ -348,13 +350,13 @@ const struct c_common_resword c_common_reswords[] =
   { "_Bool",		RID_BOOL,      D_CONLY },
   { "_Complex",		RID_COMPLEX,	0 },
   { "_Imaginary",	RID_IMAGINARY, D_CONLY },
-  { "_Float16",         RID_FLOAT16,   D_CONLY },
-  { "_Float32",         RID_FLOAT32,   D_CONLY },
-  { "_Float64",         RID_FLOAT64,   D_CONLY },
-  { "_Float128",        RID_FLOAT128,  D_CONLY },
-  { "_Float32x",        RID_FLOAT32X,  D_CONLY },
-  { "_Float64x",        RID_FLOAT64X,  D_CONLY },
-  { "_Float128x",       RID_FLOAT128X, D_CONLY },
+  { "_Float16",         RID_FLOAT16,    0 },
+  { "_Float32",         RID_FLOAT32,    0 },
+  { "_Float64",         RID_FLOAT64,    0 },
+  { "_Float128",        RID_FLOAT128,   0 },
+  { "_Float32x",        RID_FLOAT32X,   0 },
+  { "_Float64x",        RID_FLOAT64X,   0 },
+  { "_Float128x",       RID_FLOAT128X,  0 },
   { "_Decimal32",       RID_DFLOAT32,  D_CONLY },
   { "_Decimal64",       RID_DFLOAT64,  D_CONLY },
   { "_Decimal128",      RID_DFLOAT128, D_CONLY },
@@ -498,7 +500,7 @@ const struct c_common_resword c_common_reswords[] =
   { "namespace",	RID_NAMESPACE,	D_CXXONLY | D_CXXWARN },
   { "new",		RID_NEW,	D_CXXONLY | D_CXXWARN },
   { "noexcept",		RID_NOEXCEPT,	D_CXXONLY | D_CXX11 | D_CXXWARN },
-  { "nullptr",		RID_NULLPTR,	D_CXXONLY | D_CXX11 | D_CXXWARN },
+  { "nullptr",		RID_NULLPTR,	D_C2X | D_CXX11 | D_CXXWARN },
   { "operator",		RID_OPERATOR,	D_CXXONLY | D_CXXWARN },
   { "private",		RID_PRIVATE,	D_CXX_OBJC | D_CXXWARN },
   { "protected",	RID_PROTECTED,	D_CXX_OBJC | D_CXXWARN },
@@ -1365,6 +1367,10 @@ shorten_binary_op (tree result_type, tree op0, tree op1, bool bitwise)
   int uns;
   tree type;
 
+  /* Do not shorten vector operations.  */
+  if (VECTOR_TYPE_P (result_type))
+    return result_type;
+
   /* Cast OP0 and OP1 to RESULT_TYPE.  Doing so prevents
      excessive narrowing when we call get_narrower below.  For
      example, suppose that OP0 is of unsigned int extended
@@ -1422,8 +1428,11 @@ shorten_binary_op (tree result_type, tree op0, tree op1, bool bitwise)
 	  == TYPE_PRECISION (TREE_TYPE (arg0)))
       && unsigned0 == unsigned1
       && (unsigned0 || !uns))
-    return c_common_signed_or_unsigned_type
-      (unsigned0, common_type (TREE_TYPE (arg0), TREE_TYPE (arg1)));
+    {
+      tree ctype = common_type (TREE_TYPE (arg0), TREE_TYPE (arg1));
+      if (ctype != error_mark_node)
+	return c_common_signed_or_unsigned_type (unsigned0, ctype);
+    }
 
   else if (TREE_CODE (arg0) == INTEGER_CST
 	   && (unsigned1 || !uns)
@@ -3195,9 +3204,10 @@ shorten_compare (location_t loc, tree *op0_ptr, tree *op1_ptr,
 
   else if (unsignedp0 == unsignedp1 && real1 == real2
 	   && TYPE_PRECISION (TREE_TYPE (primop0)) < TYPE_PRECISION (*restype_ptr)
-	   && TYPE_PRECISION (TREE_TYPE (primop1)) < TYPE_PRECISION (*restype_ptr))
+	   && TYPE_PRECISION (TREE_TYPE (primop1)) < TYPE_PRECISION (*restype_ptr)
+	   && (type = common_type (TREE_TYPE (primop0), TREE_TYPE (primop1)))
+	      != error_mark_node)
     {
-      type = common_type (TREE_TYPE (primop0), TREE_TYPE (primop1));
       type = c_common_signed_or_unsigned_type (unsignedp0
 					       || TYPE_UNSIGNED (*restype_ptr),
 					       type);
@@ -4083,7 +4093,8 @@ static tree builtin_types[(int) BT_LAST + 1];
 
 /* A helper function for c_common_nodes_and_builtins.  Build function type
    for DEF with return type RET and N arguments.  If VAR is true, then the
-   function should be variadic after those N arguments.
+   function should be variadic after those N arguments, or, if N is zero,
+   unprototyped.
 
    Takes special care not to ICE if any of the types involved are
    error_mark_node, which indicates that said type is not in fact available
@@ -4112,7 +4123,10 @@ def_fn_type (builtin_type def, builtin_type ret, bool var, int n, ...)
   if (t == error_mark_node)
     goto egress;
   if (var)
-    t = build_varargs_function_type_array (t, n, args);
+    if (n == 0)
+      t = build_function_type (t, NULL_TREE);
+    else
+      t = build_varargs_function_type_array (t, n, args);
   else
     t = build_function_type_array (t, n, args);
 
@@ -4371,11 +4385,18 @@ c_common_nodes_and_builtins (void)
   record_builtin_type (RID_DOUBLE, NULL, double_type_node);
   record_builtin_type (RID_MAX, "long double", long_double_type_node);
 
-  if (!c_dialect_cxx ())
-    for (i = 0; i < NUM_FLOATN_NX_TYPES; i++)
+  for (i = 0; i < NUM_FLOATN_NX_TYPES; i++)
+    {
       if (FLOATN_NX_TYPE_NODE (i) != NULL_TREE)
 	record_builtin_type ((enum rid) (RID_FLOATN_NX_FIRST + i), NULL,
 			     FLOATN_NX_TYPE_NODE (i));
+    }
+
+  /* For C, let float128t_type_node (__float128 in some backends) be the
+     same type as float128_type_node (_Float128), for C++ let those
+     be distinct types that mangle and behave differently.  */
+  if (c_dialect_cxx ())
+    float128t_type_node = NULL_TREE;
 
   /* Only supported decimal floating point extension if the target
      actually supports underlying modes. */
@@ -4676,8 +4697,7 @@ c_common_nodes_and_builtins (void)
     uintptr_type_node =
       TREE_TYPE (identifier_global_value (c_get_ident (UINTPTR_TYPE)));
 
-  default_function_type
-    = build_varargs_function_type_list (integer_type_node, NULL_TREE);
+  default_function_type = build_function_type (integer_type_node, NULL_TREE);
   unsigned_ptrdiff_type_node = c_common_unsigned_type (ptrdiff_type_node);
 
   lang_hooks.decls.pushdecl
@@ -4719,6 +4739,18 @@ c_common_nodes_and_builtins (void)
      not shared.  */
   null_node = make_int_cst (1, 1);
   TREE_TYPE (null_node) = c_common_type_for_size (POINTER_SIZE, 0);
+
+  /* Create the built-in nullptr node.  This part of its initialization is
+     common to C and C++.  The front ends can further adjust its definition
+     in {c,cxx}_init_decl_processing.  In particular, we aren't setting the
+     alignment here for C++ backward ABI bug compatibility.  */
+  nullptr_type_node = make_node (NULLPTR_TYPE);
+  TYPE_SIZE (nullptr_type_node) = bitsize_int (GET_MODE_BITSIZE (ptr_mode));
+  TYPE_SIZE_UNIT (nullptr_type_node) = size_int (GET_MODE_SIZE (ptr_mode));
+  TYPE_UNSIGNED (nullptr_type_node) = 1;
+  TYPE_PRECISION (nullptr_type_node) = GET_MODE_BITSIZE (ptr_mode);
+  SET_TYPE_MODE (nullptr_type_node, ptr_mode);
+  nullptr_node = build_int_cst (nullptr_type_node, 0);
 
   /* Since builtin_types isn't gc'ed, don't export these nodes.  */
   memset (builtin_types, 0, sizeof (builtin_types));

@@ -4511,6 +4511,12 @@ c_init_decl_processing (void)
   pushdecl (build_decl (UNKNOWN_LOCATION, TYPE_DECL, get_identifier ("_Bool"),
 			boolean_type_node));
 
+  /* C-specific nullptr initialization.  */
+  record_builtin_type (RID_MAX, "nullptr_t", nullptr_type_node);
+  /* The size and alignment of nullptr_t is the same as for a pointer to
+     character type.  */
+  SET_TYPE_ALIGN (nullptr_type_node, GET_MODE_ALIGNMENT (ptr_mode));
+
   input_location = save_loc;
 
   make_fname_decl = c_make_fname_decl;
@@ -4979,6 +4985,41 @@ set_array_declarator_inner (struct c_declarator *decl,
   return decl;
 }
 
+/* Determine whether TYPE is a ISO C99 flexible array memeber type "[]".  */
+static bool
+flexible_array_member_type_p (const_tree type)
+{
+  if (TREE_CODE (type) == ARRAY_TYPE
+      && TYPE_SIZE (type) == NULL_TREE
+      && TYPE_DOMAIN (type) != NULL_TREE
+      && TYPE_MAX_VALUE (TYPE_DOMAIN (type)) == NULL_TREE)
+    return true;
+
+  return false;
+}
+
+/* Determine whether TYPE is a one-element array type "[1]".  */
+static bool
+one_element_array_type_p (const_tree type)
+{
+  if (TREE_CODE (type) != ARRAY_TYPE)
+    return false;
+  return integer_zerop (array_type_nelts (type));
+}
+
+/* Determine whether TYPE is a zero-length array type "[0]".  */
+static bool
+zero_length_array_type_p (const_tree type)
+{
+  if (TREE_CODE (type) == ARRAY_TYPE)
+    if (tree type_size = TYPE_SIZE_UNIT (type))
+      if ((integer_zerop (type_size))
+	   && TYPE_DOMAIN (type) != NULL_TREE
+	   && TYPE_MAX_VALUE (TYPE_DOMAIN (type)) == NULL_TREE)
+	return true;
+  return false;
+}
+
 /* INIT is a constructor that forms DECL's initializer.  If the final
    element initializes a flexible array field, add the size of that
    initializer to DECL's size.  */
@@ -4993,10 +5034,7 @@ add_flexible_array_elts_to_size (tree decl, tree init)
 
   elt = CONSTRUCTOR_ELTS (init)->last ().value;
   type = TREE_TYPE (elt);
-  if (TREE_CODE (type) == ARRAY_TYPE
-      && TYPE_SIZE (type) == NULL_TREE
-      && TYPE_DOMAIN (type) != NULL_TREE
-      && TYPE_MAX_VALUE (TYPE_DOMAIN (type)) == NULL_TREE)
+  if (flexible_array_member_type_p (type))
     {
       complete_array_type (&type, elt, false);
       DECL_SIZE (decl)
@@ -7121,7 +7159,8 @@ grokdeclarator (const struct c_declarator *declarator,
 	      }
 	    type_quals = TYPE_UNQUALIFIED;
 
-	    type = build_function_type (type, arg_types);
+	    type = build_function_type (type, arg_types,
+					arg_info->no_named_args_stdarg_p);
 	    declarator = declarator->declarator;
 
 	    /* Set the TYPE_CONTEXTs for each tagged type which is local to
@@ -7476,6 +7515,16 @@ grokdeclarator (const struct c_declarator *declarator,
 					     orig_qual_indirect);
 	    type = c_build_pointer_type (type);
 	    type_quals = array_ptr_quals;
+
+            if (flag_restrict_argument
+		&& POINTER_TYPE_P (type)
+		&& C_TYPE_OBJECT_OR_INCOMPLETE_P (TREE_TYPE (type)))
+	      {
+		type_quals |= TYPE_QUAL_RESTRICT;
+		if (name && warn_argument_restrict)
+		  warning_at (loc, OPT_Wrestrict_argument, "%qE array parameter is set to restrict", name);
+	      }
+
 	    if (type_quals)
 	      type = c_build_qualified_type (type, type_quals);
 
@@ -7503,8 +7552,20 @@ grokdeclarator (const struct c_declarator *declarator,
 	    type = c_build_pointer_type (type);
 	    type_quals = TYPE_UNQUALIFIED;
 	  }
-	else if (type_quals)
-	  type = c_build_qualified_type (type, type_quals);
+	else
+	  {
+	    if (flag_restrict_argument
+	       && POINTER_TYPE_P (type)
+	       && C_TYPE_OBJECT_OR_INCOMPLETE_P (TREE_TYPE (type)))
+	      {
+		type_quals |= TYPE_QUAL_RESTRICT;
+		if (name && warn_argument_restrict)
+		  warning_at (loc, OPT_Wrestrict_argument, "%qE parameter is set to restrict", name);
+	      }
+
+	    if (type_quals)
+	      type = c_build_qualified_type (type, type_quals);
+	  }
 
 	decl = build_decl (declarator->id_loc,
 			   PARM_DECL, declarator->u.id.id, type);
@@ -7887,7 +7948,8 @@ grokparms (struct c_arg_info *arg_info, bool funcdef_flag)
       if (flag_isoc2x
 	  && funcdef_flag
 	  && !arg_types
-	  && !arg_info->parms)
+	  && !arg_info->parms
+	  && !arg_info->no_named_args_stdarg_p)
 	arg_types = arg_info->types = void_list_node;
 
       /* If there is a parameter of incomplete type in a definition,
@@ -7957,6 +8019,7 @@ build_arg_info (void)
   ret->others = NULL_TREE;
   ret->pending_sizes = NULL;
   ret->had_vla_unspec = 0;
+  ret->no_named_args_stdarg_p = 0;
   return ret;
 }
 
@@ -8148,6 +8211,7 @@ get_parm_info (bool ellipsis, tree expr)
   arg_info->types = types;
   arg_info->others = others;
   arg_info->pending_sizes = expr;
+  arg_info->no_named_args_stdarg_p = ellipsis && !types;
   return arg_info;
 }
 
@@ -8696,6 +8760,81 @@ finish_incomplete_vars (tree incomplete_vars, bool toplevel)
     }
 }
 
+
+/* Determine whether the FIELD_DECL X is a flexible array member according to
+   the following info:
+  A. whether the FIELD_DECL X is the last field of the DECL_CONTEXT;
+  B. whether the FIELD_DECL is an array that is declared as "[]", "[0]",
+     or "[1]";
+  C. flag_strict_flex_arrays;
+  D. the attribute strict_flex_array that is attached to the field
+     if presenting.
+  Return TRUE when it's a flexible array member, FALSE otherwise.  */
+
+static bool
+is_flexible_array_member_p (bool is_last_field,
+			    tree x)
+{
+  /* If not the last field, return false.  */
+  if (!is_last_field)
+    return false;
+
+  /* If not an array field, return false.  */
+  if (TREE_CODE (TREE_TYPE (x)) != ARRAY_TYPE)
+    return false;
+
+  bool is_zero_length_array = zero_length_array_type_p (TREE_TYPE (x));
+  bool is_one_element_array = one_element_array_type_p (TREE_TYPE (x));
+  bool is_flexible_array = flexible_array_member_type_p (TREE_TYPE (x));
+
+  unsigned int strict_flex_array_level = flag_strict_flex_arrays;
+
+  tree attr_strict_flex_array = lookup_attribute ("strict_flex_array",
+						  DECL_ATTRIBUTES (x));
+  /* If there is a strict_flex_array attribute attached to the field,
+     override the flag_strict_flex_arrays.  */
+  if (attr_strict_flex_array)
+    {
+      /* Get the value of the level first from the attribute.  */
+      unsigned HOST_WIDE_INT attr_strict_flex_array_level = 0;
+      gcc_assert (TREE_VALUE (attr_strict_flex_array) != NULL_TREE);
+      attr_strict_flex_array = TREE_VALUE (attr_strict_flex_array);
+      gcc_assert (TREE_VALUE (attr_strict_flex_array) != NULL_TREE);
+      attr_strict_flex_array = TREE_VALUE (attr_strict_flex_array);
+      gcc_assert (tree_fits_uhwi_p (attr_strict_flex_array));
+      attr_strict_flex_array_level = tree_to_uhwi (attr_strict_flex_array);
+
+      /* The attribute has higher priority than flag_struct_flex_array.  */
+      strict_flex_array_level = attr_strict_flex_array_level;
+    }
+
+  switch (strict_flex_array_level)
+    {
+      case 0:
+	/* Default, all trailing arrays are flexible array members.  */
+	return true;
+      case 1:
+	/* Level 1: all "[1]", "[0]", and "[]" are flexible array members.  */
+	if (is_one_element_array)
+	  return true;
+	/* FALLTHROUGH.  */
+      case 2:
+	/* Level 2: all "[0]", and "[]" are flexible array members.  */
+	if (is_zero_length_array)
+	  return true;
+	/* FALLTHROUGH.  */
+      case 3:
+	/* Level 3: Only "[]" are flexible array members.  */
+	if (is_flexible_array)
+	  return true;
+	break;
+      default:
+	gcc_unreachable ();
+    }
+  return false;
+}
+
+
 /* Fill in the fields of a RECORD_TYPE or UNION_TYPE node, T.
    LOC is the location of the RECORD_TYPE or UNION_TYPE's definition.
    FIELDLIST is a chain of FIELD_DECL nodes for the fields.
@@ -8757,6 +8896,11 @@ finish_struct (location_t loc, tree t, tree fieldlist, tree attributes,
   bool saw_named_field = false;
   for (x = fieldlist; x; x = DECL_CHAIN (x))
     {
+      /* Whether this field is the last field of the structure or union.
+	 for UNION, any field is the last field of it.  */
+      bool is_last_field = (DECL_CHAIN (x) == NULL_TREE)
+			    || (TREE_CODE (t) == UNION_TYPE);
+
       if (TREE_TYPE (x) == error_mark_node)
 	continue;
 
@@ -8795,10 +8939,7 @@ finish_struct (location_t loc, tree t, tree fieldlist, tree attributes,
 	DECL_PACKED (x) = 1;
 
       /* Detect flexible array member in an invalid context.  */
-      if (TREE_CODE (TREE_TYPE (x)) == ARRAY_TYPE
-	  && TYPE_SIZE (TREE_TYPE (x)) == NULL_TREE
-	  && TYPE_DOMAIN (TREE_TYPE (x)) != NULL_TREE
-	  && TYPE_MAX_VALUE (TYPE_DOMAIN (TREE_TYPE (x))) == NULL_TREE)
+      if (flexible_array_member_type_p (TREE_TYPE (x)))
 	{
 	  if (TREE_CODE (t) == UNION_TYPE)
 	    {
@@ -8806,7 +8947,7 @@ finish_struct (location_t loc, tree t, tree fieldlist, tree attributes,
 			"flexible array member in union");
 	      TREE_TYPE (x) = error_mark_node;
 	    }
-	  else if (DECL_CHAIN (x) != NULL_TREE)
+	  else if (!is_last_field)
 	    {
 	      error_at (DECL_SOURCE_LOCATION (x),
 			"flexible array member not at end of struct");
@@ -8825,6 +8966,9 @@ finish_struct (location_t loc, tree t, tree fieldlist, tree attributes,
 	  && flexible_array_type_p (TREE_TYPE (x)))
 	pedwarn (DECL_SOURCE_LOCATION (x), OPT_Wpedantic,
 		 "invalid use of structure with flexible array member");
+
+      /* Set DECL_NOT_FLEXARRAY flag for FIELD_DECL x.  */
+      DECL_NOT_FLEXARRAY (x) = !is_flexible_array_member_p (is_last_field, x);
 
       if (DECL_NAME (x)
 	  || RECORD_OR_UNION_TYPE_P (TREE_TYPE (x)))
@@ -9541,7 +9685,8 @@ start_function (struct c_declspecs *declspecs, struct c_declarator *declarator,
       /* Make it return void instead.  */
       TREE_TYPE (decl1)
 	= build_function_type (void_type_node,
-			       TYPE_ARG_TYPES (TREE_TYPE (decl1)));
+			       TYPE_ARG_TYPES (TREE_TYPE (decl1)),
+			       TYPE_NO_NAMED_ARGS_STDARG_P (TREE_TYPE (decl1)));
     }
 
   if (warn_about_return_type)
@@ -10140,7 +10285,7 @@ store_parm_decls (void)
      empty argument list was converted to (void) in grokparms; in
      older C standard versions, it does not give the function a type
      with a prototype for future calls.  */
-  proto = arg_info->types != 0;
+  proto = arg_info->types != 0 || arg_info->no_named_args_stdarg_p;
 
   if (proto)
     store_parm_decls_newstyle (fndecl, arg_info);

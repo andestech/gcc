@@ -1,6 +1,6 @@
 /* PR c/83448 */
 /* { dg-do compile } */
-/* { dg-options "-O2 -Wformat-truncation -fdiagnostics-show-caret" } */
+/* { dg-options "-O2 -Wformat-truncation -fdiagnostics-show-caret -mno-riscv-iprintf" } */
 
 extern int snprintf (char *, __SIZE_TYPE__, const char *, ...);
 

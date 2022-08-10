@@ -5,7 +5,7 @@
    to the function that do not return a constant are not optimized away.
    Test also verifies that unknown directives prevent the optimization.
    { dg-do compile }
-   { dg-options "-O2 -Wformat -fdump-tree-optimized" }
+   { dg-options "-O2 -Wformat -fdump-tree-optimized -mno-riscv-iprintf" }
    { dg-require-effective-target int32plus } */
 
 typedef __SIZE_TYPE__ size_t;

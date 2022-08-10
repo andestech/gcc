@@ -1551,6 +1551,13 @@ find_single_drs (class loop *loop, struct graph *rdg, const bitmap &partition_st
   if (!single_ld && !single_st)
     return false;
 
+  /* Skip if storing reference is small array */
+  if (single_st && TREE_CODE (DR_REF (single_st)) == ARRAY_REF
+      && TREE_CODE (TREE_OPERAND (DR_REF (single_st), 0)) == VAR_DECL
+      && DECL_SIZE (TREE_OPERAND (DR_REF (single_st), 0))
+      && tree_to_uhwi (DECL_SIZE (TREE_OPERAND (DR_REF (single_st), 0))) <= 64)
+    return false;
+
   basic_block bb_ld = NULL;
   basic_block bb_st = NULL;
 
@@ -2751,7 +2758,7 @@ version_loop_by_alias_check (vec<struct partition *> *partitions,
       gimple_stmt_iterator cond_gsi = gsi_last_bb (cond_bb);
       gsi_insert_seq_before (&cond_gsi, cond_stmts, GSI_SAME_STMT);
     }
-  update_ssa (TODO_update_ssa);
+  update_ssa (TODO_update_ssa_no_phi);
 }
 
 /* Return true if loop versioning is needed to distrubute PARTITIONS.
@@ -3114,7 +3121,8 @@ loop_distribution::distribute_loop (class loop *loop,
 	 since it's not likely to enable many vectorization opportunities.
 	 Also if loop has any data reference which may be not addressable
 	 since alias check needs to take, compare address of the object.  */
-      if (loop->inner || has_nonaddressable_dataref_p)
+      if (optimize_loop_for_size_p (loop) || loop->inner
+	  || has_nonaddressable_dataref_p)
 	merge_dep_scc_partitions (rdg, &partitions, false);
       else
 	{

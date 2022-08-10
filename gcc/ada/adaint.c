@@ -231,6 +231,7 @@ UINT __gnat_current_ccs_encoding;
 
 #elif defined (_WIN32)
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <accctrl.h>
 #include <aclapi.h>

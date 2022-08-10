@@ -14843,7 +14843,7 @@ static machine_mode
 get_mode_wider_vector (machine_mode o)
 {
   /* ??? Rely on the ordering that genmodes.cc gives to vectors.  */
-  machine_mode n = GET_MODE_WIDER_MODE (o).require ();
+  machine_mode n = GET_MODE_NEXT_MODE (o).require ();
   gcc_assert (GET_MODE_NUNITS (o) == GET_MODE_NUNITS (n) * 2);
   gcc_assert (GET_MODE_SIZE (o) == GET_MODE_SIZE (n));
   return n;
@@ -21959,9 +21959,13 @@ canonicalize_perm (struct expand_vec_perm_d *d)
 /* Implement TARGET_VECTORIZE_VEC_PERM_CONST.  */
 
 bool
-ix86_vectorize_vec_perm_const (machine_mode vmode, rtx target, rtx op0,
-			       rtx op1, const vec_perm_indices &sel)
+ix86_vectorize_vec_perm_const (machine_mode vmode, machine_mode op_mode,
+			       rtx target, rtx op0, rtx op1,
+			       const vec_perm_indices &sel)
 {
+  if (vmode != op_mode)
+    return false;
+
   struct expand_vec_perm_d d;
   unsigned char perm[MAX_VECT_LEN];
   unsigned int i, nelt, which;

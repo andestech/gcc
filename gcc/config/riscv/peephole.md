@@ -38,3 +38,54 @@
 {
   operands[5] = GEN_INT (INTVAL (operands[2]) - INTVAL (operands[5]));
 })
+
+;; ZCMP
+(define_peephole2
+  [(set (match_operand:X 0 "a0a1_reg_operand")
+        (match_operand:X 1 "zcmp_mv_sreg_operand"))
+   (set (match_operand:X 2 "a0a1_reg_operand")
+        (match_operand:X 3 "zcmp_mv_sreg_operand"))]
+  "TARGET_ZCMP
+   && (REGNO (operands[2]) != REGNO (operands[0]))"
+  [(parallel [(set (match_dup 0)
+                   (match_dup 1))
+              (set (match_dup 2)
+                   (match_dup 3))])]
+)
+
+(define_peephole2
+  [(set (match_operand:X 0 "zcmp_mv_sreg_operand")
+        (match_operand:X 1 "a0a1_reg_operand"))
+   (set (match_operand:X 2 "zcmp_mv_sreg_operand")
+        (match_operand:X 3 "a0a1_reg_operand"))]
+  "TARGET_ZCMP
+   && (REGNO (operands[0]) != REGNO (operands[2]))
+   && (REGNO (operands[1]) != REGNO (operands[3]))"
+  [(parallel [(set (match_dup 0)
+                   (match_dup 1))
+              (set (match_dup 2)
+                   (match_dup 3))])]
+)
+
+;; Candidates may appear after peephole2 if riscv_dsp_64bit_split_p
+;; delay the split of 64-bit move after epilogue_completed.
+(define_peephole
+  [(set (match_operand:X 0 "a0a1_reg_operand")
+        (match_operand:X 1 "zcmp_mv_sreg_operand"))
+   (set (match_operand:X 2 "a0a1_reg_operand")
+        (match_operand:X 3 "zcmp_mv_sreg_operand"))]
+  "TARGET_ZCMP && !TARGET_64BIT && TARGET_DSP
+   && (REGNO (operands[2]) != REGNO (operands[0]))"
+  { return (REGNO (operands[0]) == A0_REGNUM)?"cm.mva01s\t%1,%3":"cm.mva01s\t%3,%1"; }
+)
+
+(define_peephole
+  [(set (match_operand:X 0 "zcmp_mv_sreg_operand")
+        (match_operand:X 1 "a0a1_reg_operand"))
+   (set (match_operand:X 2 "zcmp_mv_sreg_operand")
+        (match_operand:X 3 "a0a1_reg_operand"))]
+  "TARGET_ZCMP && !TARGET_64BIT && TARGET_DSP
+   && (REGNO (operands[0]) != REGNO (operands[2]))
+   && (REGNO (operands[1]) != REGNO (operands[3]))"
+  { return (REGNO (operands[1]) == A0_REGNUM)?"cm.mvsa01\t%0,%2":"cm.mvsa01\t%2,%0"; }
+)

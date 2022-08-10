@@ -6,7 +6,7 @@
    are preserved.
 
    { dg-compile }
-   { dg-options "-O2 -Wformat -Wno-format-truncation -Wno-format-zero-length -fdump-tree-optimized" } */
+   { dg-options "-O2 -Wformat -Wno-format-truncation -Wno-format-zero-length -fdump-tree-optimized -mno-riscv-iprintf" } */
 
 void sink (char*, ...);
 
