@@ -370,7 +370,7 @@ enum riscv_csrs
   NDS_MMSC_CFG = 0xFC2,
   NDS_MMSC_CFG2 = 0xFC3,
   NDS_MVEC_CFG = 0xFC7,
-
+  NDS_MCCACHE_CTL_BASE = 0xFCF,
   /* RISC-V Architecture */
   NDS_MRVARCH_CFG = 0XFCA,
 

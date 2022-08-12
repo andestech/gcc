@@ -723,6 +723,7 @@ static const struct riscv_csr_data csr_data_list[] = {
   {"mmsc_cfg", 0xFC2},
   {"mmsc_cfg2", 0xFC3},
   {"mvec_cfg", 0xFC7},
+  {"mccache_ctl_base", 0xFCF},
 
   // RISC-V Architecture
   {"mrvarch_cfg", 0xFCA},
