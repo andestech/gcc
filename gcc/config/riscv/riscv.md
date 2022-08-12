@@ -1517,12 +1517,24 @@
   [(set_attr "type" "fcvt")
    (set_attr "mode" "<ANYF:MODE>")])
 
-(define_insn "float<GPR:mode><ANYF:mode>2"
+(define_insn_and_split "float<GPR:mode><ANYF:mode>2"
   [(set (match_operand:ANYF    0 "register_operand" "= f")
 	(float:ANYF
 	    (match_operand:GPR 1 "reg_or_0_operand" " rJ")))]
   "TARGET_HARD_FLOAT"
   "fcvt.<ANYF:fmt>.<GPR:ifmt>\t%0,%z1"
+  "REG_P (operands[0])
+   && SUBREG_P (operands[1])
+   && (REGNO (operands[0]) == REGNO (SUBREG_REG (operands[1])))
+   && GET_MODE_BITSIZE (GET_MODE (operands[0])) == GET_MODE_BITSIZE (GET_MODE (operands[1]))"
+  [(set (match_dup 0)
+	(float:ANYF (match_dup 2)))]
+{
+  rtx target = gen_reg_rtx (GET_MODE (SUBREG_REG (operands[1])));
+  emit_move_insn (target, SUBREG_REG (operands[1]));
+  operands[2] = gen_rtx_SUBREG (GET_MODE (operands[1]), target,
+				subreg_lowpart_p (operands[1]) ? 0: 1);
+}
   [(set_attr "type" "fcvt")
    (set_attr "mode" "<ANYF:MODE>")])
 
