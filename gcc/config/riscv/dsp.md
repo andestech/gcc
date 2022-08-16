@@ -7012,7 +7012,7 @@
 
 ;; Multiply-accumulate instructions.
 
-(define_insn "*maddr32_0"
+(define_insn "maddr32_0"
   [(set (match_operand:SI 0 "register_operand"                   "=r")
 	(plus:SI (match_operand:SI 3 "register_operand"          " 0")
 		 (mult:SI (match_operand:SI 1 "register_operand" " r")
@@ -7022,7 +7022,7 @@
   [(set_attr "type"   "dmac")
    (set_attr "mode"   "SI")])
 
-(define_insn "*maddr32_1"
+(define_insn "maddr32_1"
   [(set (match_operand:SI 0 "register_operand"                   "=r")
 	(plus:SI (mult:SI (match_operand:SI 1 "register_operand" " r")
 			  (match_operand:SI 2 "register_operand" " r"))
@@ -7032,7 +7032,7 @@
   [(set_attr "type"   "dmac")
    (set_attr "mode"   "SI")])
 
-(define_insn "*maddr32_2"
+(define_insn "maddr32_2"
   [(set (match_operand:DI 0 "register_operand"                   "=r")
         (sign_extend:DI
           (plus:SI (mult:SI (match_operand:SI 1 "register_operand" " r")

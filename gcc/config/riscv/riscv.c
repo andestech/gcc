@@ -6945,6 +6945,22 @@ static addr_info_t extract_addr_info(rtx x)
 static int
 riscv_sched_adjust_priority (rtx_insn *insn, int priority)
 {
+  /* Hook for pre-reload schedule.
+     Slightly increase the priority of maddr32 to prevent
+     possibly more spill reg. */
+  if (TARGET_DSP && !reload_completed)
+    {
+      int icode = recog_memoized (insn);
+      if (icode == CODE_FOR_maddr32_0 || icode == CODE_FOR_maddr32_1
+	  || icode == CODE_FOR_maddr32_2)
+	{
+	  if (dump_file)
+	    fprintf (dump_file, "Adjust priority for maddr32 (INSN %u)\n",
+		     INSN_UID (insn));
+	  return priority + 1;
+	}
+    }
+
   /* We only care RV32D.  */
   if (TARGET_64BIT || !TARGET_DOUBLE_FLOAT)
     return priority;
