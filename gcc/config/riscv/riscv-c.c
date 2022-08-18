@@ -36,6 +36,7 @@ along with GCC; see the file COPYING3.  If not see
 void
 riscv_cpu_cpp_builtins (cpp_reader *pfile)
 {
+  builtin_define ("__ANDES");
   builtin_define ("__riscv");
 
   if (riscv_virtual_hosting)
