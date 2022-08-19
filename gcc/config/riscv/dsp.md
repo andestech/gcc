@@ -7023,6 +7023,17 @@
   [(set_attr "type"   "dmac")
    (set_attr "mode"   "SI")])
 
+(define_insn "*maddr32_2"
+  [(set (match_operand:DI 0 "register_operand"                   "=r")
+        (sign_extend:DI
+          (plus:SI (mult:SI (match_operand:SI 1 "register_operand" " r")
+                            (match_operand:SI 2 "register_operand" " r"))
+                   (match_operand:SI 3 "register_operand"          " 0"))))]
+  "TARGET_64BIT && TARGET_DSP"
+  "maddr32\t%0, %1, %2"
+  [(set_attr "type"   "dmac")
+   (set_attr "mode"   "DI")])
+
 (define_insn "*msubr32"
   [(set (match_operand:SI 0 "register_operand"                    "=r")
 	(minus:SI (match_operand:SI 3 "register_operand"          " 0")
