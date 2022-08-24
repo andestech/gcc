@@ -6555,6 +6555,15 @@
   [(set_attr "type" "dalu")
    (set_attr "mode" "SI")])
 
+(define_insn "ksubh_1"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (sign_extend:SI (subreg:HI (unspec:SI [(match_operand:SI 1 "register_operand" "r")
+                                   (match_operand:SI 2 "register_operand" "r")] UNSPEC_KSUBH) 0)))]
+  "TARGET_DSP"
+  "ksubh\t%0, %1, %2"
+  [(set_attr "type" "dalu")
+   (set_attr "mode" "SI")])
+
 (define_insn "ukaddw"
   [(set (match_operand:SI 0 "register_operand"             "=r")
 	(unspec:SI [(match_operand:SI 1 "register_operand" "r")
