@@ -60,6 +60,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "opts.h"
 #include "ifcvt.h"
 #include "cfgrtl.h"
+#include "rtl-iter.h"
 
 /* This file should be included last.  */
 #include "target-def.h"
@@ -7039,6 +7040,89 @@ riscv_sched_adjust_priority (rtx_insn *insn, int priority)
   return priority;
 }
 
+/* Traverse PATTERN looking for a sub-rtx with RTX_CODE CODE. */
+static rtx
+riscv_find_sub_rtx_with_code (rtx pattern, rtx_code code)
+{
+  subrtx_var_iterator::array_type array;
+  FOR_EACH_SUBRTX_VAR (iter, array, pattern, NONCONST)
+    {
+      rtx x = *iter;
+      if (GET_CODE (x) == code)
+	return x;
+    }
+  return NULL_RTX;
+}
+
+static int
+vicuna_adjust_cost (rtx_insn *insn, int dtype, rtx_insn *dep_insn, int cost)
+{
+  enum attr_type insn_type, dep_type;
+  rtx pat = PATTERN (insn);
+  rtx dep_pat = PATTERN (dep_insn);
+
+  if (recog_memoized (insn) < 0 || recog_memoized (dep_insn) < 0)
+    return cost;
+
+  insn_type = get_attr_type (insn);
+  dep_type = get_attr_type (dep_insn);
+
+  /* For load -> load with true dependency, the dependence must be on the
+     base reg of the 2nd load.
+     Consider the following example that causes a false dependency.
+       r1 = sxn([r0])
+       r0 = r0+0x4
+       r2 = sxn([r0+4])
+     The 2nd load will be marked as "multiple dependency" to the 1st load.
+     Since it's not a REG_DEP_ANTI nor a REG_DEP_OUTPUT, it will be treated
+     as a REG_DEP_TRUE and cause unnecessary  stalls when scheduling. */
+  if (insn_type == TYPE_LOAD && dep_type == TYPE_LOAD && dtype == REG_DEP_TRUE)
+    {
+      /* Note: insn depends on dep_insn. */
+      rtx load1_dest = riscv_find_sub_rtx_with_code (SET_DEST (dep_pat), REG);
+      rtx load2_dest = riscv_find_sub_rtx_with_code (SET_DEST (pat), REG);
+      rtx load1_src = riscv_find_sub_rtx_with_code (SET_SRC (dep_pat), MEM);
+      rtx load2_src = riscv_find_sub_rtx_with_code (SET_SRC (pat), MEM);
+      struct riscv_address_info addr1 = {}, addr2 = {};
+
+      if (!load1_dest || !load2_dest || !load1_src || !load2_src)
+	return cost;
+
+      if (!riscv_classify_address (&addr1, XEXP (load1_src, 0), word_mode,
+				   false)
+	  || !riscv_classify_address (&addr2, XEXP (load2_src, 0), word_mode,
+				      false))
+	return cost;
+
+      if (!rtx_equal_p (load1_dest, addr2.reg))
+	{
+	  if (dump_file)
+	    fprintf (dump_file,
+		     "Correct the cost between two load insn %d -> %d\n",
+		     INSN_UID (dep_insn), INSN_UID (insn));
+	  return 1;
+	}
+    }
+
+  return cost;
+}
+
+static int
+riscv_sched_adjust_cost (rtx_insn *insn, int dep_type, rtx_insn *dep, int cost,
+			 unsigned int)
+{
+  switch (riscv_microarchitecture)
+    {
+    case vicuna:
+      cost = vicuna_adjust_cost (insn, dep_type, dep, cost);
+      break;
+
+    default:
+      break;
+    }
+  return cost;
+}
+
 /* Linux toolchain will use linux_libc_has_function.  */
 static bool riscv_libc_has_function (enum function_class) ATTRIBUTE_UNUSED;
 
@@ -7489,6 +7573,9 @@ riscv_libgcc_floating_mode_supported_p
 
 #undef TARGET_SCHED_ADJUST_PRIORITY
 #define TARGET_SCHED_ADJUST_PRIORITY riscv_sched_adjust_priority
+
+#undef TARGET_SCHED_ADJUST_COST
+#define TARGET_SCHED_ADJUST_COST riscv_sched_adjust_cost
 
 #undef TARGET_ASM_OUTPUT_ADDR_CONST_EXTRA
 #define TARGET_ASM_OUTPUT_ADDR_CONST_EXTRA riscv_asm_output_addr_const_extra
