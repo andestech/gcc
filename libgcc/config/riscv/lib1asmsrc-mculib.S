@@ -1494,7 +1494,7 @@ __divdf3:
 .LGmain3:
 	divu	x16, x18, x12           # 	divr	$r2, $r7, $r7, $r2
 	remu	x18, x18, x12
-	add	x12, x16, 0
+	addi	x12, x16, 0
 	mul	x15, x11, x12           # 	mul	$r5, $r1, $r2
 	slli	x18, x18, 16            # 	slli	$r7, $r7, #16
 	slli	x17, x9, 16             # 	zeh	$r0, $r6
@@ -1566,7 +1566,7 @@ __divdf3:
 .Li26:
 	divu	x16, x18, x11           # 	divr	$r1, $r7, $r7, $r1
 	remu	x18, x18, x11
-	add	x11, x16, 0
+	addi	x11, x16, 0
 	mul	x15, x10, x11           # 	mul	$r5, $r0, $r1
 	slli	x18, x18, 16            # 	slli	$r7, $r7, #16
 	slli	x17, x9, 16             # 	zeh	$r0, $r6

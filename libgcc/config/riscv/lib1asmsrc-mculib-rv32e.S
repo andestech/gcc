@@ -1978,7 +1978,7 @@ __divdf3:
 	lw	x6, 4(x9)               # 	divr	$r2, $r7, $r7, $r2
 	divu	x5, x6, x12
 	remu	x6, x6, x12
-	add	x12, x5, 0
+	addi	x12, x5, 0
 	sw	x6, 4(x9)
 	mul	x15, x11, x12           # 	mul	$r5, $r1, $r2
 	lw	x5, 4(x9)               # 	slli	$r7, $r7, #16
@@ -2105,7 +2105,7 @@ __divdf3:
 	lw	x6, 4(x9)               # 	divr	$r1, $r7, $r7, $r1
 	divu	x5, x6, x11
 	remu	x6, x6, x11
-	add	x11, x5, 0
+	addi	x11, x5, 0
 	sw	x6, 4(x9)
 	mul	x15, x10, x11           # 	mul	$r5, $r0, $r1
 	lw	x5, 4(x9)               # 	slli	$r7, $r7, #16
