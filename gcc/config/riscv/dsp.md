@@ -6395,9 +6395,9 @@
   [(set (match_operand:DI 0 "register_operand"     "=r")
 	(sign_extend:DI
 	  (subreg:SI
-	    (ashiftrt:DI
-	      (match_operand:DI 1 "register_operand" " r")
-	      (match_operand:QI 2 "register_operand" " r")) 0)))]
+	    (unspec:DI
+	      [(ashiftrt:DI (match_operand:DI 1 "register_operand" " r")
+			   (match_operand:QI 2 "register_operand" " r"))] UNSPEC_WEXT64_R) 0)))]
   "TARGET_DSP && TARGET_64BIT"
   "wext\t%0, %1, %2"
   [(set_attr "type" "dwext")
