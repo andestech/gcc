@@ -37,7 +37,7 @@
        (eq_attr "type" "store"))
   "kavalan_pipe0 + kavalan_lsu | kavalan_pipe1 + kavalan_lsu")
 
-(define_insn_reservation "kavalan_branch" 0
+(define_insn_reservation "kavalan_branch" 1
   (and (eq_attr "tune" "kavalan")
        (eq_attr "type" "branch,jump,call,branch_imm"))
   "kavalan_pipe0 + kavalan_bru0 | kavalan_pipe1 + kavalan_bru1")

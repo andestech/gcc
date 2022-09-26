@@ -277,11 +277,12 @@
 ;; nop		no operation
 ;; ghost	an instruction that produces no real code
 ;; bitmanip	bit manipulation instructions
+;; crypto crypto instructions
 (define_attr "type"
   "unknown,branch,branch_imm,jump,call,load,fpload,store,fpstore,
    mtc,mfc,const,arith,logical,shift,slt,imul,idiv,move,fmove,fadd,fmul,
-   fmadd,fdiv,fcmp,fcvt,fsqrt,multi,auipc,sfb_alu,nop,ghost,bitmanip,rotate,
-   dalu,dalu64,daluround,dcmp,dclip,dmul,dmac,dinsb,dpack,dbpick,dwext"
+   fmadd,fdiv,fcmp,fcvt,fsqrt,multi,auipc,sfb_alu,nop,ghost,bitmanip,crypto,
+   rotate,dalu,dalu64,daluround,dcmp,dclip,dmul,dmac,dinsb,dpack,dbpick,dwext"
 
   (cond [(eq_attr "got" "load") (const_string "load")
 
@@ -371,7 +372,7 @@
 ;; Microarchitectures we know how to tune for.
 ;; Keep this in sync with enum riscv_microarchitecture.
 (define_attr "tune"
-  "generic,sifive_7,rocket,vicuna,vicuna2,kavalan"
+  "generic,sifive_7,rocket,vicuna,vicuna2,kavalan,makatau"
   (const (symbol_ref "((enum attr_tune) riscv_microarchitecture)")))
 
 ;; Describe a user's asm statement.
@@ -4037,3 +4038,4 @@
 (include "builtins.md")
 (include "dsp.md")
 (include "kavalan.md")
+(include "makatau.md")

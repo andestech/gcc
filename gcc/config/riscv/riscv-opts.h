@@ -56,6 +56,7 @@ enum riscv_microarchitecture_type {
   vicuna,
   vicuna2,
   kavalan,
+  makatau,
   /* Used to mark the end of the processor table.  */
   riscv_none
 };

@@ -355,6 +355,18 @@ static const struct riscv_tune_info kavalan_tune_info = {
   false,                                       /* slow_unaligned_access */
 };
 
+static const struct riscv_tune_info makatau_tune_info = {
+  {COSTS_N_INSNS (4), COSTS_N_INSNS (4)},      /* fp_add */
+  {COSTS_N_INSNS (4), COSTS_N_INSNS (4)},      /* fp_mul */
+  {COSTS_N_INSNS (17), COSTS_N_INSNS (17)},    /* fp_div */
+  {COSTS_N_INSNS (3), COSTS_N_INSNS (3)},      /* int_mul */
+  {COSTS_N_INSNS (24), COSTS_N_INSNS (24)},    /* int_div */
+  4,                                           /* issue_rate */
+  3,                                           /* branch_cost */
+  3,                                           /* memory_cost */
+  false,                                       /* slow_unaligned_access */
+};
+
 
 /* Costs to use when optimizing for size.  */
 static const struct riscv_tune_info optimize_size_tune_info = {
@@ -953,12 +965,13 @@ static const struct riscv_cpu_info riscv_cpu_info_table[] = {
   {"andes-25-series", vicuna, &vicuna_tune_info, NULL},
   {"andes-27-series", vicuna, &vicuna_tune_info, NULL},
   {"andes-45-series", kavalan, &kavalan_tune_info, NULL},
-  {"andes-65-series", kavalan, &kavalan_tune_info, NULL},
+  {"andes-65-series", makatau, &makatau_tune_info, NULL},
   {"rocket", rocket, &rocket_tune_info, NULL},
   {"size", rocket, &optimize_size_tune_info, NULL},
   {"vicuna", vicuna, &vicuna_tune_info, NULL},
   {"vicuna2", vicuna2, &vicuna_tune_info, NULL},
   {"kavalan", kavalan, &kavalan_tune_info, NULL},
+  {"makatau", makatau, &makatau_tune_info, NULL},
   {"n22", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
   {"fs02", vicuna, &vicuna_tune_info, NULL},
   {"n25", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
@@ -988,7 +1001,7 @@ static const struct riscv_cpu_info riscv_cpu_info_table[] = {
   {"nx27f", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv64_p},
   {"a27", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv32_p},
   {"ax27", vicuna, &vicuna_tune_info, riscv_cpu_avail_rv64_p},
-  {"ax65", kavalan, &kavalan_tune_info, riscv_cpu_avail_rv64_p},
+  {"ax65", makatau, &makatau_tune_info, riscv_cpu_avail_rv64_p},
 };
 
 /* Return the riscv_cpu_info entry for the given name string.  */
