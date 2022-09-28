@@ -33,20 +33,13 @@
 
 (define_insn_reservation "makatau_load_wd" 3
   (and (eq_attr "tune" "makatau")
-       (and (eq_attr "type" "load")
-            (eq_attr "mode" "SI,DI")))
-  "makatau_pipe0 + makatau_lsu")
-
-(define_insn_reservation "makatau_load_bh" 4
-  (and (eq_attr "tune" "makatau")
-       (and (eq_attr "type" "load")
-            (eq_attr "mode" "QI,HI")))
+       (eq_attr "type" "load"))
   "makatau_pipe + makatau_lsu")
 
 (define_insn_reservation "makatau_store" 0
   (and (eq_attr "tune" "makatau")
        (eq_attr "type" "store"))
-  "makatau_pipe0 + makatau_lsu")
+  "makatau_pipe + makatau_lsu")
 
 (define_insn_reservation "makatau_branch" 1
   (and (eq_attr "tune" "makatau")
@@ -184,12 +177,18 @@
             (eq_attr "mode" "DF")))
   "makatau_pipe + makatau_fpu1")
 
-(define_insn_reservation "makatau_fpu_move" 4
+(define_insn_reservation "makatau_fpu_move" 2
   (and (eq_attr "tune" "makatau")
        (eq_attr "type" "fmove,mtc,mfc"))
   "makatau_pipe + makatau_fpu")
 
-(define_insn_reservation "makatau_fpu_cmp" 6
+(define_insn_reservation "makatau_fpu_output_move" 6
+  (and (eq_attr "tune" "makatau")
+       (and (eq_attr "move_type" "fmove")
+            (eq_attr "mode" "BF,HF,SF,DF")))
+  "makatau_pipe + makatau_fpu")
+
+(define_insn_reservation "makatau_fpu_cmp" 2
   (and (eq_attr "tune" "makatau")
        (eq_attr "type" "fcmp"))
   "makatau_pipe + makatau_fpu")
