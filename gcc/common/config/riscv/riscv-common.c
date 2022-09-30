@@ -51,7 +51,6 @@ struct arch_options_t
 static arch_options_t std_ext_options[] = {
   {"a", "atomic",     false, false, 2, 0},
   {"c", "16-bit",     false, false, 2, 0},
-  {"v", "ext-vector", false, false, 1, 0},
   {"p",  "ext-dsp",   false, false, 0, 5},
   {NULL, NULL, false, false, 2, 0}
 };
@@ -71,6 +70,26 @@ static arch_options_t nonstd_z_ext_options[] = {
   {"zicboz", "ext-cbo", false, false, 1, 0},
   {"zicbom", "ext-cbo", false, false, 1, 0},
   {"zicbop", "ext-cbo", false, false, 1, 0},
+
+  {"zve32x", "", false, false, 1, 0},
+  {"zve32f", "", false, false, 1, 0},
+  {"zve32d", "", false, false, 1, 0},
+  {"zve64x", "ext-vector", false, false, 1, 0},
+  {"zve64f", "", false, false, 1, 0},
+  {"zve64d", "", false, false, 1, 0},
+
+  {"zvl32b", "", false, false, 1, 0},
+  {"zvl64b", "", false, false, 1, 0},
+  {"zvl128b", "ext-vector", false, false, 1, 0},
+  {"zvl256b", "", false, false, 1, 0},
+  {"zvl512b", "", false, false, 1, 0},
+  {"zvl1024b", "", false, false, 1, 0},
+  {"zvl2048b", "", false, false, 1, 0},
+  {"zvl4096b", "", false, false, 1, 0},
+  {"zvl8192b", "", false, false, 1, 0},
+  {"zvl16384b", "", false, false, 1, 0},
+  {"zvl32768b", "", false, false, 1, 0},
+  {"zvl65536b", "", false, false, 1, 0},
   {NULL, NULL, false, false, 2, 0}
 };
 
@@ -163,6 +182,38 @@ riscv_implied_info_t riscv_implied_info[] =
   {"zks", "zbkx"},
   {"zks", "zksed"},
   {"zks", "zksh"},
+
+  {"v", "zvl128b"},
+  {"v", "zve64d"},
+
+  {"zve32f", "f"},
+  {"zve64f", "f"},
+  {"zve64d", "d"},
+
+  {"zve32x", "zvl32b"},
+  {"zve32f", "zve32x"},
+  {"zve32f", "zvl32b"},
+
+  {"zve64x", "zve32x"},
+  {"zve64x", "zvl64b"},
+  {"zve64f", "zve32f"},
+  {"zve64f", "zve64x"},
+  {"zve64f", "zvl64b"},
+  {"zve64d", "zve64f"},
+  {"zve64d", "zvl64b"},
+
+  {"zvl64b", "zvl32b"},
+  {"zvl128b", "zvl64b"},
+  {"zvl256b", "zvl128b"},
+  {"zvl512b", "zvl256b"},
+  {"zvl1024b", "zvl512b"},
+  {"zvl2048b", "zvl1024b"},
+  {"zvl4096b", "zvl2048b"},
+  {"zvl8192b", "zvl4096b"},
+  {"zvl16384b", "zvl8192b"},
+  {"zvl32768b", "zvl16384b"},
+  {"zvl65536b", "zvl32768b"},
+
   {NULL, NULL}
 };
 
@@ -917,10 +968,18 @@ riscv_subset_list::parse_multiletter_ext (const char *p,
 	{
 	  if (!lookup(opt->ext) && opt->is_spec && opt->val)
 	    add (opt->ext, opt->default_major_version, opt->default_minor_version);
-    
+
           // Workaround: Implictly enable zfh if (v && (f || d)) is enabled.
-          if (strcmp (opt->ext, "zfh") == 0 && !lookup(opt->ext) && lookup("v") &&
+          if (strcmp (opt->ext, "zfh") == 0 && !lookup(opt->ext) && lookup("zve64x") &&
               (lookup("f") || lookup("d")))
+            add (opt->ext, opt->default_major_version, opt->default_minor_version);
+
+	  if (strcmp (opt->ext, "zve64f") == 0 && !lookup(opt->ext) &&
+	      lookup("f") && lookup("zve64x"))
+            add (opt->ext, opt->default_major_version, opt->default_minor_version);
+
+	  if (strcmp (opt->ext, "zve64d") == 0 && !lookup(opt->ext) &&
+	      lookup("d") && lookup("zve64x"))
             add (opt->ext, opt->default_major_version, opt->default_minor_version);
 	}
     }
@@ -1223,6 +1282,9 @@ void parse_arch_options(const char *option)
     }
   else
       option += 1;
+
+  if (strlen(option) == 0)
+    return;
 
   int i;
   for (i = 0; i < NUM_EXTS_KIND; ++i)
