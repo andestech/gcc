@@ -1240,15 +1240,24 @@ riscv_parse_arch_string (const char *isa,
 static void
 riscv_parse_cpu_string (const char *cpu, int *flags)
 {
+  bool hasCALU = false;
   // 45-series cpuss have CALU
-  if ((target_flags_explicit & MASK_CMOV) == 0)
-    {
-      *flags &= ~MASK_CMOV;
-      if (strcmp (cpu, "n45") == 0 || strcmp (cpu, "nx45") == 0
+  if (strcmp (cpu, "n45") == 0 || strcmp (cpu, "nx45") == 0
 	  || strcmp (cpu, "n45f") == 0 || strcmp (cpu, "nx45f") == 0
 	  || strcmp (cpu, "d45") == 0 || strcmp (cpu, "d45f") == 0
 	  || strcmp (cpu, "a45") == 0 || strcmp (cpu, "ax45") == 0)
-	*flags |= MASK_CMOV;
+     hasCALU = true;
+  // 65-series cpus have CALU
+  else if (strcmp (cpu, "ax65") == 0)
+     hasCALU = true;
+  else
+     hasCALU = false;
+  
+  if ((target_flags_explicit & MASK_CMOV) == 0)
+    {
+      *flags &= ~MASK_CMOV;
+      if (hasCALU)
+        *flags |= MASK_CMOV;
     }
 }
 
