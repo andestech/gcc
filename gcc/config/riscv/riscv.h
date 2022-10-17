@@ -1040,7 +1040,7 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
 #define CLEAR_INSN_CACHE(beg, end) asm volatile("fence.i" ::: "memory")
 
 #ifdef TARGET_OS_DEFAULT_EX9
-#define NDS32_EX9_DRIVER_SPEC " %{Os2|Os3|Os:%{!mno-execit:-mexecit}}"
+#define NDS32_EX9_DRIVER_SPEC " %{Os2|Os3|Os:%{!mno-execit:%{!mtune=ax65:%{!mtune=andes\-65\-series:-mexecit}}}}"
 #else
 #define NDS32_EX9_DRIVER_SPEC ""
 #endif
