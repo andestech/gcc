@@ -962,6 +962,7 @@ static const struct riscv_cpu_info riscv_cpu_info_table[] = {
   {"sifive-3-series", generic, &rocket_tune_info, NULL},
   {"sifive-5-series", generic, &rocket_tune_info, NULL},
   {"sifive-7-series", sifive_7, &sifive_7_tune_info, NULL},
+  {"andes-22-series", vicuna, &vicuna_tune_info, NULL},
   {"andes-25-series", vicuna, &vicuna_tune_info, NULL},
   {"andes-27-series", vicuna, &vicuna_tune_info, NULL},
   {"andes-45-series", kavalan, &kavalan_tune_info, NULL},
