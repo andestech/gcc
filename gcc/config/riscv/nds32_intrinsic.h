@@ -310,6 +310,8 @@
 #define __nds32__v_smslxda __nds__v_smslxda
 #define __nds32__clip __nds__uclip32
 #define __nds32__clips __nds__sclip32
+#define __nds32__uclip32 __nds__uclip32
+#define __nds32__sclip32 __nds__sclip32
 #define __nds32__kabs __nds__kabsw
 #define __nds32__kaddw __nds__kaddw
 #define __nds32__kaddh __nds__kaddh
