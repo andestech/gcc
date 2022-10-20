@@ -102,6 +102,8 @@ extern const char *riscv_rewrite_march (int argc, const char **argv);
 " %{mb20282:-mb20282}" \
 " %{mb22827:-mb22827}" \
 " %{mb22827.1:-mb22827.1}" \
+" %{mtune=andes\-25\-series|mtune=n25*|mtune=nx25*|mtune=d25*|mtune=a25*|mtune=ax25*:;:-mno-b19758}" \
+" %{mtune=andes\-45\-series|mtune=n45*|mtune=nx45*|mtune=d45*|mtune=a45*|mtune=ax45*:;:-mno-b25057}" \
 " %{mno-16-bit:-mno-16-bit}" \
 " %{mno-workaround:-mno-workaround}"
 

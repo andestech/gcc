@@ -186,6 +186,14 @@ mb22827.1
 Target Report Undocumented
 Insert a NOP after FSHW conditionally
 
+mb19758
+Target Report Undocumented
+Avoid the bid return non-seqution
+
+mb25057
+Target Report Undocumented
+Avoid load hits store buffer may get stale data
+
 mext-vector
 Target Report Mask(RVV)
 Use vector instructions.
