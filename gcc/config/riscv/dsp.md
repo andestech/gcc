@@ -1780,6 +1780,14 @@
   [(set_attr "type" "dpack")
    (set_attr "mode" "DI")])
 
+(define_insn "pkbtdd"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+        (rotate:DI (match_operand:DI 1 "register_operand" "r")
+                   (const_int 32)))]
+  "TARGET_64BIT && TARGET_DSP"
+  "pkbt32\t%0,%1,%1"
+  [(set_attr "type" "dpack")])
+
 (define_expand "pkbt<mode>"
   [(match_operand:VSHI 0 "register_operand")
    (match_operand:VSHI 1 "register_operand")
