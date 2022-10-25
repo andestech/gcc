@@ -36,7 +36,7 @@ along with GCC; see the file COPYING3.  If not see
 #define MAX_ARCH_STRING_LEN 256
 static char riscv_arch_string[MAX_ARCH_STRING_LEN];
 
-#define NUM_EXTS_KIND 3
+#define NUM_EXTS_KIND (sizeof (ext_options) / sizeof (ext_options[0]))
 
 struct arch_options_t
 {
@@ -98,10 +98,17 @@ static arch_options_t nonstd_x_ext_options[] = {
   {NULL, NULL, false, false, 0, 5}
 };
 
+static arch_options_t nonstd_s_ext_options[] = {
+  {"svinval", "svinval", false, false, 1, 0},
+  {"svnapot", "svnapot", false, false, 1, 0},
+  {NULL, NULL, false, false, 0, 5}
+};
+
 static arch_options_t *ext_options[] = {
   std_ext_options,
   nonstd_z_ext_options,
-  nonstd_x_ext_options
+  nonstd_x_ext_options,
+  nonstd_s_ext_options
 };
 
 static bool
@@ -841,7 +848,7 @@ riscv_subset_list::add (const char *subset, const char *ext)
   int i;
 
   /* Try to find predefined default version for subset. */
-  for (i = 0; i < NUM_EXTS_KIND; ++i)
+  for (i = 0; i < (int) NUM_EXTS_KIND; ++i)
     {
       opt = ext_options[i];
       arch_options_default_version (opt, subset, &major_version,
@@ -855,7 +862,7 @@ riscv_subset_list::add (const char *subset, const char *ext)
     }
 
   /* Try to find predefined default version for ext. */
-  for (i = 0; i < NUM_EXTS_KIND; ++i)
+  for (i = 0; i < (int) NUM_EXTS_KIND; ++i)
     {
       opt = ext_options[i];
       arch_options_default_version (opt, ext, &major_version,
@@ -1048,7 +1055,8 @@ riscv_subset_list::parse (const char *arch, location_t loc)
     goto fail;
 
   /* Parsing supervisor extension.  */
-  p = subset_list->parse_multiletter_ext (p, "s", "supervisor extension");
+  p = subset_list->parse_multiletter_ext (p, "s", "supervisor extension",
+					  nonstd_s_ext_options);
 
   if (p == NULL)
     goto fail;
@@ -1139,6 +1147,9 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"zicboz", &gcc_options::x_riscv_zicmo_subext, MASK_ZICBOZ},
   {"zicbom", &gcc_options::x_riscv_zicmo_subext, MASK_ZICBOM},
   {"zicbop", &gcc_options::x_riscv_zicmo_subext, MASK_ZICBOP},
+
+  {"svinval", &gcc_options::x_riscv_sv_subext, MASK_SVINVAL},
+  {"svnapot", &gcc_options::x_riscv_sv_subext, MASK_SVNAPOT},
 
   {NULL, NULL, 0}
 };
@@ -1322,7 +1333,7 @@ void parse_arch_options(const char *option)
     return;
 
   int i;
-  for (i = 0; i < NUM_EXTS_KIND; ++i)
+  for (i = 0; i < (int) NUM_EXTS_KIND; ++i)
     {
       arch_options_t *opt = ext_options[i];
       for (; !arch_options_end_p(opt); ++opt)
