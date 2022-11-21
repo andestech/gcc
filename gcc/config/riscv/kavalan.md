@@ -17,7 +17,7 @@
   
 (define_insn_reservation "kavalan_alu_insn_l" 2
   (and (eq_attr "tune" "kavalan")
-       (eq_attr "type" "unknown,const,arith,multi,slt,move"))
+       (eq_attr "type" "unknown,const,arith,multi,slt,move,cmov"))
   "kavalan_pipe0+kavalan_alu0 | kavalan_pipe1+kavalan_alu1")
 
 (define_insn_reservation "kavalan_load_wd" 3

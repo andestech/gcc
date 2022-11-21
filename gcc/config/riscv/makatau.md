@@ -3,7 +3,7 @@
 (define_cpu_unit "makatau_pipe0" "makatau")
 (define_cpu_unit "makatau_pipe1" "makatau")
 (define_cpu_unit "makatau_pipe2" "makatau")
-(define_cpu_unit "makatau_pipe3" "makatau")
+
 
 (define_cpu_unit "makatau_alu0,makatau_alu1,makatau_alu2,makatau_alu3" "makatau")
 (define_cpu_unit "makatau_lsu0,makatau_lsu1" "makatau")
@@ -11,7 +11,7 @@
 (define_cpu_unit "makatau_fpu0,makatau_fpu1" "makatau")
 
 (define_reservation "makatau_pipe"
- "makatau_pipe0 | makatau_pipe1 | makatau_pipe2 | makatau_pipe3")
+ "makatau_pipe0 | makatau_pipe1 | makatau_pipe2")
 
 (define_reservation "makatau_alu"
  "makatau_alu0 | makatau_alu1 | makatau_alu2 | makatau_alu3")
@@ -33,8 +33,15 @@
 
 (define_insn_reservation "makatau_load_wd" 3
   (and (eq_attr "tune" "makatau")
-       (eq_attr "type" "load"))
-  "makatau_pipe + makatau_lsu")
+       (and (eq_attr "type" "load")
+            (eq_attr "mode" "SI,DI")))
+  "(makatau_pipe + makatau_lsu)*2")
+  
+(define_insn_reservation "makatau_load_bh" 3
+  (and (eq_attr "tune" "makatau")
+       (and (eq_attr "type" "load")
+            (eq_attr "mode" "QI,HI")))
+  "(makatau_pipe + makatau_lsu)*2")
 
 (define_insn_reservation "makatau_store" 0
   (and (eq_attr "tune" "makatau")
@@ -46,10 +53,15 @@
        (eq_attr "type" "branch,jump,call,branch_imm"))
   "makatau_pipe + makatau_alu3")
 
-(define_insn_reservation "makatau_imul" 3
+(define_insn_reservation "makatau_imul" 4
   (and (eq_attr "tune" "makatau")
        (eq_attr "type" "imul"))
   "makatau_pipe + makatau_alu3")
+  
+(define_insn_reservation "makatau_cmov" 1
+  (and (eq_attr "tune" "makatau")
+       (eq_attr "type" "cmov"))
+  "makatau_pipe + makatau_pipe + makatau_alu3 + (makatau_alu0 | makatau_alu1 | makatau_alu2)")      
 
 (define_insn_reservation "makatau_idivsi" 38
   (and (eq_attr "tune" "makatau")
@@ -193,15 +205,23 @@
        (eq_attr "type" "fcmp"))
   "makatau_pipe + makatau_fpu")
 
-(define_insn_reservation "makatau_fpu_cvt" 6
+(define_insn_reservation "makatau_alu_cvt" 6
   (and (eq_attr "tune" "makatau")
-       (eq_attr "type" "fcvt"))
+       (and (eq_attr "type" "fcvt")
+            (and (eq_attr "mode" "BF,HF,SF,DF")
+                 (eq_attr "origin_mode" "SI,DI"))))
+  "makatau_pipe + makatau_alu")
+  
+(define_insn_reservation "makatau_fpu_cvt" 2
+  (and (eq_attr "tune" "makatau")
+       (and (eq_attr "type" "fcvt")
+            (eq_attr "mode" "BF,HF,SF,DF")))
   "makatau_pipe + makatau_fpu")
 
 (define_insn_reservation "makatau_fpu_load" 4
   (and (eq_attr "tune" "makatau")
        (eq_attr "type" "fpload"))
-  "makatau_pipe + makatau_lsu")
+  "(makatau_pipe + makatau_lsu)*2")
 
 (define_insn_reservation "makatau_fpu_store" 0
   (and (eq_attr "tune" "makatau")

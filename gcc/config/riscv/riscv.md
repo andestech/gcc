@@ -234,6 +234,11 @@
 ;; Main data type used by the insn
 (define_attr "mode" "unknown,none,QI,HI,SI,DI,TI,HF,BF,SF,DF,TF,V2HI,V4HI,V8HI,V4QI,V8QI,V2SI,V4SI"
   (const_string "unknown"))
+  
+(define_attr "origin_mode"
+  "unknown,none,QI,HI,SI,DI,TI,HF,BF,SF,DF,TF,V2HI,V4HI,V8HI,V4QI,V8QI,V2SI,V4SI"
+  (const_string "unknown"))
+
 
 ;; True if the main data type is twice the size of a word.
 (define_attr "dword_mode" "no,yes"
@@ -280,7 +285,7 @@
 ;; crypto crypto instructions
 (define_attr "type"
   "unknown,branch,branch_imm,jump,call,load,fpload,store,fpstore,
-   mtc,mfc,const,arith,logical,shift,slt,imul,idiv,move,fmove,fadd,fmul,
+   mtc,mfc,const,arith,logical,shift,slt,imul,idiv,move,fmove,fadd,fmul,cmov,
    fmadd,fdiv,fcmp,fcvt,fsqrt,multi,auipc,sfb_alu,nop,ghost,bitmanip,crypto,
    rotate,dalu,dalu64,daluround,dcmp,dclip,dmul,dmac,dinsb,dpack,dbpick,dwext"
 
@@ -1538,7 +1543,8 @@
 				subreg_lowpart_p (operands[1]) ? 0: 1);
 }
   [(set_attr "type" "fcvt")
-   (set_attr "mode" "<ANYF:MODE>")])
+   (set_attr "mode" "<ANYF:MODE>")
+   (set_attr "origin_mode" "<GPR:MODE>")])
 
 (define_insn "floatuns<GPR:mode><ANYF:mode>2"
   [(set (match_operand:ANYF    0 "register_operand" "= f")
@@ -1547,7 +1553,8 @@
   "TARGET_HARD_FLOAT"
   "fcvt.<ANYF:fmt>.<GPR:ifmt>u\t%0,%z1"
   [(set_attr "type" "fcvt")
-   (set_attr "mode" "<ANYF:MODE>")])
+   (set_attr "mode" "<ANYF:MODE>")
+   (set_attr "origin_mode" "<GPR:MODE>")])
 
 (define_insn "l<rint_pattern><ANYF:mode><GPR:mode>2"
   [(set (match_operand:GPR       0 "register_operand" "=r")
@@ -3333,7 +3340,7 @@
    <br_insn> %1, %z4, 0f\n\tadd %0, zero, %3\n\t.align 2\n0:
    <br_insn>c %1,  %4, 0f\n\tadd %0, %3, zero\n\t.align 2\n0:
    <br_insn>c %1,  %4, 0f\n\tadd %0, zero, %3\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<X:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3349,7 +3356,7 @@
    <rev_br_insn> %1, %z4, 0f\n\tadd %0, zero, %2\n\t.align 2\n0:
    <br_insn> %1, %z4, 0f\n\tadd %0, %3, zero\n\t.align 2\n0:
    <br_insn> %1, %z4, 0f\n\tadd %0, zero, %3\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<X:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3368,7 +3375,7 @@
    <rev_bbcs> %4, %1, 0f\n\tadd %0, zero, %2\n\t.align 2\n0:
    <bbcs> %4, %1, 0f\n\tadd %0, %3, zero\n\t.align 2\n0:
    <bbcs> %4, %1, 0f\n\tadd %0, zero, %3\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<ANYI:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3386,7 +3393,7 @@
   "@
    <equality_op:rev_br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n\t.align 2\n0:
    <equality_op:rev_br_insn>c %1, %2, 0f\n\t<cond_alu:insn> %0, %4, %5\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3401,7 +3408,7 @@
   "@
    <equality_op:br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n\t.align 2\n0:
    <equality_op:br_insn>c %1, %2, 0f\n\t<cond_alu:insn> %0, %4, %5\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3414,7 +3421,7 @@
 			(match_operand:X 3 "arith_operand" "0")))]
   "TARGET_CMOV"
   "<inequal_op:rev_br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3427,7 +3434,7 @@
 				    (match_operand:X 5 "const_arith_operand" "I"))))]
   "TARGET_CMOV"
   "<inequal_op:br_insn> %1, %z2, 0f\n\t<cond_alu:insn> %0, %4, %5\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3443,7 +3450,7 @@
 			(match_operand:X 3 "arith_operand" "0")))]
   "TARGET_CMOV && TARGET_BBCS"
   "<equality_op:rev_bbcs> %4, %1, 0f\n\t<cond_alu:insn> %0, %2, %5\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3458,7 +3465,7 @@
 				    (match_operand:X 5 "const_arith_operand" "I"))))]
   "TARGET_CMOV && TARGET_BBCS"
   "<bbcs> %4, %1, 0f\n\t<cond_alu:insn> %0, %2, %5\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3476,7 +3483,7 @@
   "@
    <equality_op:rev_br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n\t.align 2\n0:
    <equality_op:rev_br_insn>c %1, %2, 0f\n\t<any_shift:insn> %0, %4, %s5\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3491,7 +3498,7 @@
   "@
    <equality_op:br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n\t.align 2\n0:
    <equality_op:br_insn>c %1, %2, 0f\n\t<any_shift:insn> %0, %4, %s5\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3504,7 +3511,7 @@
 			(match_operand:X 3 "arith_operand" "0")))]
   "TARGET_CMOV"
   "<inequal_op:rev_br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3517,7 +3524,7 @@
 				     (match_operand:X 5 "const_arith_operand" "I"))))]
   "TARGET_CMOV"
   "<inequal_op:br_insn> %1, %z2, 0f\n\t<any_shift:insn> %0, %4, %s5\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3533,7 +3540,7 @@
 			(match_operand:X 3 "arith_operand" "0")))]
   "TARGET_CMOV && TARGET_BBCS"
   "<rev_bbcs> %4, %1, 0f\n\t<any_shift:insn> %0, %2, %s5\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3548,7 +3555,7 @@
 				     (match_operand:X 5 "const_arith_operand" "I"))))]
   "TARGET_CMOV && TARGET_BBCS"
   "<bbcs> %4, %1, 0f\n\t<any_shift:insn> %0, %2, %s5\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3570,7 +3577,7 @@
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
     return "<rev_bbcs> %4, %1, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n\t.align 2\n0:";
   }
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3591,7 +3598,7 @@
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
     return "<bbcs> %4, %1, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n\t.align 2\n0:";
   }
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3611,7 +3618,7 @@
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
     return "<rev_br_insn> %1, %z4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n\t.align 2\n0:";
   }
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3630,7 +3637,7 @@
     operands[5] = GEN_INT (INTVAL (operands[5]) + INTVAL (operands[6]) - 1);
     return "<br_insn> %1, %z4, 0f\n\tbfo<any_extract:sz> %0, %2, %5, %6\n\t.align 2\n0:";
   }
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3658,7 +3665,7 @@
 	gcc_unreachable ();
     }
   }
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3686,7 +3693,7 @@
 	gcc_unreachable ();
     }
   }
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3701,7 +3708,7 @@
   "@
    <rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n\t.align 2\n0:
    <rev_br_insn>c %1, %2, 0f\n\tbfoz %0, %4, 15, 0\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3715,7 +3722,7 @@
   "@
    <br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n\t.align 2\n0:
    <br_insn>c %1, %2, 0f\n\tbfoz %0, %4, 15, 0\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3727,7 +3734,7 @@
 			  (match_operand:GPR 3 "arith_operand" "0")))]
   "TARGET_CMOV && TARGET_BFO"
   "<rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3739,7 +3746,7 @@
 			  (zero_extend:GPR (match_operand:HI 4 "register_operand" "r"))))]
   "TARGET_CMOV && TARGET_BFO"
   "<br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3753,7 +3760,7 @@
 			  (match_operand:GPR 3 "arith_operand" "0")))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
   "<rev_bbcs> %4, %1, 0f\n\tbfoz %0, %2, 15, 0\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3767,7 +3774,7 @@
 			(zero_extend:GPR (match_operand:HI 2 "register_operand" "r"))))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
   "<bbcs> %4, %1, 0f\n\tbfoz %0, %2, 15, 0\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3782,7 +3789,7 @@
   "@
    <rev_br_insn> %1, %z2, 0f\n\tbfos %0, %4, <SHORT:sh_limit>, 0\n\t.align 2\n0:
    <rev_br_insn>c %1, %2, 0f\n\tbfos %0, %4, <SHORT:sh_limit>, 0\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "SI")
    (set (attr "length") (const_int 8))])
 
@@ -3796,7 +3803,7 @@
   "@
    <br_insn> %1, %z2, 0f\n\tbfos %0, %4, <SHORT:sh_limit>, 0\n\t.align 2\n0:
    <br_insn>c %1, %2, 0f\n\tbfos %0, %4, <SHORT:sh_limit>, 0\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "SI")
    (set (attr "length") (const_int 8))])
 
@@ -3808,7 +3815,7 @@
 			      (match_operand:SUPERQI 3 "arith_operand" "0")))]
   "TARGET_CMOV && TARGET_BFO"
   "<rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, <SHORT:sh_limit>, 0\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "SI")
    (set (attr "length") (const_int 8))])
 
@@ -3820,7 +3827,7 @@
 			      (zero_extend:SUPERQI (match_operand:SHORT 4 "register_operand" "r"))))]
   "TARGET_CMOV && TARGET_BFO"
   "<br_insn> %1, %z2, 0f\n\tbfoz %0, %4, <SHORT:sh_limit>, 0\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "SI")
    (set (attr "length") (const_int 8))])
 
@@ -3834,7 +3841,7 @@
 			      (match_operand:SUPERQI 3 "arith_operand" "0")))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
   "<rev_bbcs> %4, %1, 0f\n\tbfoz %0, %2, <SHORT:sh_limit>, 0\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "SI")
    (set (attr "length") (const_int 8))])
 
@@ -3848,7 +3855,7 @@
 			      (zero_extend:SUPERQI (match_operand:SHORT 2 "register_operand" "r"))))]
   "TARGET_CMOV && TARGET_BBCS && TARGET_BFO"
   "<bbcs> %4, %1, 0f\n\tbfoz %0, %2, <SHORT:sh_limit>, 0\n\t.align 2\n0:"
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "SI")
    (set (attr "length") (const_int 8))])
 
@@ -3874,7 +3881,7 @@
 	gcc_unreachable ();
     }
   }
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3898,7 +3905,7 @@
 	gcc_unreachable ();
     }
   }
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3914,7 +3921,7 @@
     operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
     return "<rev_br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n\t.align 2\n0:";
   }
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3930,7 +3937,7 @@
     operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
     return "<br_insn> %1, %z2, 0f\n\tbfoz %0, %4, 15, 0\n\t.align 2\n0:";
   }
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3948,7 +3955,7 @@
     operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
     return "<rev_bbcs> %4, %1, 0f\n\tbfoz %0, %2, 15, 0\n\t.align 2\n0:";
   }
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 
@@ -3966,7 +3973,7 @@
     operands[5] = GEN_INT (__builtin_popcountll (INTVAL (operands[5])) - 1);
     return "<bbcs> %4, %1, 0f\n\tbfoz %0, %2, 15, 0\n\t.align 2\n0:";
   }
-  [(set_attr "type" "arith")
+  [(set_attr "type" "cmov")
    (set_attr "mode" "<GPR:MODE>")
    (set (attr "length") (const_int 8))])
 

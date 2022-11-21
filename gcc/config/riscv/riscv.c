@@ -362,7 +362,7 @@ static const struct riscv_tune_info makatau_tune_info = {
   {COSTS_N_INSNS (3), COSTS_N_INSNS (3)},      /* int_mul */
   {COSTS_N_INSNS (24), COSTS_N_INSNS (24)},    /* int_div */
   4,                                           /* issue_rate */
-  10,                                           /* branch_cost */
+  3,                                           /* branch_cost */
   3,                                           /* memory_cost */
   false,                                       /* slow_unaligned_access */
 };
