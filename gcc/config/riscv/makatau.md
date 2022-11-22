@@ -67,13 +67,13 @@
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "type" "idiv")
             (eq_attr "mode" "SI")))
-  "makatau_pipe + makatau_alu3")
+  "makatau_pipe + makatau_alu3*38")
 
 (define_insn_reservation "makatau_idivdi" 70
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "type" "idiv")
             (eq_attr "mode" "DI")))
-  "makatau_pipe + makatau_alu3")
+  "makatau_pipe + makatau_alu3*70")
 
 (define_insn_reservation "makatau_xfer" 1
   (and (eq_attr "tune" "makatau")
@@ -139,84 +139,84 @@
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "type" "fadd")
             (eq_attr "mode" "SF,DF")))
-  "makatau_pipe + makatau_fpu")
+  "makatau_pipe*2 + makatau_fpu")
 
 (define_insn_reservation "makatau_fpu_mul" 3
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "type" "fmul")
             (eq_attr "mode" "SF,DF")))
-  "makatau_pipe + makatau_fpu")
+  "makatau_pipe*2 + makatau_fpu")
 
 (define_insn_reservation "makatau_fpu_mac" 4
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "type" "fmadd")
             (eq_attr "mode" "SF")))
-  "makatau_pipe + makatau_fpu")
+  "makatau_pipe*2 + makatau_fpu")
 
 (define_insn_reservation "makatau_fpu_div_h" 5
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "type" "fdiv")
             (eq_attr "mode" "HF")))
-  "makatau_pipe + makatau_fpu1")
+  "makatau_pipe*2 + makatau_fpu1*5")
 
 (define_insn_reservation "makatau_fpu_div_s" 8
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "type" "fdiv")
             (eq_attr "mode" "SF")))
-  "makatau_pipe + makatau_fpu1")
+  "makatau_pipe*2 + makatau_fpu1*8")
 
 (define_insn_reservation "makatau_fpu_div_d" 12
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "type" "fdiv")
             (eq_attr "mode" "DF")))
-  "makatau_pipe + makatau_fpu1")
+  "makatau_pipe*2 + makatau_fpu1*12")
   
 (define_insn_reservation "makatau_fpu_sqrt_h" 6
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "type" "fsqrt")
             (eq_attr "mode" "HF")))
-  "makatau_pipe + makatau_fpu1")
+  "makatau_pipe*2 + makatau_fpu1*6")
 
 (define_insn_reservation "makatau_fpu_sqrt_s" 10
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "type" "fsqrt")
             (eq_attr "mode" "SF")))
-  "makatau_pipe + makatau_fpu1")
+  "makatau_pipe*2 + makatau_fpu1*10")
 
 (define_insn_reservation "makatau_fpu_sqrt_d" 17
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "type" "fsqrt")
             (eq_attr "mode" "DF")))
-  "makatau_pipe + makatau_fpu1")
+  "makatau_pipe*2 + makatau_fpu1*17")
 
 (define_insn_reservation "makatau_fpu_move" 2
   (and (eq_attr "tune" "makatau")
        (eq_attr "type" "fmove,mtc,mfc"))
-  "makatau_pipe + makatau_fpu")
+  "makatau_pipe*2 + makatau_fpu")
 
 (define_insn_reservation "makatau_fpu_output_move" 6
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "move_type" "fmove")
             (eq_attr "mode" "BF,HF,SF,DF")))
-  "makatau_pipe + makatau_fpu")
+  "makatau_pipe*2 + makatau_fpu")
 
 (define_insn_reservation "makatau_fpu_cmp" 2
   (and (eq_attr "tune" "makatau")
        (eq_attr "type" "fcmp"))
-  "makatau_pipe + makatau_fpu")
+  "makatau_pipe*2 + makatau_fpu")
 
 (define_insn_reservation "makatau_alu_cvt" 6
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "type" "fcvt")
             (and (eq_attr "mode" "BF,HF,SF,DF")
                  (eq_attr "origin_mode" "SI,DI"))))
-  "makatau_pipe + makatau_alu")
+  "makatau_pipe*2 + makatau_alu")
   
 (define_insn_reservation "makatau_fpu_cvt" 2
   (and (eq_attr "tune" "makatau")
        (and (eq_attr "type" "fcvt")
             (eq_attr "mode" "BF,HF,SF,DF")))
-  "makatau_pipe + makatau_fpu")
+  "makatau_pipe*2 + makatau_fpu")
 
 (define_insn_reservation "makatau_fpu_load" 4
   (and (eq_attr "tune" "makatau")
