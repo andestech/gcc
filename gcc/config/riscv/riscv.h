@@ -79,9 +79,9 @@ extern const char *riscv_rewrite_march (int argc, const char **argv);
 				%{mno-zfh} \
 				%{mext-zbabcs} \
 				%{mno-ext-zbabcs} \
-				%{mext-zk} \
 				%{mext-zkn} \
 				%{mext-zks} \
+				%{mext-zkns} \
 				%{mext-cmo} \
 				%{mno-ext-cmo} \
 				%{mfp16})"
