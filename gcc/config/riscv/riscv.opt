@@ -386,7 +386,7 @@ Enable ShangMi Algorithm Suite.
 TargetVariable
 int riscv_zk_subext
 
-mext-cbo
+mext-cmo
 Target Report Mask(ZICBOMZP)
 Use CMO hardware instructions including Zicbom, Zicboz, Zicbop.
 
