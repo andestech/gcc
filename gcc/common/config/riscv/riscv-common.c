@@ -99,7 +99,7 @@ static arch_options_t nonstd_x_ext_options[] = {
 };
 
 static arch_options_t nonstd_s_ext_options[] = {
-  {"svinval", "svinval", false, false, 1, 0},
+  {"svinval", "ext-svinval", false, false, 1, 0},
   {"svnapot", "svnapot", false, false, 1, 0},
   {NULL, NULL, false, false, 0, 5}
 };

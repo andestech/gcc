@@ -393,5 +393,9 @@ Use CMO hardware instructions including Zicbom, Zicboz, Zicbop.
 TargetVariable
 int riscv_zicmo_subext
 
+mext-svinval
+Target Report Var(SVINVAL)
+Enable fine-grained address-translation cache invalidation instructions
+
 TargetVariable
 int riscv_sv_subext
