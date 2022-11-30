@@ -1882,19 +1882,19 @@
 })
 
 (define_insn "*movhf_hardfloat"
-  [(set (match_operand:HF 0 "nonimmediate_operand" "=f,f,m,r,f,r,r,m")
-	(match_operand:HF 1 "movehf_operand"       " f,m,f,f,r,r,m,r"))]
+  [(set (match_operand:HF 0 "nonimmediate_operand" "=f,f,m,*r,*f,*r,*r,*m")
+	(match_operand:HF 1 "movehf_operand"       " f,m,f,*f,*r,*r,*m,*r"))]
   "TARGET_HARD_FLOAT
    && TARGET_ZFH
    && (register_operand (operands[0], HFmode)
        || register_operand (operands[1], HFmode))"
   { return riscv_output_move (operands[0], operands[1]); }
-  [(set_attr "move_type" "move")
+  [(set_attr "move_type" "fmove,fpload,fpstore,mfc,mtc,move,load,store")
    (set_attr "mode" "HF")])
    
 (define_insn "*movbf_hardfloat"
-  [(set (match_operand:BF 0 "nonimmediate_operand" "=f,f,m,r,f,r,r,m")
-	(match_operand:BF 1 "movehf_operand"       " f,m,f,f,r,r,m,r"))]
+  [(set (match_operand:BF 0 "nonimmediate_operand" "=f,f,m,*r,*f,*r,*r,*m")
+	(match_operand:BF 1 "movehf_operand"       " f,m,f,*f,*r,*r,*m,*r"))]
   "TARGET_HARD_FLOAT
    && TARGET_BF16
    && TARGET_ZFH
@@ -1902,7 +1902,7 @@
    && (register_operand (operands[0], BFmode)
        || register_operand (operands[1], BFmode))"
   { return riscv_output_move (operands[0], operands[1]); }
-  [(set_attr "move_type" "move")
+  [(set_attr "move_type" "fmove,fpload,fpstore,mfc,mtc,move,load,store")
    (set_attr "mode" "BF")])
 
 (define_insn "*fp_16movhf_hardfloat"
