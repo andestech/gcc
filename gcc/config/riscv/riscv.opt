@@ -371,6 +371,9 @@ Use RVB hardware instructions including Zba, Zbb, Zbc, Zbs.
 TargetVariable
 int riscv_zb_subext
 
+TargetVariable
+int riscv_zc_subext
+
 mext-zkn
 Target Report RejectNegative Mask(ZKN)
 Enable NIST Algorithm Suite.

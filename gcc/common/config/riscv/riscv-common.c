@@ -61,6 +61,12 @@ static arch_options_t nonstd_z_ext_options[] = {
   {"zbb", "ext-zbabcs",  false, false, 1, 0},
   {"zbc", "ext-zbabcs", false, false, 1, 0},
   {"zbs", "ext-zbabcs", false, false, 1, 0},
+  {"zca", "zca", false, false, 1, 0},
+  {"zcb", "zcb", false, false, 1, 0},
+  {"zcd", "zcd", false, false, 1, 0},
+  {"zcf", "zcf", false, false, 1, 0},
+  {"zcmp", "zcmp", false, false, 1, 0},
+  {"zcmt", "zcmt", false, false, 1, 0},
   {"zkn", "ext-zkn", false, false, 1, 0},
   {"zks", "ext-zks", false, false, 1, 0},
   {"zkn", "ext-zkns", false, false, 1, 0},
@@ -173,6 +179,14 @@ struct riscv_implied_info_t
 riscv_implied_info_t riscv_implied_info[] =
 {
   {"d", "f"},
+
+  {"zcb", "zca"},
+  {"zcd", "zca"},
+  {"zcf", "zca"},
+  {"zcmp", "zca"},
+  {"zcmt", "zca"},
+//   {"zcmt", "zicsr"},
+
   {"zk", "zkn"},
   {"zk", "zkr"},
   {"zk", "zkt"},
@@ -1132,6 +1146,13 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"zbb",    &gcc_options::x_riscv_zb_subext, MASK_ZBB},
   {"zbc",    &gcc_options::x_riscv_zb_subext, MASK_ZBC},
   {"zbs",    &gcc_options::x_riscv_zb_subext, MASK_ZBS},
+
+  {"zca",    &gcc_options::x_riscv_zc_subext, MASK_ZCA},
+  {"zcb",    &gcc_options::x_riscv_zc_subext, MASK_ZCB},
+  {"zcd",    &gcc_options::x_riscv_zc_subext, MASK_ZCD},
+  {"zcf",    &gcc_options::x_riscv_zc_subext, MASK_ZCF},
+  {"zcmp",   &gcc_options::x_riscv_zc_subext, MASK_ZCMP},
+  {"zcmt",   &gcc_options::x_riscv_zc_subext, MASK_ZCMT},
 
   {"zbkb",   &gcc_options::x_riscv_zk_subext, MASK_ZBKB},
   {"zbkc",   &gcc_options::x_riscv_zk_subext, MASK_ZBKC},

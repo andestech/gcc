@@ -87,6 +87,20 @@ extern enum riscv_ict_model_type riscv_ict_model;
 #define TARGET_ZBC    ((riscv_zb_subext & MASK_ZBC) != 0)
 #define TARGET_ZBS    ((riscv_zb_subext & MASK_ZBS) != 0)
 
+#define MASK_ZCA      (1 << 0)
+#define MASK_ZCB      (1 << 1)
+#define MASK_ZCD      (1 << 2)
+#define MASK_ZCF      (1 << 3)
+#define MASK_ZCMP     (1 << 4)
+#define MASK_ZCMT     (1 << 5)
+
+#define TARGET_ZCA    ((riscv_zc_subext & MASK_ZCA) != 0)
+#define TARGET_ZCB    ((riscv_zc_subext & MASK_ZCB) != 0)
+#define TARGET_ZCD    ((riscv_zc_subext & MASK_ZCD) != 0)
+#define TARGET_ZCF    ((riscv_zc_subext & MASK_ZCF) != 0)
+#define TARGET_ZCMP   ((riscv_zc_subext & MASK_ZCMP) != 0)
+#define TARGET_ZCMT   ((riscv_zc_subext & MASK_ZCMT) != 0)
+
 #define MASK_ZBKB     (1 << 0)
 #define MASK_ZBKC     (1 << 1)
 #define MASK_ZBKX     (1 << 2)
