@@ -371,6 +371,10 @@ Use RVB hardware instructions including Zba, Zbb, Zbc, Zbs.
 TargetVariable
 int riscv_zb_subext
 
+mext-zc
+Target Var(ZC)
+Enable Code Size Reduction extensions.
+
 TargetVariable
 int riscv_zc_subext
 

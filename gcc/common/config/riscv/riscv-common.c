@@ -61,12 +61,20 @@ static arch_options_t nonstd_z_ext_options[] = {
   {"zbb", "ext-zbabcs",  false, false, 1, 0},
   {"zbc", "ext-zbabcs", false, false, 1, 0},
   {"zbs", "ext-zbabcs", false, false, 1, 0},
-  {"zca", "zca", false, false, 1, 0},
-  {"zcb", "zcb", false, false, 1, 0},
-  {"zcd", "zcd", false, false, 1, 0},
-  {"zcf", "zcf", false, false, 1, 0},
-  {"zcmp", "zcmp", false, false, 1, 0},
-  {"zcmt", "zcmt", false, false, 1, 0},
+
+  /* Let handle_conflict_ext() to solve the conflicts in Zc. */
+  {"zca", "ext-zc", false, false, 1, 0},
+  {"zcb", "ext-zc", false, false, 1, 0},
+  {"zcd", "ext-zc", false, false, 1, 0},
+  {"zcf", "ext-zc", false, false, 1, 0},
+  {"zcmp", "ext-zc", false, false, 1, 0},
+  {"zcmt", "ext-zc", false, false, 1, 0},
+  /* -mext-zc implies -mext-zbabcs */
+  {"zba", "ext-zc", false, false, 1, 0},
+  {"zbb", "ext-zc", false, false, 1, 0},
+  {"zbc", "ext-zc", false, false, 1, 0},
+  {"zbs", "ext-zc", false, false, 1, 0},
+
   {"zkn", "ext-zkn", false, false, 1, 0},
   {"zks", "ext-zks", false, false, 1, 0},
   {"zkn", "ext-zkns", false, false, 1, 0},
@@ -236,6 +244,22 @@ riscv_implied_info_t riscv_implied_info[] =
   {NULL, NULL}
 };
 
+/* Conflict ISA info, if ext exists, remove implied_ext.  */
+riscv_implied_info_t riscv_conflict_info[] =
+{
+  {"zca", "c"},
+  {"zcb", "c"},
+  {"zcd", "c"},
+  {"zcf", "c"},
+  {"zcmp", "c"},
+  {"zcmt", "c"},
+
+  {"zcmp", "zcd"},
+  {"zcmt", "zcd"},
+
+  {NULL, NULL}
+};
+
 /* Subset list.  */
 class riscv_subset_list
 {
@@ -268,6 +292,8 @@ private:
 
   void handle_implied_ext (riscv_subset_t *);
 
+  void handle_conflict_ext (void);
+
 public:
   ~riscv_subset_list ();
 
@@ -276,6 +302,8 @@ public:
   void add (const char *, const char *);
 
   void add (const char *, unsigned, unsigned, const arch_options_t *opt);
+
+  void remove (const char *);
 
   riscv_subset_t *lookup (const char *,
 			  int major_version = RISCV_DONT_CARE_VERSION,
@@ -519,6 +547,35 @@ riscv_subset_list::add (const char *subset, unsigned major_version,
   gcc_assert (opt);
   arch_options_default_version (opt, subset, &major_version, &minor_version);
   add (subset, major_version, minor_version);
+}
+
+/* Remove the subset from list. */
+void
+riscv_subset_list::remove (const char *subset)
+{
+  if (m_head == NULL)
+    return;
+
+  riscv_subset_t *itr;
+  riscv_subset_t *prev = NULL;
+  for (itr = m_head; itr != NULL; itr = itr->next)
+    {
+      if (strcasecmp (itr->name.c_str (), subset) == 0)
+	{
+	  /* Detach and free the matched element.  */
+	  if (m_tail == itr)
+	    m_tail = prev;
+
+	  if (!prev)
+	    m_head = itr->next;
+	  else
+	    prev->next = itr->next;
+
+	  delete itr;
+	  return;
+	}
+      prev = itr;
+    }
 }
 
 /* Convert subset info to string with explicit version info,
@@ -833,9 +890,7 @@ void
 riscv_subset_list::handle_implied_ext (riscv_subset_t *ext)
 {
   riscv_implied_info_t *implied_info;
-  for (implied_info = &riscv_implied_info[0];
-       implied_info->ext;
-       ++implied_info)
+  for (implied_info = &riscv_implied_info[0]; implied_info->ext; ++implied_info)
     {
       if (strcmp (ext->name.c_str (), implied_info->ext) != 0)
 	continue;
@@ -846,6 +901,23 @@ riscv_subset_list::handle_implied_ext (riscv_subset_t *ext)
 
       add (implied_info->implied_ext, implied_info->ext);
     }
+}
+
+/* Remove conflict ext.  */
+void
+riscv_subset_list::handle_conflict_ext ()
+{
+  riscv_implied_info_t *conflict_info;
+  for (conflict_info = &riscv_conflict_info[0]; conflict_info->ext;
+       ++conflict_info)
+    {
+      if (lookup (conflict_info->ext) && lookup (conflict_info->implied_ext))
+	remove (conflict_info->implied_ext);
+    }
+
+  /* Workaround: Zcf is only available on rv32. */
+  if (m_xlen == 64)
+    remove ("zcf");
 }
 
 /* Add new subset to list, but using default version based on the following priority.
@@ -1105,6 +1177,8 @@ riscv_subset_list::parse (const char *arch, location_t loc)
     {
       subset_list->handle_implied_ext (itr);
     }
+
+  subset_list->handle_conflict_ext ();
 
   return subset_list;
 
