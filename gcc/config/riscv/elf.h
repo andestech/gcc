@@ -23,6 +23,7 @@ along with GCC; see the file COPYING3.  If not see
 -melf" XLEN_SPEC "lriscv \
 %{mno-relax:--no-relax} \
 %{mno-execit-jal:--mno-execit-jal} \
+%{mnexecitop:--mnexecitop} \
 %{minnermost-loop:--mexecit-loop-aware} \
 %{shared}" \
 NDS32_EX9_SPEC \

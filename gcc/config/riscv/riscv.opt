@@ -364,6 +364,10 @@ mno-execit-jal
 Target Report RejectNegative Undocumented
 Not use execit for jal.
 
+mnexecitop
+Target Report Undocumented
+Use next execit optimization.
+
 mext-zbabcs
 Target Report Mask(ZBABCS)
 Use RVB hardware instructions including Zba, Zbb, Zbc, Zbs.
