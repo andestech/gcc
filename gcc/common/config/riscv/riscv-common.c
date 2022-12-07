@@ -916,8 +916,10 @@ riscv_subset_list::handle_conflict_ext ()
     }
 
   /* Workaround: Zcf is only available on rv32. */
-  if (m_xlen == 64)
+  if (m_xlen == 64 || !lookup ("f"))
     remove ("zcf");
+  if (!lookup ("d"))
+    remove ("zcd");
 }
 
 /* Add new subset to list, but using default version based on the following priority.
