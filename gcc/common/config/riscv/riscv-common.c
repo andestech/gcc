@@ -391,17 +391,18 @@ multi_letter_subset_rank (const std::string &subset)
   gcc_assert (subset.length () >= 2);
   int high_order = -1;
   int low_order = 0;
-  /* The order between multi-char extensions: s -> h -> z -> x.  */
+  /* Unprivileged std ext > privileged std ext > non-std ext.
+     The order between multi-char extensions: z -> s -> h -> x  */
   char multiletter_class = subset[0];
   switch (multiletter_class)
     {
-    case 's':
+    case 'z':
       high_order = 0;
       break;
-    case 'h':
+    case 's':
       high_order = 1;
       break;
-    case 'z':
+    case 'h':
       high_order = 2;
       break;
     case 'x':
@@ -1142,6 +1143,13 @@ riscv_subset_list::parse (const char *arch, location_t loc)
   if (p == NULL)
     goto fail;
 
+  /* Parsing sub-extensions.  */
+  p = subset_list->parse_multiletter_ext (p, "z", "sub-extension",
+					  nonstd_z_ext_options);
+
+  if (p == NULL)
+    goto fail;
+
   /* Parsing supervisor extension.  */
   p = subset_list->parse_multiletter_ext (p, "s", "supervisor extension",
 					  nonstd_s_ext_options);
@@ -1152,12 +1160,6 @@ riscv_subset_list::parse (const char *arch, location_t loc)
   /* Parsing hypervisor extension.  */
   p = subset_list->parse_multiletter_ext (p, "h", "hypervisor extension");
 
-  if (p == NULL)
-    goto fail;
-
-  /* Parsing sub-extensions.  */
-  p = subset_list->parse_multiletter_ext (p, "z", "sub-extension",
-					  nonstd_z_ext_options);
   if (p == NULL)
     goto fail;
 
