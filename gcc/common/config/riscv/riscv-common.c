@@ -356,7 +356,7 @@ riscv_subset_list::~riscv_subset_list ()
    priority.  */
 
 static int
-single_letter_subset_rank (char ext, bool is_zext)
+single_letter_subset_rank (char ext)
 {
   int rank;
 
@@ -372,7 +372,7 @@ single_letter_subset_rank (char ext, bool is_zext)
 
   const char *all_ext = riscv_supported_std_ext ();
   const char *ext_pos = strchr (all_ext, ext);
-  if (ext_pos == NULL || is_zext)
+  if (ext_pos == NULL)
     /* If got an unknown extension letter, then give it an alphabetical
        order, but after all known standard extension.  */
     rank = strlen (all_ext) + ext - 'a';
@@ -416,7 +416,7 @@ multi_letter_subset_rank (const std::string &subset)
     /* Order for z extension on spec: If multiple "Z" extensions are named, they
        should be ordered first by category, then alphabetically within a
        category - for example, "Zicsr_Zifencei_Zam". */
-    low_order = single_letter_subset_rank (subset[1], true);
+    low_order = single_letter_subset_rank (subset[1]);
   else
     low_order = 0;
 
@@ -452,8 +452,8 @@ subset_cmp (const std::string &a, const std::string &b)
 
   if (a_len == 1 && b_len == 1)
     {
-      int rank_a = single_letter_subset_rank (a[0], false);
-      int rank_b = single_letter_subset_rank (b[0], false);
+      int rank_a = single_letter_subset_rank (a[0]);
+      int rank_b = single_letter_subset_rank (b[0]);
 
       if (rank_a < rank_b)
 	return 1;
