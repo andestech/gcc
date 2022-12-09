@@ -307,7 +307,7 @@ Target Report
 Enable constructor/destructor feature.
 
 mno-16-bit
-Target Report RejectNegative
+Target Report RejectNegative Var(TARGET_NO_16_BIT)
 Do not genearte C extension instructions.
 
 mexecit

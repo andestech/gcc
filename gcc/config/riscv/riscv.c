@@ -5972,7 +5972,7 @@ riscv_file_start (void)
   if (! riscv_mrelax)
     fprintf (asm_out_file, "\t.option norelax\n");
 
-  if (TARGET_EXECIT && TARGET_RVC)
+  if (TARGET_EXECIT && !TARGET_NO_16_BIT)
     fprintf (asm_out_file, "\t.option execit\n");
 
   if (riscv_emit_attribute_p)

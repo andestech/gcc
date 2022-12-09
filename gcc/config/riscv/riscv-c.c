@@ -122,7 +122,7 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
     {
       builtin_define ("__nds_v5");
 
-      if (TARGET_EXECIT && TARGET_RVC)
+      if (TARGET_EXECIT && !TARGET_NO_16_BIT)
 	{
 	  builtin_define ("__nds_execit");
 
