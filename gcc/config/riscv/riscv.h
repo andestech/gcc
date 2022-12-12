@@ -185,7 +185,7 @@ extern const char *riscv_rewrite_march (int argc, const char **argv);
 #define PARM_BOUNDARY BITS_PER_WORD
 
 #define TARGET_NEED_ALIGN \
-  (!TARGET_RVC || !optimize_size || TARGET_ALWAYS_ALIGN)
+  (!(TARGET_RVC || TARGET_ZCA) || !optimize_size || TARGET_ALWAYS_ALIGN)
 
 /* Allocation boundary (in *bits*) for the code of a function.  */
 #define FUNCTION_BOUNDARY (TARGET_NEED_ALIGN ? 32 : 16)
