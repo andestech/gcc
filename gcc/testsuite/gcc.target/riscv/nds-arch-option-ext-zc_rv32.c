@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv32 } */
 /* { dg-options "-mriscv-attribute -march=rv32gc -mabi=ilp32 -mext-zc" } */
 int foo()
 {

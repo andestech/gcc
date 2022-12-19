@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target riscv64 } */
 /* { dg-options "-mriscv-attribute -march=rv64gc -mabi=lp64 -mext-zc" } */
 int foo()
 {
