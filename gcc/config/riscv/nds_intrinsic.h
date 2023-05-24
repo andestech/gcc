@@ -523,6 +523,12 @@ enum riscv_order
   (__builtin_riscv_csrr ((srname)))
 #define __nds__mtsr(val, srname) \
   (__builtin_riscv_csrw ((val), (srname)))
+#define __nds__csrrw(val, srname) \
+  (__builtin_riscv_csrrw ((val), (srname)))
+#define __nds__csrrs(val, srname) \
+  (__builtin_riscv_csrrs ((val), (srname)))
+#define __nds__csrrc(val, srname) \
+  (__builtin_riscv_csrrc ((val), (srname)))
 #define __nds__csrr(srname) \
   (__builtin_riscv_csrr ((srname)))
 #define __nds__csrw(val, srname) \
@@ -630,16 +636,6 @@ enum riscv_order
   (__builtin_riscv_amomaxud ((a), (b), (c)))
 #define __nds__ebreak(a) \
   (__builtin_riscv_ebreak ((a)))
-#define __nds__csrrw(a, b) \
-  (__builtin_riscv_csrrw ((a), (b)))
-#define __nds__csrrs(a, b) \
-  (__builtin_riscv_csrrs ((a), (b)))
-#define __nds__csrrc(a, b) \
-  (__builtin_riscv_csrrc ((a), (b)))
-#define __nds__csrs(a, b) \
-  (__builtin_riscv_csrs ((a), (b)))
-#define __nds__csrc(a, b) \
-  (__builtin_riscv_csrc ((a), (b)))
 #define __nds__get_current_sp() \
   (__builtin_riscv_get_current_sp ())
 #define __nds__set_current_sp(a) \
