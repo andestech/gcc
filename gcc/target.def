@@ -1878,12 +1878,16 @@ access using @var{type} is known to be naturally aligned.",
 DEFHOOK
 (vec_perm_const,
  "This hook is used to test whether the target can permute up to two\n\
-vectors of mode @var{mode} using the permutation vector @code{sel}, and\n\
-also to emit such a permutation.  In the former case @var{in0}, @var{in1}\n\
-and @var{out} are all null.  In the latter case @var{in0} and @var{in1} are\n\
-the source vectors and @var{out} is the destination vector; all three are\n\
-operands of mode @var{mode}.  @var{in1} is the same as @var{in0} if\n\
-@var{sel} describes a permutation on one vector instead of two.\n\
+vectors of mode @var{op_mode} using the permutation vector @code{sel},\n\
+producing a vector of mode @var{mode}.  The hook is also used to emit such\n\
+a permutation.\n\
+\n\
+When the hook is being used to test whether the target supports a permutation,\n\
+@var{in0}, @var{in1}, and @var{out} are all null.  When the hook is being used\n\
+to emit a permutation, @var{in0} and @var{in1} are the source vectors of mode\n\
+@var{op_mode} and @var{out} is the destination vector of mode @var{mode}.\n\
+@var{in1} is the same as @var{in0} if @var{sel} describes a permutation on one\n\
+vector instead of two.\n\
 \n\
 Return true if the operation is possible, emitting instructions for it\n\
 if rtxes are provided.\n\
@@ -1894,7 +1898,7 @@ try the equivalent byte operation.  If that also fails, it will try forcing\n\
 the selector into a register and using the @var{vec_perm@var{mode}}\n\
 instruction pattern.  There is no need for the hook to handle these two\n\
 implementation approaches itself.",
- bool, (machine_mode mode, rtx output, rtx in0, rtx in1,
+ bool, (machine_mode mode, machine_mode op_mode, rtx output, rtx in0, rtx in1,
 	const vec_perm_indices &sel),
  NULL)
 
@@ -3451,11 +3455,25 @@ code in @file{optabs.cc}.",
    for further details.  */
 DEFHOOK
 (vector_mode_supported_p,
- "Define this to return nonzero if the port is prepared to handle\n\
+ "Define this to return nonzero if the current target is prepared to handle\n\
 insns involving vector mode @var{mode}.  At the very least, it\n\
 must have move patterns for this mode.",
  bool, (machine_mode mode),
  hook_bool_mode_false)
+
+DEFHOOK
+(vector_mode_supported_any_target_p,
+ "Define this to return nonzero if the port is prepared to handle\n\
+insns involving vector mode @var{mode} in any target configuration.\n\
+Returning @var{true} means that the mode can be used as the @samp{TYPE_MODE}\n\
+for vector types.\n\
+\n\
+The default version of this hook returns true.  The final mode assigned to\n\
+@samp{TYPE_MODE} will also be checked against\n\
+@code{TARGET_VECTOR_MODE_SUPPORTED_P} to take target configuration into\n\
+account.",
+ bool, (machine_mode mode),
+ hook_bool_mode_true)
 
 DEFHOOK
 (compatible_vector_types_p,
@@ -4673,7 +4691,9 @@ pass all their arguments on the stack.\n\
 The argument @var{args_so_far} points to the @code{CUMULATIVE_ARGS} data\n\
 structure, containing the values that are obtained after processing the\n\
 named arguments.  The argument @var{arg} describes the last of these named\n\
-arguments.\n\
+arguments.  The argument @var{arg} should not be used if the function type\n\
+satisfies @code{TYPE_NO_NAMED_ARGS_STDARG_P}, since in that case there are\n\
+no named arguments and all arguments are accessed with @code{va_arg}.\n\
 \n\
 The target hook should do two things: first, push onto the stack all the\n\
 argument registers @emph{not} used for the named arguments, and second,\n\

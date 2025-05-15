@@ -129,10 +129,10 @@ along with GCC; see the file COPYING3.  If not see
 #include "ssa.h"
 #include "gimple-pretty-print.h"
 #include "fold-const.h"
+#include "gimple-iterator.h"
 #include "gimple-fold.h"
 #include "tree-eh.h"
 #include "gimplify.h"
-#include "gimple-iterator.h"
 #include "tree-cfg.h"
 #include "tree-ssa-propagate.h"
 #include "dbgcnt.h"
@@ -716,6 +716,10 @@ likely_value (gimple *stmt)
      constant value.  */
   if (gimple_has_volatile_ops (stmt))
     return VARYING;
+
+  /* .DEFERRED_INIT produces undefined.  */
+  if (gimple_call_internal_p (stmt, IFN_DEFERRED_INIT))
+    return UNDEFINED;
 
   /* Arrive here for more complex cases.  */
   has_constant_operand = false;

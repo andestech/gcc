@@ -1,6 +1,6 @@
 /* PR middle-end/100732 - ICE on sprintf %s with integer argument
    { dg-do compile }
-   { dg-options "-O2 -Wall -fdump-tree-optimized" } */
+   { dg-options "-O2 -Wall -fdump-tree-optimized -mno-riscv-iprintf" } */
 
 char d[32];
 

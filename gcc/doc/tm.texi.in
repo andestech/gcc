@@ -736,6 +736,9 @@ options are changed via @code{#pragma GCC optimize} or by using the
 
 @hook TARGET_OPTION_INIT_STRUCT
 
+@hook TARGET_COMPUTE_MULTILIB
+
+
 @defmac SWITCHABLE_TARGET
 Some targets need to switch between substantially different subtargets
 during compilation.  For example, the MIPS target has one subtarget for
@@ -3362,6 +3365,8 @@ stack.
 @hook TARGET_SCALAR_MODE_SUPPORTED_P
 
 @hook TARGET_VECTOR_MODE_SUPPORTED_P
+
+@hook TARGET_VECTOR_MODE_SUPPORTED_ANY_TARGET_P
 
 @hook TARGET_COMPATIBLE_VECTOR_TYPES_P
 

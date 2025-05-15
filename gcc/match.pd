@@ -347,6 +347,25 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
  (if (REAL_VALUE_NEGATIVE (TREE_REAL_CST (@0)))
   (COPYSIGN_ALL (negate @0) @1)))
 
+/* Transform c ? x * copysign (1, y) : z to c ? x ^ signs(y) : z.
+   tree-ssa-math-opts.cc does the corresponding optimization for
+   unconditional multiplications (via xorsign).  */
+(simplify
+ (IFN_COND_MUL:c @0 @1 (IFN_COPYSIGN real_onep @2) @3)
+ (with { tree signs = sign_mask_for (type); }
+  (if (signs)
+   (with { tree inttype = TREE_TYPE (signs); }
+    (view_convert:type
+     (IFN_COND_XOR:inttype @0
+      (view_convert:inttype @1)
+      (bit_and (view_convert:inttype @2) { signs; })
+      (view_convert:inttype @3)))))))
+
+/* (x >= 0 ? x : 0) + (x <= 0 ? -x : 0) -> abs x.  */
+(simplify
+  (plus:c (max @0 integer_zerop) (max (negate @0) integer_zerop))
+  (abs @0))
+
 /* X * 1, X / 1 -> X.  */
 (for op (mult trunc_div ceil_div floor_div round_div exact_div)
   (simplify
@@ -1662,6 +1681,8 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
 	 && (int_fits_type_p (@1, TREE_TYPE (@0))
 	     || tree_nop_conversion_p (TREE_TYPE (@0), type)))
 	|| types_match (@0, @1))
+       && !POINTER_TYPE_P (TREE_TYPE (@0))
+       && TREE_CODE (TREE_TYPE (@0)) != OFFSET_TYPE
        /* ???  This transform conflicts with fold-const.cc doing
 	  Convert (T)(x & c) into (T)x & (T)c, if c is an integer
 	  constants (if x has signed type, the sign bit cannot be set
@@ -1698,7 +1719,9 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
   (if (GIMPLE
        && TREE_CODE (@1) != INTEGER_CST
        && tree_nop_conversion_p (type, TREE_TYPE (@2))
-       && types_match (type, @0))
+       && types_match (type, @0)
+       && !POINTER_TYPE_P (TREE_TYPE (@0))
+       && TREE_CODE (TREE_TYPE (@0)) != OFFSET_TYPE)
    (bitop @0 (convert @1)))))
 
 (for bitop (bit_and bit_ior)
@@ -3319,6 +3342,11 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
        && (GIMPLE || !TREE_SIDE_EFFECTS (@1)))
    (cond (cmp @2 @3) @1 @0))))
 
+/* (x <= 0 ? -x : 0) -> max(-x, 0).  */
+(simplify
+  (cond (le @0 integer_zerop@1) (negate@2 @0) integer_zerop@1)
+  (max @2 @1))
+
 /* Simplifications of shift and rotates.  */
 
 (for rotate (lrotate rrotate)
@@ -4316,34 +4344,7 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
 		     || TYPE_SIGN (c2_type) == TYPE_SIGN (from_type)))))
        {
 	 if (cmp != EQ_EXPR)
-	   {
-	     if (wi::to_widest (@3) == (wi::to_widest (@2) - 1))
-	       {
-		 /* X <= Y - 1 equals to X < Y.  */
-		 if (cmp == LE_EXPR)
-		   code = LT_EXPR;
-		 /* X > Y - 1 equals to X >= Y.  */
-		 if (cmp == GT_EXPR)
-		   code = GE_EXPR;
-	       }
-	     if (wi::to_widest (@3) == (wi::to_widest (@2) + 1))
-	       {
-		 /* X < Y + 1 equals to X <= Y.  */
-		 if (cmp == LT_EXPR)
-		   code = LE_EXPR;
-		 /* X >= Y + 1 equals to X > Y.  */
-		 if (cmp == GE_EXPR)
-		   code = GT_EXPR;
-	       }
-	     if (code != ERROR_MARK
-		 || wi::to_widest (@2) == wi::to_widest (@3))
-	       {
-		 if (cmp == LT_EXPR || cmp == LE_EXPR)
-		   code = MIN_EXPR;
-		 if (cmp == GT_EXPR || cmp == GE_EXPR)
-		   code = MAX_EXPR;
-	       }
-	   }
+	   code = minmax_from_comparison (cmp, @1, @3, @1, @2);
 	 /* Can do A == C1 ? A : C2  ->  A == C1 ? C1 : C2?  */
 	 else if (int_fits_type_p (@3, from_type))
 	   code = EQ_EXPR;
@@ -4459,6 +4460,86 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
        (if (code == MIN_EXPR)
 	(op (min @X { wide_int_to_tree (from_type, real_c1); })
 	    { wide_int_to_tree (from_type, c2); })))))))))
+
+#if GIMPLE
+/* A >= B ? A : B -> max (A, B) and friends.  The code is still
+   in fold_cond_expr_with_comparison for GENERIC folding with
+   some extra constraints.  */
+(for cmp (eq ne le lt unle unlt ge gt unge ungt uneq ltgt)
+ (simplify
+  (cond (cmp:c (nop_convert1?@c0 @0) (nop_convert2?@c1 @1))
+        (convert3? @0) (convert4? @1))
+  (if (!HONOR_SIGNED_ZEROS (type)
+       && ((INTEGRAL_TYPE_P (type)
+	    /* Allow widening conversions of the data.  */
+	    && TYPE_PRECISION (TREE_TYPE (@0)) <= TYPE_PRECISION (type)
+	    && TYPE_PRECISION (TREE_TYPE (@1)) <= TYPE_PRECISION (type))
+	   || (tree_nop_conversion_p (type, TREE_TYPE (@0))
+	       && tree_nop_conversion_p (type, TREE_TYPE (@1)))))
+   (switch
+    (if (cmp == EQ_EXPR)
+     (if (VECTOR_TYPE_P (type))
+      (view_convert @c1)
+      (convert @c1)))
+    (if (cmp == NE_EXPR)
+     (if (VECTOR_TYPE_P (type))
+      (view_convert @c0)
+      (convert @c0)))
+    (if (cmp == LE_EXPR || cmp == UNLE_EXPR || cmp == LT_EXPR || cmp == UNLT_EXPR)
+     (if (!HONOR_NANS (type))
+      (if (VECTOR_TYPE_P (type))
+       (view_convert (min @c0 @c1))
+       (convert (min @c0 @c1)))))
+    (if (cmp == GE_EXPR || cmp == UNGE_EXPR || cmp == GT_EXPR || cmp == UNGT_EXPR)
+     (if (!HONOR_NANS (type))
+      (if (VECTOR_TYPE_P (type))
+       (view_convert (max @c0 @c1))
+       (convert (max @c0 @c1)))))
+    (if (cmp == UNEQ_EXPR)
+     (if (!HONOR_NANS (type))
+      (if (VECTOR_TYPE_P (type))
+       (view_convert @c1)
+       (convert @c1))))
+    (if (cmp == LTGT_EXPR)
+     (if (!HONOR_NANS (type))
+      (if (VECTOR_TYPE_P (type))
+       (view_convert @c0)
+       (convert @c0))))))))
+#endif
+
+/* These was part of minmax phiopt.  */
+/* Optimize (a CMP b) ? minmax<a, c> : minmax<b, c>
+   to minmax<min/max<a, b>, c> */
+(for minmax (min max)
+ (for cmp (lt le gt ge)
+  (simplify
+   (cond (cmp @1 @3) (minmax:c @1 @4) (minmax:c @2 @4))
+   (with
+    {
+      tree_code code = minmax_from_comparison (cmp, @1, @2, @1, @3);
+    }
+    (if (code == MIN_EXPR)
+     (minmax (min @1 @2) @4)
+     (if (code == MAX_EXPR)
+      (minmax (max @1 @2) @4)))))))
+
+/* Optimize (a CMP CST1) ? max<a,CST2> : a */
+(for cmp    (gt  ge  lt  le)
+     minmax (min min max max)
+ (simplify
+  (cond (cmp @0 @1) (minmax:c@2 @0 @3) @4)
+   (with
+    {
+      tree_code code = minmax_from_comparison (cmp, @0, @1, @0, @4);
+    }
+    (if ((cmp == LT_EXPR || cmp == LE_EXPR)
+	 && code == MIN_EXPR
+         && integer_nonzerop (fold_build2 (LE_EXPR, boolean_type_node, @3, @1)))
+     (min @2 @4)
+     (if ((cmp == GT_EXPR || cmp == GE_EXPR)
+	  && code == MAX_EXPR
+          && integer_nonzerop (fold_build2 (GE_EXPR, boolean_type_node, @3, @1)))
+      (max @2 @4))))))
 
 /* X != C1 ? -X : C2 simplifies to -X when -C1 == C2.  */
 (simplify
@@ -7575,6 +7656,8 @@ and,
  (with
   {
     tree op0 = @0, op1 = @1, op2 = @2;
+    machine_mode result_mode = TYPE_MODE (type);
+    machine_mode op_mode = TYPE_MODE (TREE_TYPE (op0));
 
     /* Build a vector of integers from the tree mask.  */
     vec_perm_builder builder;
@@ -7636,7 +7719,7 @@ and,
 	   insert from a CONSTRUCTOR or constant and use a BIT_INSERT_EXPR
 	   in that case.  But only if the vector mode is supported,
 	   otherwise this is invalid GIMPLE.  */
-        if (TYPE_MODE (type) != BLKmode
+        if (op_mode != BLKmode
 	    && (TREE_CODE (cop0) == VECTOR_CST
 		|| TREE_CODE (cop0) == CONSTRUCTOR
 		|| TREE_CODE (cop1) == VECTOR_CST
@@ -7682,12 +7765,12 @@ and,
 	       2-argument version.  */
 	    tree oldop2 = op2;
 	    if (sel.ninputs () == 2
-	       || can_vec_perm_const_p (TYPE_MODE (type), sel, false))
+	       || can_vec_perm_const_p (result_mode, op_mode, sel, false))
 	      op2 = vec_perm_indices_to_tree (TREE_TYPE (op2), sel);
 	    else
 	      {
 	        vec_perm_indices sel2 (builder, 2, nelts);
-	        if (can_vec_perm_const_p (TYPE_MODE (type), sel2, false))
+		if (can_vec_perm_const_p (result_mode, op_mode, sel2, false))
 	          op2 = vec_perm_indices_to_tree (TREE_TYPE (op2), sel2);
 	        else
 	          /* Not directly supported with either encoding,

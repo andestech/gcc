@@ -67,7 +67,9 @@ private:
   const char *parse_multiletter_ext (const char *, const char *,
 				     const char *);
 
-  void handle_implied_ext (riscv_subset_t *);
+  void handle_implied_ext (const char *);
+  bool check_implied_ext ();
+  void handle_conflict_ext (void);
   void handle_combine_ext ();
 
 public:
@@ -76,6 +78,8 @@ public:
   void add (const char *, int, int, bool, bool);
 
   void add (const char *, bool);
+
+  void remove (const char *);
 
   riscv_subset_t *lookup (const char *,
 			  int major_version = RISCV_DONT_CARE_VERSION,
@@ -89,6 +93,8 @@ public:
 
   const riscv_subset_t *begin () const {return m_head;};
   const riscv_subset_t *end () const {return NULL;};
+
+  int match_score (riscv_subset_list *) const;
 };
 
 extern const riscv_subset_list *riscv_current_subset_list (void);

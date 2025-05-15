@@ -17,4 +17,7 @@
    along with GCC; see the file COPYING3.  If not see
    <http://www.gnu.org/licenses/>.  */
 
+INSERT_PASS_AFTER (pass_warn_printf, 1, pass_riscv_iprintf);
 INSERT_PASS_AFTER (pass_rtl_store_motion, 1, pass_shorten_memrefs);
+INSERT_PASS_AFTER (pass_cprop_hardreg, 1, pass_zcmp_popret);
+INSERT_PASS_BEFORE (pass_fast_rtl_dce, 1, pass_vsetvl);

@@ -80,6 +80,7 @@ along with GCC; see the file COPYING3.  If not see
      <L18>:;
 */
 
+#define INCLUDE_ALGORITHM
 #include "config.h"
 #include "system.h"
 #include "coretypes.h"
@@ -91,14 +92,15 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-pass.h"
 #include "ssa.h"
 #include "expmed.h"
-#include "optabs-query.h"
+#include "expr.h"
+#include "optabs-tree.h"
 #include "gimple-pretty-print.h"
 #include "alias.h"
 #include "fold-const.h"
 #include "stor-layout.h"
+#include "gimple-iterator.h"
 #include "gimple-fold.h"
 #include "gimplify.h"
-#include "gimple-iterator.h"
 #include "gimplify-me.h"
 #include "tree-cfg.h"
 #include "tree-into-ssa.h"
@@ -123,6 +125,9 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-vectorizer.h"
 #include "tree-eh.h"
 
+/* For lang_hooks.types.type_for_mode.  */
+#include "langhooks.h"
+
 /* Only handle PHIs with no more arguments unless we are asked to by
    simd pragma.  */
 #define MAX_PHI_ARG_NUM \
@@ -144,6 +149,12 @@ static bool need_to_rewrite_undefined;
    be degenerated to two arguments PHI.  See more information in comment
    before phi_convertible_by_degenerating_args.  */
 static bool any_complicated_phi;
+
+/* True if we have bitfield accesses we can lower.  */
+static bool need_to_lower_bitfields;
+
+/* True if there is any ifcvting to be done.  */
+static bool need_to_ifcvt;
 
 /* Hash for struct innermost_loop_behavior.  It depends on the user to
    free the memory.  */
@@ -220,6 +231,10 @@ struct bb_predicate {
      recorded here, in order to avoid the duplication of computations
      that occur in previous conditions.  See PR44483.  */
   gimple_seq predicate_gimplified_stmts;
+
+  /* Records the number of statements recorded into
+     PREDICATE_GIMPLIFIED_STMTS.   */
+  unsigned no_predicate_stmts;
 };
 
 /* Returns true when the basic block BB has a predicate.  */
@@ -243,10 +258,16 @@ bb_predicate (basic_block bb)
 static inline void
 set_bb_predicate (basic_block bb, tree cond)
 {
+  auto aux = (struct bb_predicate *) bb->aux;
   gcc_assert ((TREE_CODE (cond) == TRUTH_NOT_EXPR
-	       && is_gimple_condexpr (TREE_OPERAND (cond, 0)))
-	      || is_gimple_condexpr (cond));
-  ((struct bb_predicate *) bb->aux)->predicate = cond;
+	       && is_gimple_val (TREE_OPERAND (cond, 0)))
+	      || is_gimple_val (cond));
+  aux->predicate = cond;
+  aux->no_predicate_stmts++;
+
+  if (dump_file && (dump_flags & TDF_DETAILS))
+    fprintf (dump_file, "Recording block %d value %d\n", bb->index,
+	     aux->no_predicate_stmts);
 }
 
 /* Returns the sequence of statements of the gimplification of the
@@ -259,12 +280,16 @@ bb_predicate_gimplified_stmts (basic_block bb)
 }
 
 /* Sets the sequence of statements STMTS of the gimplification of the
-   predicate for basic block BB.  */
+   predicate for basic block BB.  If PRESERVE_COUNTS then don't clear the predicate
+   counts.  */
 
 static inline void
-set_bb_predicate_gimplified_stmts (basic_block bb, gimple_seq stmts)
+set_bb_predicate_gimplified_stmts (basic_block bb, gimple_seq stmts,
+				   bool preserve_counts)
 {
   ((struct bb_predicate *) bb->aux)->predicate_gimplified_stmts = stmts;
+  if (stmts == NULL && !preserve_counts)
+    ((struct bb_predicate *) bb->aux)->no_predicate_stmts = 0;
 }
 
 /* Adds the sequence of statements STMTS to the sequence of statements
@@ -285,9 +310,19 @@ add_bb_predicate_gimplified_stmts (basic_block bb, gimple_seq stmts)
       gimple *stmt = gsi_stmt (gsi);
       delink_stmt_imm_use (stmt);
       gimple_set_modified (stmt, true);
+      ((struct bb_predicate *) bb->aux)->no_predicate_stmts++;
     }
   gimple_seq_add_seq_without_update
     (&(((struct bb_predicate *) bb->aux)->predicate_gimplified_stmts), stmts);
+}
+
+/* Return the number of statements the predicate of the basic block consists
+   of.  */
+
+static inline unsigned
+get_bb_num_predicate_stmts (basic_block bb)
+{
+  return ((struct bb_predicate *) bb->aux)->no_predicate_stmts;
 }
 
 /* Initializes to TRUE the predicate of basic block BB.  */
@@ -296,7 +331,7 @@ static inline void
 init_bb_predicate (basic_block bb)
 {
   bb->aux = XNEW (struct bb_predicate);
-  set_bb_predicate_gimplified_stmts (bb, NULL);
+  set_bb_predicate_gimplified_stmts (bb, NULL, false);
   set_bb_predicate (bb, boolean_true_node);
 }
 
@@ -316,7 +351,7 @@ release_bb_predicate (basic_block bb)
 
       /* Discard them.  */
       gimple_seq_discard (stmts);
-      set_bb_predicate_gimplified_stmts (bb, NULL);
+      set_bb_predicate_gimplified_stmts (bb, NULL, false);
     }
 }
 
@@ -459,8 +494,6 @@ fold_or_predicates (location_t loc, tree c1, tree c2)
 static tree
 fold_build_cond_expr (tree type, tree cond, tree rhs, tree lhs)
 {
-  tree rhs1, lhs1, cond_expr;
-
   /* If COND is comparison r != 0 and r has boolean type, convert COND
      to SSA_NAME to accept by vect bool pattern.  */
   if (TREE_CODE (cond) == NE_EXPR)
@@ -472,34 +505,20 @@ fold_build_cond_expr (tree type, tree cond, tree rhs, tree lhs)
 	  && (integer_zerop (op1)))
 	cond = op0;
     }
-  cond_expr = fold_ternary (COND_EXPR, type, cond, rhs, lhs);
 
-  if (cond_expr == NULL_TREE)
-    return build3 (COND_EXPR, type, cond, rhs, lhs);
-
-  STRIP_USELESS_TYPE_CONVERSION (cond_expr);
-
-  if (is_gimple_val (cond_expr))
-    return cond_expr;
-
-  if (TREE_CODE (cond_expr) == ABS_EXPR)
+  gimple_match_op cexpr (gimple_match_cond::UNCOND, COND_EXPR,
+			 type, cond, rhs, lhs);
+  if (cexpr.resimplify (NULL, follow_all_ssa_edges))
     {
-      rhs1 = TREE_OPERAND (cond_expr, 1);
-      STRIP_USELESS_TYPE_CONVERSION (rhs1);
-      if (is_gimple_val (rhs1))
-	return build1 (ABS_EXPR, type, rhs1);
+      if (gimple_simplified_result_is_gimple_val (&cexpr))
+	return cexpr.ops[0];
+      else if (cexpr.code == ABS_EXPR)
+	return build1 (ABS_EXPR, type, cexpr.ops[0]);
+      else if (cexpr.code == MIN_EXPR
+	       || cexpr.code == MAX_EXPR)
+	return build2 ((tree_code)cexpr.code, type, cexpr.ops[0], cexpr.ops[1]);
     }
 
-  if (TREE_CODE (cond_expr) == MIN_EXPR
-      || TREE_CODE (cond_expr) == MAX_EXPR)
-    {
-      lhs1 = TREE_OPERAND (cond_expr, 0);
-      STRIP_USELESS_TYPE_CONVERSION (lhs1);
-      rhs1 = TREE_OPERAND (cond_expr, 1);
-      STRIP_USELESS_TYPE_CONVERSION (rhs1);
-      if (is_gimple_val (rhs1) && is_gimple_val (lhs1))
-	return build2 (TREE_CODE (cond_expr), type, lhs1, rhs1);
-    }
   return build3 (COND_EXPR, type, cond, rhs, lhs);
 }
 
@@ -560,10 +579,10 @@ add_to_predicate_list (class loop *loop, basic_block bb, tree nc)
     tp = &TREE_OPERAND (bc, 0);
   else
     tp = &bc;
-  if (!is_gimple_condexpr (*tp))
+  if (!is_gimple_val (*tp))
     {
       gimple_seq stmts;
-      *tp = force_gimple_operand_1 (*tp, &stmts, is_gimple_condexpr, NULL_TREE);
+      *tp = force_gimple_operand (*tp, &stmts, true, NULL_TREE);
       add_bb_predicate_gimplified_stmts (bb, stmts);
     }
   set_bb_predicate (bb, bc);
@@ -1314,10 +1333,31 @@ predicate_bbs (loop_p loop)
 	  tree c2;
 	  edge true_edge, false_edge;
 	  location_t loc = gimple_location (stmt);
-	  tree c = build2_loc (loc, gimple_cond_code (stmt),
-				    boolean_type_node,
-				    gimple_cond_lhs (stmt),
-				    gimple_cond_rhs (stmt));
+	  tree c;
+	  /* gcc.dg/fold-bopcond-1.c shows that despite all forwprop passes
+	     conditions can remain unfolded because of multiple uses so
+	     try to re-fold here, especially to get precision changing
+	     conversions sorted out.  Do not simply fold the stmt since
+	     this is analysis only.  When conditions were embedded in
+	     COND_EXPRs those were folded separately before folding the
+	     COND_EXPR but as they are now outside we have to make sure
+	     to fold them.  Do it here - another opportunity would be to
+	     fold predicates as they are inserted.  */
+	  gimple_match_op cexpr (gimple_match_cond::UNCOND,
+				 gimple_cond_code (stmt),
+				 boolean_type_node,
+				 gimple_cond_lhs (stmt),
+				 gimple_cond_rhs (stmt));
+	  if (cexpr.resimplify (NULL, follow_all_ssa_edges)
+	      && cexpr.code.is_tree_code ()
+	      && TREE_CODE_CLASS ((tree_code)cexpr.code) == tcc_comparison)
+	    c = build2_loc (loc, (tree_code)cexpr.code, boolean_type_node,
+			    cexpr.ops[0], cexpr.ops[1]);
+	  else
+	    c = build2_loc (loc, gimple_cond_code (stmt),
+			    boolean_type_node,
+			    gimple_cond_lhs (stmt),
+			    gimple_cond_rhs (stmt));
 
 	  /* Add new condition into destination's predicate list.  */
 	  extract_true_false_edges_from_block (gimple_bb (stmt),
@@ -1405,15 +1445,6 @@ if_convertible_loop_p_1 (class loop *loop, vec<data_reference_p> *refs)
     return false;
 
   calculate_dominance_info (CDI_DOMINATORS);
-
-  /* Allow statements that can be handled during if-conversion.  */
-  ifc_bbs = get_loop_body_in_if_conv_order (loop);
-  if (!ifc_bbs)
-    {
-      if (dump_file && (dump_flags & TDF_DETAILS))
-	fprintf (dump_file, "Irreducible loop\n");
-      return false;
-    }
 
   for (i = 0; i < loop->num_nodes; i++)
     {
@@ -1856,11 +1887,44 @@ convert_scalar_cond_reduction (gimple *reduc, gimple_stmt_iterator *gsi,
   return rhs;
 }
 
-/* Produce condition for all occurrences of ARG in PHI node.  */
+/* Generate a simplified conditional.  */
 
 static tree
-gen_phi_arg_condition (gphi *phi, vec<int> *occur,
-		       gimple_stmt_iterator *gsi)
+gen_simplified_condition (tree cond, scalar_cond_masked_set_type &cond_set)
+{
+  /* Check if the value is already live in a previous branch.  This resolves
+     nested conditionals from diamond PHI reductions.  */
+  if (TREE_CODE (cond) == SSA_NAME)
+    {
+      gimple *stmt = SSA_NAME_DEF_STMT (cond);
+      gassign *assign = NULL;
+      if ((assign = as_a <gassign *> (stmt))
+	   && gimple_assign_rhs_code (assign) == BIT_AND_EXPR)
+	{
+	  tree arg1 = gimple_assign_rhs1 (assign);
+	  tree arg2 = gimple_assign_rhs2 (assign);
+	  if (cond_set.contains ({ arg1, 1 }))
+	    arg1 = boolean_true_node;
+	  else
+	    arg1 = gen_simplified_condition (arg1, cond_set);
+
+	  if (cond_set.contains ({ arg2, 1 }))
+	    arg2 = boolean_true_node;
+	  else
+	    arg2 = gen_simplified_condition (arg2, cond_set);
+
+	  cond = fold_build2 (TRUTH_AND_EXPR, boolean_type_node, arg1, arg2);
+	}
+    }
+  return cond;
+}
+
+/* Produce condition for all occurrences of ARG in PHI node.  Set *INVERT
+   as to whether the condition is inverted.  */
+
+static tree
+gen_phi_arg_condition (gphi *phi, vec<int> *occur, gimple_stmt_iterator *gsi,
+		       scalar_cond_masked_set_type &cond_set, bool *invert)
 {
   int len;
   int i;
@@ -1868,6 +1932,7 @@ gen_phi_arg_condition (gphi *phi, vec<int> *occur,
   tree c;
   edge e;
 
+  *invert = false;
   len = occur->length ();
   gcc_assert (len > 0);
   for (i = 0; i < len; i++)
@@ -1879,30 +1944,97 @@ gen_phi_arg_condition (gphi *phi, vec<int> *occur,
 	  cond = c;
 	  break;
 	}
-      c = force_gimple_operand_gsi_1 (gsi, unshare_expr (c),
-				      is_gimple_condexpr, NULL_TREE,
-				      true, GSI_SAME_STMT);
+      /* If we have just a single inverted predicate, signal that and
+	 instead invert the COND_EXPR arms.  */
+      if (len == 1 && TREE_CODE (c) == TRUTH_NOT_EXPR)
+	{
+	  c = TREE_OPERAND (c, 0);
+	  *invert = true;
+	}
+
+      c = gen_simplified_condition (c, cond_set);
+      c = force_gimple_operand_gsi (gsi, unshare_expr (c),
+				    true, NULL_TREE, true, GSI_SAME_STMT);
       if (cond != NULL_TREE)
 	{
 	  /* Must build OR expression.  */
 	  cond = fold_or_predicates (EXPR_LOCATION (c), c, cond);
-	  cond = force_gimple_operand_gsi_1 (gsi, unshare_expr (cond),
-					     is_gimple_condexpr, NULL_TREE,
-					     true, GSI_SAME_STMT);
+	  cond = force_gimple_operand_gsi (gsi, unshare_expr (cond), true,
+					   NULL_TREE, true, GSI_SAME_STMT);
 	}
       else
 	cond = c;
+
+      /* Register the new possibly simplified conditional.  When more than 2
+	 entries in a phi node we chain entries in the false branch, so the
+	 inverted condition is active.  */
+      scalar_cond_masked_key pred_cond ({ cond, 1 });
+      if (!*invert)
+	pred_cond.inverted_p = !pred_cond.inverted_p;
+      cond_set.add (pred_cond);
     }
   gcc_assert (cond != NULL_TREE);
   return cond;
 }
 
-/* Local valueization callback that follows all-use SSA edges.  */
+/* Create the smallest nested conditional possible.  On pre-order we record
+   which conditionals are live, and on post-order rewrite the chain by removing
+   already active conditions.
+
+   As an example we simplify:
+
+  _7 = a_10 < 0;
+  _21 = a_10 >= 0;
+  _22 = a_10 < e_11(D);
+  _23 = _21 & _22;
+  _ifc__42 = _23 ? t_13 : 0;
+  t_6 = _7 ? 1 : _ifc__42
+
+  into
+
+  _7 = a_10 < 0;
+  _22 = a_10 < e_11(D);
+  _ifc__42 = _22 ? t_13 : 0;
+  t_6 = _7 ? 1 : _ifc__42;
+
+  which produces better code.  */
 
 static tree
-ifcvt_follow_ssa_use_edges (tree val)
+gen_phi_nest_statement (gphi *phi, gimple_stmt_iterator *gsi,
+			scalar_cond_masked_set_type &cond_set, tree type,
+			hash_map<tree_operand_hash, auto_vec<int>> &phi_arg_map,
+			gimple **res_stmt, tree lhs0, vec<tree> &args,
+			unsigned idx)
 {
-  return val;
+  if (idx == args.length ())
+    return args[idx - 1];
+
+  vec<int> *indexes = phi_arg_map.get (args[idx - 1]);
+  bool invert;
+  tree cond = gen_phi_arg_condition (phi, indexes, gsi, cond_set, &invert);
+  tree arg1 = gen_phi_nest_statement (phi, gsi, cond_set, type, phi_arg_map,
+				      res_stmt, lhs0, args, idx + 1);
+
+  unsigned prev = idx;
+  unsigned curr = prev - 1;
+  tree arg0 = args[curr];
+  tree rhs, lhs;
+  if (idx > 1)
+    lhs = make_temp_ssa_name (type, NULL, "_ifc_");
+  else
+    lhs = lhs0;
+
+  if (invert)
+    rhs = fold_build_cond_expr (type, unshare_expr (cond),
+				arg1, arg0);
+  else
+    rhs = fold_build_cond_expr (type, unshare_expr (cond),
+				arg0, arg1);
+  gassign *new_stmt = gimple_build_assign (lhs, rhs);
+  gsi_insert_before (gsi, new_stmt, GSI_SAME_STMT);
+  update_stmt (new_stmt);
+  *res_stmt = new_stmt;
+  return lhs;
 }
 
 /* Replace a scalar PHI node with a COND_EXPR using COND as condition.
@@ -1926,7 +2058,6 @@ predicate_scalar_phi (gphi *phi, gimple_stmt_iterator *gsi)
   tree rhs, res, arg0, arg1, op0, op1, scev;
   tree cond;
   unsigned int index0;
-  unsigned int max, args_len;
   edge e;
   basic_block bb;
   unsigned int i;
@@ -1955,6 +2086,8 @@ predicate_scalar_phi (gphi *phi, gimple_stmt_iterator *gsi)
     }
 
   bb = gimple_bb (phi);
+  /* Keep track of conditionals already seen.  */
+  scalar_cond_masked_set_type cond_set;
   if (EDGE_COUNT (bb->preds) == 2)
     {
       /* Predicate ordinary PHI node with 2 arguments.  */
@@ -1963,6 +2096,7 @@ predicate_scalar_phi (gphi *phi, gimple_stmt_iterator *gsi)
       first_edge = EDGE_PRED (bb, 0);
       second_edge = EDGE_PRED (bb, 1);
       cond = bb_predicate (first_edge->src);
+      cond_set.add ({ cond, 1 });
       if (TREE_CODE (cond) == TRUTH_NOT_EXPR)
 	std::swap (first_edge, second_edge);
       if (EDGE_COUNT (first_edge->src->succs) > 1)
@@ -1975,10 +2109,11 @@ predicate_scalar_phi (gphi *phi, gimple_stmt_iterator *gsi)
 	}
       else
 	cond = bb_predicate (first_edge->src);
+
       /* Gimplify the condition to a valid cond-expr conditonal operand.  */
-      cond = force_gimple_operand_gsi_1 (gsi, unshare_expr (cond),
-					 is_gimple_condexpr, NULL_TREE,
-					 true, GSI_SAME_STMT);
+      cond = gen_simplified_condition (cond, cond_set);
+      cond = force_gimple_operand_gsi (gsi, unshare_expr (cond), true,
+				       NULL_TREE, true, GSI_SAME_STMT);
       true_bb = first_edge->src;
       if (EDGE_PRED (bb, 1)->src == true_bb)
 	{
@@ -2007,7 +2142,7 @@ predicate_scalar_phi (gphi *phi, gimple_stmt_iterator *gsi)
       new_stmt = gimple_build_assign (res, rhs);
       gsi_insert_before (gsi, new_stmt, GSI_SAME_STMT);
       gimple_stmt_iterator new_gsi = gsi_for_stmt (new_stmt);
-      if (fold_stmt (&new_gsi, ifcvt_follow_ssa_use_edges))
+      if (fold_stmt (&new_gsi, follow_all_ssa_edges))
 	{
 	  new_stmt = gsi_stmt (new_gsi);
 	  update_stmt (new_stmt);
@@ -2026,7 +2161,6 @@ predicate_scalar_phi (gphi *phi, gimple_stmt_iterator *gsi)
   bool swap = false;
   hash_map<tree_operand_hash, auto_vec<int> > phi_arg_map;
   unsigned int num_args = gimple_phi_num_args (phi);
-  int max_ind = -1;
   /* Vector of different PHI argument values.  */
   auto_vec<tree> args (num_args);
 
@@ -2041,28 +2175,38 @@ predicate_scalar_phi (gphi *phi, gimple_stmt_iterator *gsi)
       phi_arg_map.get_or_insert (arg).safe_push (i);
     }
 
-  /* Determine element with max number of occurrences.  */
-  max_ind = -1;
-  max = 1;
-  args_len = args.length ();
-  for (i = 0; i < args_len; i++)
+  /* Determine element with max number of occurrences and complexity.  Looking at only
+     number of occurrences as a measure for complexity isn't enough as all usages can
+     be unique but the comparisons to reach the PHI node differ per branch.  */
+  typedef std::pair <tree, std::pair <unsigned, unsigned>> ArgEntry;
+  auto_vec<ArgEntry> argsKV;
+  for (i = 0; i < args.length (); i++)
     {
-      unsigned int len;
-      if ((len = phi_arg_map.get (args[i])->length ()) > max)
+      unsigned int len = 0;
+      for (int index : phi_arg_map.get (args[i]))
 	{
-	  max_ind = (int) i;
-	  max = len;
+	  edge e = gimple_phi_arg_edge (phi, index);
+	  len += get_bb_num_predicate_stmts (e->src);
 	}
+
+      unsigned occur = phi_arg_map.get (args[i])->length ();
+      if (dump_file && (dump_flags & TDF_DETAILS))
+	fprintf (dump_file, "Ranking %d as len=%d, idx=%d\n", i, len, occur);
+      argsKV.safe_push ({ args[i], { len, occur }});
     }
 
-  /* Put element with max number of occurences to the end of ARGS.  */
-  if (max_ind != -1 && max_ind +1 != (int) args_len)
-    std::swap (args[args_len - 1], args[max_ind]);
+  /* Sort elements based on rankings ARGS.  */
+  std::sort(argsKV.begin(), argsKV.end(), [](ArgEntry &left, ArgEntry &right) {
+    return left.second < right.second;
+  });
+
+  for (i = 0; i < args.length (); i++)
+    args[i] = argsKV[i].first;
 
   /* Handle one special case when number of arguments with different values
      is equal 2 and one argument has the only occurrence.  Such PHI can be
      handled as if would have only 2 arguments.  */
-  if (args_len == 2 && phi_arg_map.get (args[0])->length () == 1)
+  if (args.length () == 2 && phi_arg_map.get (args[0])->length () == 1)
     {
       vec<int> *indexes;
       indexes = phi_arg_map.get (args[0]);
@@ -2077,9 +2221,8 @@ predicate_scalar_phi (gphi *phi, gimple_stmt_iterator *gsi)
 	  cond = TREE_OPERAND (cond, 0);
 	}
       /* Gimplify the condition to a valid cond-expr conditonal operand.  */
-      cond = force_gimple_operand_gsi_1 (gsi, unshare_expr (cond),
-					 is_gimple_condexpr, NULL_TREE,
-					 true, GSI_SAME_STMT);
+      cond = force_gimple_operand_gsi (gsi, unshare_expr (cond), true,
+				       NULL_TREE, true, GSI_SAME_STMT);
       if (!(is_cond_scalar_reduction (phi, &reduc, arg0 , arg1,
 				      &op0, &op1, true, &has_nop, &nop_reduc)))
 	rhs = fold_build_cond_expr (TREE_TYPE (res), unshare_expr (cond),
@@ -2099,26 +2242,9 @@ predicate_scalar_phi (gphi *phi, gimple_stmt_iterator *gsi)
   else
     {
       /* Common case.  */
-      vec<int> *indexes;
       tree type = TREE_TYPE (gimple_phi_result (phi));
-      tree lhs;
-      arg1 = args[1];
-      for (i = 0; i < args_len; i++)
-	{
-	  arg0 = args[i];
-	  indexes = phi_arg_map.get (args[i]);
-	  if (i != args_len - 1)
-	    lhs = make_temp_ssa_name (type, NULL, "_ifc_");
-	  else
-	    lhs = res;
-	  cond = gen_phi_arg_condition (phi, indexes, gsi);
-	  rhs = fold_build_cond_expr (type, unshare_expr (cond),
-				      arg0, arg1);
-	  new_stmt = gimple_build_assign (lhs, rhs);
-	  gsi_insert_before (gsi, new_stmt, GSI_SAME_STMT);
-	  update_stmt (new_stmt);
-	  arg1 = lhs;
-	}
+      gen_phi_nest_statement (phi, gsi, cond_set, type, phi_arg_map,
+			      &new_stmt, res, args, 1);
     }
 
   if (dump_file && (dump_flags & TDF_DETAILS))
@@ -2216,7 +2342,7 @@ insert_gimplified_predicates (loop_p loop)
 	    }
 
 	  /* Once the sequence is code generated, set it to NULL.  */
-	  set_bb_predicate_gimplified_stmts (bb, NULL);
+	  set_bb_predicate_gimplified_stmts (bb, NULL, true);
 	}
     }
 }
@@ -2615,9 +2741,8 @@ predicate_statements (loop_p loop)
 	      rhs = ifc_temp_var (type, unshare_expr (rhs), &gsi);
 	      if (swap)
 		std::swap (lhs, rhs);
-	      cond = force_gimple_operand_gsi_1 (&gsi, unshare_expr (cond),
-						 is_gimple_condexpr, NULL_TREE,
-						 true, GSI_SAME_STMT);
+	      cond = force_gimple_operand_gsi (&gsi, unshare_expr (cond), true,
+					       NULL_TREE, true, GSI_SAME_STMT);
 	      rhs = fold_build_cond_expr (type, unshare_expr (cond), rhs, lhs);
 	      gimple_assign_set_rhs1 (stmt, ifc_temp_var (type, rhs, &gsi));
 	      update_stmt (stmt);
@@ -2906,18 +3031,22 @@ version_loop_for_if_conversion (class loop *loop, vec<gimple *> *preds)
   class loop *new_loop;
   gimple *g;
   gimple_stmt_iterator gsi;
-  unsigned int save_length;
+  unsigned int save_length = 0;
 
   g = gimple_build_call_internal (IFN_LOOP_VECTORIZED, 2,
 				  build_int_cst (integer_type_node, loop->num),
 				  integer_zero_node);
   gimple_call_set_lhs (g, cond);
 
-  /* Save BB->aux around loop_version as that uses the same field.  */
-  save_length = loop->inner ? loop->inner->num_nodes : loop->num_nodes;
-  void **saved_preds = XALLOCAVEC (void *, save_length);
-  for (unsigned i = 0; i < save_length; i++)
-    saved_preds[i] = ifc_bbs[i]->aux;
+  void **saved_preds = NULL;
+  if (any_complicated_phi || need_to_predicate)
+    {
+      /* Save BB->aux around loop_version as that uses the same field.  */
+      save_length = loop->inner ? loop->inner->num_nodes : loop->num_nodes;
+      saved_preds = XALLOCAVEC (void *, save_length);
+      for (unsigned i = 0; i < save_length; i++)
+	saved_preds[i] = ifc_bbs[i]->aux;
+    }
 
   initialize_original_copy_tables ();
   /* At this point we invalidate porfile confistency until IFN_LOOP_VECTORIZED
@@ -2929,8 +3058,9 @@ version_loop_for_if_conversion (class loop *loop, vec<gimple *> *preds)
 			   profile_probability::always (), true);
   free_original_copy_tables ();
 
-  for (unsigned i = 0; i < save_length; i++)
-    ifc_bbs[i]->aux = saved_preds[i];
+  if (any_complicated_phi || need_to_predicate)
+    for (unsigned i = 0; i < save_length; i++)
+      ifc_bbs[i]->aux = saved_preds[i];
 
   if (new_loop == NULL)
     return NULL;
@@ -2942,7 +3072,7 @@ version_loop_for_if_conversion (class loop *loop, vec<gimple *> *preds)
   if (preds)
     preds->safe_push (g);
   gsi_insert_before (&gsi, g, GSI_SAME_STMT);
-  update_ssa (TODO_update_ssa);
+  update_ssa (TODO_update_ssa_no_phi);
   return new_loop;
 }
 
@@ -3006,7 +3136,7 @@ ifcvt_split_critical_edges (class loop *loop, bool aggressive_if_conv)
   auto_vec<edge> critical_edges;
 
   /* Loop is not well formed.  */
-  if (num <= 2 || loop->inner || !single_exit (loop))
+  if (loop->inner)
     return false;
 
   body = get_loop_body (loop);
@@ -3267,6 +3397,201 @@ ifcvt_hoist_invariants (class loop *loop, edge pe)
   free (body);
 }
 
+/* Returns the DECL_FIELD_BIT_OFFSET of the bitfield accesse in stmt iff its
+   type mode is not BLKmode.  If BITPOS is not NULL it will hold the poly_int64
+   value of the DECL_FIELD_BIT_OFFSET of the bitfield access and STRUCT_EXPR,
+   if not NULL, will hold the tree representing the base struct of this
+   bitfield.  */
+
+static tree
+get_bitfield_rep (gassign *stmt, bool write, tree *bitpos,
+		  tree *struct_expr)
+{
+  tree comp_ref = write ? gimple_assign_lhs (stmt)
+			: gimple_assign_rhs1 (stmt);
+
+  tree field_decl = TREE_OPERAND (comp_ref, 1);
+  tree rep_decl = DECL_BIT_FIELD_REPRESENTATIVE (field_decl);
+
+  /* Bail out if the representative is BLKmode as we will not be able to
+     vectorize this.  */
+  if (TYPE_MODE (TREE_TYPE (rep_decl)) == E_BLKmode)
+    return NULL_TREE;
+
+  /* Bail out if the DECL_SIZE of the field_decl isn't the same as the BF's
+     precision.  */
+  unsigned HOST_WIDE_INT bf_prec
+    = TYPE_PRECISION (TREE_TYPE (gimple_assign_lhs (stmt)));
+  if (compare_tree_int (DECL_SIZE (field_decl), bf_prec) != 0)
+    return NULL_TREE;
+
+  if (struct_expr)
+    *struct_expr = TREE_OPERAND (comp_ref, 0);
+
+  if (bitpos)
+    *bitpos
+      = fold_build2 (MINUS_EXPR, bitsizetype,
+		     DECL_FIELD_BIT_OFFSET (field_decl),
+		     DECL_FIELD_BIT_OFFSET (rep_decl));
+
+  return rep_decl;
+
+}
+
+/* Lowers the bitfield described by DATA.
+   For a write like:
+
+   struct.bf = _1;
+
+   lower to:
+
+   __ifc_1 = struct.<representative>;
+   __ifc_2 = BIT_INSERT_EXPR (__ifc_1, _1, bitpos);
+   struct.<representative> = __ifc_2;
+
+   For a read:
+
+   _1 = struct.bf;
+
+    lower to:
+
+    __ifc_1 = struct.<representative>;
+    _1 =  BIT_FIELD_REF (__ifc_1, bitsize, bitpos);
+
+    where representative is a legal load that contains the bitfield value,
+    bitsize is the size of the bitfield and bitpos the offset to the start of
+    the bitfield within the representative.  */
+
+static void
+lower_bitfield (gassign *stmt, bool write)
+{
+  tree struct_expr;
+  tree bitpos;
+  tree rep_decl = get_bitfield_rep (stmt, write, &bitpos, &struct_expr);
+  tree rep_type = TREE_TYPE (rep_decl);
+  tree bf_type = TREE_TYPE (gimple_assign_lhs (stmt));
+
+  gimple_stmt_iterator gsi = gsi_for_stmt (stmt);
+  if (dump_file && (dump_flags & TDF_DETAILS))
+    {
+      fprintf (dump_file, "Lowering:\n");
+      print_gimple_stmt (dump_file, stmt, 0, TDF_SLIM);
+      fprintf (dump_file, "to:\n");
+    }
+
+  /* REP_COMP_REF is a COMPONENT_REF for the representative.  NEW_VAL is it's
+     defining SSA_NAME.  */
+  tree rep_comp_ref = build3 (COMPONENT_REF, rep_type, struct_expr, rep_decl,
+			      NULL_TREE);
+  tree new_val = ifc_temp_var (rep_type, rep_comp_ref, &gsi);
+
+  if (dump_file && (dump_flags & TDF_DETAILS))
+    print_gimple_stmt (dump_file, SSA_NAME_DEF_STMT (new_val), 0, TDF_SLIM);
+
+  if (write)
+    {
+      new_val = ifc_temp_var (rep_type,
+			      build3 (BIT_INSERT_EXPR, rep_type, new_val,
+				      unshare_expr (gimple_assign_rhs1 (stmt)),
+				      bitpos), &gsi);
+
+      if (dump_file && (dump_flags & TDF_DETAILS))
+	print_gimple_stmt (dump_file, SSA_NAME_DEF_STMT (new_val), 0, TDF_SLIM);
+
+      gimple *new_stmt = gimple_build_assign (unshare_expr (rep_comp_ref),
+					      new_val);
+      gimple_move_vops (new_stmt, stmt);
+      gsi_insert_before (&gsi, new_stmt, GSI_SAME_STMT);
+
+      if (dump_file && (dump_flags & TDF_DETAILS))
+	print_gimple_stmt (dump_file, new_stmt, 0, TDF_SLIM);
+    }
+  else
+    {
+      tree bfr = build3 (BIT_FIELD_REF, bf_type, new_val,
+			 build_int_cst (bitsizetype, TYPE_PRECISION (bf_type)),
+			 bitpos);
+      new_val = ifc_temp_var (bf_type, bfr, &gsi);
+
+      gimple *new_stmt = gimple_build_assign (gimple_assign_lhs (stmt),
+					      new_val);
+      gimple_move_vops (new_stmt, stmt);
+      gsi_insert_before (&gsi, new_stmt, GSI_SAME_STMT);
+
+      if (dump_file && (dump_flags & TDF_DETAILS))
+	print_gimple_stmt (dump_file, new_stmt, 0, TDF_SLIM);
+    }
+
+  gsi_remove (&gsi, true);
+}
+
+/* Return TRUE if there are bitfields to lower in this LOOP.  Fill TO_LOWER
+   with data structures representing these bitfields.  */
+
+static bool
+bitfields_to_lower_p (class loop *loop,
+		      vec <gassign *> &reads_to_lower,
+		      vec <gassign *> &writes_to_lower)
+{
+  gimple_stmt_iterator gsi;
+
+  if (dump_file && (dump_flags & TDF_DETAILS))
+    {
+      fprintf (dump_file, "Analyzing loop %d for bitfields:\n", loop->num);
+    }
+
+  for (unsigned i = 0; i < loop->num_nodes; ++i)
+    {
+      basic_block bb = ifc_bbs[i];
+      for (gsi = gsi_start_bb (bb); !gsi_end_p (gsi); gsi_next (&gsi))
+	{
+	  gassign *stmt = dyn_cast<gassign*> (gsi_stmt (gsi));
+	  if (!stmt)
+	    continue;
+
+	  tree op = gimple_assign_lhs (stmt);
+	  bool write = TREE_CODE (op) == COMPONENT_REF;
+
+	  if (!write)
+	    op = gimple_assign_rhs1 (stmt);
+
+	  if (TREE_CODE (op) != COMPONENT_REF)
+	    continue;
+
+	  if (DECL_BIT_FIELD_TYPE (TREE_OPERAND (op, 1)))
+	    {
+	      if (dump_file && (dump_flags & TDF_DETAILS))
+		print_gimple_stmt (dump_file, stmt, 0, TDF_SLIM);
+
+	      if (!INTEGRAL_TYPE_P (TREE_TYPE (op)))
+		{
+		  if (dump_file && (dump_flags & TDF_DETAILS))
+		    fprintf (dump_file, "\t Bitfield NO OK to lower,"
+					" field type is not Integral.\n");
+		  return false;
+		}
+
+	      if (!get_bitfield_rep (stmt, write, NULL, NULL))
+		{
+		  if (dump_file && (dump_flags & TDF_DETAILS))
+		    fprintf (dump_file, "\t Bitfield NOT OK to lower,"
+					" representative is BLKmode.\n");
+		  return false;
+		}
+
+	      if (dump_file && (dump_flags & TDF_DETAILS))
+		fprintf (dump_file, "\tBitfield OK to lower.\n");
+	      if (write)
+		writes_to_lower.safe_push (stmt);
+	      else
+		reads_to_lower.safe_push (stmt);
+	    }
+	}
+    }
+  return !reads_to_lower.is_empty () || !writes_to_lower.is_empty ();
+}
+
+
 /* If-convert LOOP when it is legal.  For the moment this pass has no
    profitability analysis.  Returns non-zero todo flags when something
    changed.  */
@@ -3277,12 +3602,16 @@ tree_if_conversion (class loop *loop, vec<gimple *> *preds)
   unsigned int todo = 0;
   bool aggressive_if_conv;
   class loop *rloop;
+  auto_vec <gassign *, 4> reads_to_lower;
+  auto_vec <gassign *, 4> writes_to_lower;
   bitmap exit_bbs;
   edge pe;
 
  again:
   rloop = NULL;
   ifc_bbs = NULL;
+  need_to_lower_bitfields = false;
+  need_to_ifcvt = false;
   need_to_predicate = false;
   need_to_rewrite_undefined = false;
   any_complicated_phi = false;
@@ -3298,16 +3627,42 @@ tree_if_conversion (class loop *loop, vec<gimple *> *preds)
 	aggressive_if_conv = true;
     }
 
-  if (!ifcvt_split_critical_edges (loop, aggressive_if_conv))
+  if (!single_exit (loop))
     goto cleanup;
 
-  if (!if_convertible_loop_p (loop)
-      || !dbg_cnt (if_conversion_tree))
+  /* If there are more than two BBs in the loop then there is at least one if
+     to convert.  */
+  if (loop->num_nodes > 2
+      && !ifcvt_split_critical_edges (loop, aggressive_if_conv))
     goto cleanup;
 
-  if ((need_to_predicate || any_complicated_phi)
-      && ((!flag_tree_loop_vectorize && !loop->force_vectorize)
-	  || loop->dont_vectorize))
+  ifc_bbs = get_loop_body_in_if_conv_order (loop);
+  if (!ifc_bbs)
+    {
+      if (dump_file && (dump_flags & TDF_DETAILS))
+	fprintf (dump_file, "Irreducible loop\n");
+      goto cleanup;
+    }
+
+  if (loop->num_nodes > 2)
+    {
+      need_to_ifcvt = true;
+
+      if (!if_convertible_loop_p (loop) || !dbg_cnt (if_conversion_tree))
+	goto cleanup;
+
+      if ((need_to_predicate || any_complicated_phi)
+	  && ((!flag_tree_loop_vectorize && !loop->force_vectorize)
+	      || loop->dont_vectorize))
+	goto cleanup;
+    }
+
+  if ((flag_tree_loop_vectorize || loop->force_vectorize)
+      && !loop->dont_vectorize)
+    need_to_lower_bitfields = bitfields_to_lower_p (loop, reads_to_lower,
+						    writes_to_lower);
+
+  if (!need_to_ifcvt && !need_to_lower_bitfields)
     goto cleanup;
 
   /* The edge to insert invariant stmts on.  */
@@ -3318,7 +3673,8 @@ tree_if_conversion (class loop *loop, vec<gimple *> *preds)
      Either version this loop, or if the pattern is right for outer-loop
      vectorization, version the outer loop.  In the latter case we will
      still if-convert the original inner loop.  */
-  if (need_to_predicate
+  if (need_to_lower_bitfields
+      || need_to_predicate
       || any_complicated_phi
       || flag_tree_loop_if_convert != 1)
     {
@@ -3358,10 +3714,31 @@ tree_if_conversion (class loop *loop, vec<gimple *> *preds)
 	pe = single_pred_edge (gimple_bb (preds->last ()));
     }
 
-  /* Now all statements are if-convertible.  Combine all the basic
-     blocks into one huge basic block doing the if-conversion
-     on-the-fly.  */
-  combine_blocks (loop);
+  if (need_to_lower_bitfields)
+    {
+      if (dump_file && (dump_flags & TDF_DETAILS))
+	{
+	  fprintf (dump_file, "-------------------------\n");
+	  fprintf (dump_file, "Start lowering bitfields\n");
+	}
+      while (!reads_to_lower.is_empty ())
+	lower_bitfield (reads_to_lower.pop (), false);
+      while (!writes_to_lower.is_empty ())
+	lower_bitfield (writes_to_lower.pop (), true);
+
+      if (dump_file && (dump_flags & TDF_DETAILS))
+	{
+	  fprintf (dump_file, "Done lowering bitfields\n");
+	  fprintf (dump_file, "-------------------------\n");
+	}
+    }
+  if (need_to_ifcvt)
+    {
+      /* Now all statements are if-convertible.  Combine all the basic
+	 blocks into one huge basic block doing the if-conversion
+	 on-the-fly.  */
+      combine_blocks (loop);
+    }
 
   /* Perform local CSE, this esp. helps the vectorizer analysis if loads
      and stores are involved.  CSE only the loop body, not the entry
@@ -3401,6 +3778,8 @@ tree_if_conversion (class loop *loop, vec<gimple *> *preds)
   if (rloop != NULL)
     {
       loop = rloop;
+      reads_to_lower.truncate (0);
+      writes_to_lower.truncate (0);
       goto again;
     }
 

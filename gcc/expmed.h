@@ -707,6 +707,8 @@ extern rtx expand_variable_shift (enum tree_code, machine_mode,
 				  rtx, tree, rtx, int);
 extern rtx expand_shift (enum tree_code, machine_mode, rtx, poly_int64, rtx,
 			 int);
+extern rtx maybe_expand_shift (enum tree_code, machine_mode, rtx, int, rtx,
+			       int);
 #ifdef GCC_OPTABS_H
 extern rtx expand_divmod (int, enum tree_code, machine_mode, rtx, rtx,
 			  rtx, int, enum optab_methods = OPTAB_LIB_WIDEN);
@@ -715,7 +717,7 @@ extern rtx expand_divmod (int, enum tree_code, machine_mode, rtx, rtx,
 
 extern void store_bit_field (rtx, poly_uint64, poly_uint64,
 			     poly_uint64, poly_uint64,
-			     machine_mode, rtx, bool);
+			     machine_mode, rtx, bool, bool);
 extern rtx extract_bit_field (rtx, poly_uint64, poly_uint64, int, rtx,
 			      machine_mode, machine_mode, bool, rtx *);
 extern rtx extract_low_bits (machine_mode, machine_mode, rtx);

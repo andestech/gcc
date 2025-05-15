@@ -34,6 +34,7 @@
 # ifdef _GLIBCXX_HAVE_SLEEP
 #  include <unistd.h>
 # elif defined(_GLIBCXX_HAVE_WIN32_SLEEP)
+#  define WIN32_LEAN_AND_MEAN
 #  include <windows.h>
 # elif defined _GLIBCXX_NO_SLEEP && defined _GLIBCXX_HAS_GTHREADS
 // We expect to be able to sleep for targets that support multiple threads:

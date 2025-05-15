@@ -1,4 +1,5 @@
 /* { dg-options "-march=rv64imc -mabi=lp64" } */
+/* { dg-require-effective-target rv64 } */
 /* { dg-skip-if "" { *-*-* } { "*" } { "-Os" } } */
 
 /* shorten_memrefs should rewrite these load/stores into a compressible

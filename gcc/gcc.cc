@@ -27,6 +27,7 @@ CC recognizes how to compile each input file by suffixes in the file names.
 Once it knows which kind of compilation to perform, the procedure for
 compilation is specified by a string called a "spec".  */
 
+#define INCLUDE_STRING
 #include "config.h"
 #include "system.h"
 #include "coretypes.h"
@@ -43,6 +44,8 @@ compilation is specified by a string called a "spec".  */
 #include "opts.h"
 #include "filenames.h"
 #include "spellcheck.h"
+#include "opts-jobserver.h"
+#include "common/common-target.h"
 
 
 
@@ -1191,6 +1194,14 @@ proper position among the other output files.  */
 # define SYSROOT_HEADERS_SUFFIX_SPEC ""
 #endif
 
+#ifndef STARTFILE_CXX_SPEC
+#define STARTFILE_CXX_SPEC STARTFILE_SPEC
+#endif
+
+#ifndef ENDFILE_CXX_SPEC
+#define ENDFILE_CXX_SPEC ENDFILE_SPEC
+#endif
+
 static const char *asm_debug = ASM_DEBUG_SPEC;
 static const char *asm_debug_option = ASM_DEBUG_OPTION_SPEC;
 static const char *cpp_spec = CPP_SPEC;
@@ -1218,6 +1229,9 @@ static const char *sysroot_spec = SYSROOT_SPEC;
 static const char *sysroot_suffix_spec = SYSROOT_SUFFIX_SPEC;
 static const char *sysroot_hdrs_suffix_spec = SYSROOT_HEADERS_SUFFIX_SPEC;
 static const char *self_spec = "";
+
+static const char *startfile_cxx_spec = STARTFILE_CXX_SPEC;
+static const char *endfile_cxx_spec = ENDFILE_CXX_SPEC;
 
 /* Standard options to cpp, cc1, and as, to reduce duplication in specs.
    There should be no need to override these in target dependent files,
@@ -1433,7 +1447,7 @@ static const struct compiler default_compilers[] =
   {".go", "#Go", 0, 1, 0},
   {".d", "#D", 0, 1, 0}, {".dd", "#D", 0, 1, 0}, {".di", "#D", 0, 1, 0},
   /* Next come the entries for C.  */
-  {".c", "@c", 0, 0, 1},
+  {".c", "@nds32_c", 0, 0, 1},
   {"@c",
    /* cc1 has an integrated ISO C preprocessor.  We should invoke the
       external preprocessor if -save-temps is given.  */
@@ -1448,6 +1462,38 @@ static const struct compiler default_compilers[] =
       %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
 	  cc1 %(cpp_unique_options) %(cc1_options)}}}\
       %{!fsyntax-only:%(invoke_as)}}}}", 0, 0, 1},
+  {"@nds32_c",
+   /* cc1 has an integrated ISO C preprocessor.  We should invoke the
+      external preprocessor if -save-temps is given.  */
+     "%{E|M|MM:%(trad_capable_cpp) %(cpp_options) %(cpp_debug_options)}\
+      %{mace:\
+	  %{!E:%{!M:%{!MM:\
+	      %{traditional:\
+%eGNU C no longer supports -traditional without -E}\
+	  %{save-temps*|traditional-cpp|no-integrated-cpp:%(trad_capable_cpp) \
+	      %(cpp_options) -o %{save-temps*:%b.i} %{!save-temps*:%g.i} \n\
+		cs2 %{mace-s2s*} %{save-temps*:%b.i} %{!save-temps*:%g.i} \
+		    -o %{save-temps*:%b.ace.i} %{!save-temps*:%g.ace.i} --\n\
+		cc1 -fpreprocessed %{save-temps*:%b.ace.i} %{!save-temps*:%g.ace.i} \
+	      %(cc1_options)}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      %(trad_capable_cpp) %(cpp_options) -o %u.i\n}}}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cs2 %{mace-s2s*} %U.i -o %u.ace.i --\n}}}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cc1 -fpreprocessed %U.ace.i %(cc1_options)}}}\
+	  %{!fsyntax-only:%(invoke_as)}}}}}\
+      %{!mace:\
+	  %{!E:%{!M:%{!MM:\
+	      %{traditional:\
+%eGNU C no longer supports -traditional without -E}\
+	  %{save-temps*|traditional-cpp|no-integrated-cpp:%(trad_capable_cpp) \
+	      %(cpp_options) -o %{save-temps*:%b.i} %{!save-temps*:%g.i} \n\
+		cc1 -fpreprocessed %{save-temps*:%b.i} %{!save-temps*:%g.i} \
+	      %(cc1_options)}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cc1 %(cpp_unique_options) %(cc1_options)}}}\
+	  %{!fsyntax-only:%(invoke_as)}}}}}", 0, 0, 1},
   {"-",
    "%{!E:%e-E or -x required when input is from standard input}\
     %(trad_capable_cpp) %(cpp_options) %(cpp_debug_options)", 0, 0, 0},
@@ -1733,6 +1779,9 @@ static struct spec_list static_specs[] =
   INIT_STATIC_SPEC ("sysroot_suffix_spec",	&sysroot_suffix_spec),
   INIT_STATIC_SPEC ("sysroot_hdrs_suffix_spec",	&sysroot_hdrs_suffix_spec),
   INIT_STATIC_SPEC ("self_spec",		&self_spec),
+
+  INIT_STATIC_SPEC ("startfile_cxx",		&startfile_cxx_spec),
+  INIT_STATIC_SPEC ("endfile_cxx",		&endfile_cxx_spec),
 };
 
 #ifdef EXTRA_SPECS		/* additional specs needed */
@@ -3583,42 +3632,6 @@ execute (void)
   }
 }
 
-/* Find all the switches given to us
-   and make a vector describing them.
-   The elements of the vector are strings, one per switch given.
-   If a switch uses following arguments, then the `part1' field
-   is the switch itself and the `args' field
-   is a null-terminated vector containing the following arguments.
-   Bits in the `live_cond' field are:
-   SWITCH_LIVE to indicate this switch is true in a conditional spec.
-   SWITCH_FALSE to indicate this switch is overridden by a later switch.
-   SWITCH_IGNORE to indicate this switch should be ignored (used in %<S).
-   SWITCH_IGNORE_PERMANENTLY to indicate this switch should be ignored.
-   SWITCH_KEEP_FOR_GCC to indicate that this switch, otherwise ignored,
-   should be included in COLLECT_GCC_OPTIONS.
-   in all do_spec calls afterwards.  Used for %<S from self specs.
-   The `known' field describes whether this is an internal switch.
-   The `validated' field describes whether any spec has looked at this switch;
-   if it remains false at the end of the run, the switch must be meaningless.
-   The `ordering' field is used to temporarily mark switches that have to be
-   kept in a specific order.  */
-
-#define SWITCH_LIVE    			(1 << 0)
-#define SWITCH_FALSE   			(1 << 1)
-#define SWITCH_IGNORE			(1 << 2)
-#define SWITCH_IGNORE_PERMANENTLY	(1 << 3)
-#define SWITCH_KEEP_FOR_GCC		(1 << 4)
-
-struct switchstr
-{
-  const char *part1;
-  const char **args;
-  unsigned int live_cond;
-  bool known;
-  bool validated;
-  bool ordering;
-};
-
 static struct switchstr *switches;
 
 static int n_switches;
@@ -3758,8 +3771,7 @@ display_help (void)
 
   fputs (_("  -pass-exit-codes         Exit with highest error code from a phase.\n"), stdout);
   fputs (_("  --help                   Display this information.\n"), stdout);
-  fputs (_("  --target-help            Display target specific command line options "
-	   "(including assembler and linker options).\n"), stdout);
+  fputs (_("  --target-help            Display target specific command line options.\n"), stdout);
   fputs (_("  --help={common|optimizers|params|target|warnings|[^]{joined|separate|undocumented}}[,...].\n"), stdout);
   fputs (_("                           Display specific types of command line options.\n"), stdout);
   if (! verbose_flag)
@@ -3834,10 +3846,15 @@ add_preprocessor_option (const char *option, int len)
   preprocessor_options.safe_push (save_string (option, len));
 }
 
+/* -mace=/path/to/libacetool.so */
+static const char *acetool = NULL;
+
 static void
 add_assembler_option (const char *option, int len)
 {
   assembler_options.safe_push (save_string (option, len));
+  if (strncmp(option, "-mace=", 6) == 0)
+    acetool = assembler_options.last();
 }
 
 static void
@@ -5504,6 +5521,15 @@ set_collect_gcc_options (void)
 		sizeof ("COLLECT_GCC_OPTIONS=") - 1);
 
   first_time = TRUE;
+
+  if (acetool != NULL)
+    {
+      obstack_grow (&collect_obstack, "'-Wa,", 5);
+      obstack_grow (&collect_obstack, acetool, strlen (acetool));
+      obstack_grow (&collect_obstack, "'", 1);
+      first_time = FALSE;
+    }
+
   for (i = 0; (int) i < n_switches; i++)
     {
       const char *const *args;
@@ -6627,7 +6653,11 @@ do_spec_1 (const char *spec, int inswitch, const char *soft_matched_part)
 	    break;
 
 	  case 'E':
-	    value = do_spec_1 (endfile_spec, 0, NULL);
+	    if (lang_specific_is_c_plus_plus ())
+	      value = do_spec_1 (endfile_cxx_spec, 0, NULL);
+	    else
+	      value = do_spec_1 (endfile_spec, 0, NULL);
+
 	    if (value != 0)
 	      return value;
 	    break;
@@ -6672,7 +6702,11 @@ do_spec_1 (const char *spec, int inswitch, const char *soft_matched_part)
 	    break;
 
 	  case 'S':
-	    value = do_spec_1 (startfile_spec, 0, NULL);
+	    if (lang_specific_is_c_plus_plus ())
+	      value = do_spec_1 (startfile_cxx_spec, 0, NULL);
+	    else
+	      value = do_spec_1 (startfile_spec, 0, NULL);
+
 	    if (value != 0)
 	      return value;
 	    break;
@@ -9178,38 +9212,9 @@ driver::final_actions () const
 void
 driver::detect_jobserver () const
 {
-  /* Detect jobserver and drop it if it's not working.  */
-  const char *makeflags = env.get ("MAKEFLAGS");
-  if (makeflags != NULL)
-    {
-      const char *needle = "--jobserver-auth=";
-      const char *n = strstr (makeflags, needle);
-      if (n != NULL)
-	{
-	  int rfd = -1;
-	  int wfd = -1;
-
-	  bool jobserver
-	    = (sscanf (n + strlen (needle), "%d,%d", &rfd, &wfd) == 2
-	       && rfd > 0
-	       && wfd > 0
-	       && is_valid_fd (rfd)
-	       && is_valid_fd (wfd));
-
-	  /* Drop the jobserver if it's not working now.  */
-	  if (!jobserver)
-	    {
-	      unsigned offset = n - makeflags;
-	      char *dup = xstrdup (makeflags);
-	      dup[offset] = '\0';
-
-	      const char *space = strchr (makeflags + offset, ' ');
-	      if (space != NULL)
-		strcpy (dup + offset, space);
-	      xputenv (concat ("MAKEFLAGS=", dup, NULL));
-	    }
-	}
-    }
+  jobserver_info jinfo;
+  if (!jinfo.is_active && !jinfo.skipped_makeflags.empty ())
+    xputenv (jinfo.skipped_makeflags.c_str ());
 }
 
 /* Determine what the exit code of the driver should be.  */
@@ -9873,6 +9878,17 @@ set_multilib_dir (void)
 
       ++p;
     }
+
+  multilib_dir =
+    targetm_common.compute_multilib (
+      switches,
+      n_switches,
+      multilib_dir,
+      multilib_defaults,
+      multilib_select,
+      multilib_matches,
+      multilib_exclusions,
+      multilib_reuse);
 
   if (multilib_dir == NULL && multilib_os_dir != NULL
       && strcmp (multilib_os_dir, ".") == 0)
@@ -11214,6 +11230,7 @@ driver::finalize ()
   added_libraries = 0;
   XDELETEVEC (outfiles);
   outfiles = NULL;
+  acetool = NULL;
   spec_lang = 0;
   last_language_n_infiles = 0;
   gcc_input_filename = NULL;

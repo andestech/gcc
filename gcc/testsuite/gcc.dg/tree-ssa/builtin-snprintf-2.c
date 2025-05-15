@@ -1,7 +1,7 @@
 /* PR middle-end/79496 - call to snprintf with non-zero size eliminated
    with -Wformat-truncation=2
    { dg-do compile }
-   { dg-options "-O2 -Wall -Wformat-truncation=2 -fprintf-return-value -fdump-tree-optimized" } */
+   { dg-options "-O2 -Wall -Wformat-truncation=2 -fprintf-return-value -fdump-tree-optimized -mno-riscv-iprintf" } */
 
 char d[2];
 
