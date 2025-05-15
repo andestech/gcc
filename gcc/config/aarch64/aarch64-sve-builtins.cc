@@ -1533,6 +1533,7 @@ function_builder::add_function (const function_instance &instance,
 {
   unsigned int length = vec_safe_length (registered_functions);
   unsigned int code = (m_function_index << AARCH64_BUILTIN_SHIFT) | AARCH64_BUILTIN_SVE;
+  bool create_p;
   /* We need to be able to generate placeholders to enusre that we have a
      consistent numbering scheme for function codes between the C and C++
      frontends, so that everything ties up in LTO.
@@ -1549,7 +1550,7 @@ function_builder::add_function (const function_instance &instance,
   tree decl = placeholder_p || m_function_nulls
     ? integer_zero_node
     : simulate_builtin_function_decl (input_location, name, fntype,
-				      code, NULL, attrs);
+				      code, NULL, attrs, &create_p);
 
   registered_function &rfn = *ggc_alloc <registered_function> ();
   rfn.instance = instance;

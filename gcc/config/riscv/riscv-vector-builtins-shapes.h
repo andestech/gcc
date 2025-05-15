@@ -59,6 +59,43 @@ extern const function_shape *const seg_fault_load;
 extern const function_shape *const crypto_vv;
 extern const function_shape *const crypto_vi;
 extern const function_shape *const crypto_vv_no_op_type;
+extern const function_shape *const vcpopv;
+/* Andes BF16 Mode Switch. In rvv-intrinsic-doc, some of non-overloaded base
+ * will happen collide issue in BF/HF mode switch. E.g.,
+ * __riscv_vfwadd_vv_f32m1(op1, op2, vl), type of op1 and op2 could BF or HF.
+ * List these instance base vfwadd, vfwadd_frm, vfwsub, vfwsub_frm, vfwmul,
+ * vfwmul_frm, vfwmacc, vfwmacc_frm, vfwnmacc, vfwnmacc_frm, vfwmsac,
+ * vfwmsac_frm, vfwnmsac, vfwnmsac_frm, vfclass, vfcvt_x, vfcvt_xu, vfcvt_x_frm,
+ * vfcvt_xu_frm, vfcvt_rtz_x, vfwcvt_rtz_xu, vfncvt_x, vfncvt_xu, vfncvt_rtz_x,
+ * vfncvt_rtz_xu, vfncvt_x_frm, vfncvt_xu_frm. */
+extern const function_shape *const alu_default_fp;
+extern const function_shape *const alu_ms_fp;
+extern const function_shape *const alu_default_bf;
+extern const function_shape *const alu_ms_bf;
+extern const function_shape *const alu_frm_default_fp;
+extern const function_shape *const alu_frm_ms_fp;
+extern const function_shape *const alu_frm_default_bf;
+extern const function_shape *const alu_frm_ms_bf;
+extern const function_shape *const widen_alu_default_fp;
+extern const function_shape *const widen_alu_ms_fp;
+extern const function_shape *const widen_alu_default_bf;
+extern const function_shape *const widen_alu_ms_bf;
+extern const function_shape *const widen_alu_frm_default_fp;
+extern const function_shape *const widen_alu_frm_ms_fp;
+extern const function_shape *const widen_alu_frm_default_bf;
+extern const function_shape *const widen_alu_frm_ms_bf;
+extern const function_shape *const narrow_alu_default_fp;
+extern const function_shape *const narrow_alu_ms_fp;
+extern const function_shape *const narrow_alu_default_bf;
+extern const function_shape *const narrow_alu_ms_bf;
+extern const function_shape *const narrow_alu_frm_default_fp;
+extern const function_shape *const narrow_alu_frm_ms_fp;
+extern const function_shape *const narrow_alu_frm_default_bf;
+extern const function_shape *const narrow_alu_frm_ms_bf;
+/* NTLH */
+extern const function_shape *const ntlh;
+/* Andes Vector INT4 Load Extension */
+extern const function_shape *const nibbleload;
 }
 
 } // end namespace riscv_vector

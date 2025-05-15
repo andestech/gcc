@@ -1,6 +1,6 @@
 /* { dg-do compile } */
 /* Verify that store mapping are compatible with Table A.6 & A.7.  */
-/* { dg-options "-O3" } */
+/* { dg-options "-O3 -matomic" } */
 /* { dg-skip-if "" { *-*-* } { "-g" "-flto"} } */
 /* { dg-final { check-function-bodies "**" "" } } */
 

@@ -72,7 +72,10 @@ along with GCC; see the file COPYING3.  If not see
   VECTOR, MASK, SIGNED, UNSIGNED, EEW8_INDEX, EEW16_INDEX, EEW32_INDEX,        \
   EEW64_INDEX, SHIFT, DOUBLE_TRUNC, QUAD_TRUNC, OCT_TRUNC,                     \
   DOUBLE_TRUNC_SCALAR, DOUBLE_TRUNC_SIGNED, DOUBLE_TRUNC_UNSIGNED,             \
-  DOUBLE_TRUNC_UNSIGNED_SCALAR, DOUBLE_TRUNC_FLOAT, FLOAT, LMUL1, WLMUL1,      \
+  DOUBLE_TRUNC_UNSIGNED_SCALAR, DOUBLE_TRUNC_FLOAT,			       \
+  QUAD_TRUNC_SCALAR, QUAD_TRUNC_SIGNED, QUAD_TRUNC_UNSIGNED,		       \
+  QUAD_TRUNC_UNSIGNED_SCALAR, FLOAT, BFLOAT, LMUL1, WLMUL1, WLMUL1_SCALAR,     \
+  DOUBLE_TRUNC_BF, DOUBLE_TRUNC_BF_SCALAR,				       \
   EEW8_INTERPRET, EEW16_INTERPRET, EEW32_INTERPRET, EEW64_INTERPRET,           \
   BOOL1_INTERPRET, BOOL2_INTERPRET, BOOL4_INTERPRET, BOOL8_INTERPRET,          \
   BOOL16_INTERPRET, BOOL32_INTERPRET, BOOL64_INTERPRET,                        \
@@ -92,6 +95,11 @@ along with GCC; see the file COPYING3.  If not see
 /* Define RVV_FRM rounding mode enum for floating-point intrinsics.  */
 #ifndef DEF_RVV_FRM_ENUM
 #define DEF_RVV_FRM_ENUM(NAME, VALUE)
+#endif
+
+/* Use "DEF_SCALAR_TYPE" macro to define scalar function types   */
+#ifndef DEF_SCALAR_TYPE
+#define DEF_SCALAR_TYPE(NAME, SCALAR_TYPE)
 #endif
 
 /* SEW/LMUL = 64:
@@ -556,6 +564,51 @@ DEF_RVV_TUPLE_TYPE (vfloat64m4x2_t, 19, __rvv_float64m4x2_t, vfloat64m4_t, doubl
 DEF_RVV_TYPE (vfloat64m8_t, 17, __rvv_float64m8_t, double, RVVM8DF, _f64m8,
 	      _f64, _e64m8)
 
+/* Enabled if TARGET_ZVFBFMIN or TARGET_BF16MS.  */
+/* LMUL = 1/4.  */
+DEF_RVV_TYPE (vbfloat16mf4_t, 19, __rvv_bfloat16mf4_t, bfloat16, RVVMF4BF, _bf16mf4,
+	      _bf16, _e16mf4)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf4x2_t, 21, __rvv_bfloat16mf4x2_t, vbfloat16mf4_t, bfloat16, 2, _bf16mf4x2)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf4x3_t, 21, __rvv_bfloat16mf4x3_t, vbfloat16mf4_t, bfloat16, 3, _bf16mf4x3)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf4x4_t, 21, __rvv_bfloat16mf4x4_t, vbfloat16mf4_t, bfloat16, 4, _bf16mf4x4)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf4x5_t, 21, __rvv_bfloat16mf4x5_t, vbfloat16mf4_t, bfloat16, 5, _bf16mf4x5)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf4x6_t, 21, __rvv_bfloat16mf4x6_t, vbfloat16mf4_t, bfloat16, 6, _bf16mf4x6)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf4x7_t, 21, __rvv_bfloat16mf4x7_t, vbfloat16mf4_t, bfloat16, 7, _bf16mf4x7)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf4x8_t, 21, __rvv_bfloat16mf4x8_t, vbfloat16mf4_t, bfloat16, 8, _bf16mf4x8)
+/* LMUL = 1/2.  */
+DEF_RVV_TYPE (vbfloat16mf2_t, 19, __rvv_bfloat16mf2_t, bfloat16, RVVMF2BF, _bf16mf2,
+	      _bf16, _e16mf2)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf2x2_t, 21, __rvv_bfloat16mf2x2_t, vbfloat16mf2_t, bfloat16, 2, _bf16mf2x2)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf2x3_t, 21, __rvv_bfloat16mf2x3_t, vbfloat16mf2_t, bfloat16, 3, _bf16mf2x3)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf2x4_t, 21, __rvv_bfloat16mf2x4_t, vbfloat16mf2_t, bfloat16, 4, _bf16mf2x4)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf2x5_t, 21, __rvv_bfloat16mf2x5_t, vbfloat16mf2_t, bfloat16, 5, _bf16mf2x5)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf2x6_t, 21, __rvv_bfloat16mf2x6_t, vbfloat16mf2_t, bfloat16, 6, _bf16mf2x6)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf2x7_t, 21, __rvv_bfloat16mf2x7_t, vbfloat16mf2_t, bfloat16, 7, _bf16mf2x7)
+DEF_RVV_TUPLE_TYPE (vbfloat16mf2x8_t, 21, __rvv_bfloat16mf2x8_t, vbfloat16mf2_t, bfloat16, 8, _bf16mf2x8)
+/* LMUL = 1.  */
+DEF_RVV_TYPE (vbfloat16m1_t, 18, __rvv_bfloat16m1_t, bfloat16, RVVM1BF, _bf16m1,
+	      _bf16, _e16m1)
+DEF_RVV_TUPLE_TYPE (vbfloat16m1x2_t, 20, __rvv_bfloat16m1x2_t, vbfloat16m1_t, bfloat16, 2, _bf16m1x2)
+DEF_RVV_TUPLE_TYPE (vbfloat16m1x3_t, 20, __rvv_bfloat16m1x3_t, vbfloat16m1_t, bfloat16, 3, _bf16m1x3)
+DEF_RVV_TUPLE_TYPE (vbfloat16m1x4_t, 20, __rvv_bfloat16m1x4_t, vbfloat16m1_t, bfloat16, 4, _bf16m1x4)
+DEF_RVV_TUPLE_TYPE (vbfloat16m1x5_t, 20, __rvv_bfloat16m1x5_t, vbfloat16m1_t, bfloat16, 5, _bf16m1x5)
+DEF_RVV_TUPLE_TYPE (vbfloat16m1x6_t, 20, __rvv_bfloat16m1x6_t, vbfloat16m1_t, bfloat16, 6, _bf16m1x6)
+DEF_RVV_TUPLE_TYPE (vbfloat16m1x7_t, 20, __rvv_bfloat16m1x7_t, vbfloat16m1_t, bfloat16, 7, _bf16m1x7)
+DEF_RVV_TUPLE_TYPE (vbfloat16m1x8_t, 20, __rvv_bfloat16m1x8_t, vbfloat16m1_t, bfloat16, 8, _bf16m1x8)
+/* LMUL = 2.  */
+DEF_RVV_TYPE (vbfloat16m2_t, 18, __rvv_bfloat16m2_t, bfloat16, RVVM2BF, _bf16m2,
+	      _bf16, _e16m2)
+DEF_RVV_TUPLE_TYPE (vbfloat16m2x2_t, 20, __rvv_bfloat16m2x2_t, vbfloat16m2_t, bfloat16, 2, _bf16m2x2)
+DEF_RVV_TUPLE_TYPE (vbfloat16m2x3_t, 20, __rvv_bfloat16m2x3_t, vbfloat16m2_t, bfloat16, 3, _bf16m2x3)
+DEF_RVV_TUPLE_TYPE (vbfloat16m2x4_t, 20, __rvv_bfloat16m2x4_t, vbfloat16m2_t, bfloat16, 4, _bf16m2x4)
+/* LMUL = 4.  */
+DEF_RVV_TYPE (vbfloat16m4_t, 18, __rvv_bfloat16m4_t, bfloat16, RVVM4BF, _bf16m4,
+	      _bf16, _e16m4)
+DEF_RVV_TUPLE_TYPE (vbfloat16m4x2_t, 20, __rvv_bfloat16m4x2_t, vbfloat16m4_t, bfloat16, 2, _bf16m4x2)
+/* LMUL = 8.  */
+DEF_RVV_TYPE (vbfloat16m8_t, 17, __rvv_bfloat16m8_t, bfloat16, RVVM8BF, _bf16m8,
+	      _bf16, _e16m8)
+
 DEF_RVV_OP_TYPE (vv)
 DEF_RVV_OP_TYPE (vx)
 DEF_RVV_OP_TYPE (vi)
@@ -583,6 +636,8 @@ DEF_RVV_OP_TYPE (xu_v)
 DEF_RVV_OP_TYPE (f_w)
 DEF_RVV_OP_TYPE (xu_w)
 DEF_RVV_OP_TYPE (s)
+DEF_RVV_OP_TYPE (bf16_s)
+DEF_RVV_OP_TYPE (s_bf16)
 
 DEF_RVV_PRED_TYPE (ta)
 DEF_RVV_PRED_TYPE (tu)
@@ -614,9 +669,11 @@ DEF_RVV_BASE_TYPE (scalar_ptr, get_scalar_ptr_type (type_idx))
    __riscv_vlm_v_b1 (const uint8_t *base, size_t vl).  */
 DEF_RVV_BASE_TYPE (scalar_const_ptr, get_scalar_const_ptr_type (type_idx))
 DEF_RVV_BASE_TYPE (void, void_type_node)
+DEF_RVV_BASE_TYPE (void_const_ptr, const_ptr_type_node)
 DEF_RVV_BASE_TYPE (size, size_type_node)
 DEF_RVV_BASE_TYPE (ptrdiff, ptrdiff_type_node)
 DEF_RVV_BASE_TYPE (unsigned_long, long_unsigned_type_node)
+DEF_RVV_BASE_TYPE (int, integer_type_node)
 DEF_RVV_BASE_TYPE (long, long_integer_type_node)
 DEF_RVV_BASE_TYPE (eew8_index, get_vector_type (type_idx))
 DEF_RVV_BASE_TYPE (eew16_index, get_vector_type (type_idx))
@@ -631,9 +688,17 @@ DEF_RVV_BASE_TYPE (double_trunc_signed_vector, get_vector_type (type_idx))
 DEF_RVV_BASE_TYPE (double_trunc_unsigned_vector, get_vector_type (type_idx))
 DEF_RVV_BASE_TYPE (double_trunc_unsigned_scalar, get_scalar_type (type_idx))
 DEF_RVV_BASE_TYPE (double_trunc_float_vector, get_vector_type (type_idx))
+DEF_RVV_BASE_TYPE (quad_trunc_scalar, get_scalar_type (type_idx))
+DEF_RVV_BASE_TYPE (quad_trunc_signed_vector, get_vector_type (type_idx))
+DEF_RVV_BASE_TYPE (quad_trunc_unsigned_vector, get_vector_type (type_idx))
+DEF_RVV_BASE_TYPE (quad_trunc_unsigned_scalar, get_scalar_type (type_idx))
 DEF_RVV_BASE_TYPE (float_vector, get_vector_type (type_idx))
+DEF_RVV_BASE_TYPE (bfloat_vector, get_vector_type (type_idx))
 DEF_RVV_BASE_TYPE (lmul1_vector, get_vector_type (type_idx))
 DEF_RVV_BASE_TYPE (widen_lmul1_vector, get_vector_type (type_idx))
+DEF_RVV_BASE_TYPE (widen_lmul1_scalar, get_scalar_type (type_idx))
+DEF_RVV_BASE_TYPE (double_trunc_bf_vector, get_vector_type (type_idx))
+DEF_RVV_BASE_TYPE (double_trunc_bf_scalar, get_scalar_type (type_idx))
 DEF_RVV_BASE_TYPE (eew8_interpret, get_vector_type (type_idx))
 DEF_RVV_BASE_TYPE (eew16_interpret, get_vector_type (type_idx))
 DEF_RVV_BASE_TYPE (eew32_interpret, get_vector_type (type_idx))
@@ -673,6 +738,18 @@ DEF_RVV_FRM_ENUM (RDN, FRM_RDN)
 DEF_RVV_FRM_ENUM (RUP, FRM_RUP)
 DEF_RVV_FRM_ENUM (RMM, FRM_RMM)
 
+DEF_SCALAR_TYPE (int8_t, int8)
+DEF_SCALAR_TYPE (int16_t, int16)
+DEF_SCALAR_TYPE (int32_t, int32)
+DEF_SCALAR_TYPE (int64_t, int64)
+DEF_SCALAR_TYPE (uint8_t, uint8)
+DEF_SCALAR_TYPE (uint16_t, uint16)
+DEF_SCALAR_TYPE (uint32_t, uint32)
+DEF_SCALAR_TYPE (uint64_t, uint64)
+DEF_SCALAR_TYPE (float16, float16)
+DEF_SCALAR_TYPE (float, float)
+DEF_SCALAR_TYPE (double, double)
+
 #include "riscv-vector-type-indexer.gen.def"
 
 #undef DEF_RVV_PRED_TYPE
@@ -683,3 +760,4 @@ DEF_RVV_FRM_ENUM (RMM, FRM_RMM)
 #undef DEF_RVV_TYPE_INDEX
 #undef DEF_RVV_VXRM_ENUM
 #undef DEF_RVV_FRM_ENUM
+#undef DEF_SCALAR_TYPE

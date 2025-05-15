@@ -3,6 +3,7 @@
 /* { dg-require-effective-target stdint_types } */
 /* { dg-options "-O2 -fdump-tree-optimized" } */
 /* { dg-additional-options "-mzarch" { target s390*-*-* } } */
+/* { dg-additional-options "-mext-zc" { target riscv*-*-* } } */
 
 #include <stdint.h>
 

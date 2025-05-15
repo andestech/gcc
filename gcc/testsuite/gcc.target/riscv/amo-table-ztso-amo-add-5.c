@@ -3,6 +3,7 @@
 /* { dg-options "-O3" } */
 /* { dg-add-options riscv_a } */
 /* { dg-add-options riscv_ztso } */
+/* { dg-add-options riscv_v5_abi } */
 /* { dg-skip-if "" { *-*-* } { "-g" "-flto"} } */
 /* { dg-final { check-function-bodies "**" "" } } */
 

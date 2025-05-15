@@ -112,14 +112,54 @@ fold_fault_load (gimple_folder &f)
   return repl;
 }
 
+/* True if ret or arg mode type have BFmode. Don't consider tuple type because
+ * it would not used this function. */
+static bool
+is_bf_mode (function_expander &e)
+{
+  auto BF = [] (machine_mode mode) {
+    switch (mode)
+      {
+      case E_BFmode:
+      case E_RVVMF4BFmode:
+      case E_RVVMF2BFmode:
+      case E_RVVM1BFmode:
+      case E_RVVM2BFmode:
+      case E_RVVM4BFmode:
+      case E_RVVM8BFmode:
+	return true;
+      default:
+	break;
+      }
+    return false;
+  };
+
+  if (BF (e.ret_mode ()))
+    return true;
+  for (unsigned i = 0; e.op_info->args[i].base_type != NUM_BASE_TYPES; ++i)
+    if (BF (e.arg_mode (i)))
+      return true;
+
+  return false;
+}
+
 /* Implements vsetvl<mode> && vsetvlmax<mode>.  */
-template<bool VLMAX_P>
+template <bool VLMAX_P, bool VOLATILE_P = false>
 class vsetvl : public function_base
 {
 public:
   bool apply_vl_p () const override
   {
     return false;
+  }
+
+  unsigned int call_properties (const function_instance &) const override
+  {
+    if (TARGET_BF16)
+      return CP_WRITE_CSR;
+    if (VOLATILE_P)
+      return CP_READ_CSR | CP_WRITE_CSR;
+    return 0;
   }
 
   rtx expand (function_expander &e) const override
@@ -132,7 +172,7 @@ public:
     tree type = builtin_types[e.type.index].vector;
     machine_mode mode = TYPE_MODE (type);
 
-    if (TARGET_XTHEADVECTOR)
+    if (TARGET_XTHEADVECTOR || VOLATILE_P)
       {
 	machine_mode inner_mode = GET_MODE_INNER (mode);
 	/* SEW.  */
@@ -170,6 +210,8 @@ public:
     /* MASK_ANY.  */
     e.add_input_operand (Pmode,
 			 gen_int_mode (get_prefer_mask_policy (), Pmode));
+    if (TARGET_BF16 || VOLATILE_P)
+      return e.generate_insn (code_for_vsetvl_volatile (Pmode));
     return e.generate_insn (code_for_vsetvl_no_side_effects (Pmode));
   }
 };
@@ -432,6 +474,31 @@ public:
 
   rtx expand (function_expander &e) const override
   {
+    if (TARGET_BF16MS && is_bf_mode (e))
+      {
+	switch (e.op_info->op)
+	  {
+	  case OP_TYPE_vv:
+	    return e.use_exact_insn (
+	      code_for_pred_dual_widen_bf (CODE, e.vector_mode ()));
+	  case OP_TYPE_vf:
+	    return e.use_exact_insn (
+	      code_for_pred_dual_widen_bf_scalar (CODE, e.vector_mode ()));
+	  case OP_TYPE_wv:
+	    if (CODE == PLUS)
+	      return e.use_exact_insn (
+		code_for_pred_single_widen_addbf (e.vector_mode ()));
+	    else
+	      return e.use_exact_insn (
+		code_for_pred_single_widen_subbf (e.vector_mode ()));
+	  case OP_TYPE_wf:
+	    return e.use_exact_insn (
+	      code_for_pred_single_widen_bf_scalar (CODE, e.vector_mode ()));
+	  default:
+	    gcc_unreachable ();
+	  }
+      }
+
     switch (e.op_info->op)
       {
       case OP_TYPE_vv:
@@ -1289,6 +1356,17 @@ public:
 
   rtx expand (function_expander &e) const override
   {
+    if (TARGET_BF16MS && is_bf_mode (e))
+      {
+	if (e.op_info->op == OP_TYPE_vf)
+	  return e.use_widen_ternop_insn (
+	    code_for_pred_widen_mul_bf_scalar (PLUS, e.vector_mode ()));
+	if (e.op_info->op == OP_TYPE_vv)
+	  return e.use_widen_ternop_insn (
+	    code_for_pred_widen_mul_bf (PLUS, e.vector_mode ()));
+	gcc_unreachable ();
+      }
+
     if (e.op_info->op == OP_TYPE_vf)
       return e.use_widen_ternop_insn (
 	code_for_pred_widen_mul_scalar (PLUS, e.vector_mode ()));
@@ -1314,6 +1392,16 @@ public:
 
   rtx expand (function_expander &e) const override
   {
+    if (TARGET_BF16MS && is_bf_mode (e))
+      {
+	if (e.op_info->op == OP_TYPE_vf)
+	  return e.use_widen_ternop_insn (
+	    code_for_pred_widen_mul_neg_bf_scalar (MINUS, e.vector_mode ()));
+	if (e.op_info->op == OP_TYPE_vv)
+	  return e.use_widen_ternop_insn (
+	    code_for_pred_widen_mul_neg_bf (MINUS, e.vector_mode ()));
+	gcc_unreachable ();
+      }
     if (e.op_info->op == OP_TYPE_vf)
       return e.use_widen_ternop_insn (
 	code_for_pred_widen_mul_neg_scalar (MINUS, e.vector_mode ()));
@@ -1339,6 +1427,16 @@ public:
 
   rtx expand (function_expander &e) const override
   {
+    if (TARGET_BF16MS && is_bf_mode (e))
+      {
+	if (e.op_info->op == OP_TYPE_vf)
+	  return e.use_widen_ternop_insn (
+	    code_for_pred_widen_mul_bf_scalar (MINUS, e.vector_mode ()));
+	if (e.op_info->op == OP_TYPE_vv)
+	  return e.use_widen_ternop_insn (
+	    code_for_pred_widen_mul_bf (MINUS, e.vector_mode ()));
+	gcc_unreachable ();
+      }
     if (e.op_info->op == OP_TYPE_vf)
       return e.use_widen_ternop_insn (
 	code_for_pred_widen_mul_scalar (MINUS, e.vector_mode ()));
@@ -1364,6 +1462,16 @@ public:
 
   rtx expand (function_expander &e) const override
   {
+    if (TARGET_BF16MS && is_bf_mode (e))
+      {
+	if (e.op_info->op == OP_TYPE_vf)
+	  return e.use_widen_ternop_insn (
+	    code_for_pred_widen_mul_neg_bf_scalar (PLUS, e.vector_mode ()));
+	if (e.op_info->op == OP_TYPE_vv)
+	  return e.use_widen_ternop_insn (
+	    code_for_pred_widen_mul_neg_bf (PLUS, e.vector_mode ()));
+	gcc_unreachable ();
+      }
     if (e.op_info->op == OP_TYPE_vf)
       return e.use_widen_ternop_insn (
 	code_for_pred_widen_mul_neg_scalar (PLUS, e.vector_mode ()));
@@ -1512,6 +1620,9 @@ public:
 
   rtx expand (function_expander &e) const override
   {
+    if (TARGET_BF16MS && is_bf_mode (e))
+      return e.use_exact_insn (
+	code_for_pred_widen_fcvt_x_bf (UNSPEC, e.vector_mode ()));
     return e.use_exact_insn (
       code_for_pred_widen_fcvt_x_f (UNSPEC, e.vector_mode ()));
   }
@@ -1524,6 +1635,8 @@ class vfwcvt_rtz_x : public function_base
 public:
   rtx expand (function_expander &e) const override
   {
+    if (TARGET_BF16MS && is_bf_mode (e))
+      return e.use_exact_insn (code_for_pred_widen_bf (CODE, e.vector_mode ()));
     return e.use_exact_insn (code_for_pred_widen (CODE, e.vector_mode ()));
   }
 };
@@ -1540,6 +1653,13 @@ public:
     if (e.op_info->op == OP_TYPE_xu_v)
       return e.use_exact_insn (
 	code_for_pred_widen (UNSIGNED_FLOAT, e.vector_mode ()));
+    if (TARGET_BF16 && e.op_info->op == OP_TYPE_s_bf16)
+      {
+	e.add_input_operand (0);
+	return e.generate_insn (code_for_vfwcvt_bf16 (e.vector_mode ()));
+      }
+    if (TARGET_ZVFBFMIN && e.op_info->op == OP_TYPE_f_v)
+      return e.use_exact_insn (code_for_pred_extend_bf (e.vector_mode ()));
     gcc_unreachable ();
   }
 };
@@ -2242,19 +2362,6 @@ template<rtx_code CODE>
 class bitmanip : public function_base
 {
 public:
-  bool apply_tail_policy_p () const override
-  {
-    return (CODE == CLZ || CODE == CTZ) ? false : true;
-  }
-  bool apply_mask_policy_p () const override
-  {
-    return (CODE == CLZ || CODE == CTZ) ? false : true;
-  }
-  bool has_merge_operand_p () const override
-  {
-    return (CODE == CLZ || CODE == CTZ) ? false : true;
-  }
-  
   rtx expand (function_expander &e) const override
   {
     switch (e.op_info->op)
@@ -2424,8 +2531,295 @@ public:
   }
 };
 
-static CONSTEXPR const vsetvl<false> vsetvl_obj;
-static CONSTEXPR const vsetvl<true> vsetvlmax_obj;
+/* Implements vqmacc<su><su>.  */
+class vqmacc : public function_base
+{
+public:
+  bool has_merge_operand_p () const override { return false; }
+
+  rtx expand (function_expander &e) const override
+  {
+    if (e.op_info->op == OP_TYPE_vx)
+      return e.use_widen_ternop_insn
+	(code_for_pred_quad_mul_plus_scalar (SIGN_EXTEND, e.vector_mode ()));
+    if (e.op_info->op == OP_TYPE_vv)
+      return e.use_widen_ternop_insn
+	(code_for_pred_quad_mul_plus (SIGN_EXTEND, e.vector_mode ()));
+    gcc_unreachable ();
+  }
+};
+
+class vqmaccu : public function_base
+{
+public:
+  bool has_merge_operand_p () const override { return false; }
+
+  rtx expand (function_expander &e) const override
+  {
+    if (e.op_info->op == OP_TYPE_vx)
+      return e.use_widen_ternop_insn
+	(code_for_pred_quad_mul_plus_scalar (ZERO_EXTEND, e.vector_mode ()));
+    if (e.op_info->op == OP_TYPE_vv)
+      return e.use_widen_ternop_insn
+	(code_for_pred_quad_mul_plus (ZERO_EXTEND, e.vector_mode ()));
+    gcc_unreachable ();
+  }
+};
+
+class vqmaccsu : public function_base
+{
+public:
+  bool has_merge_operand_p () const override { return false; }
+
+  rtx expand (function_expander &e) const override
+  {
+    if (e.op_info->op == OP_TYPE_vx)
+      return e.use_widen_ternop_insn
+	(code_for_pred_quad_mul_plussu_scalar (e.vector_mode ()));
+    if (e.op_info->op == OP_TYPE_vv)
+      return e.use_widen_ternop_insn
+	(code_for_pred_quad_mul_plussu (e.vector_mode ()));
+    gcc_unreachable ();
+  }
+};
+
+class vqmaccus : public function_base
+{
+public:
+  bool has_merge_operand_p () const override { return false; }
+
+  rtx expand (function_expander &e) const override
+  {
+    return e.use_widen_ternop_insn
+      (code_for_pred_quad_mul_plusus_scalar (e.vector_mode ()));
+  }
+};
+
+/* Implements vwmacc<su><su>.  */
+template<rtx_code EXTEND>
+class vd4dot : public function_base
+{
+public:
+  bool has_merge_operand_p () const override { return false; }
+
+  rtx expand (function_expander &e) const override
+  {
+    return e.use_widen_ternop_insn
+      (code_for_pred_vd4dot (EXTEND, e.vector_mode ()));
+  }
+};
+
+/* Implements vwmacc<su><su>.  */
+class vd4dotsu : public function_base
+{
+public:
+  bool has_merge_operand_p () const override { return false; }
+
+  rtx expand (function_expander &e) const override
+  {
+    return e.use_widen_ternop_insn (code_for_pred_vd4dotsu (e.vector_mode ()));
+  }
+};
+
+template<int UNSPEC, enum frm_op_type FRM_OP = NO_FRM>
+class vfpmad : public function_base
+{
+public:
+  bool has_rounding_mode_operand_p () const override
+  {
+    return FRM_OP == HAS_FRM;
+  }
+  bool may_require_frm_p () const override { return true; }
+
+  rtx expand (function_expander &e) const override
+  {
+    return e.use_exact_insn (code_for_pred_vfpmad (UNSPEC, e.vector_mode ()));
+  }
+};
+
+template<enum frm_op_type FRM_OP = NO_FRM>
+class vfwmaccbf : public function_base
+{
+public:
+  bool has_rounding_mode_operand_p () const override
+  {
+    return FRM_OP == HAS_FRM;
+  }
+  bool has_merge_operand_p () const override { return false; }
+  bool may_require_frm_p () const override { return true; }
+
+  rtx expand (function_expander &e) const override
+  {
+    if (e.op_info->op == OP_TYPE_vf)
+      return e.use_widen_ternop_insn (
+	code_for_pred_widen_mul_plus_bf_scalar (e.vector_mode ()));
+    if (e.op_info->op == OP_TYPE_vv)
+      return e.use_widen_ternop_insn (
+	code_for_pred_widen_mul_plus_bf (e.vector_mode ()));
+    gcc_unreachable ();
+  }
+};
+
+template<enum frm_op_type FRM_OP = NO_FRM>
+class vfncvtbf16_bf : public function_base
+{
+public:
+  bool has_rounding_mode_operand_p () const override
+  {
+    return FRM_OP == HAS_FRM;
+  }
+  bool may_require_frm_p () const override { return true; }
+
+  rtx expand (function_expander &e) const override
+  {
+    if (TARGET_ZVFBFMIN && e.op_info->op == OP_TYPE_f_w)
+      return e.use_exact_insn (code_for_pred_trunc_bf16 (e.vector_mode ()));
+    else if (TARGET_BF16 && e.op_info->op == OP_TYPE_bf16_s)
+      {
+	e.add_input_operand (0);
+	return e.generate_insn (code_for_vfncvt_bf16 (e.vector_mode ()));
+      }
+    gcc_unreachable ();
+
+  }
+};
+
+template <enum frm_op_type FRM_OP = NO_FRM>
+class vfncvt_bf : public function_base
+{
+public:
+  bool has_rounding_mode_operand_p () const override
+  {
+    return FRM_OP == HAS_FRM;
+  }
+
+  bool may_require_frm_p () const override { return true; }
+
+  rtx expand (function_expander &e) const override
+  {
+    if (e.op_info->op == OP_TYPE_f_w)
+      return e.use_exact_insn (code_for_pred_trunc_bf (e.vector_mode ()));
+    if (e.op_info->op == OP_TYPE_x_w)
+      return e.use_exact_insn (code_for_pred_narrow_bf (FLOAT, e.arg_mode (0)));
+    if (e.op_info->op == OP_TYPE_xu_w)
+      return e.use_exact_insn (
+	code_for_pred_narrow_bf (UNSIGNED_FLOAT, e.arg_mode (0)));
+    gcc_unreachable ();
+  }
+};
+
+class vfncvt_rod_bf : public function_base
+{
+public:
+  rtx expand (function_expander &e) const override
+  {
+    return e.use_exact_insn (code_for_pred_rod_trunc_bf (e.vector_mode ()));
+  }
+};
+
+class vfwcvt_bf : public function_base
+{
+public:
+  rtx expand (function_expander &e) const override
+  {
+    if (e.op_info->op == OP_TYPE_f_v)
+      return e.use_exact_insn (code_for_pred_extend_bfms (e.vector_mode ()));
+    if (e.op_info->op == OP_TYPE_x_v)
+      return e.use_exact_insn (
+	code_for_pred_widen_bf (FLOAT, e.vector_mode ()));
+    if (e.op_info->op == OP_TYPE_xu_v)
+      return e.use_exact_insn (
+	code_for_pred_widen_bf (UNSIGNED_FLOAT, e.vector_mode ()));
+    gcc_unreachable ();
+  }
+};
+
+/* Implements NTLH intrinsics.  */
+template<bool STORE_P, bool DEFAULT_DOMAIN>
+class ntl : public function_base
+{
+public:
+  bool apply_vl_p () const override { return false; }
+  bool apply_tail_policy_p () const override { return false; }
+  bool apply_mask_policy_p () const override { return false; }
+  bool use_mask_predication_p () const override { return false; }
+  bool has_merge_operand_p () const override { return false; }
+
+  /* Otherwise ntl (vector *) will have hash collision with
+     ntl (vector *, * scalar).  */
+  bool require_full_hash_p () const override { return true; }
+
+  unsigned int call_properties (const function_instance &) const override
+  {
+    if (STORE_P)
+      return CP_WRITE_MEMORY;
+    else
+      return CP_READ_MEMORY;
+  }
+
+  bool can_be_overloaded_p (enum predication_type_index) const override
+  {
+    return true;
+  }
+
+  rtx expand (function_expander &e) const override
+  {
+    machine_mode mode = e.vector_mode ();
+    int arg_offset = 0;
+    /* All SCALAR_TYPE_* only have scalar types, see
+       register_builtin_scalar_type().  */
+    bool vector_p = VECTOR_MODE_P (mode);
+
+    if (!vector_p)
+      mode = e.scalar_mode ();
+
+    e.add_mem_operand (mode, arg_offset++);
+    for (int argno = arg_offset; argno < call_expr_nargs (e.exp); argno++)
+      e.add_input_operand (argno);
+
+    /* Default domain arg (__RISCV_NTLH_ALL = 5).  */
+    if (DEFAULT_DOMAIN)
+      e.add_input_operand (SImode, gen_rtx_CONST_INT (SImode, 5));
+
+    /* Vector NTLH.  */
+    if (vector_p)
+      return e.generate_insn (code_for_mov_whole_ntl (mode));
+
+    /* Scalar NTLH. */
+    if (!FLOAT_MODE_P (mode))
+      return e.generate_insn (code_for_mov_scalar_ntl (mode));
+    else
+      return e.generate_insn (code_for_mov_float_ntl (mode));
+  }
+};
+
+/* Implements
+ * vln8.v/vln8.v codegen.  */
+template <bool SIGN> class nibbleload : public function_base
+{
+public:
+  unsigned int call_properties (const function_instance &) const override
+  {
+    return CP_READ_MEMORY;
+  }
+
+  bool can_be_overloaded_p (enum predication_type_index pred) const override
+  {
+    return pred != PRED_TYPE_none;
+  }
+
+  rtx expand (function_expander &e) const override
+  {
+    if (SIGN)
+      return e.use_contiguous_load_insn (
+	code_for_pred_intload_mov (SIGN_EXTEND, e.vector_mode ()), true);
+    return e.use_contiguous_load_insn (
+      code_for_pred_intload_mov (ZERO_EXTEND, e.vector_mode ()), true);
+  }
+};
+
+static CONSTEXPR const vsetvl<false, false> vsetvl_obj;
+static CONSTEXPR const vsetvl<true, false> vsetvlmax_obj;
 static CONSTEXPR const loadstore<false, LST_UNIT_STRIDE, false> vle_obj;
 static CONSTEXPR const loadstore<true, LST_UNIT_STRIDE, false> vse_obj;
 static CONSTEXPR const loadstore<false, LST_UNIT_STRIDE, false> vlm_obj;
@@ -2721,6 +3115,7 @@ static CONSTEXPR const b_reverse<UNSPEC_VBREV8>  vbrev8_obj;
 static CONSTEXPR const b_reverse<UNSPEC_VREV8>   vrev8_obj;
 static CONSTEXPR const bitmanip<CLZ> vclz_obj;
 static CONSTEXPR const bitmanip<CTZ> vctz_obj;
+static CONSTEXPR const bitmanip<POPCOUNT> vcpopv_obj;
 static CONSTEXPR const vwsll vwsll_obj;
 static CONSTEXPR const clmul<UNSPEC_VCLMUL>      vclmul_obj;
 static CONSTEXPR const clmul<UNSPEC_VCLMULH>     vclmulh_obj;
@@ -2740,6 +3135,56 @@ static CONSTEXPR const crypto_vi<UNSPEC_VSM4K>   vsm4k_obj;
 static CONSTEXPR const crypto_vv<UNSPEC_VSM4R>   vsm4r_obj;
 static CONSTEXPR const vsm3me vsm3me_obj;
 static CONSTEXPR const vaeskf2_vsm3c<UNSPEC_VSM3C>   vsm3c_obj;
+static CONSTEXPR const vqmacc vqmacc_obj;
+static CONSTEXPR const vqmaccu vqmaccu_obj;
+static CONSTEXPR const vqmaccsu vqmaccsu_obj;
+static CONSTEXPR const vqmaccus vqmaccus_obj;
+static CONSTEXPR const vqmacc nds_vqmacc_obj;
+static CONSTEXPR const vqmaccu nds_vqmaccu_obj;
+static CONSTEXPR const vqmaccsu nds_vqmaccsu_obj;
+static CONSTEXPR const vqmaccus nds_vqmaccus_obj;
+static CONSTEXPR const vd4dot<SIGN_EXTEND> vd4dots_obj;
+static CONSTEXPR const vd4dot<ZERO_EXTEND> vd4dotu_obj;
+static CONSTEXPR const vd4dotsu vd4dotsu_obj;
+static CONSTEXPR const vd4dot<SIGN_EXTEND> nds_vd4dots_obj;
+static CONSTEXPR const vd4dot<ZERO_EXTEND> nds_vd4dotu_obj;
+static CONSTEXPR const vd4dotsu nds_vd4dotsu_obj;
+static CONSTEXPR const vfpmad <UNSPEC_VFPMADT, NO_FRM> vfpmadt_obj;
+static CONSTEXPR const vfpmad <UNSPEC_VFPMADB, NO_FRM> vfpmadb_obj;
+static CONSTEXPR const vfpmad <UNSPEC_VFPMADT, HAS_FRM> vfpmadt_frm_obj;
+static CONSTEXPR const vfpmad <UNSPEC_VFPMADB, HAS_FRM> vfpmadb_frm_obj;
+static CONSTEXPR const vfpmad <UNSPEC_VFPMADT, NO_FRM> nds_vfpmadt_obj;
+static CONSTEXPR const vfpmad <UNSPEC_VFPMADB, NO_FRM> nds_vfpmadb_obj;
+static CONSTEXPR const vfpmad <UNSPEC_VFPMADT, HAS_FRM> nds_vfpmadt_frm_obj;
+static CONSTEXPR const vfpmad <UNSPEC_VFPMADB, HAS_FRM> nds_vfpmadb_frm_obj;
+static CONSTEXPR const vfwmaccbf<NO_FRM> vfwmaccbf16_obj;
+static CONSTEXPR const vfwmaccbf<HAS_FRM> vfwmaccbf16_frm_obj;
+static CONSTEXPR const vfwcvt_f vfwcvtbf16_f_obj;
+static CONSTEXPR const vfncvtbf16_bf<NO_FRM> vfncvtbf16_bf_obj;
+static CONSTEXPR const vfwcvt_f vfwcvt_obj;
+static CONSTEXPR const vfncvtbf16_bf<NO_FRM> vfncvt_obj;
+static CONSTEXPR const vfwcvt_f nds_vfwcvt_obj;
+static CONSTEXPR const vfncvtbf16_bf<NO_FRM> nds_vfncvt_obj;
+static CONSTEXPR const vfncvtbf16_bf<HAS_FRM> vfncvtbf16_bf_frm_obj;
+static CONSTEXPR const nibbleload<true> vln8_obj;
+static CONSTEXPR const nibbleload<false> vlnu8_obj;
+/* Andes BF16 Mode Switch*/
+static CONSTEXPR const vfcvt_f<NO_FRM> vfcvt_bf_obj;
+static CONSTEXPR const vfcvt_f<HAS_FRM> vfcvt_bf_frm_obj;
+static CONSTEXPR const vfwcvt_bf vfwcvt_bf_obj;
+static CONSTEXPR const vfncvt_bf<NO_FRM> vfncvt_bf_obj;
+static CONSTEXPR const vfncvt_bf<HAS_FRM> vfncvt_bf_frm_obj;
+static CONSTEXPR const vfncvt_rod_bf vfncvt_rod_bf_obj;
+
+/* Andes ACE vsetvl{max} */
+static CONSTEXPR const vsetvl<false, true> ace_vsetvl_obj;
+static CONSTEXPR const vsetvl<true, true> ace_vsetvlmax_obj;
+
+/* NTLH */
+static CONSTEXPR const ntl<false, true> ntl_load_default_obj;
+static CONSTEXPR const ntl<false, false> ntl_load_obj;
+static CONSTEXPR const ntl<true, true> ntl_store_default_obj;
+static CONSTEXPR const ntl<true, false> ntl_store_obj;
 
 /* Declare the function base NAME, pointing it to an instance
    of class <NAME>_obj.  */
@@ -3040,6 +3485,8 @@ BASE (vbrev8)
 BASE (vrev8)
 BASE (vclz)
 BASE (vctz)
+/* Apply suffix 'v' to prevent conflic with vcpop.m */
+BASE (vcpopv)
 BASE (vrol)
 BASE (vror)
 BASE (vwsll)
@@ -3061,4 +3508,55 @@ BASE (vsm4k)
 BASE (vsm4r)
 BASE (vsm3me)
 BASE (vsm3c)
+BASE (vqmacc)
+BASE (vqmaccu)
+BASE (vqmaccsu)
+BASE (vqmaccus)
+BASE (nds_vqmacc)
+BASE (nds_vqmaccu)
+BASE (nds_vqmaccsu)
+BASE (nds_vqmaccus)
+BASE (vd4dots)
+BASE (vd4dotu)
+BASE (vd4dotsu)
+BASE (nds_vd4dots)
+BASE (nds_vd4dotu)
+BASE (nds_vd4dotsu)
+BASE (vfpmadt)
+BASE (vfpmadb)
+BASE (vfpmadt_frm)
+BASE (vfpmadb_frm)
+BASE (nds_vfpmadt)
+BASE (nds_vfpmadb)
+BASE (nds_vfpmadt_frm)
+BASE (nds_vfpmadb_frm)
+BASE (vln8)
+BASE (vlnu8)
+BASE (vfwmaccbf16)
+BASE (vfwmaccbf16_frm)
+BASE (vfwcvtbf16_f)
+BASE (vfncvtbf16_bf)
+BASE (vfwcvt)
+BASE (vfncvt)
+BASE (nds_vfwcvt)
+BASE (nds_vfncvt)
+BASE (vfncvtbf16_bf_frm)
+
+/* Andes ACE vsetvl{max} */
+BASE (ace_vsetvl)
+BASE (ace_vsetvlmax)
+
+/* Andes BF16 Mode Switch*/
+BASE (vfcvt_bf)
+BASE (vfcvt_bf_frm)
+BASE (vfwcvt_bf)
+BASE (vfncvt_bf)
+BASE (vfncvt_bf_frm)
+BASE (vfncvt_rod_bf)
+
+/* NTLH */
+BASE (ntl_load_default)
+BASE (ntl_load)
+BASE (ntl_store_default)
+BASE (ntl_store)
 } // end namespace riscv_vector

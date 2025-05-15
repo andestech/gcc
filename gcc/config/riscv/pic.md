@@ -75,7 +75,7 @@
   [(set_attr "type" "fpload")
    (set (attr "length") (const_int 8))])
 
-(define_insn "*local_pic_load_sf<mode>"
+(define_insn "*local_pic_load_sf<SOFTF:mode>"
   [(set (match_operand:SOFTF 0 "register_operand" "=r")
 	(mem:SOFTF (match_operand 1 "absolute_symbolic_operand" "")))]
   "!TARGET_HARD_FLOAT && USE_LOAD_ADDRESS_MACRO (operands[1])"

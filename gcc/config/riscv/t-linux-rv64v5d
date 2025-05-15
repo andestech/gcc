@@ -1,0 +1,8 @@
+MULTILIB_REQUIRED += march=rv64imafd_zicsr_zifencei_zca_xandes/mabi=lp64d
+
+# Removed reuse rules due to Andes Bugzilla #28124.
+# MULTILIB_REUSE += march.rv64imafd_zicsr_zifencei_zca_xandes/mabi.lp64d=march.rv64imafd_zicsr_zifencei_xandes/mabi.lp64d \
+# march.rv64imafd_zicsr_zifencei_zca_xandes/mabi.lp64d=march.rv64imafd_zicsr_zifencei_zfh_xandes/mabi.lp64d \
+# march.rv64imafd_zicsr_zifencei_zca_xandes/mabi.lp64d=march.rv64imafd_zicsr_zifencei_zfh_zca_xandes/mabi.lp64d \
+# march.rv64imafd_zicsr_zifencei_zca_xandes/mabi.lp64d=march.rv64imafdc_zicsr_zifencei_xandes/mabi.lp64d \
+# march.rv64imafd_zicsr_zifencei_zca_xandes/mabi.lp64d=march.rv64imafdc_zicsr_zifencei_zfh_xandes/mabi.lp64d

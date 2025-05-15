@@ -4501,6 +4501,8 @@ get_fp_rounding_coefficient (machine_mode inner_mode)
 
   if (inner_mode == E_HFmode)
     real_from_integer (&real, inner_mode, 1024, SIGNED);
+  else if (inner_mode == E_BFmode)
+    real_from_integer (&real, inner_mode, 1024, SIGNED);
   else if (inner_mode == E_SFmode)
     real_from_integer (&real, inner_mode, 8388608, SIGNED);
   else if (inner_mode == E_DFmode)
@@ -4695,7 +4697,7 @@ expand_vec_nearbyint (rtx op_0, rtx op_1, machine_mode vec_fp_mode,
 
   /* Step-3: Backup FP exception flags, nearbyint never raise exceptions. */
   rtx fflags = gen_reg_rtx (SImode);
-  emit_insn (gen_riscv_frflags (fflags));
+  emit_insn (gen_riscv_frflags_fenv (fflags));
 
   /* Step-4: Convert to integer on mask, with rounding down (aka nearbyint).  */
   rtx tmp = gen_reg_rtx (vec_int_mode);
@@ -4705,7 +4707,7 @@ expand_vec_nearbyint (rtx op_0, rtx op_1, machine_mode vec_fp_mode,
   emit_vec_cvt_f_x (op_0, tmp, mask, UNARY_OP_TAMU_FRM_DYN, vec_fp_mode);
 
   /* Step-6: Restore FP exception flags. */
-  emit_insn (gen_riscv_fsflags (fflags));
+  emit_insn (gen_riscv_fsflags_fenv (fflags));
 
   /* Step-7: Retrieve the sign bit for -0.0.  */
   emit_vec_copysign (op_0, op_0, op_1, vec_fp_mode);

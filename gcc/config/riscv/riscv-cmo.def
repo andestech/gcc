@@ -13,8 +13,8 @@ RISCV_BUILTIN (zero_si, "zicboz_cbo_zero", RISCV_BUILTIN_DIRECT_NO_TARGET, RISCV
 RISCV_BUILTIN (zero_di, "zicboz_cbo_zero", RISCV_BUILTIN_DIRECT_NO_TARGET, RISCV_VOID_FTYPE_VOID_PTR, zero64),
 
 // zicbop
-RISCV_BUILTIN (prefetchi_si, "zicbop_cbo_prefetchi", RISCV_BUILTIN_DIRECT, RISCV_USI_FTYPE_USI, prefetchi32),
-RISCV_BUILTIN (prefetchi_di, "zicbop_cbo_prefetchi", RISCV_BUILTIN_DIRECT, RISCV_UDI_FTYPE_UDI, prefetchi64),
+RISCV_BUILTIN (prefetchi_si, "zicbop_cbo_prefetchi", RISCV_BUILTIN_DIRECT_NO_TARGET, RISCV_VOID_FTYPE_CONST_VOID_PTR, prefetchi32),
+RISCV_BUILTIN (prefetchi_di, "zicbop_cbo_prefetchi", RISCV_BUILTIN_DIRECT_NO_TARGET, RISCV_VOID_FTYPE_CONST_VOID_PTR, prefetchi64),
 
 // zbkc or zbc
 RISCV_BUILTIN (clmul_si, "clmul_32", RISCV_BUILTIN_DIRECT, RISCV_USI_FTYPE_USI_USI, clmul_zbkc_or_zbc),

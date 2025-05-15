@@ -50,7 +50,15 @@ if { [ishost "*-*-cygwin*"] } {
 # This avoids issues where a diagnostic which could embed a URL
 # is emitted before -fdiagnostics-plain-output is handled, where
 # otherwise the output could be affected by the environment.
-setenv TERM xterm
+# Do not set TERM as xterm when host is msys2; otherwise, it will lead
+# to compiler's output not matching, due to extra char sequence ^[[6n.
+# Please see extern-gcc-testsuit repo commit SHA 631b2e94 for more
+# details.
+if { [ishost "*-*-msys*"] } {
+  setenv TERM dumb
+} else {
+  setenv TERM xterm
+}
 
 # Avoid sporadic data-losses with expect
 match_max -d 10000
@@ -726,7 +734,7 @@ proc gcc-dg-debug-runtest { target_compile trivial opt_opts testcases } {
 	    }
 
 	    # These tests check for information which is not emitted for CTF
-	    # as CTF type information is emitted for entities at file and 
+	    # as CTF type information is emitted for entities at file and
 	    # global scope only.
 	    if { ([string match {*/debug-[126].c} "$nshort"] \
 		  || [string match {*/enum-[12].C} "$nshort"] ) \

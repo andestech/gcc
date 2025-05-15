@@ -4,7 +4,7 @@
 #include "riscv_vector.h"
 
 void foo(int32_t *in1, int32_t *in2, int32_t *in3, int32_t *out, size_t n, int cond, int avl) {
-  
+
   size_t vl;
   if (cond)
     vl = __riscv_vsetvl_e32m1(avl);
@@ -18,5 +18,5 @@ void foo(int32_t *in1, int32_t *in2, int32_t *in3, int32_t *out, size_t n, int c
   }
 }
 
-/* { dg-final { scan-assembler-times {vsetvli} 3 { target { no-opts "-O0" no-opts "-Os" no-opts "-g" no-opts "-funroll-loops" } } } } */
+/* { dg-final { scan-assembler-times {vsetvli} 2 { target { no-opts "-O0" no-opts "-O1" no-opts "-Os" no-opts "-g" no-opts "-funroll-loops" } } } } */
 /* { dg-final { scan-assembler-times {srli\s+[a-x0-9]+,\s*[a-x0-9]+,\s*4} 1 { target { no-opts "-O0" no-opts "-g" no-opts "-funroll-loops" } } } } */

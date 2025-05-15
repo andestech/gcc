@@ -905,9 +905,10 @@ aarch64_general_simulate_builtin (const char *name, tree fntype,
 				  unsigned int code,
 				  tree attrs = NULL_TREE)
 {
+  bool create_p;
   code = (code << AARCH64_BUILTIN_SHIFT) | AARCH64_BUILTIN_GENERAL;
   return simulate_builtin_function_decl (input_location, name, fntype,
-					 code, NULL, attrs);
+					 code, NULL, attrs, &create_p);
 }
 
 static const char *
@@ -1308,6 +1309,7 @@ void
 aarch64_init_simd_intrinsics (void)
 {
   unsigned int i = 0;
+  bool create_p;
 
   for (i = 0; i < ARRAY_SIZE (aarch64_simd_intrinsic_data); ++i)
     {
@@ -1337,7 +1339,8 @@ aarch64_init_simd_intrinsics (void)
       unsigned int code
 	      = (d->fcode << AARCH64_BUILTIN_SHIFT | AARCH64_BUILTIN_GENERAL);
       tree fndecl = simulate_builtin_function_decl (input_location, d->name,
-						    ftype, code, NULL, attrs);
+						    ftype, code, NULL, attrs,
+						    &create_p);
       aarch64_builtin_decls[d->fcode] = fndecl;
     }
 }
@@ -1452,11 +1455,12 @@ aarch64_init_simd_builtin_functions (bool called_from_pragma)
 
       if (called_from_pragma)
 	{
+	  bool create_p;
 	  unsigned int raw_code
 		= (fcode << AARCH64_BUILTIN_SHIFT) | AARCH64_BUILTIN_GENERAL;
 	  fndecl = simulate_builtin_function_decl (input_location, namebuf,
 						   ftype, raw_code, NULL,
-						   attrs);
+						   attrs, &create_p);
 	}
       else
 	fndecl = aarch64_general_add_builtin (namebuf, ftype, fcode, attrs);

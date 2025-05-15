@@ -80,7 +80,10 @@ private:
   const char *parse_single_multiletter_ext (const char *, const char *,
 					    const char *, bool);
 
+  const char *parse_profiles (const char*);
+
   void handle_implied_ext (const char *);
+  void handle_conflict_ext (void);
   bool check_implied_ext ();
   void handle_combine_ext ();
   void check_conflict_ext ();
@@ -91,6 +94,8 @@ public:
   void add (const char *, int, int, bool, bool);
 
   void add (const char *, bool);
+
+  void remove (const char *);
 
   riscv_subset_t *lookup (const char *,
 			  int major_version = RISCV_DONT_CARE_VERSION,

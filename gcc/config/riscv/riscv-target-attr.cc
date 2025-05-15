@@ -217,11 +217,7 @@ riscv_target_attr_parser::update_settings (struct gcc_options *opts) const
     {
       std::string local_arch = m_subset_list->to_string (true);
       const char* local_arch_str = local_arch.c_str ();
-      struct cl_target_option *default_opts
-	= TREE_TARGET_OPTION (target_option_default_node);
-      if (opts->x_riscv_arch_string != default_opts->x_riscv_arch_string)
-	free (CONST_CAST (void *, (const void *) opts->x_riscv_arch_string));
-      opts->x_riscv_arch_string = xstrdup (local_arch_str);
+      opts->x_riscv_arch_string = ggc_strdup (local_arch_str);
 
       riscv_set_arch_by_subset_list (m_subset_list, opts);
     }
@@ -415,6 +411,10 @@ riscv_option_valid_attribute_p (tree fndecl, tree, tree args, int)
   if (ret)
     {
       riscv_override_options_internal (&global_options);
+      /* Note that multiple fndecl may share the same target_option_node
+         as cl_option_hash_table doesn't consider the content of
+         x_riscv_arch_string. So we cannot simply free the string in
+         update_settings as multiple fndecl may share the same string. */
       new_target = build_target_option_node (&global_options,
 					     &global_options_set);
       DECL_FUNCTION_SPECIFIC_TARGET (fndecl) = new_target;

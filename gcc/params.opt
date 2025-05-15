@@ -737,6 +737,10 @@ Maximum number of arguments in a PHI supported by TREE if-conversion unless the 
 Common Joined UInteger Var(param_max_unroll_times) Init(8) Param Optimization
 The maximum number of unrollings of a single loop.
 
+-param=max-unroll-loop-branch=
+Common Joined UInteger Var(param_max_unroll_loop_branch) Init(1) IntegerRange(1, 20) Param Optimization
+Maximum number of loop branch count.
+
 -param=max-unrolled-insns=
 Common Joined UInteger Var(param_max_unrolled_insns) Init(200) Param Optimization
 The maximum number of instructions to consider to unroll in a loop.
@@ -880,6 +884,10 @@ Min. ratio of insns to mem ops to enable prefetching in a loop.
 -param=prefetch-minimum-stride=
 Common Joined UInteger Var(param_prefetch_minimum_stride) Init(-1) Param Optimization
 The minimum constant stride beyond which we should use prefetch hints for.
+
+-param=prefetch-writes=
+Common Joined UInteger Var(param_prefetch_writes) Init(1) IntegerRange(0, 1) Param Optimization
+Whether software prefetch hints should be issued for write memory accesses.
 
 -param=profile-func-internal-id=
 Common Joined UInteger Var(param_profile_func_internal_id) IntegerRange(0, 1) Param

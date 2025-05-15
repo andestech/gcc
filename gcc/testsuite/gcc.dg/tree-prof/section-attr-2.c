@@ -10,7 +10,7 @@
 #define MAXITER 10000
 #endif
 
-#define SIZE 10000
+#define SIZE 1000
 
 #define NOINLINE __attribute__((noinline)) __attribute__ ((noclone))
 

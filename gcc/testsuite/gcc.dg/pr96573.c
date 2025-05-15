@@ -3,6 +3,7 @@
 /* { dg-require-effective-target bswap } */
 /* { dg-options "-O3 -fdump-tree-optimized" } */
 /* { dg-final { scan-tree-dump "__builtin_bswap\|VEC_PERM_EXPR\[^\n\r]*7, 6, 5, 4, 3, 2, 1, 0" "optimized" { xfail vect_variable_length } } } */
+/* { dg-additional-options "-mext-zc" { target riscv*-*-* } } */
 
 typedef __SIZE_TYPE__ size_t;
 

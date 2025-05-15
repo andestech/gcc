@@ -1588,6 +1588,14 @@ find_single_drs (class loop *loop, struct graph *rdg, const bitmap &partition_st
   if (!single_ld && !single_st)
     return false;
 
+  /* Skip if storing reference is small array */
+  if (single_st && TREE_CODE (DR_REF (single_st)) == ARRAY_REF
+      && TREE_CODE (TREE_OPERAND (DR_REF (single_st), 0)) == VAR_DECL
+      && DECL_SIZE (TREE_OPERAND (DR_REF (single_st), 0))
+      && TREE_CODE (DECL_SIZE (TREE_OPERAND (DR_REF (single_st), 0))) == INTEGER_CST
+      && tree_to_uhwi (DECL_SIZE (TREE_OPERAND (DR_REF (single_st), 0))) <= 64)
+    return false;
+
   basic_block bb_ld = NULL;
   basic_block bb_st = NULL;
   edge exit = single_exit (loop);
@@ -3205,7 +3213,8 @@ loop_distribution::distribute_loop (class loop *loop,
 	 since it's not likely to enable many vectorization opportunities.
 	 Also if loop has any data reference which may be not addressable
 	 since alias check needs to take, compare address of the object.  */
-      if (loop->inner || has_nonaddressable_dataref_p)
+      if (optimize_loop_for_size_p (loop) || loop->inner
+	  || has_nonaddressable_dataref_p)
 	merge_dep_scc_partitions (rdg, &partitions, false);
       else
 	{

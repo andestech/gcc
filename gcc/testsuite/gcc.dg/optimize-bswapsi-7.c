@@ -3,6 +3,7 @@
 /* { dg-require-effective-target bswap } */
 /* { dg-options "-O2 -fno-tree-vectorize -fdump-tree-optimized" } */
 /* { dg-additional-options "-march=z900" { target s390-*-* } } */
+/* { dg-additional-options "-mext-zc" { target riscv*-*-* } } */
 
 static unsigned int
 f1 (unsigned int x)

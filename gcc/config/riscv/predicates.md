@@ -19,6 +19,9 @@
 ;; along with GCC; see the file COPYING3.  If not see
 ;; <http://www.gnu.org/licenses/>.
 
+(define_predicate "movecc_comparison_operator"
+  (match_code "eq,ne,le,leu,ge,geu"))
+
 (define_predicate "const_arith_operand"
   (and (match_code "const_int")
        (match_test "SMALL_OPERAND (INTVAL (op))")))
@@ -67,6 +70,14 @@
 ;; the csr_operand, but it's not CSR related.
 (define_predicate "vector_scalar_shift_operand"
   (match_operand 0 "csr_operand"))
+
+(define_predicate "const_frm_operand"
+  (and (match_code "const_int")
+       (match_test "IN_RANGE (INTVAL (op), 0, 7)")))
+
+(define_predicate "frm_operand"
+  (ior (match_operand 0 "const_frm_operand")
+       (match_operand 0 "register_operand")))
 
 (define_predicate "sle_operand"
   (and (match_code "const_int")
@@ -211,6 +222,23 @@
 (define_predicate "branch_on_bit_operand"
   (and (match_code "const_int")
        (match_test "INTVAL (op) >= IMM_BITS - 1")))
+
+;; Only use branch-on-one-bit when TARGET_BBCS is on.
+(define_predicate "branch_bbcs_operand"
+  (match_code "const_int")
+{
+  if (TARGET_BBCS && (INTVAL (op) >= 0))
+    {
+      if (TARGET_64BIT && INTVAL (op) <= 63)
+        return true;
+      else if (INTVAL (op) <=31)
+        return true;
+      else
+	return false;
+    }
+
+  return (INTVAL (op) >= IMM_BITS - 1);
+})
 
 ;; A legitimate CONST_INT operand that takes more than one instruction
 ;; to load.
@@ -574,19 +602,23 @@
 (define_special_predicate "vector_eew8_stride_operand"
   (ior (match_operand 0 "pmode_register_operand")
        (and (match_code "const_int")
-            (match_test "INTVAL (op) == 1 || INTVAL (op) == 0"))))
+            (ior (match_test "INTVAL (op) == 1")
+                 (match_test "TARGET_ZVLSS && INTVAL (op) == 0")))))
 (define_special_predicate "vector_eew16_stride_operand"
   (ior (match_operand 0 "pmode_register_operand")
        (and (match_code "const_int")
-            (match_test "INTVAL (op) == 2 || INTVAL (op) == 0"))))
+            (ior (match_test "INTVAL (op) == 2")
+                 (match_test "TARGET_ZVLSS && INTVAL (op) == 0")))))
 (define_special_predicate "vector_eew32_stride_operand"
   (ior (match_operand 0 "pmode_register_operand")
        (and (match_code "const_int")
-            (match_test "INTVAL (op) == 4 || INTVAL (op) == 0"))))
+            (ior (match_test "INTVAL (op) == 4")
+                 (match_test "TARGET_ZVLSS && INTVAL (op) == 0")))))
 (define_special_predicate "vector_eew64_stride_operand"
   (ior (match_operand 0 "pmode_register_operand")
        (and (match_code "const_int")
-            (match_test "INTVAL (op) == 8 || INTVAL (op) == 0"))))
+            (ior (match_test "INTVAL (op) == 8")
+                 (match_test "TARGET_ZVLSS && INTVAL (op) == 0")))))
 
 ;; A special predicate that doesn't match a particular mode.
 (define_special_predicate "vector_any_register_operand"
@@ -659,4 +691,188 @@
   enum riscv_symbol_type type;
   return (riscv_symbolic_constant_p (op, &type)
          && type == SYMBOL_PCREL);
+})
+
+(define_predicate "ecall_register_operand"
+  (match_code "reg,subreg")
+{
+  if (GET_CODE (op) == SUBREG)
+    op = SUBREG_REG (op);
+
+  return (REG_P (op)
+	  && ((TARGET_RVE && (REGNO (op) == T0_REGNUM))
+	      || (!TARGET_RVE && (REGNO (op) == A7_REGNUM))));
+})
+
+(define_predicate "extract_size_imm_si"
+  (and (match_code "const_int")
+         (match_test "IN_RANGE (INTVAL (op), 1, 32)")))
+
+(define_predicate "extract_loc_imm_si"
+  (and (match_code "const_int")
+         (match_test "IN_RANGE (INTVAL (op), 0, 31)")))
+
+(define_predicate "extract_size_imm_di"
+  (and (match_code "const_int")
+         (match_test "IN_RANGE (INTVAL (op), 1, 64)")))
+
+(define_predicate "extract_loc_imm_di"
+  (and (match_code "const_int")
+         (match_test "IN_RANGE (INTVAL (op), 0, 63)")))
+
+(define_predicate "branch_bimm_operand"
+  (match_code "const_int")
+{
+  if (TARGET_BIMM)
+    return satisfies_constraint_Bz07 (op);
+  else
+    return false;
+})
+
+(define_predicate "reg_or_imm7u_operand"
+  (ior (match_operand 0 "reg_or_0_operand")
+       (match_code "const_int"))
+{
+  if (CONST_INT_P (op))
+    {
+      if (op == CONST0_RTX(mode))
+	return true;
+      if (TARGET_BIMM)
+        return satisfies_constraint_Bz07 (op);
+      else
+	return false;
+    }
+  return true;
+})
+
+(define_predicate "imm_extract_operand"
+  (match_test "satisfies_constraint_Bext (op)"))
+
+(define_predicate "prefetch_address_operand"
+  (and (match_operand 0 "address_operand")
+       (match_code "reg, plus")))
+
+(define_predicate "imm2u_operand"
+  (and (match_operand 0 "const_int_operand")
+       (match_test "satisfies_constraint_u02 (op)")))
+
+(define_predicate "imm3u_operand"
+  (and (match_operand 0 "const_int_operand")
+       (match_test "satisfies_constraint_u03 (op)")))
+
+(define_predicate "imm4u_operand"
+  (and (match_operand 0 "const_int_operand")
+       (match_test "satisfies_constraint_u04 (op)")))
+
+(define_predicate "imm5u_operand"
+  (and (match_operand 0 "const_int_operand")
+       (match_test "satisfies_constraint_u05 (op)")))
+
+(define_predicate "imm6u_operand"
+  (and (match_operand 0 "const_int_operand")
+       (match_test "satisfies_constraint_u06 (op)")))
+
+(define_predicate "rimm3u_operand"
+  (ior (match_operand 0 "register_operand")
+       (match_operand 0 "imm3u_operand")))
+
+(define_predicate "rimm4u_operand"
+  (ior (match_operand 0 "register_operand")
+       (match_operand 0 "imm4u_operand")))
+
+(define_predicate "rimm5u_operand"
+  (ior (match_operand 0 "register_operand")
+       (match_operand 0 "imm5u_operand")))
+
+(define_predicate "rimm6u_operand"
+  (ior (match_operand 0 "register_operand")
+       (match_operand 0 "imm6u_operand")))
+
+(define_predicate "pwr_7_operand"
+  (and (match_code "const_int")
+       (match_test "INTVAL (op) != 0
+		    && (unsigned) exact_log2 (INTVAL (op)) <= 7")))
+
+(define_predicate "insv_operand"
+  (match_code "const_int")
+{
+  return INTVAL (op) == 0
+	 || INTVAL (op) == 8
+	 || INTVAL (op) == 16
+	 || INTVAL (op) == 24;
+})
+
+(define_predicate "insv64_operand"
+  (match_code "const_int")
+{
+  return INTVAL (op) == 0
+	 || INTVAL (op) == 8
+	 || INTVAL (op) == 16
+	 || INTVAL (op) == 24
+	 || INTVAL (op) == 32
+	 || INTVAL (op) == 40
+	 || INTVAL (op) == 48
+	 || INTVAL (op) == 56;
+})
+
+(define_predicate "imm_0_1_operand"
+  (and (match_operand 0 "const_int_operand")
+       (ior (match_test "satisfies_constraint_M00 (op)")
+	    (match_test "satisfies_constraint_M01 (op)"))))
+
+(define_predicate "imm_1_2_operand"
+  (and (match_operand 0 "const_int_operand")
+       (ior (match_test "satisfies_constraint_M01 (op)")
+	    (match_test "satisfies_constraint_M02 (op)"))))
+
+(define_predicate "imm_2_3_operand"
+  (and (match_operand 0 "const_int_operand")
+       (ior (match_test "satisfies_constraint_M02 (op)")
+	    (match_test "satisfies_constraint_M03 (op)"))))
+
+(define_predicate "imm_1_2_4_8_operand"
+  (and (match_operand 0 "const_int_operand")
+       (ior (ior (match_test "satisfies_constraint_M01 (op)")
+		 (match_test "satisfies_constraint_M02 (op)"))
+	    (ior (match_test "satisfies_constraint_M04 (op)")
+		 (match_test "satisfies_constraint_M08 (op)")))))
+
+(define_predicate "imm_15_16_operand"
+  (and (match_operand 0 "const_int_operand")
+       (ior (match_test "satisfies_constraint_M15 (op)")
+	    (match_test "satisfies_constraint_M16 (op)"))))
+
+(define_predicate "register_even_operand"
+  (match_operand 0 "register_operand")
+{
+  if (GET_CODE (op) == SUBREG)
+    op = SUBREG_REG (op); /* Possibly a MEM */
+
+  if (!REG_P (op))
+    return false;
+
+  if (REGNO (op) >= FIRST_PSEUDO_REGISTER)
+    return true;
+
+  return ((!TARGET_64BIT
+	   && GP_REG_P (REGNO (op))
+	   && (REGNO (op) & 1) == 0)
+	  || (TARGET_64BIT && GP_REG_P (REGNO (op))));
+})
+
+(define_predicate "const_insb64_operand"
+  (and (match_code "const_int")
+       (match_test "IN_RANGE (INTVAL (op), 0, 7)")))
+
+;; Zilsd
+(define_special_predicate "zilsd_load_multiple_operation"
+  (match_code "parallel")
+{
+  return valid_zilsd_load_store (op, true);
+})
+
+(define_special_predicate "zilsd_store_multiple_operation"
+  (match_code "parallel")
+{
+  return valid_zilsd_load_store (op, false);
 })

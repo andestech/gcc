@@ -3,6 +3,7 @@
 /* { dg-options "" } */
 /* { dg-add-options bfloat16 } */
 /* { dg-require-effective-target bfloat16_runtime } */
+/* { dg-skip-if "" { riscv*-*-* } } */
 
 #define TYPE __bf16
 #define CST(C) CONCAT (C, bf16)

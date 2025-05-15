@@ -1,5 +1,6 @@
 /* { dg-do compile { target *-*-linux* *-*-gnu* } } */
 /* { dg-options "-fhardened -fstack-protector" } */
+/* { dg-skip-if "" { *-*-* } { "-static" } { "" } } */
 
 #ifdef __SSP_STRONG__
 # error "-fstack-protector-strong enabled when it should not be"

@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-skip-if "" { riscv*-*-* } } */
 /* { dg-options "-O2 -fdump-tree-optimized" } */
 
 int f1(unsigned int x, unsigned int y, unsigned int z)

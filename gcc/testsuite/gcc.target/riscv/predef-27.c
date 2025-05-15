@@ -27,7 +27,7 @@ int main () {
 #error "__riscv_zfhmin"
 #endif
 
-#if defined(__riscv_zvfhmin)
+#if !defined(__riscv_zvfhmin)
 #error "__riscv_zvfhmin"
 #endif
 

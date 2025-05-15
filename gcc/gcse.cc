@@ -780,9 +780,17 @@ want_to_gcse_p (rtx x, machine_mode mode, HOST_WIDE_INT *max_distance_ptr)
     case CALL:
       return false;
 
-    CASE_CONST_ANY:
+    case CONST_DOUBLE:
+    case CONST_FIXED:
+    case CONST_VECTOR:
       if (!doing_code_hoisting_p)
 	/* Do not PRE constants.  */
+	return false;
+
+      /* FALLTHRU */
+
+    case CONST_INT:
+      if (!doing_code_hoisting_p && !flag_gcse_const)
 	return false;
 
       /* FALLTHRU */

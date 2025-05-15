@@ -28,6 +28,9 @@
 (define_register_constraint "j" "SIBCALL_REGS"
   "@internal")
 
+(define_register_constraint "e" "TARGET_RVE ? T0_REG : A7_REG"
+  "A syscall register.")
+
 ;; Avoid using register t0 for JALR's argument, because for some
 ;; microarchitectures that is a return-address stack hint.
 (define_register_constraint "l" "JALR_REGS"
@@ -136,7 +139,6 @@
        (match_test "CONSTANT_P (op)")))
 
 ;; Zfa constraints.
-
 (define_constraint "zfli"
   "A floating point number that can be loaded using instruction `fli` in zfa."
   (and (match_code "const_double")
@@ -208,8 +210,9 @@
 
 (define_memory_constraint "Wdm"
   "Vector duplicate memory operand"
-  (and (match_code "mem")
-       (match_code "reg" "0")))
+  (and (match_test "TARGET_ZVLSS")
+       (and (match_code "mem")
+	    (match_code "reg" "0"))))
 
 ;; Vendor ISA extension constraints.
 
@@ -275,3 +278,98 @@
   "Shifting immediate for SIMD shufflei3."
   (and (match_code "const_int")
        (match_test "IN_RANGE (ival, -64, -1)")))
+
+(define_constraint "Bz07"
+  "Zero extended immediate 7-bit value"
+  (and (match_test "TARGET_BIMM")
+       (and (match_code "const_int")
+	    (match_test "ival < (1 << 7) && ival >= 0"))))
+
+(define_constraint "Bext"
+  "Sequence bit extract."
+  (and (match_code "const_int")
+       (match_test "(ival & (ival + 1)) == 0")))
+
+(define_address_constraint "Zpf05"
+  "An address valid for a prefetch instruction."
+  (match_test "riscv_address_valid_for_prefetch_p (op)"))
+
+(define_constraint "u01"
+  "Unsigned immediate 1-bit value"
+  (and (match_code "const_int")
+       (match_test "ival == 1 || ival == 0")))
+
+(define_constraint "u02"
+  "Unsigned immediate 2-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 2) && ival >= 0")))
+
+(define_constraint "u03"
+  "Unsigned immediate 3-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 3) && ival >= 0")))
+
+(define_constraint "u04"
+  "Unsigned immediate 4-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 4) && ival >= 0")))
+
+(define_constraint "u05"
+  "Unsigned immediate 5-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 5) && ival >= 0")))
+
+(define_constraint "u06"
+  "Unsigned immediate 6-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 6) && ival >= 0")))
+
+(define_constraint "u08"
+  "Unsigned immediate 8-bit value"
+  (and (match_code "const_int")
+       (match_test "ival < (1 << 8) && ival >= 0")))
+
+(define_constraint "D07"
+  "A constraint that matches the integers 2^(0...7)."
+  (and (match_code "const_int")
+       (match_test "(unsigned) exact_log2 (ival) <= 7")))
+
+(define_constraint "M00"
+  "Constant value 1"
+  (and (match_code "const_int")
+       (match_test "ival == 0")))
+
+(define_constraint "M01"
+  "Constant value 1"
+  (and (match_code "const_int")
+       (match_test "ival == 1")))
+
+(define_constraint "M02"
+  "Constant value 2"
+  (and (match_code "const_int")
+       (match_test "ival == 2")))
+
+(define_constraint "M03"
+  "Constant value 3"
+  (and (match_code "const_int")
+       (match_test "ival == 3")))
+
+(define_constraint "M04"
+  "Constant value 4"
+  (and (match_code "const_int")
+       (match_test "ival == 4")))
+
+(define_constraint "M08"
+  "Constant value 8"
+  (and (match_code "const_int")
+       (match_test "ival == 8")))
+
+(define_constraint "M15"
+  "Constant value 15"
+  (and (match_code "const_int")
+       (match_test "ival == 15")))
+
+(define_constraint "M16"
+  "Constant value 16"
+  (and (match_code "const_int")
+       (match_test "ival == 16")))

@@ -405,6 +405,7 @@ extern bool lra_need_for_scratch_reg_p (void);
 extern bool lra_need_for_spills_p (void);
 extern void lra_spill (void);
 extern void lra_final_code_change (void);
+extern int lra_spill_iter;
 
 /* lra-remat.cc:  */
 

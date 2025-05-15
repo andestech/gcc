@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-march=rv64gcv -mabi=lp64d -O3 -ftree-vectorize -mrvv-max-lmul=dynamic -mrvv-vector-bits=zvl -fdump-tree-vect-details" } */
+/* { dg-skip-if "" { *32-*-linux* } { "*" } } */
 
 #define TYPE double
 #define N 200

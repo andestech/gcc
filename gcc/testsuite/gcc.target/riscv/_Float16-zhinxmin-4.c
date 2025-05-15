@@ -5,8 +5,7 @@
 /* Make sure zfhmin behaves the same way as zfh. */
 /*
 ** foo: { target { no-opts "-flto" } }
-**   lla\ta[0-9]+,\.LC0
-**   lhu\ta[0-9]+,0\(a[0-9]+\)
+**   lh\ta[0-9]+,\.LC0
 **   ...
 */
 _Float16 foo() { return 0.8974; }

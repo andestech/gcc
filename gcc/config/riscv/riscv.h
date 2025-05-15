@@ -46,6 +46,7 @@ along with GCC; see the file COPYING3.  If not see
 #define RISCV_TUNE_STRING_DEFAULT "rocket"
 #endif
 
+extern const char *nds_march_has_xandes_p (int argc, const char **argv);
 extern const char *riscv_expand_arch (int argc, const char **argv);
 extern const char *riscv_expand_arch_from_cpu (int argc, const char **argv);
 extern const char *riscv_default_mtune (int argc, const char **argv);
@@ -53,11 +54,51 @@ extern const char *riscv_multi_lib_check (int argc, const char **argv);
 extern const char *riscv_arch_help (int argc, const char **argv);
 
 # define EXTRA_SPEC_FUNCTIONS						\
+  { "nds_march_has_xandes_p", nds_march_has_xandes_p },			\
   { "riscv_expand_arch", riscv_expand_arch },				\
   { "riscv_expand_arch_from_cpu", riscv_expand_arch_from_cpu },		\
   { "riscv_default_mtune", riscv_default_mtune },			\
   { "riscv_multi_lib_check", riscv_multi_lib_check },			\
   { "riscv_arch_help", riscv_arch_help },
+
+#define MARCH_POST_PROC_SPEC \
+  "%:riscv_expand_arch(%{march=*} \
+		       %{matomic} \
+		       %{mno-atomic} \
+		       %{mno-16-bit} \
+		       %{mext-dsp} \
+		       %{mno-ext-dsp} \
+		       %{mext-vector} \
+		       %{mext-vector=*} \
+		       %{mzfh} \
+		       %{mno-zfh} \
+		       %{mno-zvfh} \
+		       %{mbf16} \
+		       %{mno-bf16} \
+		       %{mext-zbabcs} \
+		       %{mno-ext-zbabcs} \
+		       %{mext-zc} \
+		       %{mext-zilsd} \
+		       %{mno-ext-zilsd} \
+		       %{mno-zcmp} \
+		       %{mno-zcmt} \
+		       %{mext-zkn} \
+		       %{mext-zks} \
+		       %{mext-zkns} \
+		       %{mext-zvkns} \
+		       %{mext-ntlh} \
+		       %{mno-ext-ntlh} \
+		       %{mext-svinval} \
+		       %{mno-ext-svinval} \
+		       %{mext-cmo} \
+		       %{mno-ext-cmo} \
+		       %{mext-bf16min} \
+		       %{mno-ext-bf16min} \
+               %{mbf16ms} \
+		       %{mno-bf16ms} \
+		       %{mcpu=*} \
+		       %{mtune=*} \
+		       %{misa-spec=*})"
 
 /* Support for a compile-time default CPU, et cetera.  The rules are:
    --with-arch is ignored if -march or -mcpu is specified.
@@ -74,7 +115,7 @@ extern const char *riscv_arch_help (int argc, const char **argv);
   {"arch", "%{!march=*:"						\
 	   "  %{!mcpu=*:-march=%(VALUE)}"				\
 	   "  %{mcpu=*:%:riscv_expand_arch_from_cpu(%* %(VALUE))}}" },	\
-  {"abi", "%{!mabi=*:-mabi=%(VALUE)}" },				\
+  {"abi", "%{!mabi=*:%{march=rv32v5*:-mabi=ilp32%*;:%{march=rv64v5*:-mabi=lp64%*;:-mabi=%(VALUE)}}}" }, \
   {"isa_spec", "%{!misa-spec=*:-misa-spec=%(VALUE)}" },			\
   {"tls", "%{!mtls-dialect=*:-mtls-dialect=%(VALUE)}"},         	\
 
@@ -97,29 +138,99 @@ extern const char *riscv_arch_help (int argc, const char **argv);
 
 #define MULTILIB_DEFAULTS \
   {"march=" STRINGIZING (TARGET_RISCV_DEFAULT_ARCH), \
-   "mabi=" STRINGIZING (TARGET_RISCV_DEFAULT_ABI) }
+   "mabi=" STRINGIZING (TARGET_RISCV_DEFAULT_ABI), \
+   TARGET_DEFAULT_CMODEL_STR }
+
+#undef  CC1_SPEC
+#define CC1_SPEC \
+  " %{Os1:-Os -mno-save-restore}" \
+  " %{Os2:-Os}" \
+  " %{Os3:-Os}" \
+  " %{mtune=andes-60-series|mtune=ax65*:-fno-lra-mem-subreg-simplify}" \
+  " %{mtune=andes-45-series|mtune=n45*|mtune=nx45*|mtune=d45*|mtune=a45*|mtune=ax45*:-fno-lra-mem-subreg-simplify}"
 
 #undef ASM_SPEC
 #define ASM_SPEC "\
 %(subtarget_asm_debugging_spec) \
 %{" FPIE_OR_FPIC_SPEC ":-fpic} \
-%{march=*} \
+%{march=*:" MARCH_POST_PROC_SPEC "} \
 %{mabi=*} \
 %{mno-relax} \
 %{mbig-endian} \
 %{mlittle-endian} \
 %(subtarget_asm_spec)" \
-ASM_MISA_SPEC
+ASM_MISA_SPEC \
+" %{mno-16-bit}" \
+" %{O|O1|O2|O3|Ofast:-O1;:-Os}" \
+" %{mcmodel=small|mcmodel=medlow:-mcmodel=medlow; \
+    mcmodel=medium|mcmodel=medany:-mcmodel=medany; \
+    mcmodel=large:-mcmodel=large}" \
+" %{mb20282:-mb20282}" \
+" %{mno-b20282:-mno-b20282}" \
+" %{mb22827:-mb22827}" \
+" %{mno-b22827:-mno-b22827}" \
+" %{mb22827.1:-mb22827.1}" \
+" %{mno-b22827.1:-mno-b22827.1}" \
+" %{mb19758:-mb19758}" \
+" %{mno-b19758:-mno-b19758}" \
+" %{mb25057:-mb25057}" \
+" %{mno-b25057:-mno-b25057}" \
+" %{mtune=andes-25-series|mtune=n25*|mtune=nx25*|mtune=d25*|mtune=a25*|mtune=ax25*:;:-mno-b19758}" \
+" %{mtune=andes-45-series|mtune=n45*|mtune=nx45*|mtune=d45*|mtune=a45*|mtune=ax45*:;:-mno-b25057}" \
+" %{mno-workaround:-mno-workaround}"
+
+#define NDS_OPT_COMPAT_SPEC \
+  " %{mex9:-mexecit}" \
+  " %{mno-ex9:-mno-execit}" \
+  " %{mext-fpu-fma:-mfma}" \
+  " %{mno-ext-fpu-fma:-mno-fma}"
+
+#ifdef TARGET_OS_DEFAULT_EX9
+#define NDS32_EX9_SPEC " %{mexecit:%{!mno-execit:%{!mtune=ax65:%{!mtune=andes-60-series:--mexecit}}}}" \
+		       " %{mtune=andes-23-series:--mnexecitop}"
+#define NDS32_EX9_DRIVER_SPEC \
+" %{%:nds_march_has_xandes_p(%{march=*}): " \
+"   %{Os2|Os3|Os:%{!mno-16-bit:%{!mno-execit:%{!mtune=ax65:%{!mtune=andes-60-series:-mexecit}}}}}}"
+#else
+#define NDS32_EX9_SPEC " %{mexecit:--mexecit}"
+#define NDS32_EX9_DRIVER_SPEC ""
+#endif
+
+#define NDS_DRIVER_SPEC \
+  " %{frepo:-fuse-ld=bfd}" \
+  " %{fdata-sections:-fno-section-anchors}" \
+  " %{%:nds_march_has_xandes_p(%{march=*}):%{Os2:%{!mno-innermost-loop:-minnermost-loop}}}" \
+  " %{mtune=andes-23-series:-mext-zc}" \
+  " %{mtune=andes-45-series:%{!mno-ext-zvlsseg:-mext-zvlsseg}}"
+
+#define CMODEL_SPEC \
+  " %{mcmodel=small:-mcmodel=medlow}" \
+  " %{mcmodel=medium:%{march=rv32*:-mcmodel=medlow}}" \
+  " %{mcmodel=medium:%{march=rv64*:-mcmodel=medany}}" \
+  " %{mcmodel=large:%{march=rv32*:-mcmodel=medlow}}"
 
 #undef DRIVER_SELF_SPECS
 #define DRIVER_SELF_SPECS					\
 "%{march=help:%:riscv_arch_help()} "				\
 "%{print-supported-extensions:%:riscv_arch_help()} "		\
 "%{-print-supported-extensions:%:riscv_arch_help()} "		\
-"%{march=*:%:riscv_expand_arch(%*)} "				\
-"%{!march=*:%{mcpu=*:%:riscv_expand_arch_from_cpu(%*)}} "
+"%{march=*:" MARCH_POST_PROC_SPEC "} "				\
+"%{!march=*:%{mcpu=*:%:riscv_expand_arch_from_cpu(%*)}} "	\
+  NDS_OPT_COMPAT_SPEC \
+  NDS32_EX9_DRIVER_SPEC \
+  NDS_DRIVER_SPEC \
+  CMODEL_SPEC
 
+#ifndef TARGET_DEFAULT_MEDLOW
+#error "TARGET_DEFAULT_MEDLOW undefined!"
+#endif
+#if TARGET_DEFAULT_MEDLOW == 1
 #define TARGET_DEFAULT_CMODEL CM_MEDLOW
+#define TARGET_DEFAULT_CMODEL_STR "mcmodel=medlow"
+#else
+#define TARGET_DEFAULT_CMODEL CM_MEDANY
+#define TARGET_DEFAULT_CMODEL_STR "mcmodel=medany"
+#endif
 
 #define LOCAL_LABEL_PREFIX	"."
 #define USER_LABEL_PREFIX	""
@@ -181,6 +292,10 @@ ASM_MISA_SPEC
    ? 0 									\
    : ((riscv_abi == ABI_ILP32F || riscv_abi == ABI_LP64F) ? 4 : 8))
 
+/* Width of register of MODE */
+#define BITS_PER_REG(mode)                                                     \
+  ((GET_MODE_CLASS (mode) == MODE_FLOAT) ? UNITS_PER_FP_REG * 8 : BITS_PER_WORD)
+
 /* Set the sizes of the core types.  */
 #define SHORT_TYPE_SIZE 16
 #define INT_TYPE_SIZE 32
@@ -195,8 +310,18 @@ ASM_MISA_SPEC
 /* Allocation boundary (in *bits*) for storing arguments in argument list.  */
 #define PARM_BOUNDARY BITS_PER_WORD
 
+#define TARGET_NEED_ALIGN \
+  ((!TARGET_RVC && !TARGET_ZCA) || !optimize_size || TARGET_ALWAYS_ALIGN)
+
 /* Allocation boundary (in *bits*) for the code of a function.  */
-#define FUNCTION_BOUNDARY ((TARGET_RVC || TARGET_ZCA) ? 16 : 32)
+#define FUNCTION_BOUNDARY (TARGET_NEED_ALIGN ? 32 : 16)
+
+#define JUMP_ALIGN(x) \
+  (align_jumps.levels[0].log ? align_jumps : (TARGET_NEED_ALIGN ? 2 : 1))
+#define LOOP_ALIGN(x) \
+  (align_loops.levels[0].log ? align_loops : (TARGET_NEED_ALIGN ? 2 : 1))
+#define LABEL_ALIGN(x) \
+  (align_labels.levels[0].log ? align_labels : (TARGET_NEED_ALIGN ? 2 : 1))
 
 /* The smallest supported stack boundary the calling convention supports.  */
 #define STACK_BOUNDARY \
@@ -243,12 +368,20 @@ ASM_MISA_SPEC
    mode that should actually be used.  We allow pairs of registers.  */
 #define MAX_FIXED_MODE_SIZE GET_MODE_BITSIZE (TARGET_64BIT ? TImode : DImode)
 
+/* DATA_ALIGNMENT and LOCAL_ALIGNMENT common definition based on microarchitecture.  */
+#define RISCV_MARCH_ALIGNMENT(MARCH, ALIGN)			\
+  ((MARCH == vicuna || MARCH == chihuahua)				\
+    ? (((ALIGN) <= 32) ? 32 : ALIGN)					\
+    : ALIGN)
+
 /* DATA_ALIGNMENT and LOCAL_ALIGNMENT common definition.  */
-#define RISCV_EXPAND_ALIGNMENT(COND, TYPE, ALIGN)			\
-  (((COND) && ((ALIGN) < BITS_PER_WORD)					\
-    && (TREE_CODE (TYPE) == ARRAY_TYPE					\
-	|| TREE_CODE (TYPE) == UNION_TYPE				\
-	|| TREE_CODE (TYPE) == RECORD_TYPE)) ? BITS_PER_WORD : (ALIGN))
+#define RISCV_EXPAND_ALIGNMENT(COND, TYPE, ALIGN)				\
+  ((COND) ? ((((ALIGN) < BITS_PER_WORD)						\
+	      && (TREE_CODE (TYPE) == ARRAY_TYPE				\
+		  || TREE_CODE (TYPE) == UNION_TYPE				\
+		  || TREE_CODE (TYPE) == RECORD_TYPE)) ? BITS_PER_WORD		\
+	     : RISCV_MARCH_ALIGNMENT(riscv_microarchitecture, ALIGN))	\
+   : ALIGN)
 
 /* If defined, a C expression to compute the alignment for a static
    variable.  TYPE is the data type, and ALIGN is the alignment that
@@ -504,6 +637,8 @@ ASM_MISA_SPEC
 enum reg_class
 {
   NO_REGS,			/* no registers in set */
+  T0_REG,			/* T0 register */
+  A7_REG,			/* A7 register */
   SIBCALL_REGS,			/* registers used by indirect sibcalls */
   JALR_REGS,			/* registers used by indirect calls */
   GR_REGS,			/* integer registers */
@@ -527,6 +662,8 @@ enum reg_class
 #define REG_CLASS_NAMES							\
 {									\
   "NO_REGS",								\
+  "T0_REG",								\
+  "A7_REG",								\
   "SIBCALL_REGS",							\
   "JALR_REGS",								\
   "GR_REGS",								\
@@ -552,6 +689,8 @@ enum reg_class
 #define REG_CLASS_CONTENTS						\
 {									\
   { 0x00000000, 0x00000000, 0x00000000, 0x00000000 },	/* NO_REGS */		\
+  { 0x00000020, 0x00000000, 0x00000000, 0x00000000 },	/* T0_REG */		\
+  { 0x00020000, 0x00000000, 0x00000000, 0x00000000 },	/* A7_REG */		\
   { 0xf003fcc0, 0x00000000, 0x00000000, 0x00000000 },	/* SIBCALL_REGS */	\
   { 0xffffffc0, 0x00000000, 0x00000000, 0x00000000 },	/* JALR_REGS */		\
   { 0xffffffff, 0x00000000, 0x00000000, 0x00000000 },	/* GR_REGS */		\
@@ -610,6 +749,8 @@ enum reg_class
      registers.  */							\
   64, 65, 66, 67							\
 }
+
+#define ADJUST_REG_ALLOC_ORDER riscv_adjust_reg_alloc_order()
 
 /* True if VALUE is a signed 12-bit number.  */
 
@@ -843,7 +984,7 @@ extern enum riscv_cc get_riscv_cc (const rtx use);
   (PTR) = riscv_asm_output_opcode(STREAM, PTR)
 
 #define JUMP_TABLES_IN_TEXT_SECTION 0
-#define CASE_VECTOR_MODE SImode
+#define CASE_VECTOR_MODE ptr_mode
 #define CASE_VECTOR_PC_RELATIVE (riscv_cmodel != CM_MEDLOW)
 
 #define LOCAL_SYM_P(sym)						\
@@ -920,14 +1061,16 @@ extern enum riscv_cc get_riscv_cc (const rtx use);
    may contain character constants, extra white space, comments, etc.  */
 
 #ifndef ASM_APP_ON
-#define ASM_APP_ON " #APP\n"
+#define ASM_APP_ON (riscv_cmodel == CM_LARGE ?				\
+		    "#APP\n\t.option cmodel_large\n" : "#APP\n")
 #endif
 
 /* Output to assembler file text saying following lines
    no longer contain unusual constructs.  */
 
 #ifndef ASM_APP_OFF
-#define ASM_APP_OFF " #NO_APP\n"
+#define ASM_APP_OFF (riscv_cmodel == CM_LARGE ?				\
+		     "#NO_APP\n\t.option cmodel_medany\n" : "#NO_APP\n")
 #endif
 
 #define REGISTER_NAMES						\
@@ -1031,12 +1174,15 @@ extern enum riscv_cc get_riscv_cc (const rtx use);
 /* This is how to output an element of a case-vector that is absolute.  */
 
 #define ASM_OUTPUT_ADDR_VEC_ELT(STREAM, VALUE)				\
-  fprintf (STREAM, "\t.word\t%sL%d\n", LOCAL_LABEL_PREFIX, VALUE)
+  fprintf (STREAM, "\t%s\t%sL%d\n",					\
+	   ptr_mode == DImode ? ".dword" : ".word",			\
+	   LOCAL_LABEL_PREFIX, VALUE)
 
 /* This is how to output an element of a PIC case-vector. */
 
 #define ASM_OUTPUT_ADDR_DIFF_ELT(STREAM, BODY, VALUE, REL)		\
-  fprintf (STREAM, "\t.word\t%sL%d-%sL%d\n",				\
+  fprintf (STREAM, "\t%s\t%sL%d-%sL%d\n",				\
+	   ptr_mode == DImode ? ".dword" : ".word",			\
 	   LOCAL_LABEL_PREFIX, VALUE, LOCAL_LABEL_PREFIX, REL)
 
 /* This is how to output an assembler line
@@ -1224,8 +1370,11 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
 #define VECTOR_STORE_FLAG_VALUE(MODE) CONSTM1_RTX (GET_MODE_INNER (MODE))
 
 /* Mode switching (Lazy code motion) for RVV rounding mode instructions.  */
-#define OPTIMIZE_MODE_SWITCHING(ENTITY) (TARGET_VECTOR)
-#define NUM_MODES_FOR_MODE_SWITCHING {VXRM_MODE_NONE, riscv_vector::FRM_NONE}
+#define OPTIMIZE_MODE_SWITCHING(ENTITY) (riscv_optimize_mode_switching (ENTITY))
+#define NUM_MODES_FOR_MODE_SWITCHING                                           \
+  {                                                                            \
+    VXRM_MODE_NONE, riscv_vector::FRM_NONE, riscv_vector::UMISC_CTL_NONE       \
+  }
 
 /* The size difference between different RVV modes can be up to 64 times.
    e.g. RVVMF64BI vs RVVMF1BI on zvl512b, which is [1, 1] vs [64, 64].  */
@@ -1236,5 +1385,33 @@ extern void riscv_remove_unneeded_save_restore_calls (void);
 
 /* Check TLS Descriptors mechanism is selected.  */
 #define TARGET_TLSDESC (riscv_tls_dialect == TLS_DESCRIPTORS)
+
+#ifdef TARGET_DEFAULT_GP_RELAX
+#define NDS32_GP_RELAX_DEFAULT_SPEC \
+" %{%:nds_march_has_xandes_p(%{march=*}): " \
+"   %{!mno-gp-insn-relax:--mgp-insn-relax}}"
+#else
+#define NDS32_GP_RELAX_DEFAULT_SPEC ""
+#endif
+
+#define NDS32_GP_RELAX_SPEC \
+  NDS32_GP_RELAX_DEFAULT_SPEC \
+  " %{mgp-insn-relax:--mgp-insn-relax}" \
+  " %{mno-gp-insn-relax:--mno-gp-insn-relax}"
+
+#define BTB_FIXUP_SPEC \
+  " %{Os3|Os:--mno-avoid-btb-miss}"
+
+#define WORKAROUND_SPEC \
+  " %{mno-workaround:--mno-workaround}"
+
+#define ASM_OUTPUT_POOL_EPILOGUE riscv_asm_output_pool_epilogue
+
+#define ICT_VERSION 1
+
+#define CLEAR_INSN_CACHE(beg, end) asm volatile("fence.i" ::: "memory")
+
+/* Used for auto insert CSR for mode switch and it from nds_intrinsic.h. */
+#define NDS_UMISC_CTL 0x813
 
 #endif /* ! GCC_RISCV_H */

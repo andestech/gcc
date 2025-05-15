@@ -23,6 +23,7 @@ along with GCC; see the file COPYING3.  If not see
 #define GCC_RISCV_PROTOS_H
 
 #include "memmodel.h"
+#include "tree-pass.h"
 
 /* Symbol types we understand.  The order of this list must match that of
    the unspec enum in riscv.md, subsequent to UNSPEC_ADDRESS_FIRST.  */
@@ -155,6 +156,7 @@ extern rtx riscv_function_value (const_tree, const_tree, enum machine_mode);
 extern bool riscv_store_data_bypass_p (rtx_insn *, rtx_insn *);
 extern rtx riscv_gen_gpr_save_insn (struct riscv_frame_info *);
 extern bool riscv_gpr_save_operation_p (rtx);
+extern bool riscv_indirect_call_referenced_p (const_rtx);
 extern void riscv_reinit (void);
 extern poly_uint64 riscv_regmode_natural_size (machine_mode);
 extern bool riscv_v_ext_vector_mode_p (machine_mode);
@@ -165,6 +167,9 @@ extern bool riscv_shamt_matches_mask_p (int, HOST_WIDE_INT);
 extern void riscv_subword_address (rtx, rtx *, rtx *, rtx *, rtx *);
 extern void riscv_lshift_subword (machine_mode, rtx, rtx, rtx *);
 extern enum memmodel riscv_union_memmodels (enum memmodel, enum memmodel);
+extern bool riscv_address_valid_for_prefetch_p (rtx);
+extern bool riscv_optimize_mode_switching (int);
+extern bool valid_zilsd_load_store (rtx, bool);
 
 /* Routines implemented in riscv-c.cc.  */
 void riscv_cpu_cpp_builtins (cpp_reader *);
@@ -176,6 +181,7 @@ extern bool riscv_gimple_fold_builtin (gimple_stmt_iterator *);
 extern rtx riscv_expand_builtin (tree, rtx, rtx, machine_mode, int);
 extern tree riscv_builtin_decl (unsigned int, bool);
 extern void riscv_init_builtins (void);
+extern void riscv_final_prescan_insn (rtx_insn *);
 
 /* Routines implemented in riscv-common.cc.  */
 extern std::string riscv_arch_str (bool version_p = true);
@@ -183,6 +189,7 @@ extern void riscv_parse_arch_string (const char *, struct gcc_options *, locatio
 
 extern bool riscv_hard_regno_rename_ok (unsigned, unsigned);
 
+gimple_opt_pass * make_pass_riscv_iprintf (gcc::context *ctxt);
 rtl_opt_pass * make_pass_shorten_memrefs (gcc::context *ctxt);
 rtl_opt_pass * make_pass_avlprop (gcc::context *ctxt);
 rtl_opt_pass * make_pass_vsetvl (gcc::context *ctxt);
@@ -291,6 +298,24 @@ struct cpu_vector_cost
   /* Cost of vector register move operations.  */
   const regmove_vector_cost *regmove;
 };
+
+extern void riscv_asm_output_pool_epilogue (FILE *, const char *,
+					    tree, HOST_WIDE_INT);
+
+
+/* Auxiliary functions to split/output sms pattern.  */
+extern bool riscv_need_split_sms_p (rtx, rtx, rtx, rtx);
+extern const char *riscv_output_sms (rtx, rtx, rtx, rtx);
+extern void riscv_split_sms (rtx, rtx, rtx, rtx, rtx, rtx, rtx);
+
+extern void riscv_split_ashiftdi3 (rtx, rtx, rtx);
+extern void riscv_split_ashiftrtdi3 (rtx, rtx, rtx);
+extern void riscv_split_lshiftrtdi3 (rtx, rtx, rtx);
+extern void riscv_split_shiftrtdi3 (rtx, rtx, rtx);
+
+/* Auxiliary functions for manipulation DI mode.  */
+extern rtx riscv_di_high_part_subreg(rtx);
+extern rtx riscv_di_low_part_subreg(rtx);
 
 /* Routines implemented in riscv-selftests.cc.  */
 #if CHECKING_P
@@ -560,7 +585,7 @@ bool verify_type_context (location_t, type_context_kind, const_tree, bool);
 bool expand_vec_perm_const (machine_mode, machine_mode, rtx, rtx, rtx,
 			    const vec_perm_indices &);
 #endif
-void handle_pragma_vector (void);
+void handle_pragma_vector (bool);
 tree builtin_decl (unsigned, bool);
 gimple *gimple_fold_builtin (unsigned int, gimple_stmt_iterator *, gcall *);
 rtx expand_builtin (unsigned int, tree, rtx);
@@ -693,6 +718,14 @@ enum floating_point_rounding_mode
   FRM_NONE = 10,
 };
 
+/* Switch mode bitfield for half floating point. */
+enum half_floating_point_switch_mode
+{
+  UMISC_CTL_BF,
+  UMISC_CTL_HF,
+  UMISC_CTL_NONE,
+};
+
 enum floating_point_rounding_mode get_frm_mode (rtx);
 opt_machine_mode vectorize_related_mode (machine_mode, scalar_mode,
 					 poly_uint64);
@@ -793,5 +826,7 @@ enum
   RISCV_MINOR_VERSION_BASE = 1000,
   RISCV_REVISION_VERSION_BASE = 1,
 };
+
+extern void riscv_adjust_reg_alloc_order (void);
 
 #endif /* ! GCC_RISCV_PROTOS_H */

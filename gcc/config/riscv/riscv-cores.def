@@ -43,6 +43,19 @@ RISCV_TUNE("thead-c906", generic, thead_c906_tune_info)
 RISCV_TUNE("xiangshan-nanhu", xiangshan, xiangshan_nanhu_tune_info)
 RISCV_TUNE("generic-ooo", generic_ooo, generic_ooo_tune_info)
 RISCV_TUNE("size", generic, optimize_size_tune_info)
+RISCV_TUNE("vicuna", generic, vicuna_tune_info)
+RISCV_TUNE("kavalan", generic, kavalan_tune_info)
+RISCV_TUNE("andes-22-series", vicuna, vicuna_tune_info)
+RISCV_TUNE("andes-23-series", chihuahua, chihuahua_tune_info)
+RISCV_TUNE("andes-25-series", vicuna, vicuna_tune_info)
+RISCV_TUNE("andes-27-series", vicuna, vicuna_v_tune_info)
+RISCV_TUNE("andes-45-series", kavalan, kavalan_tune_info)
+RISCV_TUNE("andes-45-series-dlen-factor2", kavalan, kavalan_tune_info)
+RISCV_TUNE("andes-45-series-hvm", kavalan, kavalan_tune_info)
+RISCV_TUNE("andes-45-series-dlen-factor2-hvm", kavalan, kavalan_tune_info)
+RISCV_TUNE("andes-46-series", kavalan, kavalan_tune_info)
+RISCV_TUNE("andes-60-series", makatau, makatau_tune_info)
+RISCV_TUNE("andes-66-series", kavalan, kavalan_tune_info)
 
 #undef RISCV_TUNE
 
@@ -96,4 +109,97 @@ RISCV_CORE("xiangshan-nanhu",      "rv64imafdc_zba_zbb_zbc_zbs_"
 			      "zbkb_zbkc_zbkx_zknd_zkne_zknh_zksed_zksh_"
 			      "svinval_zicbom_zicboz",
 			      "xiangshan-nanhu")
+/* Andes CPU list.  */
+RISCV_CORE("n22",      "rv32imc_zicsr_zifencei_xandes",    "andes-25-series")
+RISCV_CORE("n225",     "rv32imc_zicsr_zifencei_"
+		       "zca_zcb_zcmp_zcmt_zba_zbb_zbc_zbs_xandes",
+		       "andes-23-series")
+RISCV_CORE("d23",      "rv32imcp_zicsr_zifencei_"
+		       "zicbop_zicbom_zicboz_zca_zcb_zcmp_zcmt_"
+		       "zba_zbb_zbc_zbs_xandes",    "andes-23-series")
+RISCV_CORE("fs02",     "rv32imac_zicsr_zifencei_xandes",    "andes-25-series")
+RISCV_CORE("n25",      "rv32imc_zicsr_zifencei_xandes",    "andes-25-series")
+RISCV_CORE("d25",      "rv32imcp_zicsr_zifencei_zba_zbb_zbc_zbs_xandes",
+		       "andes-25-series")
+RISCV_CORE("nx25",     "rv64imc_zicsr_zifencei_xandes",    "andes-25-series")
+RISCV_CORE("n25f",     "rv32imfc_zicsr_zifencei_xandes",   "andes-25-series")
+RISCV_CORE("d25f",     "rv32imfcp_zicsr_zifencei_zba_zbb_zbc_zbs_xandes",
+		       "andes-25-series")
+RISCV_CORE("nx25f",    "rv64imfc_zicsr_zifencei_xandes",  "andes-25-series")
+RISCV_CORE("a25",      "rv32imac_zicsr_zifencei_xandes",    "andes-25-series")
+RISCV_CORE("ax25",     "rv64imac_zicsr_zifencei_xandes",    "andes-25-series")
+RISCV_CORE("n45",      "rv32imc_zicsr_zifencei_xandes",    "andes-45-series")
+RISCV_CORE("d45",      "rv32imcp_zicsr_zifencei_zba_zbb_zbc_zbs_xandes",
+		       "andes-45-series")
+RISCV_CORE("nx45",     "rv64imc_zicsr_zifencei_xandes",    "andes-45-series")
+RISCV_CORE("nx45v",    "rv64imfdcv_zicsr_zifencei_xandes",   "andes-45-series")
+RISCV_CORE("n45f",     "rv32imfc_zicsr_zifencei_xandes",   "andes-45-series")
+RISCV_CORE("d45f",     "rv32imfcp_zicsr_zifencei_zba_zbb_zbc_zbs_xandes",
+		       "andes-45-series")
+RISCV_CORE("nx45f",    "rv64imfc_zicsr_zifencei_xandes",  "andes-45-series")
+RISCV_CORE("a45",      "rv32imac_zicsr_zifencei_xandes",    "andes-45-series")
+RISCV_CORE("ax45",     "rv64imac_zicsr_zifencei_xandes",    "andes-45-series")
+RISCV_CORE("ax45mpv",  "rv64imafdcpv_zicsr_zifencei_zba_zbb_zbc_zbs_xandes",
+		       "andes-45-series")
+RISCV_CORE("a46mp",    "rv32imafdb_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccif"
+                       "_zicclsm_ziccrse_zicntr_zicsr_zifencei_zihintpause_zihpm"
+                       "_zilsd_zmmul_za64rs_zaamo_zalrsc_zfbfmin_zfhmin_zca_zcb_zcf"
+                       "_zcmp_zcmt_zba_zbb_zbc_zbs_zkt_ssccptr_sscounterenw_sstvala"
+                       "_sstvecd_svade_svbare_svinval_svpbmt_xandes_xnexecit",
+		       "andes-45-series")
+RISCV_CORE("a46mpv",   "rv32imafdb_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccif"
+                       "_zicclsm_ziccrse_zicntr_zicsr_zifencei_zihintpause_zihpm"
+                       "_zilsd_zmmul_za64rs_zaamo_zalrsc_zfbfmin_zfhmin_zca_zcb_zcf"
+                       "_zcmp_zcmt_zba_zbb_zbc_zbs_zkt_zve32f_zve32x_zvfbfmin"
+                       "_zvfbfwma_zvfh_zvfhmin_zvl128b_zvl32b_zvl64b_ssccptr"
+                       "_sscounterenw_sstvala_sstvecd_svade_svbare_svinval_svpbmt"
+                       "_xandes_xnexecit",
+		       "andes-45-series")
+RISCV_CORE("ax46",     "rv64imafdb_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccif"
+                       "_zicclsm_ziccrse_zicntr_zicsr_zifencei_zihintpause_zihpm"
+                       "_zmmul_za64rs_zaamo_zalrsc_zfbfmin_zfhmin_zca_zcb"
+                       "_zcmp_zcmt_zba_zbb_zbc_zbs_zkt_ssccptr_sscounterenw_sstvala"
+                       "_sstvecd_svade_svbare_svinval_svpbmt_xandes_xnexecit",
+		       "andes-45-series")
+RISCV_CORE("ax46mp",   "rv64imafdb_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccif"
+                       "_zicclsm_ziccrse_zicntr_zicsr_zifencei_zihintpause_zihpm"
+                       "_zmmul_za64rs_zaamo_zalrsc_zfbfmin_zfhmin_zca_zcb"
+                       "_zcmp_zcmt_zba_zbb_zbc_zbs_zkt_ssccptr_sscounterenw_sstvala"
+                       "_sstvecd_svade_svbare_svinval_svpbmt_xandes_xnexecit",
+		       "andes-45-series")
+RISCV_CORE("ax46mpv",  "rv64imafdbv_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccif"
+                       "_zicclsm_ziccrse_zicntr_zicsr_zifencei_zihintpause_zihpm"
+                       "_zmmul_za64rs_zaamo_zalrsc_zfbfmin_zfhmin_zca_zcb"
+                       "_zcmp_zcmt_zba_zbb_zbc_zbs_zkt_zve32f_zve32x_zve64d_zve64f"
+                       "_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvl128b_zvl32b"
+                       "_zvl64b_ssccptr_sscounterenw_sstvala_sstvecd_svade_svbare"
+                       "_svinval_svpbmt_xandes_xnexecit",
+		       "andes-45-series")
+RISCV_CORE("n27",      "rv32imc_zicsr_zifencei_xandes",    "andes-27-series")
+RISCV_CORE("nx27",     "rv64imc_zicsr_zifencei_xandes",    "andes-27-series")
+RISCV_CORE("nx27v",    "rv64imfdcv_zicsr_zifencei_xandes",   "andes-27-series")
+RISCV_CORE("d27",      "rv32imcp_zicsr_zifencei_zba_zbb_zbc_zbs_xandes",
+		       "andes-27-series")
+RISCV_CORE("n27f",     "rv32imfc_zicsr_zifencei_xandes",   "andes-27-series")
+RISCV_CORE("d27f",     "rv32imfcp_zicsr_zifencei_zba_zbb_zbc_zbs_xandes",
+		       "andes-27-series")
+RISCV_CORE("nx27f",    "rv64imfc_zicsr_zifencei_xandes",  "andes-27-series")
+RISCV_CORE("a27",      "rv32imac_zicsr_zifencei_xandes",    "andes-27-series")
+RISCV_CORE("ax27",     "rv64imac_zicsr_zifencei_xandes",    "andes-27-series")
+RISCV_CORE("ax65",     "rv64imfdcv_zicsr_zifencei_xandes",  "andes-60-series")
+
+RISCV_CORE("ax66",     "rv64imafdcbvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccif"
+                       "_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr"
+                       "_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs"
+                       "_zaamo_zalrsc_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb"
+                       "_zcmop_zba_zbb_zbc_zbs_zkt_zvbb_zvbc_zve32f_zve32x_zve64d"
+                       "_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg"
+                       "_zvkn_zvknc_zvkned_zvkng_zvknhb_zvks_zvksc_zvksed_zvksg"
+                       "_zvksh_zvkt_zvl128b_zvl32b_zvl64b_sha_shcounterenw_shgatpa"
+                       "_shtvala_shvsatpa_shvstvala_shvstvecd_ssccptr_sscofpmf"
+                       "_sscounterenw_ssnpm_sspm_ssstateen_ssstrict_sstc_sstvala"
+                       "_sstvecd_ssu64xl_supm_svade_svbare_svinval_svnapot_svpbmt"
+                       "_svvptc_xandesperf_xandesvdot_xandesvqmac",
+		       "andes-45-series")
+
 #undef RISCV_CORE

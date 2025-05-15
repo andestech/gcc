@@ -16,5 +16,5 @@ unsigned int ror(unsigned int rs1, unsigned int rs2)
 
 /* { dg-final { scan-assembler-times {\mrolw} 1 } } */
 /* { dg-final { scan-assembler-times {\mrorw} 1 } } */
-/* { dg-final { scan-assembler-not {\mand} } } */
+/* { dg-final { scan-assembler-not {\mand[ \t]} } } */
 /* { dg-final { scan-assembler-not {\msext\.w\M} } } */

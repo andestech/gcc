@@ -5217,6 +5217,7 @@ lra_constraints (bool first_p)
   rtx_insn *original_insn;
   basic_block last_bb;
   bitmap_iterator bi;
+  bool skip_transform;
 
   lra_constraint_iter++;
   if (lra_dump_file != NULL)
@@ -5439,7 +5440,24 @@ lra_constraints (bool first_p)
 	  curr_static_id = curr_id->insn_static_data;
 	  init_curr_insn_input_reloads ();
 	  init_curr_operand_mode ();
-	  if (curr_insn_transform (false))
+
+	  /* If flag_lra_mem_subreg_simplify is off, do not reload any new
+	     insn until the second run of lra_spill, in which some insn will
+	     be simplified and prevent possible lra looping issue.
+	  */
+	  skip_transform = false;
+	  if (!flag_lra_mem_subreg_simplify && !first_p)
+	    if (INSN_UID (curr_insn) > new_insn_uid_start)
+	      {
+		skip_transform = true;
+		if (lra_dump_file != NULL)
+		  fprintf (lra_dump_file,
+			   "  Delay reloading of insn %d to next "
+			   "lra_constraints iteration.\n",
+			   INSN_UID (curr_insn));
+	      }
+
+	  if (curr_insn_transform (skip_transform))
 	    changed_p = true;
 	  /* Check non-transformed insns too for equiv change as USE
 	     or CLOBBER don't need reloads but can contain pseudos

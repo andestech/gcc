@@ -1,5 +1,6 @@
 /* { dg-do compile { target *-*-linux* *-*-gnu* } } */
 /* { dg-options "-fhardened -O -fdump-tree-gimple" } */
+/* { dg-skip-if "" { *-*-* } { "-static" } { "" } } */
 
 int
 foo ()

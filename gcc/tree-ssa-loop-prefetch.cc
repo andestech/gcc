@@ -653,6 +653,8 @@ gather_memory_references (class loop *loop, bool *no_other_refs, unsigned *ref_c
 	    }
 	  if (REFERENCE_CLASS_P (lhs))
 	    {
+	    if (!param_prefetch_writes)
+		continue;
 	    *no_other_refs &= gather_memory_references_ref (loop, &refs,
 							    lhs, true, stmt);
 	    *ref_count += 1;

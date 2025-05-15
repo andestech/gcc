@@ -36,15 +36,15 @@ dg-init
 # Main loop.
 set CFLAGS "$DEFAULT_CFLAGS -O3"
 dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/base/*.\[cS\]]] \
-	"" $CFLAGS
+	"-mext-zvlsseg" $CFLAGS
 gcc-dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/vsetvl/*.\[cS\]]] \
-	"" $CFLAGS
+	"-mext-zvlsseg" $CFLAGS
 dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/*.\[cS\]]] \
-	"-O3 -ftree-vectorize" $CFLAGS
+	"-O3 -ftree-vectorize -mext-zvlsseg" $CFLAGS
 dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/vls/*.\[cS\]]] \
-	"-O3 -ftree-vectorize -mrvv-vector-bits=scalable" $CFLAGS
+	"-O3 -ftree-vectorize -mrvv-vector-bits=scalable -mext-zvlsseg" $CFLAGS
 dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/struct/*.\[cS\]]] \
-	"" "-O3 -ftree-vectorize"
+	"-mext-zvlsseg" "-O3 -ftree-vectorize"
 
 set AUTOVEC_TEST_OPTS [list \
   {-ftree-vectorize -O3 -mrvv-max-lmul=m1} \
@@ -59,23 +59,23 @@ set AUTOVEC_TEST_OPTS [list \
   {-ftree-vectorize -O2 -mrvv-max-lmul=dynamic} ]
 foreach op $AUTOVEC_TEST_OPTS {
   dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/partial/*.\[cS\]]] \
-    "" "$op"
+    "-mext-zvlsseg" "$op"
   dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/binop/*.\[cS\]]] \
-    "" "$op"
+    "-mext-zvlsseg" "$op"
   dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/cmp/*.\[cS\]]] \
-    "" "$op"
+    "-mext-zvlsseg" "$op"
   dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/conversions/*.\[cS\]]] \
-    "" "$op"
+    "-mext-zvlsseg" "$op"
   dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/unop/*.\[cS\]]] \
-    "" "$op"
+    "-mext-zvlsseg" "$op"
   dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/ternop/*.\[cS\]]] \
-    "" "$op"
+    "-mext-zvlsseg" "$op"
   dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/reduc/*.\[cS\]]] \
-    "" "$op"
+    "-mext-zvlsseg" "$op"
   dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/cond/*.\[cS\]]] \
-    "" "$op"
+    "-mext-zvlsseg" "$op"
   dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/builtin/*.\[cS\]]] \
-    "" "$op"
+    "-mext-zvlsseg" "$op"
 }
 
 # widening operation only test on LMUL < 8
@@ -88,12 +88,12 @@ set AUTOVEC_TEST_OPTS [list \
   {-ftree-vectorize -O2 -mrvv-max-lmul=m4} ]
 foreach op $AUTOVEC_TEST_OPTS {
   dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/widen/*.\[cS\]]] \
-    "" "$op"
+    "-mext-zvlsseg" "$op"
 }
 
 # VLS-VLMAX tests
 dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/vls-vlmax/*.\[cS\]]] \
-	"-std=c99 -O3 -ftree-vectorize -mrvv-vector-bits=zvl" $CFLAGS
+	"-std=c99 -O3 -ftree-vectorize -mrvv-vector-bits=zvl -mext-zvlsseg" $CFLAGS
 
 # gather-scatter tests
 set AUTOVEC_TEST_OPTS [list \
@@ -119,7 +119,27 @@ set AUTOVEC_TEST_OPTS [list \
   {-ftree-vectorize -O2 -mrvv-vector-bits=scalable -mrvv-max-lmul=dynamic -ffast-math} ]
 foreach op $AUTOVEC_TEST_OPTS {
   dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/autovec/gather-scatter/*.\[cS\]]] \
-    "" "$op"
+    "-mext-zvlsseg" "$op"
+}
+
+set POLICY [list \
+  {policy} \
+  {non-policy} ]
+set OVERLOAD [list \
+  {overloaded} \
+  {non-overloaded} ]
+foreach po $POLICY {
+  foreach ov $OVERLOAD {
+    # For Andes RVV BF mode switch tests
+    dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/bfloat/$po/$ov/*.\[cS\]]] \
+      "-mext-zvlsseg" $CFLAGS
+    # For Andes RVV V5 feature tests
+    dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/xandesvector/$po/$ov/*.\[cS\]]] \
+      "" $CFLAGS
+    # For RVK feature tests
+    dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/rvk/$po/$ov/*.\[cS\]]] \
+      "" $CFLAGS
+  }
 }
 
 # All done.

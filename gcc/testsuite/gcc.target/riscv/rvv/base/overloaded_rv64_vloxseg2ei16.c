@@ -1,4 +1,4 @@
-/* { dg-options "-march=rv64gcv_zvfh -mabi=lp64 -O3" } */
+/* { dg-options "-march=rv64gcv_zvfh -mabi=lp64 -O3 -mext-zvlsseg" } */
 
 #include "overloaded_vloxseg2ei16.h"
 

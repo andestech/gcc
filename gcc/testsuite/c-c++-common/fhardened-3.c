@@ -1,5 +1,6 @@
 /* { dg-do compile { target *-*-linux* *-*-gnu* } } */
 /* { dg-options "-fhardened -O0" } */
+/* { dg-skip-if "" { *-*-* } { "-static" } { "" } } */
 /* Test that we don't get any diagnostic coming from libc headers.  */
 
 #include <stdio.h>

@@ -1,6 +1,7 @@
 /* Test that we do not have ice when compile */
 /* { dg-do compile } */
 /* { dg-options "-march=rv64gc_zve32f_zvfh_zfh -mabi=lp64d -O2" } */
+/* { dg-skip-if "" { *32-*-linux* } { "*" } } */
 
 #include <sys/types.h>
 

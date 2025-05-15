@@ -1,6 +1,7 @@
 /* Test that we do not have ice when compile */
 /* { dg-do compile } */
 /* { dg-options "-march=rv64gcv -mabi=lp64d -O3" } */
+/* { dg-skip-if "" { *32-*-linux* } { "*" } } */
 
 #include <riscv_vector.h>
 

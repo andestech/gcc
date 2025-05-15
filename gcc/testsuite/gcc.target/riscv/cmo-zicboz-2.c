@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-require-effective-target rv32 } */
 /* { dg-options "-march=rv32gc_zicboz -mabi=ilp32" } */
 
 int var;

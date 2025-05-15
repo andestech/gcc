@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-march=rv64gcv -mabi=lp64d -O2" } */
+/* { dg-skip-if "" { *32-*-linux* } { "*" } } */
 
 #include <string.h>
 

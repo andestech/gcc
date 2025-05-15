@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-O2 -fdump-tree-optimized-blocks-details" } */
+/* { dg-options "-O2 -fdump-tree-optimized-blocks-details -fdisable-ipa-inline" } */
 
 typedef struct { unsigned short a; } A;
 

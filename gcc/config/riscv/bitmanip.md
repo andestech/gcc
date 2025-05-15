@@ -194,7 +194,7 @@
 (define_expand "clzsi2"
   [(set (match_operand:SI 0 "register_operand")
 	(clz:SI (match_operand:SI 1 "register_operand")))]
-  "TARGET_ZBB || (!TARGET_64BIT && TARGET_XTHEADBB)")
+  "TARGET_ZBB || (!TARGET_64BIT && (TARGET_XTHEADBB || TARGET_DSP))")
 
 (define_expand "ctz<mode>2"
   [(set (match_operand:GPR 0 "register_operand")
@@ -330,10 +330,37 @@
   [(set (match_operand:SI 0 "register_operand" "=r")
        (rotatert:SI (match_operand:SI 1 "register_operand" "r")
                     (match_operand:QI 2 "arith_operand" "rI")))]
-  "TARGET_ZBB || TARGET_ZBKB || TARGET_XTHEADBB"
+  "TARGET_ZBB || TARGET_ZBKB || TARGET_XTHEADBB || TARGET_DSP"
 {
   if (TARGET_XTHEADBB && !immediate_operand (operands[2], VOIDmode))
     FAIL;
+
+  if (!TARGET_ZBB && TARGET_DSP)
+    {
+      if (TARGET_64BIT)
+	{
+	  rtx tmp = gen_reg_rtx (DImode);
+	  rtx output = gen_reg_rtx (DImode);
+	  emit_insn (gen_pkbbdi_3 (tmp, operands[1], operands[1]));
+	  if (imm5u_operand (operands[2], QImode))
+	    emit_insn (gen_wext64_i (output, tmp, operands[2]));
+	  else
+	    emit_insn (gen_wext64_r (output, tmp, operands[2]));
+	  emit_move_insn (operands[0], lowpart_subreg (SImode, output, DImode));
+	  DONE;
+	}
+      else
+	{
+	  if (!imm5u_operand (operands[2], QImode))
+	    FAIL;
+	  rtx tmp = gen_reg_rtx (DImode);
+	  rtx pair = gen_rtx_PAIR (DImode, operands[1]);
+	  emit_move_insn (tmp, pair);
+	  emit_insn (gen_wext (operands[0], tmp, operands[2]));
+	  DONE;
+	}
+    }
+
   if (TARGET_64BIT && register_operand (operands[2], QImode))
     {
       rtx t = gen_reg_rtx (DImode);
@@ -374,9 +401,35 @@
   [(set (match_operand:SI 0 "register_operand" "=r")
        (rotate:SI (match_operand:SI 1 "register_operand" "r")
                   (match_operand:QI 2 "register_operand" "r")))]
-  "TARGET_ZBB || TARGET_ZBKB"
+  "TARGET_ZBB || TARGET_ZBKB || TARGET_DSP"
 {
-  if (TARGET_64BIT)
+  if (!TARGET_ZBB && !TARGET_ZBKB && TARGET_DSP)
+    {
+      if (imm5u_operand (operands[2], QImode))
+	{
+	  if (TARGET_64BIT)
+	    {
+	      rtx tmp = gen_reg_rtx (DImode);
+	      rtx output = gen_reg_rtx (DImode);
+	      emit_insn (gen_pkbbdi_3 (tmp, operands[1], operands[1]));
+	      emit_insn (gen_wext64_i (output, tmp, GEN_INT (32 - INTVAL (operands[2]))));
+	      emit_move_insn (operands[0], lowpart_subreg (SImode, output, DImode));
+	      DONE;
+	    }
+	  else
+	    {
+	      HOST_WIDE_INT shiftamount = INTVAL (operands[2]);
+	      rtx tmp = gen_reg_rtx (DImode);
+	      rtx pair = gen_rtx_PAIR (DImode, operands[1]);
+	      emit_move_insn (tmp, pair);
+	      emit_insn (gen_wext (operands[0], tmp, GEN_INT (32 - shiftamount)));
+	      DONE;
+	    }
+        }
+      else
+        FAIL;
+    }
+  if (TARGET_64BIT && (TARGET_ZBB || TARGET_ZBKB))
     {
       rtx t = gen_reg_rtx (DImode);
       emit_insn (gen_rotlsi3_sext (t, operands[1], operands[2]));
@@ -457,13 +510,14 @@
 (define_expand "bswapsi2"
   [(set (match_operand:SI 0 "register_operand")
 	(bswap:SI (match_operand:SI 1 "register_operand")))]
-  "TARGET_ZBB || TARGET_ZBKB || TARGET_XTHEADBB"
+  "TARGET_ZBB || TARGET_ZBKB || TARGET_XTHEADBB || TARGET_DSP"
 {
   /* Expose bswapsi2 on TARGET_64BIT so that the gimple store
      merging pass will create suitable bswap insns.  We can actually
      just FAIL that case when generating RTL and let the generic code
      handle it.  */
-  if (TARGET_64BIT && !TARGET_XTHEADBB)
+  if (TARGET_64BIT && !TARGET_XTHEADBB
+      && (!TARGET_DSP || (TARGET_DSP && TARGET_ZBB)))
     FAIL;
 })
 
@@ -482,21 +536,24 @@
 (define_expand "bswaphi2"
   [(set (match_operand:HI 0 "register_operand" "=r")
         (bswap:HI (match_operand:HI 1 "register_operand" "r")))]
-  "TARGET_ZBB"
+  "TARGET_ZBB || TARGET_DSP"
 {
-  rtx tmp = gen_reg_rtx (word_mode);
-  rtx newop1 = gen_lowpart (word_mode, operands[1]);
-  if (TARGET_64BIT)
-    emit_insn (gen_bswapdi2 (tmp, newop1));
-  else
-    emit_insn (gen_bswapsi2 (tmp, newop1));
-  rtx tmp1 = gen_reg_rtx (word_mode);
-  if (TARGET_64BIT)
-    emit_insn (gen_lshrdi3 (tmp1, tmp, GEN_INT (64 - 16)));
-  else
-    emit_insn (gen_lshrsi3 (tmp1, tmp, GEN_INT (32 - 16)));
-  emit_move_insn (operands[0], gen_lowpart (HImode, tmp1));
-  DONE;
+  if (TARGET_ZBB && !TARGET_DSP)
+    {
+      rtx tmp = gen_reg_rtx (word_mode);
+      rtx newop1 = gen_lowpart (word_mode, operands[1]);
+      if (TARGET_64BIT)
+      emit_insn (gen_bswapdi2 (tmp, newop1));
+      else
+      emit_insn (gen_bswapsi2 (tmp, newop1));
+      rtx tmp1 = gen_reg_rtx (word_mode);
+      if (TARGET_64BIT)
+      emit_insn (gen_lshrdi3 (tmp1, tmp, GEN_INT (64 - 16)));
+      else
+      emit_insn (gen_lshrsi3 (tmp1, tmp, GEN_INT (32 - 16)));
+      emit_move_insn (operands[0], gen_lowpart (HImode, tmp1));
+      DONE;
+    }
 })
 
 (define_expand "<bitmanip_optab>di3"
@@ -507,10 +564,32 @@
 
 (define_expand "<bitmanip_optab>si3"
   [(set (match_operand:SI 0 "register_operand" "=r")
-        (bitmanip_minmax:SI (match_operand:SI 1 "register_operand" "r")
+        (bitmanip_uminmax:SI (match_operand:SI 1 "register_operand" "r")
                             (match_operand:SI 2 "register_operand" "r")))]
   "TARGET_ZBB"
 {
+  if (TARGET_64BIT)
+    {
+      rtx t = gen_reg_rtx (DImode);
+      operands[1] = force_reg (DImode, gen_rtx_SIGN_EXTEND (DImode, operands[1]));
+      operands[2] = force_reg (DImode, gen_rtx_SIGN_EXTEND (DImode, operands[2]));
+      emit_insn (gen_<bitmanip_optab>di3 (t, operands[1], operands[2]));
+      emit_move_insn (operands[0], gen_lowpart (SImode, t));
+      DONE;
+    }
+})
+
+(define_expand "<bitmanip_optab>si3"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (bitmanip_sminmax:SI (match_operand:SI 1 "register_operand" "r")
+                            (match_operand:SI 2 "register_operand" "r")))]
+  "TARGET_ZBB || TARGET_DSP"
+{
+  if (TARGET_DSP && !TARGET_ZBB)
+    {
+      emit_insn (gen_dsp<bitmanip_optab>si3 (operands[0],operands[1], operands[2]));
+      DONE;
+    }
   if (TARGET_64BIT)
     {
       rtx t = gen_reg_rtx (DImode);
@@ -706,6 +785,17 @@
   "bext\t%0,%1,%2"
   [(set_attr "type" "bitmanip")])
 
+;; combine cannot deal with subreg patterns for extracting.
+;; This is a special case for RV64 (op1 >> op2) & 1.
+(define_insn "*bextdi_s"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(and:DI (subreg:DI (lshiftrt:SI (match_operand:SI 1 "register_operand" "r")
+			   (subreg:QI (match_operand:DI 2 "register_operand" "r") 0)) 0)
+	       (const_int 1)))]
+  "TARGET_ZBS && TARGET_64BIT"
+  "bext\t%0,%1,%2"
+  [(set_attr "type" "bitmanip")])
+
 (define_insn "*bexti"
   [(set (match_operand:X 0 "register_operand" "=r")
 	(zero_extract:X (match_operand:X 1 "register_operand" "r")
@@ -878,3 +968,20 @@
   "TARGET_ZBC"
   "clmulr\t%0,%1,%2"
   [(set_attr "type" "clmul")])
+
+;; Andes defined
+(define_insn_and_split "*dsp_si_pair"
+  [(set (match_operand:DI   0 "register_operand" "=r")
+       (pair:DI
+         (match_operand:SI 1 "register_operand" "r")))]
+  "TARGET_DSP && !TARGET_64BIT && !reload_completed"
+  "#"
+  "&& true"
+  [(const_int 1)]
+{
+  rtx low = riscv_di_low_part_subreg (operands[0]);
+  rtx high = riscv_di_high_part_subreg (operands[0]);
+  emit_move_insn (low, operands[1]);
+  emit_move_insn (high, operands[1]);
+  DONE;
+})

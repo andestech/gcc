@@ -1,0 +1,4 @@
+# https://editorconfig.org/
+# Display tab size as 8 spaces for all files
+[*]
+tab_width = 8

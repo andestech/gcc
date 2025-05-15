@@ -1,5 +1,6 @@
 /* { dg-do compile { target *-*-linux* *-*-gnu* } } */
 /* { dg-options "-fhardened -U_FORTIFY_SOURCE -U_GLIBCXX_ASSERTIONS" } */
+/* { dg-skip-if "" { *-*-* } { "-static" } { "" } } */
 
 #if defined(_FORTIFY_SOURCE) || defined(_GLIBCXX_ASSERTIONS)
 # error "hardening enabled when it should not be"

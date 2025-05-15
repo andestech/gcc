@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-march=rv32g_zfa -mabi=ilp32 -O0" } */
+/* { dg-options "-march=rv32g_zfa -mabi=ilp32 -O0 -mtune=generic-ooo" } */
 
 double foo(long long a)
 {

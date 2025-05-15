@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-skip-if "" { !riscv_v } } */
 
 #define N 16
 

@@ -1,3 +1,4 @@
+/* { dg-additional-options "-mno-riscv-iprintf" } */
 typedef __SIZE_TYPE__ size_t;
 #include "../../gcc.dg/analyzer/analyzer-decls.h"
 

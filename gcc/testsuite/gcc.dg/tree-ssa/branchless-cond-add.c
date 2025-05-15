@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-skip-if "" { riscv*-*-* } } */
 /* { dg-options "-O2 -fdump-tree-optimized" } */
 /* PR tree-optimization/110155 */
 

@@ -52,6 +52,16 @@ if { [istarget "powerpc-ibm-aix*"] } {
 
 global module_do
 global module_cmis
+global module_cmis_prefix
+
+if { [ishost *-*-cygwin*] || [ishost *-*-msys*] } {
+    # Get Windows system path
+    set module_cmis_prefix [exec cygpath -am /]
+    # Replace ':' to '-' prefix for module
+    set module_cmis_prefix [ string map { : "-" } $module_cmis_prefix ]
+} else {
+    set module_cmis_prefix {}
+}
 
 set DEFAULT_REPO "gcm.cache"
 
@@ -78,6 +88,8 @@ proc dg-module-cmi { args } {
 	set not 0
     }
 
+    global module_cmis_prefix
+    set prefix $module_cmis_prefix
     if { [string index $name 0] == "=" } {
 	set cmi [string range $name 1 end]
     } else {
@@ -86,7 +98,9 @@ proc dg-module-cmi { args } {
 	    upvar prog srcname
 	    set cmi "$srcname.gcm"
 	    if { [string index $cmi 0] == "/" } {
+        set prefix "$prefix$cmi"
 		set cmi [string range $cmi 1 end]
+        set cmi $prefix
 	    } else {
 		set cmi ",/$cmi"
 	    }
@@ -379,7 +393,7 @@ foreach src [lsort [find $srcdir/$subdir {*_a.[CHX}]] {
 		    set nshort [file tail [file dirname $test]]/[file tail $test]
 		    verbose "Testing $nshort $std" 1
 		    switch [file extension $test] {
-			".C" {		
+			".C" {
 			    lappend asm_list [file rootname [file tail $test]].s
 			}
 			".X" {

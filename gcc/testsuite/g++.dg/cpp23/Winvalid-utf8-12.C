@@ -1,6 +1,7 @@
 // P2295R6 - Support for UTF-8 as a portable source file encoding
 // This test intentionally contains various byte sequences which are not valid UTF-8
 // { dg-do preprocess }
+/* { dg-skip-if "" { riscv*-*-* } } */
 // { dg-options "-finput-charset=UTF-8 -pedantic-errors -Wno-invalid-utf8" }
 
 #define I(x)

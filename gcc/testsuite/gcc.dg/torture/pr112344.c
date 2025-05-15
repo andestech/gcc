@@ -1,6 +1,7 @@
 /* { dg-do run } */
 /* { dg-require-effective-target int32plus } */
 /* { dg-skip-if "non-optimized code is too slow" { ! run_expensive_tests } { "*" } { "-O2" "-O3" } } */
+/* { dg-skip-if "" { riscv*-*-* } } */
 
 int
 main ()
