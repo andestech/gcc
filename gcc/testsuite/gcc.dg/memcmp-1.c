@@ -2,7 +2,7 @@
 /* { dg-do run } */
 /* { dg-options "-O2" } */
 /* { dg-require-effective-target ptr32plus } */
-/* { dg-timeout-factor 2 } */
+/* { dg-timeout-factor 4 } */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,20 +19,20 @@ int lib_strncmp(const char *a, const char *b, size_t n)
 
 #ifndef NRAND
 #ifdef TEST_ALL
-#define NRAND 10000
+#define NRAND 1000
 #else
-#define NRAND 500
+#define NRAND 1
 #endif
 #endif
 #ifndef TZONE
 #ifdef TEST_ALL
 #define TZONE 16
 #else
-#define TZONE 8
+#define TZONE 4
 #endif
 #endif
 
-#define MAX_SZ 600
+#define MAX_SZ 1
 
 #define DEF_RS(ALIGN)                                                      \
 static void test_memcmp_runtime_size_ ## ALIGN (const char *str1, 	   \

@@ -396,6 +396,13 @@ DEF_RTL_EXPR(SCRATCH, "scratch", "", RTX_OBJ)
    complete value and the second is the byte offset of the selected part.   */
 DEF_RTL_EXPR(SUBREG, "subreg", "ep", RTX_EXTRA)
 
+/* (PAIR a) represents a reg that is twice as many bits as a, with both
+   high and low part value is identical to a.  While using two subreg
+   with two move insns can achieve the same purpose, wrapping them in
+   a PAIR leaves more opportunities for optimizations. 
+   This is only used in Andes RV32 DSP implementation.  */
+DEF_RTL_EXPR(PAIR, "pair", "e", RTX_EXTRA)
+
 /* This one-argument rtx is used for move instructions
    that are guaranteed to alter only the low part of a destination.
    Thus, (SET (SUBREG:HI (REG...)) (MEM:HI ...))

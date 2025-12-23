@@ -2,7 +2,7 @@
    (and only by) -Og
 
    { dg-do compile }
-   { dg-options "-Og -Wall -fdump-tree-optimized" } */
+   { dg-options "-Og -Wall -fdump-tree-optimized -mno-riscv-iprintf" } */
 
 char d[2];
 

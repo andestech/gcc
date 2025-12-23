@@ -32,8 +32,7 @@ Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA. 
 extern "C" {
 #endif
 
-#if defined(__MSDOS__) || (defined(_WIN32) && ! defined(__CYGWIN__)) || \
-    defined(__OS2__)
+#if defined(__MSDOS__) || defined(_WIN32) || defined(__OS2__) || defined (__CYGWIN__)
 #  ifndef HAVE_DOS_BASED_FILE_SYSTEM
 #    define HAVE_DOS_BASED_FILE_SYSTEM 1
 #  endif

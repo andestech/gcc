@@ -99,8 +99,13 @@ def unique(x):
   # Convert list to set and then convert back to list.
   #
   # Add sorted to prevent non-deterministic results in different env.
+  # Need to preserve the first item in list since it's the primary arch.
   #
-  return list(sorted(list(set(x))))
+  if (len(x) == 0):
+    return x
+  new_list = list(sorted(list(set(x[1:]))))
+  new_list.insert(0, x[0])
+  return new_list
 
 #
 # Expand EXT string if there is any expansion operator (*).

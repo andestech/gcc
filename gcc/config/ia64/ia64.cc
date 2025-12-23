@@ -332,8 +332,8 @@ static fixed_size_mode ia64_get_reg_raw_mode (int regno);
 static section * ia64_hpux_function_section (tree, enum node_frequency,
 					     bool, bool);
 
-static bool ia64_vectorize_vec_perm_const (machine_mode, rtx, rtx, rtx,
-					   const vec_perm_indices &);
+static bool ia64_vectorize_vec_perm_const (machine_mode, machine_mode, rtx,
+					   rtx, rtx, const vec_perm_indices &);
 
 static unsigned int ia64_hard_regno_nregs (unsigned int, machine_mode);
 static bool ia64_hard_regno_mode_ok (unsigned int, machine_mode);
@@ -4596,8 +4596,9 @@ ia64_setup_incoming_varargs (cumulative_args_t cum,
 {
   CUMULATIVE_ARGS next_cum = *get_cumulative_args (cum);
 
-  /* Skip the current argument.  */
-  ia64_function_arg_advance (pack_cumulative_args (&next_cum), arg);
+  if (!TYPE_NO_NAMED_ARGS_STDARG_P (TREE_TYPE (current_function_decl)))
+    /* Skip the current argument.  */
+    ia64_function_arg_advance (pack_cumulative_args (&next_cum), arg);
 
   if (next_cum.words < MAX_ARGUMENT_SLOTS)
     {
@@ -10466,11 +10467,19 @@ ia64_init_builtins (void)
 	= build_pointer_type (build_qualified_type
 			      (char_type_node, TYPE_QUAL_CONST));
 
-      (*lang_hooks.types.register_builtin_type) (float128_type_node,
+      if (float128t_type_node == NULL_TREE)
+	{
+	  float128t_type_node = make_node (REAL_TYPE);
+	  TYPE_PRECISION (float128t_type_node)
+	    = TYPE_PRECISION (float128_type_node);
+	  layout_type (float128t_type_node);
+	  SET_TYPE_MODE (float128t_type_node, TYPE_MODE (float128_type_node));
+	}
+      (*lang_hooks.types.register_builtin_type) (float128t_type_node,
 						 "__float128");
 
       /* TFmode support builtins.  */
-      ftype = build_function_type_list (float128_type_node, NULL_TREE);
+      ftype = build_function_type_list (float128t_type_node, NULL_TREE);
       decl = add_builtin_function ("__builtin_infq", ftype,
 				   IA64_BUILTIN_INFQ, BUILT_IN_MD,
 				   NULL, NULL_TREE);
@@ -10481,7 +10490,7 @@ ia64_init_builtins (void)
 				   NULL, NULL_TREE);
       ia64_builtins[IA64_BUILTIN_HUGE_VALQ] = decl;
 
-      ftype = build_function_type_list (float128_type_node,
+      ftype = build_function_type_list (float128t_type_node,
 					const_string_type,
 					NULL_TREE);
       decl = add_builtin_function ("__builtin_nanq", ftype,
@@ -10496,8 +10505,8 @@ ia64_init_builtins (void)
       TREE_READONLY (decl) = 1;
       ia64_builtins[IA64_BUILTIN_NANSQ] = decl;
 
-      ftype = build_function_type_list (float128_type_node,
-					float128_type_node,
+      ftype = build_function_type_list (float128t_type_node,
+					float128t_type_node,
 					NULL_TREE);
       decl = add_builtin_function ("__builtin_fabsq", ftype,
 				   IA64_BUILTIN_FABSQ, BUILT_IN_MD,
@@ -10505,9 +10514,9 @@ ia64_init_builtins (void)
       TREE_READONLY (decl) = 1;
       ia64_builtins[IA64_BUILTIN_FABSQ] = decl;
 
-      ftype = build_function_type_list (float128_type_node,
-					float128_type_node,
-					float128_type_node,
+      ftype = build_function_type_list (float128t_type_node,
+					float128t_type_node,
+					float128t_type_node,
 					NULL_TREE);
       decl = add_builtin_function ("__builtin_copysignq", ftype,
 				   IA64_BUILTIN_COPYSIGNQ, BUILT_IN_MD,
@@ -11751,9 +11760,13 @@ ia64_expand_vec_perm_const_1 (struct expand_vec_perm_d *d)
 /* Implement TARGET_VECTORIZE_VEC_PERM_CONST.  */
 
 static bool
-ia64_vectorize_vec_perm_const (machine_mode vmode, rtx target, rtx op0,
-			       rtx op1, const vec_perm_indices &sel)
+ia64_vectorize_vec_perm_const (machine_mode vmode, machine_mode op_mode,
+			       rtx target, rtx op0, rtx op1,
+			       const vec_perm_indices &sel)
 {
+  if (vmode != op_mode)
+    return false;
+
   struct expand_vec_perm_d d;
   unsigned char perm[MAX_VECT_LEN];
   unsigned int i, nelt, which;

@@ -1,6 +1,6 @@
 /* PR middle-end/47917 */
 /* { dg-do compile } */
-/* { dg-options "-O2 -fdump-tree-optimized" } */
+/* { dg-options "-O2 -fdump-tree-optimized -mno-riscv-iprintf" } */
 
 extern int snprintf (char *, __SIZE_TYPE__, const char *, ...);
 extern int memcmp (const void *, const void *, __SIZE_TYPE__);

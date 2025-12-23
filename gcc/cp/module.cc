@@ -5312,6 +5312,7 @@ trees_out::core_bools (tree t)
       WB (t->decl_common.decl_by_reference_flag);
       WB (t->decl_common.decl_read_flag);
       WB (t->decl_common.decl_nonshareable_flag);
+      WB (t->decl_common.decl_not_flexarray);
     }
 
   if (CODE_CONTAINS_STRUCT (code, TS_DECL_WITH_VIS))
@@ -5456,6 +5457,7 @@ trees_in::core_bools (tree t)
       RB (t->decl_common.decl_by_reference_flag);
       RB (t->decl_common.decl_read_flag);
       RB (t->decl_common.decl_nonshareable_flag);
+      RB (t->decl_common.decl_not_flexarray);
     }
 
   if (CODE_CONTAINS_STRUCT (code, TS_DECL_WITH_VIS))

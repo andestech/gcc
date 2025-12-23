@@ -1311,7 +1311,25 @@ riscv*-*-freebsd*)
 	extra_parts="$extra_parts crtbegin.o crtend.o crti.o crtn.o crtendS.o crtbeginT.o"
 	;;
 riscv*-*-*)
-	tmake_file="${tmake_file} riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}"
+	case "${with_arch}" in
+	*32E* | *32e* )
+		tmake_file="${tmake_file} riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}e"
+		;;
+	*)
+		tmake_file="${tmake_file} riscv/t-softfp${host_address} t-softfp riscv/t-elf riscv/t-elf${host_address}"
+		;;
+	esac
+
+	# process --with-libc
+	case "${with_libc}" in
+	mculib)
+		case "${with_arch}" in
+		*32EM* | *32em* | *32IM* | *32im* )
+		    tmake_file="${tmake_file} riscv/t-riscv-mculib-generic"
+		    ;;
+		esac
+		;;
+	esac
 	extra_parts="$extra_parts crtbegin.o crtend.o crti.o crtn.o"
 	;;
 rs6000-ibm-aix4.[3456789]* | powerpc-ibm-aix4.[3456789]*)
@@ -1585,6 +1603,9 @@ i[34567]86-*-linux* | x86_64-*-linux*)
 aarch64*-*-*)
 	# ILP32 needs an extra header for unwinding
 	tm_file="${tm_file} aarch64/value-unwind.h"
+	;;
+riscv*-*-*)
+	tm_file="${tm_file} riscv/value-unwind.h"
 	;;
 esac
 

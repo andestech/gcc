@@ -1,11 +1,7 @@
 /* Software floating-point emulation.
    Basic four-word fraction declaration and manipulation.
-   Copyright (C) 1997-2019 Free Software Foundation, Inc.
+   Copyright (C) 1997-2022 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Richard Henderson (rth@cygnus.com),
-		  Jakub Jelinek (jj@ultra.linux.cz),
-		  David S. Miller (davem@redhat.com) and
-		  Peter Maydell (pmaydell@chiark.greenend.org.uk).
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -28,7 +24,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef SOFT_FP_OP_4_H
 #define SOFT_FP_OP_4_H	1
@@ -517,10 +513,15 @@
 	      R##_f[_FP_DIV_MEAT_4_udiv_i] = -1;			\
 	      if (!_FP_DIV_MEAT_4_udiv_i)				\
 		break;							\
-	      __FP_FRAC_SUB_4 (X##_f[3], X##_f[2], X##_f[1], X##_f[0],	\
-			       Y##_f[2], Y##_f[1], Y##_f[0], 0,		\
-			       X##_f[2], X##_f[1], X##_f[0],		\
-			       _FP_DIV_MEAT_4_udiv_n_f[_FP_DIV_MEAT_4_udiv_i]); \
+              UWtype __FP_FRAC_tmp;                                     \
+              __FP_FRAC_SUB_4 (X##_f[2], X##_f[1], X##_f[0], __FP_FRAC_tmp,     \
+                               Y##_f[2], Y##_f[1], Y##_f[0], 0,         \
+                               X##_f[2], X##_f[1], X##_f[0],            \
+                               _FP_DIV_MEAT_4_udiv_n_f[_FP_DIV_MEAT_4_udiv_i]); \
+              X##_f[3] = X##_f[2];                                      \
+              X##_f[2] = X##_f[1];                                      \
+              X##_f[1] = X##_f[0];                                      \
+              X##_f[0] = __FP_FRAC_tmp; 				\
 	      _FP_FRAC_SUB_4 (X, Y, X);					\
 	      if (X##_f[3] > Y##_f[3])					\
 		{							\

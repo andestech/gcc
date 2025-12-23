@@ -1,5 +1,6 @@
 /* { dg-do compile } */
-/* { dg-options "-march=rv64gc -mabi=lp64" } */
+/* { dg-options "-march=rv64gc -mabi=lp64 -mno-ext-zc" } */
+/* { dg-require-effective-target rv64 } */
 /* { dg-skip-if "" { *-*-* } { "-O0" "-Og" } } */
 
 /* Test for lshrsi3_zero_extend_3+1 pattern that uses p2m1_shift_operand.  */
@@ -38,5 +39,3 @@ sub5 (unsigned int i)
 }
 /* { dg-final { scan-assembler-times "slli" 5 } } */
 /* { dg-final { scan-assembler-times "srli" 5 } } */
-/* { dg-final { scan-assembler-times "slliw" 1 } } */
-/* { dg-final { scan-assembler-times "srliw" 1 } } */

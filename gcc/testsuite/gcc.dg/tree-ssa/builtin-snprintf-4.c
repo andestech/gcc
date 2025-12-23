@@ -5,7 +5,7 @@
    value provided it also arranged to set errno to EOVERFLOW.  If that
    is ever implemented this test will need to be adjusted.
    { dg-do compile }
-   { dg-options "-O2 -Wall -fdump-tree-optimized -ftrack-macro-expansion=0" } */
+   { dg-options "-O2 -Wall -fdump-tree-optimized -ftrack-macro-expansion=0 -mno-riscv-iprintf" } */
 
 #include "../range.h"
 
