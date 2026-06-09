@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-march=rv32gcv -mabi=ilp32d -O3 -fno-sched-pressure" } */
+/* { dg-options "-march=rv32gcv -mabi=ilp32d -O3 -fno-sched-pressure -mtune=rocket" } */
 
 #include "riscv_vector.h"
 

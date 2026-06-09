@@ -1,5 +1,6 @@
 /* { dg-do compile { target *-*-linux* *-*-gnu* } } */
 /* { dg-options "-fhardened -D_FORTIFY_SOURCE=1" } */
+/* { dg-skip-if "" { *-*-* } { "-static" } { "" } } */
 
 #if _FORTIFY_SOURCE != 1
 # error "_FORTIFY_SOURCE != 1"

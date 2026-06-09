@@ -948,6 +948,9 @@ costs::record_potential_vls_unrolling (loop_vec_info loop_vinfo)
 bool
 costs::prefer_unrolled_loop () const
 {
+  if (!UNROLL_VLS)
+    return false;
+
   if (!m_unrolled_vls_stmts)
     return false;
 

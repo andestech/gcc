@@ -339,6 +339,56 @@ extern const function_base *const vsm4k;
 extern const function_base *const vsm4r;
 extern const function_base *const vsm3me;
 extern const function_base *const vsm3c;
+extern const function_base *const vcpopv;
+extern const function_base *const vqmacc;
+extern const function_base *const vqmaccu;
+extern const function_base *const vqmaccsu;
+extern const function_base *const vqmaccus;
+extern const function_base *const nds_vqmacc;
+extern const function_base *const nds_vqmaccu;
+extern const function_base *const nds_vqmaccsu;
+extern const function_base *const nds_vqmaccus;
+extern const function_base *const vd4dots;
+extern const function_base *const vd4dotu;
+extern const function_base *const vd4dotsu;
+extern const function_base *const nds_vd4dots;
+extern const function_base *const nds_vd4dotu;
+extern const function_base *const nds_vd4dotsu;
+extern const function_base *const vfpmadt;
+extern const function_base *const vfpmadb;
+extern const function_base *const vfpmadt_frm;
+extern const function_base *const vfpmadb_frm;
+extern const function_base *const nds_vfpmadt;
+extern const function_base *const nds_vfpmadb;
+extern const function_base *const nds_vfpmadt_frm;
+extern const function_base *const nds_vfpmadb_frm;
+extern const function_base *const vfwcvt_s;
+extern const function_base *const vfncvt_bf16;
+extern const function_base *const nds_vfwcvt_s;
+extern const function_base *const nds_vfncvt_bf16;
+extern const function_base *const nds_vfncvt_bf16_frm;
+extern const function_base *const vln8;
+extern const function_base *const vlnu8;
+
+/* Andes ACE vsetvl{max} */
+extern const function_base *const ace_vsetvl;
+extern const function_base *const ace_vsetvlmax;
+
+/* NTLH */
+extern const function_base *const ntl_load_default;
+extern const function_base *const ntl_load;
+extern const function_base *const ntl_store_default;
+extern const function_base *const ntl_store;
+/* Zvfbfmin*/
+extern const function_base *const vfncvtbf16_f;
+extern const function_base *const vfncvtbf16_f_frm;
+extern const function_base *const vfwcvtbf16_f;
+/* Zvfbfwma */
+extern const function_base *const vfwmaccbf16;
+extern const function_base *const vfwmaccbf16_frm;
+/* Zvfofp8min */
+extern const function_base *const vfncvt_sat_f;
+extern const function_base *const vfncvt_sat_f_frm;
 }
 
 } // end namespace riscv_vector

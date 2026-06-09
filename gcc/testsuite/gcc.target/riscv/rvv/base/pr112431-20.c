@@ -1,5 +1,9 @@
 /* { dg-do compile } */
 /* { dg-options "-march=rv64gcv_zvfh_zfh -mabi=lp64d -O3" } */
+/* Skip this testcase because __riscv_vfwadd_wf_f32m2 (v0, 55, vl) is
+   ambiguous: the literal 55 can be interpreted as either _Float16
+   or __bf16, matching both Zvfh and XAndesBF overloaded variants.  */
+/* { dg-skip-if "ambiguous overloaded _wf scalar literal resolution" { *-*-* } } */
 
 #include "riscv_vector.h"
 

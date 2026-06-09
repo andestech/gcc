@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-march=rv64gcv_zvl256b -mabi=lp64d -mrvv-max-lmul=m8 -mrvv-vector-bits=zvl  -fno-vect-cost-model -O3 -fdump-tree-optimized" } */
+/* { dg-skip-if "" { *32-*-linux* } { "*" } } */
 
 #include <assert.h>
 

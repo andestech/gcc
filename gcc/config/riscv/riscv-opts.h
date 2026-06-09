@@ -41,6 +41,14 @@ enum riscv_code_model {
 };
 extern enum riscv_code_model riscv_cmodel;
 
+/* Multiply instruction configuration.  */
+enum riscv_mul_type
+{
+  MUL_TYPE_AUTO,
+  MUL_TYPE_FAST,
+  MUL_TYPE_SLOW
+};
+
 enum riscv_isa_spec_class {
   ISA_SPEC_CLASS_NONE,
 
@@ -58,7 +66,11 @@ enum riscv_microarchitecture_type {
   sifive_p400,
   sifive_p600,
   xiangshan,
-  generic_ooo
+  generic_ooo,
+  vicuna,
+  kavalan,
+  andes_ax66,
+  chihuahua,
 };
 extern enum riscv_microarchitecture_type riscv_microarchitecture;
 
@@ -97,6 +109,7 @@ enum riscv_entity
 {
   RISCV_VXRM = 0,
   RISCV_FRM,
+  RISCV_UMISC_CTL,
   MAX_RISCV_ENTITIES
 };
 
@@ -111,6 +124,16 @@ enum stringop_strategy_enum {
   /* Use any. */
   STRATEGY_AUTO = STRATEGY_SCALAR | STRATEGY_VECTOR
 };
+
+/* The ict model defines the address generation strategy.  */
+enum riscv_ict_model_type
+{
+  ICT_MODEL_TINY,
+  ICT_MODEL_SMALL,
+  ICT_MODEL_LARGE
+};
+
+extern enum riscv_ict_model_type riscv_ict_model;
 
 /* Behavior of VSETVL Pass.  */
 enum vsetvl_strategy_enum {
@@ -158,6 +181,15 @@ enum rvv_vector_bits_enum {
 enum riscv_tls_type {
   TLS_TRADITIONAL,
   TLS_DESCRIPTORS
+};
+
+enum riscv_zve
+{
+  ZVE32X,
+  ZVE32F,
+  ZVE64X,
+  ZVE64F,
+  ZVE64D,
 };
 
 #endif /* ! GCC_RISCV_OPTS_H */

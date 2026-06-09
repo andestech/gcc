@@ -3,6 +3,7 @@
 /* { dg-require-effective-target bswap } */
 /* { dg-options "-O2 -fno-tree-vectorize -fdump-tree-store-merging" } */
 /* { dg-additional-options "-march=z900" { target s390-*-* } } */
+/* { dg-additional-options "-mext-zc" { target riscv*-*-* } } */
 
 typedef unsigned char u8;
 typedef unsigned int u32;

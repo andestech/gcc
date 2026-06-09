@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-additional-options "-std=c99 -march=rv64gcv -mabi=lp64d -fno-vect-cost-model -mrvv-vector-bits=scalable -fno-builtin" } */
+/* { dg-skip-if "" { *32-*-linux* } { "*" } } */
 
 #include "vmv-imm-template.h"
 

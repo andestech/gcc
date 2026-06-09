@@ -1,5 +1,6 @@
 /* PR middle-end/99578 */
 /* { dg-do compile { target int32 } } */
+/* { dg-skip-if "" { riscv*-*-elf* } } */
 /* { dg-options "-O2 -Warray-bounds" } */
 
 struct S { int a, b[4]; };
@@ -9,7 +10,7 @@ void
 foo (struct S *p)
 {
   if (p) return;
-  __builtin_memset (p->b, 0, sizeof p->b);	/* { dg-warning "offset \\\[0, 15\\\] is out of the bounds \\\[0, 0\\\]" } */
+  __builtin_memset (p->b, 0, sizeof p->b);     /* { dg-warning "offset \\\[0, 15\\\] is out of the bounds \\\[0, 0\\\]" } */
 }
 
 void

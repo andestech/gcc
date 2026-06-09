@@ -859,9 +859,10 @@ void
 emit_hard_vlmax_vsetvl (machine_mode vmode, rtx vl)
 {
   unsigned int sew = get_sew (vmode);
+  rtx altfmt = gen_int_mode (ALTFMT_NONE, Pmode);
   emit_insn (gen_vsetvl (Pmode, vl, RVV_VLMAX, gen_int_mode (sew, Pmode),
-			 gen_int_mode (get_vlmul (vmode), Pmode), const0_rtx,
-			 const0_rtx));
+			 gen_int_mode (get_vlmul (vmode), Pmode), altfmt,
+			 const0_rtx, const0_rtx));
 }
 
 void
@@ -1671,13 +1672,15 @@ get_vlmul (machine_mode mode)
       int inner_size = GET_MODE_BITSIZE (GET_MODE_INNER (mode));
       if (size < TARGET_MIN_VLEN)
 	{
+	  /* Follow rule LMUL >= SEW / ELEN.  */
+	  int elen = TARGET_VECTOR_ELEN_64 ? 1 : 2;
 	  int factor = TARGET_MIN_VLEN / size;
 	  if (inner_size == 8)
-	    factor = MIN (factor, 8);
+	    factor = MIN (factor, 8 / elen);
 	  else if (inner_size == 16)
-	    factor = MIN (factor, 4);
+	    factor = MIN (factor, 4 / elen);
 	  else if (inner_size == 32)
-	    factor = MIN (factor, 2);
+	    factor = MIN (factor, 2 / elen);
 	  else if (inner_size == 64)
 	    factor = MIN (factor, 1);
 	  else
@@ -2041,11 +2044,12 @@ rtx
 gen_no_side_effects_vsetvl_rtx (machine_mode vmode, rtx vl, rtx avl)
 {
   unsigned int sew = get_sew (vmode);
+  rtx altfmt = gen_int_mode (ALTFMT_NONE, Pmode);
   rtx tail_policy = gen_int_mode (get_prefer_tail_policy (), Pmode);
   rtx mask_policy = gen_int_mode (get_prefer_mask_policy (), Pmode);
   return gen_vsetvl_no_side_effects (Pmode, vl, avl, gen_int_mode (sew, Pmode),
 				     gen_int_mode (get_vlmul (vmode), Pmode),
-				     tail_policy, mask_policy);
+				     altfmt, tail_policy, mask_policy);
 }
 
 /* GET VL * 2 rtx.  */
@@ -3378,7 +3382,8 @@ shuffle_compress_patterns (struct expand_vec_perm_d *d)
 
   insn_code icode = code_for_pred_compress (vmode);
   rtx ops[] = {d->target, merge, d->op0, mask};
-  emit_vlmax_insn (icode, COMPRESS_OP_MERGE, ops);
+  emit_nonvlmax_insn (icode, COMPRESS_OP_MERGE, ops,
+		      gen_int_mode (vlen, Pmode));
   return true;
 }
 
@@ -4501,6 +4506,8 @@ get_fp_rounding_coefficient (machine_mode inner_mode)
 
   if (inner_mode == E_HFmode)
     real_from_integer (&real, inner_mode, 1024, SIGNED);
+  else if (inner_mode == E_BFmode)
+    real_from_integer (&real, inner_mode, 1024, SIGNED);
   else if (inner_mode == E_SFmode)
     real_from_integer (&real, inner_mode, 8388608, SIGNED);
   else if (inner_mode == E_DFmode)
@@ -4695,7 +4702,7 @@ expand_vec_nearbyint (rtx op_0, rtx op_1, machine_mode vec_fp_mode,
 
   /* Step-3: Backup FP exception flags, nearbyint never raise exceptions. */
   rtx fflags = gen_reg_rtx (SImode);
-  emit_insn (gen_riscv_frflags (fflags));
+  emit_insn (gen_riscv_frflags_fenv (fflags));
 
   /* Step-4: Convert to integer on mask, with rounding down (aka nearbyint).  */
   rtx tmp = gen_reg_rtx (vec_int_mode);
@@ -4705,7 +4712,7 @@ expand_vec_nearbyint (rtx op_0, rtx op_1, machine_mode vec_fp_mode,
   emit_vec_cvt_f_x (op_0, tmp, mask, UNARY_OP_TAMU_FRM_DYN, vec_fp_mode);
 
   /* Step-6: Restore FP exception flags. */
-  emit_insn (gen_riscv_fsflags (fflags));
+  emit_insn (gen_riscv_fsflags_fenv (fflags));
 
   /* Step-7: Retrieve the sign bit for -0.0.  */
   emit_vec_copysign (op_0, op_0, op_1, vec_fp_mode);

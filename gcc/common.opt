@@ -417,7 +417,7 @@ Driver Alias(symbolic)
 
 -target-help
 Common Driver
-Display target specific command line options (including assembler and linker options).
+Alias for --help=target.
 
 -time
 Driver Alias(time)
@@ -887,6 +887,10 @@ Wtsan
 Common Var(warn_tsan) Init(1) Warning
 Warn about unsupported features in ThreadSanitizer.
 
+Wrestrict_argument
+Common Var(warn_argument_restrict) Warning
+Warn when an argument is set to restrict by -mrestrict-argument option.
+
 Xassembler
 Driver Separate
 
@@ -1089,6 +1093,14 @@ Does nothing. Preserved for backward compatibility.
 fargument-noalias-anything
 Common Ignore
 Does nothing. Preserved for backward compatibility.
+
+mrestrict-argument
+Common Var(flag_restrict_argument) Optimization
+Force pointer arguments to be qualified with restrict keyword.
+
+mipa-escape-analysis
+Common Var(flag_ipa_escape_analysis) Optimization
+Try to reduce the number of passing &var argument for improving points-to analysis.
 
 fsanitize=
 Common Driver Joined
@@ -1667,7 +1679,7 @@ ffast-math
 Common Optimization
 
 ffat-lto-objects
-Common Var(flag_fat_lto_objects)
+Common Var(flag_fat_lto_objects) Init(1)
 Output lto objects containing both the intermediate language and binary output.
 
 ffinite-math-only
@@ -1746,6 +1758,10 @@ fgcse-after-reload
 Common Var(flag_gcse_after_reload) Optimization
 Perform global common subexpression elimination after register allocation has
 finished.
+
+fgcse-const
+Common Var(flag_gcse_const) Optimization
+Always enable const_int in GCSE optimization pass.
 
 Enum
 Name(dwarf_gnat_encodings) Type(int)
@@ -2192,6 +2208,10 @@ Give external symbols a leading underscore.
 floop-optimize
 Common Ignore
 Does nothing.  Preserved for backward compatibility.
+
+flra-mem-subreg-simplify
+Common Var(flag_lra_mem_subreg_simplify) Init(1) Optimization
+Try to remove memory subregs to simplify LRA job.
 
 flra-remat
 Common Var(flag_lra_remat) Optimization

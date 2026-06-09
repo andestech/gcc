@@ -103,7 +103,7 @@ Target RejectNegative Joined Var(riscv_tune_string) Save
 -mtune=PROCESSOR	Optimize the output for PROCESSOR.
 
 mcpu=
-Target RejectNegative Joined Var(riscv_cpu_string) Save
+Target RejectNegative Joined Negative(mcpu=) Var(riscv_cpu_string) Save
 -mcpu=PROCESSOR	Use architecture of and optimize the output for PROCESSOR.
 
 msmall-data-limit=
@@ -119,6 +119,10 @@ Target Var(riscv_mshorten_memrefs) Init(1)
 Convert BASE + LARGE_OFFSET addresses to NEW_BASE + SMALL_OFFSET to allow more
 memory accesses to be generated as compressed instructions.  Currently targets
 32-bit integer load/stores.
+
+mriscv-iprintf
+Target Bool Var(riscv_iprintf) Init(-1)
+Enable replace printf with iprintf if available.
 
 mcmodel=
 Target RejectNegative Joined Enum(code_model) Var(riscv_cmodel) Init(TARGET_DEFAULT_CMODEL) Save
@@ -137,6 +141,13 @@ Enum(code_model) String(medlow) Value(CM_MEDLOW)
 
 EnumValue
 Enum(code_model) String(medany) Value(CM_MEDANY)
+
+; Compatible for nds32 toolchain
+EnumValue
+Enum(code_model) String(small) Value(CM_MEDLOW)
+
+EnumValue
+Enum(code_model) String(medium) Value(CM_MEDANY)
 
 EnumValue
 Enum(code_model) String(large) Value(CM_LARGE)
@@ -164,7 +175,51 @@ Mask(64BIT)
 
 Mask(MUL)
 
-Mask(ATOMIC)
+matomic
+Target Mask(ATOMIC)
+Use atomic extension instructions.
+
+mbfo
+Target Mask(BFO) Undocumented
+Use hardware instructions for bitfields extract: bfos, bfoz.
+
+mbbcs
+Target Mask(BBCS) Undocumented
+Use hardware instructions for bit testing branch: bbc, bbs.
+
+mbimm
+Target Mask(BIMM) Undocumented
+Use hardware instructions: beqc, bnec.
+
+mlea
+Target Mask(LEA) Undocumented
+Use hardware load effective address instructions: lea.
+
+Mask(V5)
+
+mext-dsp
+Target Mask(DSP)
+Use hardware DSP instructions.
+
+mb20282
+Target Undocumented
+Avoid conditional jump erratum.
+
+mb22827
+Target Undocumented
+Insert a fclass.x after FDIV.x/FSQRT.x conditionally.
+
+mb22827.1
+Target Undocumented
+Insert a NOP after FSHW conditionally.
+
+mb19758
+Target Undocumented
+Avoid the bid return non-seqution.
+
+mb25057
+Target Undocumented
+Avoid load hits store buffer may get stale data.
 
 Mask(HARD_FLOAT)
 
@@ -176,7 +231,116 @@ Mask(RVE)
 
 Mask(VECTOR)
 
+mext-vector
+Target RejectNegative
+Enable RISC-V vector extension.
+
 Mask(FULL_V)
+
+Enum
+Name(mext_vector_opt) Type(enum riscv_zve)
+Supported Embedded vector extensions (for use with the -mext-vector= option):
+
+EnumValue
+Enum(mext_vector_opt) String(zve32x) Value(ZVE32X)
+
+EnumValue
+Enum(mext_vector_opt) String(zve32f) Value(ZVE32F)
+
+EnumValue
+Enum(mext_vector_opt) String(zve64x) Value(ZVE64X)
+
+EnumValue
+Enum(mext_vector_opt) String(zve64f) Value(ZVE64F)
+
+EnumValue
+Enum(mext_vector_opt) String(zve64d) Value(ZVE64D)
+
+mext-vector=
+Target Joined RejectNegative Var(mext_vector_string)
+Enable RISC-V vector extensions for embedded processors. Permissible values for this option are: 'zve32x', 'zve32f', 'zve64x', 'zve64f', and 'zve64d'.
+
+mvector-vlen=
+Target RejectNegative Undocumented Joined UInteger Var(riscv_vector_vlen) Init(1024)
+Set the max length of vector registers.
+
+mvector-dlen=
+Target RejectNegative Undocumented Joined UInteger Var(riscv_vector_dlen) Init(1024)
+Set the SIMD width of VPU.
+
+mhvm
+Target Undocumented Bool Var(enable_hvm) Init(0)
+Set if hardware utilizes High-Bandwidth Vector Memory.
+
+mzfh
+Target
+Use Zfh extension instructions.
+
+mno-zvfh
+Target RejectNegative
+Disable zvfh support.
+
+mbf16
+Target
+Support Andes BFLOAT16 Conversion Extension.
+
+mext-bf16min
+Target
+Support RISC-V minimal BFloat16 extension(Zfbfmin, Zvfbfmin, and Zvfbfwma).
+
+mbf16ms
+Target
+Support Andes BFLOAT16 Mode Switch.
+
+mbf16mscsr
+Target Undocumented Var(TARGET_BF16MSCSR) Init(0)
+Auto set FP mode of umisc_ctl csr.
+
+Os1
+Target
+Optimize for size level 1. This option will disable execit optimization to prevent performance drop.
+
+Os2
+Target
+Optimize for size level 2. This option will disable execit optimization for innermost loop to prevent performance drop.
+
+Os3
+Target
+Optimize for size level 3 which mean don't care performance.
+
+mvh
+Target Var(riscv_virtual_hosting)
+Enable Virtual Hosting support.
+
+mconfig-mul=
+Target RejectNegative Joined Enum(riscv_mul_type) Var(riscv_mul_config) Init(MUL_TYPE_AUTO)
+Specify configuration of instruction mul.
+
+Enum
+Name(riscv_mul_type) Type(enum riscv_mul_type)
+
+EnumValue
+Enum(riscv_mul_type) String(auto) Value(MUL_TYPE_AUTO)
+
+EnumValue
+Enum(riscv_mul_type) String(fast) Value(MUL_TYPE_FAST)
+
+EnumValue
+Enum(riscv_mul_type) String(fast1) Value(MUL_TYPE_FAST)
+
+EnumValue
+Enum(riscv_mul_type) String(fast2) Value(MUL_TYPE_FAST)
+
+EnumValue
+Enum(riscv_mul_type) String(slow) Value(MUL_TYPE_SLOW)
+
+mmove-bytes-per-loop=
+Target RejectNegative Joined UInteger Var(riscv_movebytes_per_loop) Init(0)
+-mmove-byte-per-loop=N Set <N> bytes of data movement can be handled per loop iteration.
+
+malways-align
+Target Mask(ALWAYS_ALIGN)
+Always align function entry, jump target and return address.
 
 mriscv-attribute
 Target Var(riscv_emit_attribute_p) Init(-1)
@@ -224,6 +388,10 @@ Use the given offset for addressing the stack-protector guard.
 TargetVariable
 long riscv_stack_protector_guard_offset = 0
 
+mext-zbabcs
+Target Mask(ZBABCS)
+Use RVB hardware instructions including Zba, Zbb, Zbc, Zbs.
+
 TargetVariable
 int riscv_zi_subext
 
@@ -245,6 +413,14 @@ Mask(ZICCLSM)     Var(riscv_zi_subext)
 
 Mask(ZICCRSE)     Var(riscv_zi_subext)
 
+Mask(ZICFILP)     Var(riscv_zi_subext)
+
+Mask(ZICFISS)     Var(riscv_zi_subext)
+
+Mask(ZIMOP)       Var(riscv_zi_subext)
+
+Mask(ZILSD)       Var(riscv_zi_subext)
+
 TargetVariable
 int riscv_za_subext
 
@@ -253,6 +429,12 @@ Mask(ZAWRS) Var(riscv_za_subext)
 Mask(ZA64RS)  Var(riscv_za_subext)
 
 Mask(ZA128RS) Var(riscv_za_subext)
+
+Mask(ZAMA16B) Var(riscv_za_subext)
+
+Mask(ZAAMO) Var(riscv_za_subext)
+
+Mask(ZALRSC) Var(riscv_za_subext)
 
 TargetVariable
 int riscv_zb_subext
@@ -264,6 +446,38 @@ Mask(ZBB) Var(riscv_zb_subext)
 Mask(ZBC) Var(riscv_zb_subext)
 
 Mask(ZBS) Var(riscv_zb_subext)
+
+mext-zc
+Target RejectNegative Var(ZC)
+Enable Code Size Reduction extensions.
+
+mno-zcmp
+Target RejectNegative
+Disable Zcmp extension.
+
+mno-zcmt
+Target RejectNegative
+Disable Zcmt extension.
+
+mno-zcmt-table-jump
+Target RejectNegative Undocumented
+Guide linker not to generate Zcmt table jump.
+
+mext-zkn
+Target RejectNegative Var(TARGET_FLAG_ZKN)
+Enable NIST Algorithm Suite.
+
+mext-zvkns
+Target
+Enable Vector Bit-manipulation and NIST Algorithm Suite and ShangMi Algorithm Suite.
+
+mext-zks
+Target RejectNegative Var(TARGET_FLAG_ZKS)
+Enable ShangMi Algorithm Suite.
+
+mext-zkns
+Target Mask(ZKNS)
+Enable NIST Algorithm Suite and ShangMi Algorithm Suite.
 
 TargetVariable
 int riscv_zinx_subext
@@ -341,6 +555,18 @@ Mask(ZVL32768B) Var(riscv_zvl_flags)
 
 Mask(ZVL65536B) Var(riscv_zvl_flags)
 
+mnexecitop
+Target Undocumented
+Use next execit optimization.
+
+mext-cmo
+Target Mask(ZICBOMZP)
+Use CMO hardware instructions including Zicbom, Zicboz, Zicbop.
+
+mext-svinval
+Target Var(SVINVAL)
+Enable fine-grained address-translation cache invalidation instructions.
+
 TargetVariable
 int riscv_zvb_subext
 
@@ -399,9 +625,15 @@ Mask(ZFH)     Var(riscv_zf_subext)
 
 Mask(ZVFBFMIN) Var(riscv_zf_subext)
 
+Mask(ZVFOFP8MIN) Var(riscv_zf_subext)
+
 Mask(ZVFHMIN) Var(riscv_zf_subext)
 
 Mask(ZVFH)    Var(riscv_zf_subext)
+
+Mask(ZFBFMIN) Var(riscv_zf_subext)
+
+Mask(ZVFBFWMA) Var(riscv_zf_subext)
 
 TargetVariable
 int riscv_zfa_subext
@@ -429,6 +661,10 @@ Mask(ZCD)  Var(riscv_zc_subext)
 Mask(ZCMP) Var(riscv_zc_subext)
 
 Mask(ZCMT) Var(riscv_zc_subext)
+
+Mask(ZCMOP) Var(riscv_zc_subext)
+
+Mask(ZCLSD) Var(riscv_zc_subext)
 
 Mask(XCVBI) Var(riscv_xcv_subext)
 
@@ -509,6 +745,23 @@ Set the version of RISC-V ISA spec.
 mmovcc
 Target Var(TARGET_MOVCC)
 Enable conditional moves unconditionally.
+
+mict-model=
+Target RejectNegative Joined Enum(ict_model) Var(riscv_ict_model) Init(ICT_MODEL_SMALL)
+Specify the address generation strategy for ICT call's code model.
+
+Enum
+Name(ict_model) Type(enum riscv_ict_model_type)
+Known ict model types (for use with the -mict-model= option):
+
+EnumValue
+Enum(ict_model) String(tiny) Value(ICT_MODEL_TINY)
+
+EnumValue
+Enum(ict_model) String(small) Value(ICT_MODEL_SMALL)
+
+EnumValue
+Enum(ict_model) String(large) Value(ICT_MODEL_LARGE)
 
 minline-atomics
 Target Var(TARGET_INLINE_SUBWORD_ATOMIC) Init(1)
@@ -620,3 +873,85 @@ Enum(tls_type) String(desc) Value(TLS_DESCRIPTORS)
 mtls-dialect=
 Target RejectNegative Joined Enum(tls_type) Var(riscv_tls_dialect) Init(TLS_TRADITIONAL) Save
 Specify TLS dialect.
+
+menable-unrolled-vls
+Target Var(UNROLL_VLS, 1) Init(1)
+Enable unrolled VLS loop heuristic.
+
+mctor-dtor
+Target
+Enable constructor/destructor feature.
+
+minnermost-loop
+Target Mask(INNERMOST_LOOP)
+Insert the innermost loop directive.
+
+mno-16-bit
+Target RejectNegative Var(TARGET_NO_16_BIT)
+Do not genearte C extension instructions.
+
+mexecit
+Target Var(TARGET_EXECIT)
+Use special directives to guide linker doing execit optimization.
+
+mex9
+Target Undocumented
+Use special directives to guide linker doing execit optimization.
+
+mgp-insn-relax
+Target
+Use special directives to guide linker doing gp insn relax optimization.
+
+mrestrict-even-reg-for-regpair
+Target Mask(RESTRICT_EVEN_REG_FOR_REGPAIR)
+Restrict register pair must start with even register number.
+
+mfma
+Target Var(TARGET_FMA) Init(1)
+Generating fma instructions.
+
+mext-fpu-fma
+Target Undocumented
+Generating fma instructions.
+
+mno-workaround
+Target RejectNegative Undocumented
+Do not use workaroud solution.
+
+mno-execit-jal
+Target RejectNegative Undocumented
+Not use execit for jal.
+
+mpool-section
+Target Var(TARGET_POOL_SECTION) Init(0)
+Seprate constant pool from text section in large code model.
+
+mcmov
+Target Mask(CMOV)
+
+TargetVariable
+int riscv_xnds_subext
+
+Mask(BF16)  Var(riscv_xnds_subext)
+
+Mask(BF16MS)  Var(riscv_xnds_subext)
+
+mext-zvlsseg
+Target Var(TARGET_ZVLSSEG) Init(0)
+Enable RISC-V vector zvlsseg extension.
+
+mext-ntlh
+Target
+Enable the Zihintntl externsion.
+
+mext-zilsd
+Target
+Enable the Zilsd externsion.
+
+mext-zvlsidx
+Target Var(TARGET_ZVLSIDX) Init(1)
+Enable RISC-V vector index load-store extension.
+
+mext-zvlss
+Target Var(TARGET_ZVLSS) Init(1)
+Enable RISC-V vector strided load-store extension.

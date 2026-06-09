@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options " -O2 -march=rv32imaf_zca_zcmp -mabi=ilp32f" } */
+/* { dg-options " -O2 -fshrink-wrap-separate -march=rv32imaf_zca_zcmp -mabi=ilp32f" } */
 /* { dg-skip-if "" { *-*-* } {"-O0" "-O1" "-Os" "-Og" "-O3" "-Oz" "-flto"} } */
 
 typedef struct MAT_PARAMS_S

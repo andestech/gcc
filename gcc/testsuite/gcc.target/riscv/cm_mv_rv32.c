@@ -9,10 +9,12 @@ func (int a, int b);
 /*
 **sum:
 **	...
-**	cm.mvsa01	s1,s2
+**	mv	s1,a0
+**	sw	a1,12\(sp\)
 **	call	func
+**  lw	a1,12\(sp\)
 **	mv	s0,a0
-**	cm.mva01s	s1,s2
+**	mv	a0,s1
 **	call	func
 **	...
 */

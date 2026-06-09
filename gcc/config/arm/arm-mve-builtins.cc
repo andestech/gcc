@@ -868,6 +868,7 @@ function_builder::add_function (const function_instance &instance,
 {
   unsigned int code = vec_safe_length (registered_functions);
   code = (code << ARM_BUILTIN_SHIFT) | ARM_BUILTIN_MVE;
+  bool create_p;
 
   /* We need to be able to generate placeholders to ensure that we have a
      consistent numbering scheme for function codes between the C and C++
@@ -885,7 +886,7 @@ function_builder::add_function (const function_instance &instance,
   tree decl = placeholder_p
     ? integer_zero_node
     : simulate_builtin_function_decl (input_location, name, fntype,
-				      code, NULL, attrs);
+				      code, NULL, attrs, &create_p);
   registered_function &rfn = *ggc_alloc <registered_function> ();
   rfn.instance = instance;
   rfn.decl = decl;

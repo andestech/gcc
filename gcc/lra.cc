@@ -2360,6 +2360,9 @@ lra (FILE *f, int verbose)
 {
   int i;
   bool live_p, inserted_p;
+  bool save_flag_lra_mem_subreg_simplify;
+
+  save_flag_lra_mem_subreg_simplify = flag_lra_mem_subreg_simplify;
 
   lra_dump_file = f;
   lra_verbose = verbose;
@@ -2389,6 +2392,7 @@ lra (FILE *f, int verbose)
   lra_assignment_iter = lra_assignment_iter_after_spill = 0;
   lra_inheritance_iter = lra_undo_inheritance_iter = 0;
   lra_rematerialization_iter = 0;
+  lra_spill_iter = 0;
 
   setup_reg_spill_flag ();
 
@@ -2608,6 +2612,8 @@ lra (FILE *f, int verbose)
 
   if (flag_checking)
     check_rtl (true);
+
+  flag_lra_mem_subreg_simplify = save_flag_lra_mem_subreg_simplify;
 
   timevar_pop (TV_LRA);
 }

@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-march=rv64gcv_zvfh -mabi=lp64 -O3" } */
+/* { dg-options "-march=rv64gcv_zvfh -mabi=lp64 -O3 -mext-zvlsseg" } */
 /* { dg-additional-options "-fno-schedule-insns -fno-schedule-insns2" } */
 
 #include "riscv_vector.h"
@@ -256,6 +256,6 @@ test_vcreate_v_i64m2x4 (vint64m2_t v0, vint64m2_t v1, vint64m2_t v2,
 }
 
 // Ideally with O3, should find 0 instances of any vmvnr.v PR113913
-/* { dg-final { scan-assembler-times {vmv1r.v\s+v[0-9]+,\s*v[0-9]+} 72 } } */
-/* { dg-final { scan-assembler-times {vmv2r.v\s+v[0-9]+,\s*v[0-9]+} 36 } } */
+/* { dg-final { scan-assembler-times {vmv1r.v\s+v[0-9]+,\s*v[0-9]+} 112 } } */
+/* { dg-final { scan-assembler-times {vmv2r.v\s+v[0-9]+,\s*v[0-9]+} 60 } } */
 /* { dg-final { scan-assembler-times {vmv4r.v\s+v[0-9]+,\s*v[0-9]+} 16 } } */

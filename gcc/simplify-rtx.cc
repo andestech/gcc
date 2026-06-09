@@ -4649,6 +4649,7 @@ simplify_ashift:
 	     when X has same component mode as vec_select.  */
 	  unsigned HOST_WIDE_INT subreg_offset = 0;
 	  if (GET_CODE (trueop0) == SUBREG
+	      && VECTOR_MODE_P ((GET_MODE (SUBREG_REG (trueop0))))
 	      && GET_MODE_INNER (mode)
 		 == GET_MODE_INNER (GET_MODE (SUBREG_REG (trueop0)))
 	      && GET_MODE_NUNITS (mode).is_constant (&l1)

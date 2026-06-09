@@ -1622,7 +1622,7 @@ value_replacement (basic_block cond_bb, basic_block middle_bb,
 /* If VAR is an SSA_NAME that points to a BIT_NOT_EXPR then return the TREE for
    the value being inverted.  */
 
-static tree
+tree
 strip_bit_not (tree var)
 {
   if (TREE_CODE (var) != SSA_NAME)

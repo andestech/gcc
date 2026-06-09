@@ -4236,30 +4236,6 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
  (if (ANY_INTEGRAL_TYPE_P (type) && TYPE_OVERFLOW_UNDEFINED (type))
   (max @2 @1)))
 
-/* (zero_one == 0) ? y : z <op> y -> ((typeof(y))zero_one * z) <op> y */
-(for op (bit_xor bit_ior plus)
- (simplify
-  (cond (eq zero_one_valued_p@0
-            integer_zerop)
-        @1
-        (op:c @2 @1))
-  (if (INTEGRAL_TYPE_P (type)
-       && TYPE_PRECISION (type) > 1
-       && (INTEGRAL_TYPE_P (TREE_TYPE (@0))))
-       (op (mult (convert:type @0) @2) @1))))
-
-/* (zero_one != 0) ? z <op> y : y -> ((typeof(y))zero_one * z) <op> y */
-(for op (bit_xor bit_ior plus)
- (simplify
-  (cond (ne zero_one_valued_p@0
-            integer_zerop)
-       (op:c @2 @1)
-        @1)
-  (if (INTEGRAL_TYPE_P (type)
-       && TYPE_PRECISION (type) > 1
-       && (INTEGRAL_TYPE_P (TREE_TYPE (@0))))
-       (op (mult (convert:type @0) @2) @1))))
-
 /* ?: Value replacement. */
 /* a == 0 ? b : b + a  -> b + a */
 (for op (plus bit_ior bit_xor)
@@ -5778,6 +5754,38 @@ DEFINE_INT_AND_FLOAT_ROUND_FN (RINT)
 )
 
 /* These was part of minmax phiopt.  */
+/* Transform (a CMP b) ? minmax<a, c> : minmax<b, c>
+ into minmax<min/max<a, b>, c>, assuming that operands 'a', 'b', and 'c' originate from bitwise inversion */
+(match strip_bit_not_p
+  @0
+  (if (TREE_CODE (@0) == SSA_NAME
+       && is_gimple_assign (SSA_NAME_DEF_STMT (@0))
+       && gimple_assign_rhs_code (SSA_NAME_DEF_STMT (@0)) == BIT_NOT_EXPR)))
+
+(for minmax (min max)
+ (for cmp (lt le gt ge ne)
+  (simplify
+   (cond (cmp:c strip_bit_not_p@1 strip_bit_not_p@3)
+         (minmax:c strip_bit_not_p@1 strip_bit_not_p@4)
+         (minmax:c strip_bit_not_p@2 strip_bit_not_p@4))
+   (with
+    {
+      @1 = strip_bit_not(@1);
+      @2 = strip_bit_not(@2);
+      @3 = strip_bit_not(@3);
+      @4 = strip_bit_not(@4);
+      tree_code code = minmax_from_comparison (cmp, @1, @2, @1, @3);
+    }
+    (switch
+      (if (code == MIN_EXPR && minmax == MIN_EXPR)
+        (bit_not (max (max @1 @2) @4)))
+      (if (code == MIN_EXPR && minmax == MAX_EXPR)
+        (bit_not (min (max @1 @2) @4)))
+      (if (code == MAX_EXPR && minmax == MIN_EXPR)
+        (bit_not (max (min @1 @2) @4)))
+      (if (code == MAX_EXPR && minmax == MAX_EXPR)
+        (bit_not (min (min @1 @2) @4))))))))
+
 /* Optimize (a CMP b) ? minmax<a, c> : minmax<b, c>
    to minmax<min/max<a, b>, c> */
 (for minmax (min max)

@@ -2,6 +2,7 @@
    and https://www.man7.org/linux/man-pages/man3/sprintf.3.html */
 
 /* C only: C++ fpermissive already emits errors. */
+/* { dg-additional-options "-mno-riscv-iprintf" } */
 #include "analyzer-decls.h"
 
 extern int

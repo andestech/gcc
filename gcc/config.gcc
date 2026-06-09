@@ -548,12 +548,14 @@ pru-*-*)
 	;;
 riscv*)
 	cpu_type=riscv
-	extra_objs="riscv-builtins.o riscv-c.o riscv-sr.o riscv-shorten-memrefs.o riscv-selftests.o riscv-string.o"
+	extra_objs="riscv-builtins.o riscv-c.o riscv-sr.o riscv-iprintf.o riscv-shorten-memrefs.o riscv-selftests.o riscv-string.o"
 	extra_objs="${extra_objs} riscv-v.o riscv-vsetvl.o riscv-vector-costs.o riscv-avlprop.o"
 	extra_objs="${extra_objs} riscv-vector-builtins.o riscv-vector-builtins-shapes.o riscv-vector-builtins-bases.o"
 	extra_objs="${extra_objs} thead.o riscv-target-attr.o"
 	d_target_objs="riscv-d.o"
-	extra_headers="riscv_vector.h riscv_crypto.h riscv_bitmanip.h riscv_th_vector.h"
+	extra_headers="riscv_vector.h riscv_crypto.h riscv_bitmanip.h riscv_th_vector.h riscv_ntlh.h"
+	extra_headers="${extra_headers} nds32_intrinsic.h nds_intrinsic.h riscv_csr.h nds_v5_platform.h"
+	extra_headers="${extra_headers} nds_vector_0p10.h rvv-non-policy_intrin0p10.h rvv-overloaded-non-policy_intrin0p10.h rvv-overloaded-policy_intrin0p10.h rvv-policy_intrin0p10.h"
 	target_gtfiles="$target_gtfiles \$(srcdir)/config/riscv/riscv-vector-builtins.cc"
 	target_gtfiles="$target_gtfiles \$(srcdir)/config/riscv/riscv-vector-builtins.h"
 	;;
@@ -2486,10 +2488,40 @@ microblaze*-*-elf)
 riscv*-*-linux*)
 	tm_file="elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} riscv/linux.h"
 	case "x${enable_multilib}" in
-	xno) ;;
-	xyes) tmake_file="${tmake_file} riscv/t-linux-multilib" ;;
+	xno) riscv_multilibs="";;
+	xyes) riscv_multilibs="${with_multilib_list}" ;;
 	*) echo "Unknown value for enable_multilib"; exit 1
 	esac
+
+	if test "$riscv_multilibs" = "default"; then
+		riscv_multilibs="all"
+	fi
+	riscv_multilibs=`echo $riscv_multilibs | sed -e 's/,/ /g'`
+	for riscv_multilib in ${riscv_multilibs}; do
+		case ${riscv_multilib} in
+		all )
+			tmake_file="${tmake_file} riscv/t-linux-multilib"
+			;;
+		rv32v5 )
+			tmake_file="${tmake_file} riscv/t-linux-rv32v5"
+			;;
+                rv32v5d )
+                        tmake_file="${tmake_file} riscv/t-linux-rv32v5d"
+                        ;;
+		rv64v5 )
+			tmake_file="${tmake_file} riscv/t-linux-rv64v5"
+			;;
+		rv64v5d )
+			tmake_file="${tmake_file} riscv/t-linux-rv64v5d"
+			;;
+		"" )
+			;;
+		*)
+			echo "--with-multilib-list=${riscv_multilib} not supported."
+			exit 1
+		esac
+	done
+
 	tmake_file="${tmake_file} riscv/t-riscv riscv/t-linux"
 	tm_defines="${tm_defines} TARGET_DEFAULT_ASYNC_UNWIND_TABLES=1"
 	gnu_ld=yes
@@ -2513,12 +2545,70 @@ riscv*-*-elf* | riscv*-*-rtems*)
 	  ;;
 	*)
 	  if test "x${with_multilib_generator}" = xdefault; then
-		  case "x${enable_multilib}" in
-		  xno) ;;
-		  xyes) tmake_file="${tmake_file} riscv/t-elf-multilib" ;;
-		  *) echo "Unknown value for enable_multilib"; exit 1
-		  esac
+		  riscv_multilibs="${with_multilib_list}"
+		  if test "$riscv_multilibs" = "default"; then
+			  riscv_multilibs="all"
+		  fi
+		  riscv_multilibs=`echo $riscv_multilibs | sed -e 's/,/ /g'`
+		  for riscv_multilib in ${riscv_multilibs}; do
+			  case ${riscv_multilib} in
+			  all )
+				  tmake_file="${tmake_file} riscv/t-elf-multilib riscv/t-elf-vh"
+				  ;;
+			  vh )
+				  tmake_file="${tmake_file} riscv/t-elf-vh"
+				  ;;
+			  rv* )
+				  TM_MULTILIB_CONFIG="${TM_MULTILIB_CONFIG}/march=${riscv_multilib}"
+				  tmake_file="${tmake_file} riscv/t-elf-arch"
+				  ;;
+			  cmodel )
+				  tmake_file="${tmake_file} riscv/t-elf-cmodel"
+				  ;;
+			  dsp )
+				  tmake_file="${tmake_file} riscv/t-elf-dsp"
+				  ;;
+			  no-fma )
+				  tmake_file="${tmake_file} riscv/t-elf-no-fma"
+				  ;;
+			  andes45 )
+				  tmake_file="${tmake_file} riscv/t-elf-andes45"
+				  ;;
+			  zc )
+				  tmake_file="${tmake_file} riscv/t-elf-zc"
+				  ;;
+			  all-rv32v5 )
+				  tmake_file="${tmake_file} riscv/t-elf-rv32v5"
+				  ;;
+			  all-rv64v5 )
+				  tmake_file="${tmake_file} riscv/t-elf-rv64v5"
+				  ;;
+			  *)
+				  echo "--with-multilib-list=${riscv_multilib} not supported."
+				  exit 1
+			  esac
+		  done
+		  TM_MULTILIB_CONFIG=`echo $TM_MULTILIB_CONFIG | sed 's:^/::'`
 	  fi
+	  # process --with-libc
+	  case "${with_libc}" in
+	  mculib)
+		  tm_defines="${tm_defines} TARGET_MCULIB=1"
+		  ;;
+	  *)
+		  ;;
+	  esac
+
+	  # Handle --enable-Os-default-ex9 setting.
+	  if test x${enable_Os_default_ex9} = xyes; then
+		  tm_defines="${tm_defines} TARGET_OS_DEFAULT_EX9=1"
+	  fi
+
+	  # Handle --enable-gp-insn-relax-default setting.
+	  if test x${enable_gp_insn_relax_default=} = xyes; then
+		  tm_defines="${tm_defines} TARGET_DEFAULT_GP_RELAX=1"
+	  fi
+
 	esac
 	tmake_file="${tmake_file} riscv/t-riscv"
 	gnu_ld=yes
@@ -4686,8 +4776,14 @@ case "${target}" in
 		supported_defaults="abi arch tune riscv_attribute isa_spec tls"
 
 		case "${target}" in
-		riscv-* | riscv32*) xlen=32 ;;
-		riscv64*) xlen=64 ;;
+		riscv32*)
+			xlen=32
+			tm_defines="${tm_defines} TARGET_DEFAULT_MEDLOW=1"
+		;;
+		riscv64*)
+			xlen=64
+			tm_defines="${tm_defines} TARGET_DEFAULT_MEDLOW=0"
+		;;
 		*) echo "Unsupported RISC-V target ${target}" 1>&2; exit 1 ;;
 		esac
 
@@ -4698,6 +4794,7 @@ case "${target}" in
 			;;
 		2.2)
 			tm_defines="${tm_defines} TARGET_DEFAULT_ISA_SPEC=ISA_SPEC_CLASS_2P2"
+			with_isa_spec=2.2
 			;;
 		20190608 | 201906)
 			tm_defines="${tm_defines} TARGET_DEFAULT_ISA_SPEC=ISA_SPEC_CLASS_20190608"
@@ -4825,20 +4922,16 @@ case "${target}" in
 			;;
 		esac
 
-		# Handle --with-multilib-list.
-		if test "x${with_multilib_list}" != xdefault; then
-			tmake_file="${tmake_file} riscv/t-withmultilib"
-
-			case ${with_multilib_list} in
-			ilp32 | ilp32f | ilp32d \
-			| lp64 | lp64f | lp64d )
-				TM_MULTILIB_CONFIG="${with_arch},${with_multilib_list}"
-				;;
-			*)
-				echo "--with-multilib-list=${with_multilib_list} not supported."
-				exit 1
-			esac
+		# Handle --enable-Os-default-ex9 setting.
+		if test x${enable_Os_default_ex9} = xyes; then
+			tm_defines="${tm_defines} TARGET_OS_DEFAULT_EX9=1"
 		fi
+
+		# Handle --enable-gp-insn-relax-default setting.
+		if test x${enable_gp_insn_relax_default=} = xyes; then
+			tm_defines="${tm_defines} TARGET_DEFAULT_GP_RELAX=1"
+		fi
+
 		;;
 
 	mips*-*-*)

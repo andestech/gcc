@@ -1918,6 +1918,43 @@ proc check_effective_target_riscv_v { } {
     }]
 }
 
+# Return 1 if the target runtime supports 256-bit vectors, 0 otherwise.
+# Cache the result.
+
+proc check_effective_target_rvv_zvl256b_ok { } {
+    # Check if the target has a VLENB of 32.
+    set gcc_march [regsub {[[:alnum:]]*} [riscv_get_arch] &v]
+    return [check_runtime ${gcc_march}_exec {
+	int main()
+	{
+	  int vlenb = 0;
+	  asm ("csrr %0,vlenb" : "=r" (vlenb) : : );
+	  if (vlenb == 32)
+	    return 1;
+	  return 0;
+	}
+      } "-march=${gcc_march}"]
+}
+
+# Return 1 if the target runtime supports 512-bit vectors, 0 otherwise.
+# Cache the result.
+
+proc check_effective_target_rvv_zvl512b_ok { } {
+    # Check if the target has a VLENB of 64.
+    set gcc_march [regsub {[[:alnum:]]*} [riscv_get_arch] &v]
+    return [check_runtime ${gcc_march}_exec {
+	int main()
+	{
+	  int vlenb = 0;
+	  asm ("csrr %0,vlenb" : "=r" (vlenb) : : );
+	  if (vlenb == 64)
+	    return 1;
+	  return 0;
+	}
+      } "-march=${gcc_march}"]
+}
+
+
 # Return 1 if the target arch supports the Zvfh extension, 0 otherwise.
 # Cache the result.
 
@@ -1990,7 +2027,13 @@ proc check_effective_target_riscv_v_ok { } {
     # simulator
     set gcc_march [regsub {[[:alnum:]]*} [riscv_get_arch] &v]
     if { [check_runtime ${gcc_march}_exec {
-	  int main() {  asm("vsetivli t0, 9, e8, m1, tu, ma"); return 0; } } "-march=${gcc_march}"] } {
+	  int main() {
+            asm("vsetivli t0, 9, e8, m1, tu, ma");
+            asm("feq.d a3,fa5,fa4");
+            return 0;
+          }
+          } "-march=${gcc_march}"
+       ] } {
 	return 1
     }
 
@@ -2056,7 +2099,7 @@ proc check_effective_target_riscv_zvfh_ok { } {
 proc riscv_get_arch { } {
     set gcc_march ""
     # ??? do we neeed to add more extensions to the list below?
-    foreach ext { i m a f d q c v zicsr zifencei zfh zba zbb zbc zbs zvfh ztso } {
+    foreach ext { i e m a f d q c v zicsr zifencei zfh zba zbb zbc zbs zvfh ztso } {
 	if { [check_no_compiler_messages  riscv_ext_$ext assembly [string map [list DEF __riscv_$ext] {
 		#ifndef DEF
 		#error "Not DEF"
@@ -2137,6 +2180,28 @@ proc add_options_for_riscv_ztso { flags } {
 	return "$flags"
     }
     return "$flags -march=[riscv_get_arch]_ztso"
+}
+
+proc add_options_for_riscv_v5_abi { flags } {
+    if { ![istarget riscv*-*-linux*] } {
+        return "$flags";
+    }
+    set gcc_mabi ""
+    if { [check_effective_target_ilp32] } {
+	if { [check_effective_target_riscv_d] } {
+	    set gcc_mabi "-mabi=ilp32d"
+	} elseif { [check_effective_target_riscv_hard_fp] } {
+	    set gcc_mabi "-mabi=ilp32f"
+	} else {
+	    set gcc_mabi "-mabi=ilp32"
+	}
+    } else {
+	if { [check_effective_target_riscv_d] } {
+	    set gcc_mabi "-mabi=lp64d"
+	} else {
+	    set gcc_mabi "-mabi=lp64"
+    }}
+    return "$flags $gcc_mabi"
 }
 
 proc add_options_for_riscv_zvfh { flags } {
@@ -7390,6 +7455,34 @@ proc check_effective_target_powerpc_elfv2 { } {
     }
 }
 
+# Return true if the target is a 32-bit RISC-V target.
+
+proc check_effective_target_riscv32 { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages riscv32 object {
+	#if __riscv_xlen == 32
+	int dummy;
+	#else
+	#error not 32-bit RISC-V target
+	#endif
+	}]
+    }
+}
+
+# Return true if the riscv target supports hard floating-point unit.
+
+proc check_effective_target_riscv_hard_fp { } {
+    if { [istarget riscv*-*-*] } {
+	return [check_no_compiler_messages hard_fp object {
+	    #if defined __riscv_flen
+	    int dummy;
+	    #else
+	    #error no support fpu
+	    #endif
+	}]
+    }
+}
+
 # Return 1 if this is a PowerPC target supporting -mrop-protect
 
 proc check_effective_target_rop_ok { } {
@@ -8094,6 +8187,28 @@ proc check_effective_target_vect_widen_mult_si_to_di_pattern { } {
 proc check_effective_target_vect_widen_shift { } {
     return [check_cached_effective_target_indexed vect_widen_shift {
       expr { [is-effective-target arm_neon] }}]
+}
+
+# Return 1 if the target supports executing riscv zbabcs instructions, 0
+# otherwise.  Cache the result.
+
+proc check_riscv_zbabcs_hw_available {  } {
+    return [check_cached_effective_target riscv_zbabcs_hw_available {
+       # If this is not the right target then we can skip the test.
+       if { ![istarget riscv*-*-*] } {
+           expr 0
+       } else {
+           check_runtime_nocache riscv_zbabcs_hw_available {
+		int main()
+		{
+		  unsigned long misa;
+		  asm ("csrr %0, misa": "=r"(misa)::);
+		  if ((misa & (0x1LL << 1)) == 0)
+		    return 1;
+		}
+           } ""
+       }
+    }]
 }
 
 # Return 1 if the target plus current options supports a vector
@@ -9856,6 +9971,7 @@ proc is-effective-target { arg } {
 	  "gc_sections"    { set selected [check_gc_sections_available] }
 	  "linker_plugin"  { set selected [check_linker_plugin_available] }
 	  "cxa_atexit"     { set selected [check_cxa_atexit_available] }
+	  "riscv_zbabcs_hw" { set selected [check_riscv_zbabcs_hw_available] }
 	  default          { error "unknown effective target keyword `$arg'" }
 	}
     }
@@ -9888,6 +10004,7 @@ proc is-effective-target-keyword { arg } {
 	  "gc_sections"    { return 1 }
 	  "cxa_atexit"     { return 1 }
 	  "ppc_cpu_supports_hw" { return 1 }
+	  "riscv_zbabcs_hw" { return 1 }
 	  default          { return 0 }
 	}
     }

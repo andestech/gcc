@@ -1,5 +1,6 @@
 /* { dg-do compile } */
-/* { dg-options "-march=rv64gczve32x -mabi=lp64d -mrvv-vector-bits=zvl" } */
+/* { dg-options "-march=rv64gczve32x -mabi=lp64d -mrvv-vector-bits=zvl -mext-zvlsseg" } */
+/* { dg-skip-if "" { *32-*-linux* } { "*" } } */
 
 #include <stdint-gcc.h>
 #include "riscv_vector.h"

@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with GCC; see the file COPYING3.  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#define TARGET_LINUX_ABI 1
+
 #define TARGET_OS_CPP_BUILTINS()				\
   do {								\
     GNU_USER_TARGET_OS_CPP_BUILTINS();				\
@@ -53,13 +55,20 @@ along with GCC; see the file COPYING3.  If not see
 -X \
 %{mbig-endian:-EB} \
 %{mlittle-endian:-EL} \
+%{mno-execit-jal:--mno-execit-jal} \
+%{mnexecitop:--mnexecitop} \
+%{minnermost-loop:--mexecit-loop-aware} \
+%{mno-zcmt|mno-zcmt-table-jump|mno-16-bit:--mno-opt-table-jump} \
 %{shared} \
   %{!shared: \
     %{!static: \
       %{!static-pie: \
 	%{rdynamic:-export-dynamic} \
 	-dynamic-linker " GNU_USER_DYNAMIC_LINKER "}} \
-    %{static:-static} %{static-pie:-static -pie --no-dynamic-linker -z text}}"
+    %{static:-static} %{static-pie:-static -pie --no-dynamic-linker -z text}}" \
+NDS32_GP_RELAX_SPEC \
+BTB_FIXUP_SPEC \
+WORKAROUND_SPEC
 
 #define STARTFILE_PREFIX_SPEC 			\
    "/lib" XLEN_SPEC "/" ABI_SPEC "/ "		\

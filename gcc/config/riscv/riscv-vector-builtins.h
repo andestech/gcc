@@ -109,21 +109,50 @@ static const unsigned int CP_WRITE_CSR = 1U << 5;
 #define RVV_REQUIRE_FULL_V (1 << 4) /* Require Full 'V' extension.  */
 #define RVV_REQUIRE_MIN_VLEN_64 (1 << 5)	/* Require TARGET_MIN_VLEN >= 64.  */
 #define RVV_REQUIRE_ELEN_FP_16 (1 << 6) /* Require FP ELEN >= 32.  */
+#define RVV_REQUIRE_ELEN_BF_16 (1 << 7) /* Require BF16.  */
+#define RVV_REQUIRE_ZVLSS (1 << 23) /* Require ZVLSIDX extension.  */
+#define RVV_REQUIRE_ZVLSIDX (1 << 24) /* Require ZVLSIDX extension.  */
+#define RVV_REQUIRE_ZVLSSEG (1 << 25) /* Require ZVLSSEG extension.  */
+#define RVV_REQUIRE_XANDESVBFHCVT                                              \
+  (1 << 26)			       /* Require XANDESVBFHCVT extension.  */
+#define RVV_REQUIRE_ZVFBFWMA (1 << 27) /* Require ZVFBFWMA extension.  */
+#define RVV_REQUIRE_ZVFBFMIN (1 << 28) /* Require ZVFBFMIN extension.  */
+#define RVV_REQUIRE_ZVFH (1 << 29) /* Require ZVFH.  */
+#define RVV_REQUIRE_V5 (1 << 30) /* Require Andes V5.  */
+#define RVV_REQUIRE_XANDESBF (1 << 31) /* Require XANDESBF extension.  */
+#define RVV_REQUIRE_ZVFBFMIN_OR_XANDESBF (1ULL << 32) /* Require ZVFBFMIN or XANDESBF extension.  */
+#define RVV_REQUIRE_ZVFBFMIN_OR_XANDESBF_OR_XANDESVBFHCVT                      \
+  (1ULL << 33) /* Require ZVFBFMIN or XANDESBF or XANDESVBFHCVT extension.  */
+#define SCALAR_REQUIRE_ZFHMIN (1ULL << 34) /* Require Zfhmin extension.  */
+#define SCALAR_REQUIRE_F (1ULL << 35)	   /* Require F extension.  */
+#define SCALAR_REQUIRE_D (1ULL << 36)	   /* Require D extension.  */
+#define RVV_REQUIRE_ZVFOFP8MIN (1ULL << 37) /* Require ZVFOFP8MIN extension.   \
+					     */
 
 /* Enumerates the required extensions.  */
 enum required_ext
 {
-  VECTOR_EXT,   /* Vector extension */
-  ZVBB_EXT,    /* Cryto vector Zvbb sub-ext */
-  ZVBB_OR_ZVKB_EXT, /* Cryto vector Zvbb or zvkb sub-ext */
-  ZVBC_EXT,    /* Crypto vector Zvbc sub-ext */
-  ZVKG_EXT,    /* Crypto vector Zvkg sub-ext */
-  ZVKNED_EXT,  /* Crypto vector Zvkned sub-ext */
-  ZVKNHA_OR_ZVKNHB_EXT, /* Crypto vector Zvknh[ab] sub-ext */
-  ZVKNHB_EXT,  /* Crypto vector Zvknhb sub-ext */
-  ZVKSED_EXT,  /* Crypto vector Zvksed sub-ext */
-  ZVKSH_EXT,   /* Crypto vector Zvksh sub-ext */
-  XTHEADVECTOR_EXT,   /* XTheadVector extension */
+  VECTOR_EXT,			  /* Vector extension */
+  ZVBB_EXT,			  /* Cryto vector Zvbb sub-ext */
+  ZVBB_OR_ZVKB_EXT,		  /* Cryto vector Zvbb or zvkb sub-ext */
+  ZVBC_EXT,			  /* Crypto vector Zvbc sub-ext */
+  ZVKG_EXT,			  /* Crypto vector Zvkg sub-ext */
+  ZVKNED_EXT,			  /* Crypto vector Zvkned sub-ext */
+  ZVKNHA_OR_ZVKNHB_EXT,		  /* Crypto vector Zvknh[ab] sub-ext */
+  ZVKNHB_EXT,			  /* Crypto vector Zvknhb sub-ext */
+  ZVKSED_EXT,			  /* Crypto vector Zvksed sub-ext */
+  ZVKSH_EXT,			  /* Crypto vector Zvksh sub-ext */
+  XTHEADVECTOR_EXT,		  /* XTheadVector extension */
+  V5_EXT,			  /* Andest V5 extension */
+  XANDESVBFHCVT_EXT,		  /* Andes xandesvbfhcvt extension */
+  BF16MS_EXT,			  /* Andes BF16 mode switch extension */
+  ZIHINTNTL_EXT,		  /* Zihintntl extension */
+  ZVFBFMIN_OR_BF16MS_EXT,	  /* ZVFBFNMIN or XANDESBF extension */
+  ZVFBFMIN_OR_BF16MS_OR_BF16_EXT, /* ZVFBFNMIN or XANDESBF or XANDESVBFHCVT
+				     extension */
+  ZVFBFMIN_EXT,			  /* Zvfbfmin externsion */
+  ZVFOFP8MIN_EXT,		  /* Zvfofp8min extension */
+  ZVFBFWMA_EXT,			  /* Zvfbfwma extension */
   /* Please update below to isa_name func when add or remove enum type(s).  */
 };
 
@@ -153,6 +182,24 @@ static inline const char * reqired_ext_to_isa_name (enum required_ext required)
       return "zvksh";
     case XTHEADVECTOR_EXT:
       return "xthreadvector";
+    case V5_EXT:
+      return "xandes";
+    case ZVFBFWMA_EXT:
+      return "zvfbfwma";
+    case ZVFBFMIN_EXT:
+      return "zvfbfmin";
+    case ZVFOFP8MIN_EXT:
+      return "zvfofp8min";
+    case XANDESVBFHCVT_EXT:
+      return "xandesvbfhcvt";
+    case BF16MS_EXT:
+      return "xandesbf";
+    case ZIHINTNTL_EXT:
+      return "zihintntl";
+    case ZVFBFMIN_OR_BF16MS_EXT:
+      return "zvfbfmin or xandesbf";
+    case ZVFBFMIN_OR_BF16MS_OR_BF16_EXT:
+      return "zvfbfmin or xandesbf or xandesvbfhcvt";
     default:
       gcc_unreachable ();
   }
@@ -186,6 +233,24 @@ static inline bool required_extensions_specified (enum required_ext required)
       return TARGET_ZVKSH;
     case XTHEADVECTOR_EXT:
       return TARGET_XTHEADVECTOR;
+    case V5_EXT:
+      return TARGET_V5;
+    case ZVFBFWMA_EXT:
+      return TARGET_ZVFBFWMA;
+    case ZVFBFMIN_EXT:
+      return TARGET_ZVFBFMIN;
+    case ZVFOFP8MIN_EXT:
+      return TARGET_ZVFOFP8MIN;
+    case XANDESVBFHCVT_EXT:
+      return TARGET_BF16;
+    case BF16MS_EXT:
+      return TARGET_BF16MS;
+    case ZIHINTNTL_EXT:
+      return TARGET_ZIHINTNTL;
+    case ZVFBFMIN_OR_BF16MS_EXT:
+      return TARGET_ZVFBFMIN || TARGET_BF16MS;
+    case ZVFBFMIN_OR_BF16MS_OR_BF16_EXT:
+      return TARGET_ZVFBFMIN || TARGET_BF16MS || TARGET_BF16;
     default:
       gcc_unreachable ();
   }
@@ -208,6 +273,7 @@ enum vector_type_index
 {
 #define DEF_RVV_TYPE(NAME, ABI_NAME, NCHARS, ARGS...) VECTOR_TYPE_##NAME,
 #define DEF_RVV_TUPLE_TYPE(NAME, ABI_NAME, NCHARS, ARGS...) VECTOR_TYPE_##NAME,
+#define DEF_SCALAR_TYPE(NAME, SCALAR_TYPE) SCALAR_TYPE_##NAME,
 #include "riscv-vector-builtins.def"
   NUM_VECTOR_TYPES,
   VECTOR_TYPE_INVALID = NUM_VECTOR_TYPES
@@ -288,6 +354,16 @@ struct rvv_op_info
   const rvv_arg_type_info *args;
 };
 
+struct pragma_intrinsic_flags
+{
+  int intrinsic_target_flags;
+
+  int intrinsic_riscv_vector_elen_flags;
+  int intrinsic_riscv_zvl_flags;
+  int intrinsic_riscv_zvb_subext;
+  int intrinsic_riscv_zvk_subext;
+};
+
 class registered_function;
 class function_base;
 class function_shape;
@@ -322,6 +398,24 @@ struct function_group_info
         return TARGET_ZVKSH;
       case XTHEADVECTOR_EXT:
 	return TARGET_XTHEADVECTOR;
+      case V5_EXT:
+	return TARGET_V5;
+      case ZVFBFWMA_EXT:
+	return TARGET_ZVFBFWMA;
+      case ZVFBFMIN_EXT:
+	return TARGET_ZVFBFMIN;
+      case ZVFOFP8MIN_EXT:
+	return TARGET_ZVFOFP8MIN;
+      case XANDESVBFHCVT_EXT:
+	return TARGET_BF16;
+      case BF16MS_EXT:
+	return TARGET_BF16MS;
+      case ZIHINTNTL_EXT:
+	return TARGET_ZIHINTNTL;
+      case ZVFBFMIN_OR_BF16MS_EXT:
+	return TARGET_ZVFBFMIN || TARGET_BF16MS;
+      case ZVFBFMIN_OR_BF16MS_OR_BF16_EXT:
+	return TARGET_ZVFBFMIN || TARGET_BF16MS || TARGET_BF16;
       default:
         gcc_unreachable ();
     }
@@ -401,6 +495,8 @@ public:
   void append_base_name (const char *);
   void append_sew (int);
   void append_nf (int);
+  void append_int (int, int);
+  void append_float (int);
   char *finish_name ();
 
 private:
@@ -475,22 +571,24 @@ public:
   void add_vundef_operand (machine_mode);
   void add_fixed_operand (rtx);
   void add_integer_operand (rtx);
-  void add_mem_operand (machine_mode, unsigned);
+  void add_mem_operand (machine_mode, unsigned, bool BLK = false);
 
   machine_mode vector_mode (void) const;
+  machine_mode scalar_mode (void) const;
   machine_mode index_mode (void) const;
   machine_mode arg_mode (int) const;
   machine_mode mask_mode (void) const;
   machine_mode ret_mode (void) const;
 
   rtx use_exact_insn (insn_code);
-  rtx use_contiguous_load_insn (insn_code);
+  rtx use_contiguous_load_insn (insn_code, bool BLK = false);
   rtx use_contiguous_store_insn (insn_code);
   rtx use_compare_insn (rtx_code, insn_code);
   rtx use_ternop_insn (bool, insn_code);
   rtx use_widen_ternop_insn (insn_code);
   rtx use_scalar_move_insn (insn_code);
   rtx generate_insn (insn_code);
+  rtx get_output_operand () { return m_ops[0].value; };
 
   /* The function call expression.  */
   tree exp;
@@ -543,6 +641,11 @@ public:
 
   /* Return true if intrinsics maybe require frm operand.  */
   virtual bool may_require_frm_p () const;
+
+  /* Return true if intrinsics require full hash key encoding.
+     This could happen if their argument types only differ in non-ptr
+     scalar parts.  */
+  virtual bool require_full_hash_p () const;
 
   /* Try to fold the given gimple call.  Return the new gimple statement
      on success, otherwise return null.  */
@@ -703,6 +806,13 @@ function_expander::vector_mode (void) const
   return TYPE_MODE (builtin_types[type.index].vector);
 }
 
+/* Return the machine_mode of the corresponding vector type.  */
+inline machine_mode
+function_expander::scalar_mode (void) const
+{
+  return TYPE_MODE (builtin_types[type.index].scalar);
+}
+
 /* Return the machine_mode of the corresponding index type.  */
 inline machine_mode
 function_expander::index_mode (void) const
@@ -813,6 +923,14 @@ function_base::may_require_frm_p () const
    not need vxrm operand.  */
 inline bool
 function_base::may_require_vxrm_p () const
+{
+  return false;
+}
+
+/* We choose to return false by default since most of the intrinsics does
+   not encounter hash table collide issue.  */
+inline bool
+function_base::require_full_hash_p () const
 {
   return false;
 }

@@ -35,6 +35,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "dojump.h"
 #include "expr.h"
 #include "dumpfile.h"
+#include "sreal.h"
 
 /* This pass performs loop unrolling.  We only perform this
    optimization on innermost loops (with single exception) because
@@ -729,6 +730,24 @@ decide_unroll_runtime_iterations (class loop *loop, int flags)
       return;
     }
 
+  if (!(flags & UAP_UNROLL_ALL) && !loop->unroll
+      && !(get_estimated_loop_iterations (loop, &iterations)))
+    {
+      sreal snit;
+      bool reliable;
+      /* 30 is a magic extreme value. It's from rv32 eembc/conven00:
+	 the probability is only 0.22 and nunroll is 8.  */
+      double ratio = 30;
+      if (expected_loop_iterations_by_profile (loop, &snit, &reliable)
+	  && !reliable
+	  && snit.to_double () * ratio < nunroll)
+	{
+	  if (dump_file)
+	    fprintf (dump_file, ";; Not unrolling loop, doesn't roll\n");
+	  return;
+	}
+    }
+
   /* Success; now force nunroll to be power of 2, as code-gen
      requires it, we are unable to cope with overflows in
      computation of number of iterations.  */
@@ -1188,7 +1207,7 @@ decide_unroll_stupid (class loop *loop, int flags)
      of mispredicts. 
      TODO: this heuristic needs tunning; call inside the loop body
      is also relatively good reason to not unroll.  */
-  if (num_loop_branches (loop) > 1)
+  if (num_loop_branches (loop) > (unsigned) param_max_unroll_loop_branch)
     {
       if (dump_file)
 	fprintf (dump_file, ";; Not unrolling, contains branches\n");

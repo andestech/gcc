@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-march=rv32gcv -mabi=ilp32 -O3 -ftree-vectorize -mrvv-max-lmul=dynamic -mrvv-vector-bits=scalable -fselective-scheduling -fdump-tree-vect-details" } */
+/* { dg-options "-march=rv32gcv -mabi=ilp32 -O3 -ftree-vectorize -mrvv-max-lmul=dynamic -mrvv-vector-bits=scalable -fselective-scheduling -fdump-tree-vect-details -mtune=rocket" } */
 
 void
 foo (int *restrict a, int *restrict b, int n)

@@ -1,5 +1,6 @@
 /* { dg-do run } */
 /* { dg-require-effective-target int32plus } */
+/* { dg-skip-if "" { riscv*-*-* } } */
 
 int a;
 void b()

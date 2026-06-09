@@ -23,6 +23,7 @@ along with GCC; see the file COPYING3.  If not see
 #define INCLUDE_STRING
 #define INCLUDE_SET
 #define INCLUDE_MAP
+#include <string>
 #include "config.h"
 #include "system.h"
 #include "coretypes.h"
@@ -41,6 +42,525 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 typedef bool (*riscv_implied_predicator_t) (const riscv_subset_list *);
+#define NUM_EXTS_KIND (sizeof(ext_options)/sizeof(ext_options[0]))
+
+struct arch_options_t
+{
+  const char *ext;
+  const char *option_name;
+  bool is_spec;	/* is -m[no-]option_name specified by user ? */
+  bool val; /* specified value */
+};
+
+static arch_options_t std_ext_options[] = {
+  {"a", "atomic", false, false},
+  {"c", "16-bit", false, false},
+  {"p", "ext-dsp", false, false},
+  {NULL, NULL, false, false}
+};
+
+static arch_options_t nonstd_z_ext_options[] = {
+  {"zfh", "zfh", false, false},
+  {"zfbfmin", "ext-bf16min", false, false},
+  {"zve64d", "ext-vector", false, false},
+  {"zve32f", "ext-vector", false, false},
+  {"zve64x", "ext-vector", false, false},
+  {"zve32x", "ext-vector", false, false},
+  {"zvfh", "ext-vector", false, false},
+  {"zvfbfmin", "ext-vector", false, false},
+  {"zvfbfwma", "ext-vector", false, false},
+  {"zve64d", "=zve64d", false, false},
+  {"zve64f", "=zve64f", false, false},
+  {"zve32f", "=zve32f", false, false},
+  {"zve64x", "=zve64x", false, false},
+  {"zve32x", "=zve32x", false, false},
+  {"zvkns", "ext-zvkns", false, false}, // this is the fake extension to describe the whole set
+  {"zvbc", "ext-zvkns", false, false},
+  {"zvknhb", "ext-zvkns", false, false},
+  {"zvkn", "ext-zvkns", false, false},
+  {"zvknc", "ext-zvkns", false, false},
+  {"zvkng", "ext-zvkns", false, false},
+  {"zvksc", "ext-zvkns", false, false},
+  {"zba", "ext-zbabcs", false, false},
+  {"zbb", "ext-zbabcs", false, false},
+  {"zbc", "ext-zbabcs", false, false},
+  {"zbs", "ext-zbabcs", false, false},
+  {"zca", "ext-zc", false, false},
+  {"zcb", "ext-zc", false, false},
+  {"zcmp", "ext-zc", false, false},
+  {"zcmt", "ext-zc", false, false},
+  {"zcmp", "zcmp", false, false},
+  {"zcmt", "zcmt", false, false},
+  /* -mno-16-bit disables all zc extensions. */
+  {"zca", "16-bit", false, false},
+  {"zcb", "16-bit", false, false},
+  {"zcd", "16-bit", false, false},
+  {"zcf", "16-bit", false, false},
+  {"zcmp", "16-bit", false, false},
+  {"zcmt", "16-bit", false, false},
+  {"zclsd", "16-bit", false, false},
+  {"zcmop", "16-bit", false, false},
+  /* -mext-zc implies -mext-zbabcs */
+  {"zba", "ext-zc", false, false},
+  {"zbb", "ext-zc", false, false},
+  {"zbc", "ext-zc", false, false},
+  {"zbs", "ext-zc", false, false},
+  {"zkn", "ext-zkn", false, false},
+  {"zks", "ext-zks", false, false},
+  {"zkn", "ext-zkns", false, false},
+  {"zks", "ext-zkns", false, false},
+  {"zicboz", "ext-cmo", false, false},
+  {"zicbom", "ext-cmo", false, false},
+  {"zicbop", "ext-cmo", false, false},
+  {"zihintntl", "ext-ntlh", false, false},
+  {"zilsd", "ext-zilsd", false, false},
+  {"zclsd", "ext-zilsd", false, false},
+  {"zvl32b", "=zvl32b", false, false},
+  {"zvl64b", "=zvl64b", false, false},
+  {"zvl128b", "=zvl128b", false, false},
+  {"zvl256b", "=zvl256b", false, false},
+  {"zvl512b", "=zvl512b", false, false},
+  {"zvl1024b", "=zvl1024b", false, false},
+  {"zvl2048b", "=zvl2048b", false, false},
+  {"zvl4096b", "=zvl4096b", false, false},
+  {"zvl8192b", "=zvl8192b", false, false},
+  {"zvl16384b", "=zvl16384b", false, false},
+  {"zvl32768b", "=zvl32768b", false, false},
+  {"zvl65536b", "=zvl65536b", false, false},
+  {"zvfh", "zvfh", false, false},
+  {"zvbb", "ext-zvkns", false, false},
+  {"zvkb", "ext-zvkns", false, false},
+  {"zvkg", "ext-zvkns", false, false},
+  {"zvkned", "ext-zvkns", false, false},
+  {"zvknha", "ext-zvkns", false, false},
+  {"zvksed", "ext-zvkns", false, false},
+  {"zvksh", "ext-zvkns", false, false},
+  {"zvkt", "ext-zvkns", false, false},
+  // the superset of mext-zvkns to be handled
+  {"zvks", "ext-zvkns", false, false},
+  {"zvksg", "ext-zvkns", false, false},
+  {NULL, NULL, false, false}
+};
+
+static arch_options_t *p_entry_zfh = &nonstd_z_ext_options[0];
+static arch_options_t *p_entry_zfbfmin = &nonstd_z_ext_options[1];
+static arch_options_t *p_entry_zve64d = &nonstd_z_ext_options[2];
+static arch_options_t *p_entry_zve32f = &nonstd_z_ext_options[3];
+static arch_options_t *p_entry_zve64x = &nonstd_z_ext_options[4];
+static arch_options_t *p_entry_zve32x = &nonstd_z_ext_options[5];
+static arch_options_t *p_entry_zvfh = &nonstd_z_ext_options[6];
+static arch_options_t *p_entry_zvfbfmin = &nonstd_z_ext_options[7];
+static arch_options_t *p_entry_zvfbfwma = &nonstd_z_ext_options[8];
+static arch_options_t *p_entry_val_zve64d = &nonstd_z_ext_options[9];
+static arch_options_t *p_entry_val_zve64f = &nonstd_z_ext_options[10];
+static arch_options_t *p_entry_val_zve32f = &nonstd_z_ext_options[11];
+static arch_options_t *p_entry_val_zve64x = &nonstd_z_ext_options[12];
+static arch_options_t *p_entry_val_zve32x = &nonstd_z_ext_options[13];
+static arch_options_t *p_entry_zvkns = &nonstd_z_ext_options[14];
+
+static arch_options_t nonstd_x_ext_options[] = {
+  {"xandesbfhcvt", "bf16", false, false},
+  {"xandesvbfhcvt", "bf16", false, false},
+  {"xandesbf", "bf16ms", false, false},
+  {NULL, NULL, false, false}
+};
+
+static arch_options_t nonstd_s_ext_options[] = {
+  {"svinval", "ext-svinval", false, false},
+  {NULL, NULL, false, false}
+};
+
+static arch_options_t *ext_options[] = {
+  std_ext_options,
+  nonstd_z_ext_options,
+  nonstd_x_ext_options,
+  nonstd_s_ext_options
+};
+
+struct riscv_profiles
+{
+  const char *profile_name;
+  const char *profile_string;
+};
+
+/* This table records the mapping form RISC-V Profiles into march string.  */
+static const riscv_profiles riscv_profiles_table[] =
+{
+  /* RVI20U only contains the base extesnion 'i' as mandatory extension.  */
+  {"rvi20u64", "rv64i"},
+  {"rvi20u32", "rv32i"},
+
+  /* RVA20U contains the 'i,m,a,f,d,c,zicsr,zicntr,ziccif,ziccrse,ziccamoa,
+     zicclsm,za128rs' as mandatory extensions.  */
+  {"rva20u64", "rv64imafdc_ziccamoa_ziccif_zicclsm_ziccrse_zicntr_zicsr_zmmul_za128rs" \
+               "_zaamo_zalrsc"},
+
+  /* RVA20S64 mandatory include all the extensions in RVA20U64 and
+     additonal 'zifencei' as mandatory extensions.
+     Notes that ss1p11, svbare, sv39, svade, ssccptr, sstvecd, sstvala should
+     control by binutils.  */
+  {"rva20s64", "rv64imafdc_ziccamoa_ziccif_zicclsm_ziccrse_zicntr_zicsr_zifencei_zmmul" \
+               "_za128rs_zaamo_zalrsc_ssccptr_sstvala_sstvecd_svade_svbare"},
+
+  /* RVA22U contains the 'i,m,a,f,d,c,zicsr,zihintpause,zba,zbb,zbs,
+     zicbom,zicbop,zicboz,zfhmin,zkt,zicntr,zihpm,ziccif,ziccrse,ziccamoa,
+     zicclsm,zic64b,za64rs' as mandatory extensions.  */
+  {"rva22u64", "rv64imafdcb_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccif_zicclsm_ziccrse" \
+               "_zicntr_zicsr_zihintpause_zihpm_zmmul_za64rs_zaamo_zalrsc_zfhmin_zba_zbb" \
+               "_zbs_zkt"},
+
+  /* RVA22S64 mandatory include all the extensions in RVA22U64 and
+     additonal 'zifencei,svpbmt,svinval' as mandatory extensions.
+     Notes that ss1p12, svbare, sv39, svade, ssccptr, sstvecd, sstvala,
+     sscounterenw extentions should control by binutils.  */
+  {"rva22s64", "rv64imafdcb_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccif_zicclsm_ziccrse" \
+               "_zicntr_zicsr_zifencei_zihintpause_zihpm_zmmul_za64rs_zaamo_zalrsc_zfhmin" \
+               "_zba_zbb_zbs_zkt_ssccptr_sscounterenw_sstvala_sstvecd_svade_svbare_svinval" \
+               "_svpbmt"},
+
+  /* RVA23U contains the 'i,m,a,f,d,c,v,zicsr,zihintpause,zba,zbb,zbs,
+     zicbom,zicbop,zicboz,zfhmin,zkt,zicntr,zihpm,ziccif,ziccrse,ziccamoa,
+     zicclsm,zic64b,za64rs,zvfhmin,zvbb,zvkt,zihintntl,zicond,zimop,zcmop,zcb,
+     zfa,zawrs' as mandatory extensions.  */
+  {"rva23u64", "rv64imafdcbv_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccif_zicclsm_ziccrse" \
+               "_zicntr_zicond_zicsr_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zaamo" \
+               "_zalrsc_zawrs_zfa_zfhmin_zca_zcb_zcmop_zba_zbb_zbs_zkt_zvbb_zve32f" \
+               "_zve32x_zve64d_zve64f_zve64x_zvfhmin_zvkb_zvkt_zvl128b_zvl32b_zvl64b_supm"},
+
+  /* RVA23S64 mandatory include all the extensions in RVA23U64 and
+     additonal 'h,zifencei,svpbmt,svinval,svnapot,sstc,sscofpmf,ssstateen'
+     as mandatory extensions.
+     Notes that ss1p13, svbare, sv39, svade, ssccptr, sstvecd, sstvala,
+     sscounterenw,ssnpm,ssu64xl,shcounterenw,shvstvala,shtvala,shvstvecd,shvsatpa,shgatpa
+     extentions should control by binutils.  */
+  {"rva23s64","rv64imafdcbvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccif_zicclsm_ziccrse" \
+              "_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul" \
+              "_za64rs_zaamo_zalrsc_zawrs_zfa_zfhmin_zca_zcb_zcmop_zba_zbb_zbs_zkt" \
+              "_zvbb_zve32f_zve32x_zve64d_zve64f_zve64x_zvfhmin_zvkb_zvkt_zvl128b_zvl32b" \
+              "_zvl64b_sha_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd" \
+              "_ssccptr_sscofpmf_sscounterenw_ssnpm_ssstateen_sstc_sstvala_sstvecd_ssu64xl" \
+              "_supm_svade_svbare_svinval_svnapot_svpbmt"},
+
+  /* RVB23U64 contains the 'i,m,a,f,d,c,zicsr,zihintpause,zba,zbb,zbs,
+     zicbom,zicbop,zicboz,zkt,zicntr,zihpm,ziccif,ziccrse,ziccamoa,
+     zicclsm,zic64b,za64rs,zihintntl,zicond,zimop,zcmop,zcb,zfa,zawrs'
+     as mandatory extensions.  */
+  {"rvb23u64", "rv64imafdcb_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccif_zicclsm_ziccrse" \
+               "_zicntr_zicond_zicsr_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zaamo" \
+               "_zalrsc_zawrs_zfa_zca_zcb_zcd_zcmop_zba_zbb_zbs_zkt"},
+
+  /* RVB23S64 mandatory include all the extensions in RVB23U64 and
+     additional 'zifencei,svpbmt,svinval,svnapot,sstc,sscofpmf,sscounterenw'
+     as mandatory extensions.
+     Notes that svbare, sv39, svade, ssccptr, sstvecd, sstvala, ssu64xl
+     extensions should control by binutils.  */
+  {"rvb23s64", "rv64imafdcb_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccif_zicclsm_ziccrse" \
+               "_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul" \
+               "_za64rs_zaamo_zalrsc_zawrs_zfa_zca_zcb_zcd_zcmop_zba_zbb_zbs_zkt" \
+               "_ssccptr_sscofpmf_sscounterenw_sstvala_sstvecd_sstc_ssu64xl" \
+               "_svade_svbare_svinval_svnapot_svpbmt"},
+
+  /* Terminate the list.  */
+  {NULL, NULL}
+};
+
+static bool
+arch_options_end_p (const arch_options_t * opt)
+{
+  return (opt->ext == NULL) && (opt->option_name == NULL);
+}
+
+static void
+nds_get_isa_info (location_t loc, const char *isa, int &xlen,
+		  bool &has_f, bool &has_d)
+{
+  const char *p = isa;
+
+  if (startswith (p, "rv32"))
+    xlen = 32;
+  else if (startswith (p, "rv64"))
+    xlen = 64;
+  else
+    {
+      error_at (loc, "%<-march=%s%>: ISA string must begin with rv32 or rv64",
+		isa);
+      return;
+    }
+
+  p += 4;
+
+  if (*p == 'g')
+    {
+      has_f = true;
+      has_d = true;
+      return;
+    }
+
+  while (*p)
+    {
+      if (*p == 'x' || *p == 's' || *p == 'z')
+	break;
+
+      if (*p == 'f')
+	{
+	  has_f = true;
+	  p++;
+	}
+
+      if (*p == 'd')
+	{
+	  has_d = true;
+	  break;
+	}
+
+      p++;
+    }
+}
+
+/* Helper function to set some options to be validated later
+   by reusing entry of "ext-vector".  */
+
+static void
+set_opt_to_be_validated (arch_options_t *entry_zvfh,
+			 arch_options_t *entry_zvfbfmin,
+			 arch_options_t *entry_zvfbfwma)
+{
+  entry_zvfh->is_spec = true;
+  entry_zvfh->val = true;
+
+  entry_zvfbfmin->is_spec = true;
+  entry_zvfbfmin->val = true;
+
+  entry_zvfbfwma->is_spec = true;
+  entry_zvfbfwma->val = true;
+}
+
+static void
+validate_arch_options (const char *isa, location_t loc)
+{
+  int xlen = 0;
+  int expected_elen = 0;
+  bool has_f = false;
+  bool has_d = false;
+  bool has_zfh = false;
+  bool has_zfbfmin = false;
+  bool has_any_v = false;
+  bool has_zve64 = false;
+  arch_options_t *opt = NULL;
+
+  /* get f/d info from isa string */
+  nds_get_isa_info (loc, isa, xlen, has_f, has_d);
+
+  /* Validate option -mzfh.  */
+  opt = p_entry_zfh;
+  gcc_assert (strcmp (opt->option_name, "zfh") == 0
+	      && strcmp (opt->ext, "zfh") == 0);
+  if (opt->is_spec && opt->val)
+    {
+      if (!has_f && !has_d)
+	error_at (loc, "Only support %<-mzfh%> option on F and D instruction set");
+      else
+	has_zfh = true;
+    }
+
+  /* Validate option -mext-bf16min.  */
+  opt = p_entry_zfbfmin;
+  gcc_assert (strcmp (opt->option_name, "ext-bf16min") == 0
+	      && strcmp (opt->ext, "zfbfmin") == 0);
+  if (opt->is_spec && opt->val)
+    {
+      if (!has_f && !has_d)
+	error_at (loc, "Only support %<-mext-bf16min%> option on F and D instruction set");
+      else
+	has_zfbfmin = true;
+    }
+
+  /* Validate option -mext-vector=XXX  */
+  opt = p_entry_val_zve64d;
+  gcc_assert (strcmp (opt->ext, "zve64d") == 0);
+  if (opt->is_spec && opt->val)
+    {
+      if (!has_d)
+	error_at (loc, "Only support %<-mext-vector=zve64d%> option on D instruction set");
+
+      set_opt_to_be_validated (p_entry_zvfh, p_entry_zvfbfmin, p_entry_zvfbfwma);
+      has_zve64 = true;
+      has_any_v = true;
+    }
+
+  opt = p_entry_val_zve64f;
+  gcc_assert (strcmp (opt->ext, "zve64f") == 0);
+  if (opt->is_spec && opt->val)
+    {
+      if (!has_f && !has_d)
+	error_at (loc, "Only support %<-mext-vector=zve64f%> option on F or D instruction set");
+
+      set_opt_to_be_validated (p_entry_zvfh, p_entry_zvfbfmin, p_entry_zvfbfwma);
+      has_zve64 = true;
+      has_any_v = true;
+    }
+
+  opt = p_entry_val_zve32f;
+  gcc_assert (strcmp (opt->ext, "zve32f") == 0);
+  if (opt->is_spec && opt->val)
+    {
+      if (!has_f && !has_d)
+	error_at (loc, "Only support %<-mext-vector=zve32f%> option on F or D instruction set");
+
+      set_opt_to_be_validated (p_entry_zvfh, p_entry_zvfbfmin, p_entry_zvfbfwma);
+      has_any_v = true;
+    }
+
+  /* Validate option -mext-vector.  */
+  opt = p_entry_zve64d;
+  gcc_assert (strcmp (opt->ext, "zve64d") == 0);
+  /* Enable zve64d only if -mext-vecotr is given and extension 'D' is enabled.  */
+  has_any_v |= opt->is_spec;
+  opt->is_spec = opt->is_spec && has_d;
+  has_zve64 |= opt->is_spec;
+
+  opt = p_entry_zve32f;
+  gcc_assert (strcmp (opt->ext, "zve32f") == 0);
+  /* Enable zve32f only if -mext-vecotr is given and extension 'F' is enabled.  */
+  has_any_v |= opt->is_spec;
+  opt->is_spec = opt->is_spec && has_f;
+
+  expected_elen = xlen;
+  if (has_f && !has_d)
+    expected_elen = 32;
+
+  opt = p_entry_zve64x;
+  gcc_assert (strcmp (opt->ext, "zve64x") == 0);
+  /* Enable zve64x only if -mext-vecotr is given and expected_elen is 64.  */
+  has_any_v |= opt->is_spec;
+  opt->is_spec = opt->is_spec && (expected_elen == 64);
+  has_zve64 |= opt->is_spec;
+
+  opt = p_entry_zve32x;
+  gcc_assert (strcmp (opt->ext, "zve32x") == 0);
+  /* Enable zve32x only if -mext-vecotr is given and expected_elen is 32.  */
+  has_any_v |= opt->is_spec;
+  opt->is_spec = opt->is_spec && (expected_elen == 32);
+
+  opt = p_entry_zvfh;
+  gcc_assert (strcmp (opt->ext, "zvfh") == 0);
+  /* Enable zvfh only if -mext-vecotr is given and extension 'ZFH' is enabled.  */
+  opt->is_spec = opt->is_spec && has_zfh;
+
+  opt = p_entry_zvfbfmin;
+  gcc_assert (strcmp (opt->ext, "zvfbfmin") == 0);
+  /* Enable zvfbfmin only if -mext-bf16min and -mext-vecotr are both given.  */
+  opt->is_spec = opt->is_spec && has_zfbfmin;
+
+  opt = p_entry_zvfbfwma;
+  gcc_assert (strcmp (opt->ext, "zvfbfwma") == 0);
+  /* Enable zvfbfwma only if -mext-bf16min and -mext-vecotr are both given.  */
+  opt->is_spec = opt->is_spec && has_zfbfmin;
+
+  gcc_assert (strcmp (p_entry_val_zve32x->ext, "zve32x") == 0);
+  has_any_v |= p_entry_val_zve32x->is_spec;
+  gcc_assert (strcmp (p_entry_val_zve64x->ext, "zve64x") == 0);
+  has_any_v |= p_entry_val_zve64x->is_spec;
+  has_zve64 |= p_entry_val_zve64x->is_spec;
+  opt = p_entry_zvkns;
+  gcc_assert (strcmp (opt->ext, "zvkns") == 0);
+  if (opt->is_spec)
+    {
+      if (!has_any_v)
+	error_at (loc, "invalid arch name `zvkn(-mext-zvkns)`, 'zve32x' or "
+		       "'zve64x' should also be specified");
+
+      if (!has_zve64)
+	{
+	  // disable zvbc, zvknhb, zvkn, zvknc, zvkng, zvksc
+	  gcc_assert (strcmp (nonstd_z_ext_options[15].ext, "zvbc") == 0);
+	  for (int i = 15; i <= 20; ++i)
+	    {
+	      nonstd_z_ext_options[i].is_spec = false;
+	    }
+	  gcc_assert (strcmp (nonstd_z_ext_options[20].ext, "zvksc") == 0);
+	}
+      opt->is_spec = false;
+    }
+}
+
+static char expanded_arch_str[50];
+
+static const char *
+riscv_convert_nds_ext (const char *isa)
+{
+  const char *str = NULL;
+  const char *p = isa + 4;
+
+  if (strncmp (p, "v5f", 3) == 0)
+    str = "imafc_zicsr_zifencei_xandes";
+  else if (strncmp (p, "v5d", 3) == 0)
+    str = "imafdc_zicsr_zifencei_xandes";
+  else if (strncmp (p, "v5", 2) == 0)
+    str = "imac_zicsr_zifencei_xandes";
+
+  if (str != NULL)
+    {
+      strncpy (expanded_arch_str, isa, 4);
+      strcpy (expanded_arch_str + 4, str);
+      return expanded_arch_str;
+    }
+
+  return isa;
+}
+
+static const char *
+nds_expand_profiles (const char * p){
+  /* Checking if input string contains a Profiles.
+     There are two cases use Proifles in -march option
+
+     1. Only use Proifles as -march input
+     2. Mixed Profiles with other extensions
+
+     use '+' to split Profiles and other extension.  */
+  for (int i = 0; riscv_profiles_table[i].profile_name != NULL; ++i) {
+    const char* match = strstr(p, riscv_profiles_table[i].profile_name);
+    const char* plus_ext = strchr(p, '_');
+    /* Find profile at the begin.  */
+    if (match != NULL && match == p) {
+      /* If there's no '+' sign, return the profile_string directly.  */
+      if(!plus_ext)
+	return riscv_profiles_table[i].profile_string;
+      /* If there's a '+' sign, need to add profiles with other ext.  */
+      else {
+	size_t arch_len = strlen(riscv_profiles_table[i].profile_string) + strlen(plus_ext);
+	/* Reset the input string with Profiles mandatory extensions,
+	   end with '_' to connect other additional extensions.  */
+	static char* result = new char[arch_len + 2];
+	strcpy(result, riscv_profiles_table[i].profile_string);
+	strcat(result, plus_ext);
+	return result;
+      }
+    }
+  }
+  return p;
+}
+
+static const char *
+nds_preprocess_arch_string (const char *isa, location_t loc)
+{
+  isa = nds_expand_profiles (isa);
+  /* Convert nds string to standard extension.  */
+  isa = riscv_convert_nds_ext (isa);
+
+  /* Validate arch options based on standard extension.  */
+  validate_arch_options (isa, loc);
+
+  return isa;
+}
+
+/* Type for conflicted ISA info.  */
+struct riscv_conflicted_info_t
+{
+  const char *ext;
+  const char *conflicted_ext;
+  const char *required_mext;
+};
 
 /* Type for implied ISA info.  */
 struct riscv_implied_info_t
@@ -75,9 +595,27 @@ struct riscv_implied_info_t
 /* Implied ISA info, must end with NULL sentinel.  */
 static const riscv_implied_info_t riscv_implied_info[] =
 {
+  {"c", "zca"},
+  {"c", "zcf",
+   [] (const riscv_subset_list *subset_list) -> bool
+   {
+     return subset_list->xlen () == 32 && subset_list->lookup ("f");
+   }},
+  {"c", "zcd",
+   [] (const riscv_subset_list *subset_list) -> bool
+   {
+     return subset_list->lookup ("d");
+   }},
+
   {"d", "f"},
   {"f", "zicsr"},
   {"d", "zicsr"},
+
+  {"zce", "zcf",
+   [] (const riscv_subset_list *subset_list) -> bool
+   {
+     return subset_list->xlen () == 32 && subset_list->lookup ("f");
+   }},
 
   {"zdinx", "zfinx"},
   {"zfinx", "zicsr"},
@@ -164,9 +702,14 @@ static const riscv_implied_info_t riscv_implied_info[] =
   {"zvfhmin", "zve32f"},
   {"zvfh", "zve32f"},
   {"zvfh", "zfhmin"},
+  {"zvfh", "zvfhmin"},
+  {"zvfofp8min", "zve32f"},
 
   {"zhinx", "zhinxmin"},
   {"zhinxmin", "zfinx"},
+
+  {"zcmop",  "zca"},
+  {"zcmop",  "zimop"},
 
   {"zce",  "zca"},
   {"zce",  "zcb"},
@@ -183,6 +726,8 @@ static const riscv_implied_info_t riscv_implied_info[] =
    {
      return subset_list->xlen () == 32 && subset_list->lookup ("f");
    }},
+  {"zclsd", "zilsd"},
+  {"zclsd", "zca"},
 
   {"smaia", "ssaia"},
   {"smstateen", "ssstateen"},
@@ -193,6 +738,19 @@ static const riscv_implied_info_t riscv_implied_info[] =
   {"sstc", "zicsr"},
 
   {NULL, NULL}
+};
+
+/* Conflict ISA info, if ext exists, remove implied_ext.  */
+riscv_conflicted_info_t riscv_conflict_info[] =
+{
+  /* Always remove c and zcd for -mext-zc. Note that c should be expanded
+     to zca/zcf/zcd first by handle_implied_ext().  */
+  {"i", "c", "ext-zc"},
+  {"i", "zcd", "ext-zc"},
+
+  {"zcf", "zclsd", "ext-zilsd"},
+
+  {NULL, NULL, NULL}
 };
 
 /* This structure holds version information for specific ISA version.  */
@@ -237,9 +795,13 @@ static const struct riscv_ext_version riscv_ext_version_table[] =
   {"c", ISA_SPEC_CLASS_20190608, 2, 0},
   {"c", ISA_SPEC_CLASS_2P2,      2, 0},
 
+  {"b",       ISA_SPEC_CLASS_NONE, 1, 0},
+
   {"h",       ISA_SPEC_CLASS_NONE, 1, 0},
 
   {"v",       ISA_SPEC_CLASS_NONE, 1, 0},
+
+  {"p",       ISA_SPEC_CLASS_NONE, 0, 5},
 
   {"zicsr", ISA_SPEC_CLASS_20191213, 2, 0},
   {"zicsr", ISA_SPEC_CLASS_20190608, 2, 0},
@@ -249,9 +811,12 @@ static const struct riscv_ext_version riscv_ext_version_table[] =
 
   {"zicond", ISA_SPEC_CLASS_NONE, 1, 0},
 
+  {"zimop",  ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zcmop",  ISA_SPEC_CLASS_NONE, 1, 0},
+
   {"za64rs",  ISA_SPEC_CLASS_NONE, 1, 0},
   {"za128rs", ISA_SPEC_CLASS_NONE, 1, 0},
-  {"zawrs", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zawrs",   ISA_SPEC_CLASS_NONE, 1, 0},
 
   {"zba", ISA_SPEC_CLASS_NONE, 1, 0},
   {"zbb", ISA_SPEC_CLASS_NONE, 1, 0},
@@ -288,6 +853,9 @@ static const struct riscv_ext_version riscv_ext_version_table[] =
 
   {"zicntr", ISA_SPEC_CLASS_NONE, 2, 0},
   {"zihpm",  ISA_SPEC_CLASS_NONE, 2, 0},
+
+  {"zilsd", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zclsd", ISA_SPEC_CLASS_NONE, 1, 0},
 
   {"zk",    ISA_SPEC_CLASS_NONE, 1, 0},
   {"zkn",   ISA_SPEC_CLASS_NONE, 1, 0},
@@ -336,6 +904,9 @@ static const struct riscv_ext_version riscv_ext_version_table[] =
   {"zvfbfmin",  ISA_SPEC_CLASS_NONE, 1, 0},
   {"zvfhmin",   ISA_SPEC_CLASS_NONE, 1, 0},
   {"zvfh",      ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvfofp8min", ISA_SPEC_CLASS_NONE, 0, 2},
+  {"zfbfmin",   ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zvfbfwma",  ISA_SPEC_CLASS_NONE, 1, 0},
 
   {"zfa",     ISA_SPEC_CLASS_NONE, 1, 0},
 
@@ -348,6 +919,34 @@ static const struct riscv_ext_version riscv_ext_version_table[] =
   {"zcd",  ISA_SPEC_CLASS_NONE, 1, 0},
   {"zcmp", ISA_SPEC_CLASS_NONE, 1, 0},
   {"zcmt", ISA_SPEC_CLASS_NONE, 1, 0},
+
+  /* Pre-defined for ax66.  Please remove if conflict with
+     the upstream.  */
+  {"zama16b", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zaamo", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zalrsc", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zicfilp", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"zicfiss", ISA_SPEC_CLASS_NONE, 1, 0},
+  /* Pre-defined for privilege mode.  */
+  {"sha", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"shcounterenw", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"shgatpa", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"shtvala", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"shvsatpa", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"shvstvala", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"shvstvecd", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"ssccptr", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"sscounterenw", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"ssnpm", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"sspm", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"ssstrict", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"sstvala", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"sstvecd", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"ssu64xl", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"supm", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"svade", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"svbare", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"svvptc", ISA_SPEC_CLASS_NONE, 1, 0},
 
   {"smaia",     ISA_SPEC_CLASS_NONE, 1, 0},
   {"smepmp",    ISA_SPEC_CLASS_NONE, 1, 0},
@@ -383,6 +982,21 @@ static const struct riscv_ext_version riscv_ext_version_table[] =
   {"xtheadvector", ISA_SPEC_CLASS_NONE, 1, 0},
 
   {"xventanacondops", ISA_SPEC_CLASS_NONE, 1, 0},
+  /* Andes defined.  */
+  {"xandes", ISA_SPEC_CLASS_NONE, 5, 0},
+  {"xnexecit", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"xandesbf", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"xandesperf", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"xandescodense", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"xandesnewcodense", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"xandesbfhcvt", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"xandesvbfhcvt", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"xandesvsintload", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"xandesvpackfph", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"xandesvdot", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"xandesvsinth", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"xandesvqmac", ISA_SPEC_CLASS_NONE, 1, 0},
+  {"xandesvmm", ISA_SPEC_CLASS_NONE, 1, 0},
 
   /* Terminate the list.  */
   {NULL, ISA_SPEC_CLASS_NONE, 0, 0}
@@ -483,21 +1097,10 @@ riscv_subset_list::match_score (riscv_subset_list *list) const
 {
   riscv_subset_t *s;
   int score = 0;
-  bool has_a_ext, list_has_a_ext;
 
   /* Impossible to match if XLEN is different.  */
   if (list->m_xlen != this->m_xlen)
     return 0;
-
-  /* There is different code gen in libstdc++ and libatomic between w/ A-ext
-     and w/o A-ext, and it not work if using soft and hard atomic mechanism
-     at same time, so they are incompatible.  */
-  has_a_ext = this->lookup ("a") != NULL;
-  list_has_a_ext = list->lookup ("a") != NULL;
-
-  if (has_a_ext != list_has_a_ext)
-    return 0;
-
 
   /* list must be subset of current this list, otherwise it not safe to
      link.
@@ -507,8 +1110,6 @@ riscv_subset_list::match_score (riscv_subset_list *list) const
   for (s = list->m_head; s != NULL; s = s->next)
     if (this->lookup (s->name.c_str ()) != NULL)
       score++;
-    else
-      return 0;
 
   return score;
 }
@@ -644,6 +1245,56 @@ standard_extensions_p (const char *ext)
   return false;
 }
 
+static bool
+ext_options_enabled_p (const char *option)
+{
+  unsigned int i;
+  for (i = 0; i < NUM_EXTS_KIND; ++i)
+    {
+      arch_options_t *opt = ext_options[i];
+      for (; !arch_options_end_p(opt); ++opt)
+	if (strcmp(opt->option_name, option) == 0 &&
+	    opt->is_spec && opt->val)
+	  return true;
+    }
+
+  return false;
+}
+
+static bool
+arch_options_disabled_p (const char *p)
+{
+  arch_options_t *opt;
+
+  for (unsigned int i = 0; i < NUM_EXTS_KIND; ++i)
+    {
+      opt = ext_options[i];
+      for (; !arch_options_end_p(opt); ++opt)
+	if (strncmp(opt->ext, p, strlen(opt->ext)) == 0 &&
+	    opt->is_spec && !opt->val)
+	  return true;
+    }
+
+  return false;
+}
+
+static bool
+arch_options_enabled_p (const char *p)
+{
+  arch_options_t *opt;
+
+  for (unsigned int i = 0; i < NUM_EXTS_KIND; ++i)
+    {
+      opt = ext_options[i];
+      for (; !arch_options_end_p(opt); ++opt)
+	if (strncmp(opt->ext, p, strlen(opt->ext)) == 0 &&
+	    opt->is_spec && opt->val)
+	  return true;
+    }
+
+  return false;
+}
+
 /* Add new subset to list.  */
 
 void
@@ -651,6 +1302,10 @@ riscv_subset_list::add (const char *subset, int major_version,
 			int minor_version, bool explicit_version_p,
 			bool implied_p)
 {
+
+  if (arch_options_disabled_p (subset))
+    return;
+
   riscv_subset_t *ext = lookup (subset);
 
   if (ext)
@@ -801,6 +1456,35 @@ riscv_subset_list::add (const char *subset, bool implied_p)
   get_default_version (subset, &major_version, &minor_version);
 
   add (subset, major_version, minor_version, false, implied_p);
+}
+
+/* Remove the subset from list. */
+void
+riscv_subset_list::remove (const char *subset)
+{
+  if (m_head == NULL)
+    return;
+
+  riscv_subset_t *itr;
+  riscv_subset_t *prev = NULL;
+  for (itr = m_head; itr != NULL; itr = itr->next)
+    {
+      if (strcasecmp (itr->name.c_str (), subset) == 0)
+	{
+	  /* Detach and free the matched element.  */
+	  if (m_tail == itr)
+	    m_tail = prev;
+
+	  if (!prev)
+	    m_head = itr->next;
+	  else
+	    prev->next = itr->next;
+
+	  delete itr;
+	  return;
+	}
+      prev = itr;
+    }
 }
 
 /* Convert subset info to string with explicit version info,
@@ -1075,6 +1759,7 @@ riscv_subset_list::parse_base_ext (const char *p)
 		"%<i%> or %<g%>", m_arch);
       return NULL;
     }
+
   return p;
 }
 
@@ -1126,9 +1811,7 @@ void
 riscv_subset_list::handle_implied_ext (const char *ext)
 {
   const riscv_implied_info_t *implied_info;
-  for (implied_info = &riscv_implied_info[0];
-       implied_info->ext;
-       ++implied_info)
+  for (implied_info = &riscv_implied_info[0]; implied_info->ext; ++implied_info)
     {
       if (!implied_info->match (this, ext))
 	continue;
@@ -1155,6 +1838,26 @@ riscv_subset_list::handle_implied_ext (const char *ext)
       if (lookup ("zifencei") == NULL)
 	add ("zifencei", true);
     }
+}
+
+/* Remove conflict ext.  */
+void
+riscv_subset_list::handle_conflict_ext ()
+{
+  riscv_conflicted_info_t *conflict_info;
+  for (conflict_info = &riscv_conflict_info[0]; conflict_info->ext;
+       ++conflict_info)
+    {
+      if (conflict_info->required_mext != NULL
+          && !ext_options_enabled_p (conflict_info->required_mext))
+        continue;
+      if (lookup (conflict_info->ext) && lookup (conflict_info->conflicted_ext))
+	remove (conflict_info->conflicted_ext);
+    }
+
+  /* Workaround until assembler recognize it.  */
+  if (lookup ("zce"))
+    remove ("zce");
 }
 
 /* Check that all implied extensions are included.  */
@@ -1254,6 +1957,9 @@ riscv_subset_list::check_conflict_ext ()
 	 && lookup ("xtheadvector"))
     error_at (m_loc, "%<-march=%s%>: xtheadvector conflicts with vector "
 		   "extension or its sub-extensions", m_arch);
+
+  if (lookup ("zcf") && lookup ("zclsd"))
+    error_at (m_loc, "%<-march=%s%>: zcf conflicts with zclsd", m_arch);
 }
 
 /* Parsing function for multi-letter extensions.
@@ -1355,7 +2061,10 @@ riscv_subset_list::parse_single_multiletter_ext (const char *p,
       return NULL;
     }
 
-  add (subset, major_version, minor_version, explicit_version_p, false);
+  /* Check if this multi-letter extension is disabled explicitly by nds's option
+   * before adding it. */
+  if (!arch_options_disabled_p(subset))
+    add (subset, major_version, minor_version, explicit_version_p, false);
   p += end_of_version - subset;
   free (subset);
 
@@ -1410,6 +2119,10 @@ riscv_subset_list::parse (const char *arch, location_t loc)
   riscv_subset_list *subset_list = new riscv_subset_list (arch, loc);
   const char *p = arch;
   p = subset_list->parse_base_ext (p);
+  const char *std_exts = riscv_supported_std_ext ();
+  char std_ext = '\0';
+  char subset[2] = {0, 0};
+
   if (p == NULL)
     goto fail;
 
@@ -1427,12 +2140,50 @@ riscv_subset_list::parse (const char *arch, location_t loc)
 		    arch);
 	  goto fail;
 	default:
+	  std_ext = *p;
+	  while (*std_exts && std_ext != *std_exts)
+	    {
+	      /* During reaching to the next matching std-ext letter, if a
+	       * std-ext is enabled via nds's option, add it.
+	       * ex: -march=rv32ic -matomic => enable a during i -> c  */
+	      subset[0] = *std_exts;
+	      if (arch_options_enabled_p(subset))
+		subset_list->add (subset, false);
+	      std_exts++;
+	    }
+
 	  p = subset_list->parse_single_ext (p, /*exact_single_p=*/ false);
+	  if (*std_exts)
+	    std_exts++;
 	}
     }
 
   if (p == NULL)
     goto fail;
+
+  /* Check the reminding standard extension is enabled by option. */
+  while (*std_exts)
+    {
+      subset[0] = *std_exts;
+
+      if (arch_options_enabled_p(subset))
+	subset_list->add (subset, false);
+      std_exts++;
+    }
+
+  /* Check for non standard extension options.  */
+  for (unsigned int i = 1; i < NUM_EXTS_KIND; ++i)
+    {
+      arch_options_t *opt = ext_options[i];
+
+      for (; !arch_options_end_p(opt); ++opt)
+	{
+	  /* Do lookup first to check if the same extension has been added
+	     because of specification in march string.  */
+	  if (!subset_list->lookup(opt->ext) && opt->is_spec && opt->val)
+	    subset_list->add (opt->ext, false);
+	}
+    }
 
   subset_list->finalize ();
 
@@ -1487,6 +2238,53 @@ riscv_subset_list::finalize ()
   gcc_assert (check_implied_ext ());
 
   handle_combine_ext ();
+  handle_conflict_ext ();
+
+  /* In newer version of GCC, TARGET_XXX is related to internal flags
+     which are not finalized during driver phase. Therefore We should
+     avoid using it here to check if a feature is enabled or not. */
+ 
+  /* Add Xnexecit if both Zcb and Xandes are present.  */
+  if (!lookup ("xnexecit") && lookup ("zcb") && lookup ("xandes"))
+      add ("xnexecit", true);
+
+  if (!lookup ("xandesnewcodense") && lookup ("zcb") && lookup ("xandes"))
+      add ("xandesnewcodense", true);
+
+  if (!lookup ("xandesperf") && lookup ("xandes"))
+    add ("xandesperf", true);
+
+  if (!lookup ("xandescodense") && lookup ("xandes")
+      && !lookup ("zcb") && !lookup ("xandesnewcodense"))
+    add ("xandescodense", true);
+
+  if (!lookup ("xandesvpackfph") && lookup ("xandes")
+	     && (lookup ("zvfh") || lookup ("xandesbf")))
+    add ("xandesvpackfph", true);
+
+  if (!lookup ("xandesvdot") && lookup ("xandes")
+             && (lookup ("zve32x")))
+    add ("xandesvdot", true);
+
+  if (!lookup ("xandesvqmac") && lookup ("xandes")
+             && (lookup ("zve32x")))
+    add ("xandesvqmac", true);
+
+  if (!lookup ("xandesbfhcvt") && lookup ("xandes")
+             && lookup ("xandesvbfhcvt"))
+    add ("xandesbfhcvt", true);
+
+  if (!lookup ("xandesvbfhcvt") && lookup ("xandes") && lookup ("zve32x")
+      && lookup ("xandesbfhcvt"))
+    add ("xandesvbfhcvt", true);
+
+  if (!lookup ("xandesvsintload") && lookup ("xandes") 
+             && (lookup ("zve32x")))
+    add ("xandesvsintload", true);
+
+  if (!lookup ("xandesvmm") && lookup ("xandes") && (lookup ("zve32x")))
+    add ("xandesvmm", true);
+
   check_conflict_ext ();
 }
 
@@ -1527,6 +2325,9 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"zifencei", &gcc_options::x_riscv_zi_subext, MASK_ZIFENCEI},
   {"zicond",   &gcc_options::x_riscv_zi_subext, MASK_ZICOND},
 
+  {"zimop",   &gcc_options::x_riscv_zi_subext, MASK_ZIMOP},
+  {"zcmop",   &gcc_options::x_riscv_zc_subext, MASK_ZCMOP},
+
   {"za64rs", &gcc_options::x_riscv_za_subext, MASK_ZA64RS},
   {"za128rs", &gcc_options::x_riscv_za_subext, MASK_ZA128RS},
   {"zawrs", &gcc_options::x_riscv_za_subext, MASK_ZAWRS},
@@ -1559,6 +2360,9 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"zicclsm", &gcc_options::x_riscv_zi_subext, MASK_ZICCLSM},
   {"ziccrse", &gcc_options::x_riscv_zi_subext, MASK_ZICCRSE},
 
+  {"zilsd", &gcc_options::x_riscv_zi_subext, MASK_ZILSD},
+  {"zclsd", &gcc_options::x_riscv_zc_subext, MASK_ZCLSD},
+
   {"zicboz", &gcc_options::x_riscv_zicmo_subext, MASK_ZICBOZ},
   {"zicbom", &gcc_options::x_riscv_zicmo_subext, MASK_ZICBOM},
   {"zicbop", &gcc_options::x_riscv_zicmo_subext, MASK_ZICBOP},
@@ -1583,6 +2387,7 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"zvfbfmin", &gcc_options::x_riscv_vector_elen_flags, MASK_VECTOR_ELEN_BF_16},
   {"zvfhmin",  &gcc_options::x_riscv_vector_elen_flags, MASK_VECTOR_ELEN_FP_16},
   {"zvfh",     &gcc_options::x_riscv_vector_elen_flags, MASK_VECTOR_ELEN_FP_16},
+  {"zvfofp8min", &gcc_options::x_riscv_vector_elen_flags, MASK_VECTOR_ELEN_FP_32},
 
   {"zvbb",     &gcc_options::x_riscv_zvb_subext, MASK_ZVBB},
   {"zvbc",     &gcc_options::x_riscv_zvb_subext, MASK_ZVBC},
@@ -1619,6 +2424,10 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"zvfbfmin",  &gcc_options::x_riscv_zf_subext, MASK_ZVFBFMIN},
   {"zvfhmin",   &gcc_options::x_riscv_zf_subext, MASK_ZVFHMIN},
   {"zvfh",      &gcc_options::x_riscv_zf_subext, MASK_ZVFH},
+  {"zfbfmin",   &gcc_options::x_riscv_zf_subext, MASK_ZFBFMIN},
+  {"zvfbfmin",  &gcc_options::x_riscv_zf_subext, MASK_ZVFBFMIN},
+  {"zvfbfwma",  &gcc_options::x_riscv_zf_subext, MASK_ZVFBFWMA},
+  {"zvfofp8min",  &gcc_options::x_riscv_zf_subext, MASK_ZVFOFP8MIN},
 
   {"zfa",       &gcc_options::x_riscv_zfa_subext, MASK_ZFA},
 
@@ -1637,6 +2446,14 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"svnapot", &gcc_options::x_riscv_sv_subext, MASK_SVNAPOT},
 
   {"ztso", &gcc_options::x_riscv_ztso_subext, MASK_ZTSO},
+
+  /* Pre-defined for ax66.  Please remove if conflict with
+     the upstream.  */
+  {"zama16b", &gcc_options::x_riscv_za_subext, MASK_ZAMA16B},
+  {"zaamo", &gcc_options::x_riscv_za_subext, MASK_ZAAMO},
+  {"zalrsc", &gcc_options::x_riscv_za_subext, MASK_ZALRSC},
+  {"zicfilp", &gcc_options::x_riscv_zi_subext, MASK_ZICFILP},
+  {"zicfiss", &gcc_options::x_riscv_zi_subext, MASK_ZICFISS},
 
   {"xcvmac",        &gcc_options::x_riscv_xcv_subext, MASK_XCVMAC},
   {"xcvalu",        &gcc_options::x_riscv_xcv_subext, MASK_XCVALU},
@@ -1671,6 +2488,9 @@ static const riscv_ext_flag_table_t riscv_ext_flag_table[] =
   {"xtheadvector",  &gcc_options::x_target_flags, MASK_VECTOR},
 
   {"xventanacondops", &gcc_options::x_riscv_xventana_subext, MASK_XVENTANACONDOPS},
+  {"xandesbf", &gcc_options::x_riscv_xnds_subext, MASK_BF16MS},
+  {"xandesbfhcvt", &gcc_options::x_riscv_xnds_subext, MASK_BF16},
+  {"xandesvbfhcvt", &gcc_options::x_riscv_xnds_subext, MASK_BF16},
 
   {NULL, NULL, 0}
 };
@@ -1700,6 +2520,36 @@ riscv_set_arch_by_subset_list (riscv_subset_list *subset_list,
 	{
 	  if (subset_list->lookup (arch_ext_flag_tab->ext))
 	    opts->*arch_ext_flag_tab->var_ref |= arch_ext_flag_tab->mask;
+	}
+
+      opts->x_target_flags &= ~MASK_DSP;
+      if (subset_list->lookup ("p"))
+	opts->x_target_flags |= MASK_DSP;
+
+      // initialize v5 related mask
+      if ((target_flags_explicit & MASK_V5) == 0)
+	opts->x_target_flags &= ~MASK_V5;
+      if ((target_flags_explicit & MASK_BFO) == 0)
+	opts->x_target_flags &= ~MASK_BFO;
+      if ((target_flags_explicit & MASK_BBCS) == 0)
+	opts->x_target_flags &= ~MASK_BBCS;
+      if ((target_flags_explicit & MASK_BIMM) == 0)
+	opts->x_target_flags &= ~MASK_BIMM;
+      if ((target_flags_explicit & MASK_LEA) == 0)
+	opts->x_target_flags &= ~MASK_LEA;
+
+      if (subset_list->lookup ("xandes"))
+	{
+	  if ((target_flags_explicit & MASK_V5) == 0)
+	    opts->x_target_flags |= MASK_V5;
+	  if ((target_flags_explicit & MASK_BFO) == 0)
+	    opts->x_target_flags |= MASK_BFO;
+	  if ((target_flags_explicit & MASK_BBCS) == 0)
+	    opts->x_target_flags |= MASK_BBCS;
+	  if ((target_flags_explicit & MASK_BIMM) == 0)
+	    opts->x_target_flags |= MASK_BIMM;
+	  if ((target_flags_explicit & MASK_LEA) == 0)
+	    opts->x_target_flags |= MASK_LEA;
 	}
     }
 }
@@ -1740,6 +2590,77 @@ riscv_find_cpu (const char *cpu)
   return NULL;
 }
 
+void
+enable_ext_options (const char *option, bool val)
+{
+  unsigned int i;
+  for (i = 0; i < NUM_EXTS_KIND; ++i)
+    {
+      arch_options_t *opt = ext_options[i];
+      for (; !arch_options_end_p (opt); ++opt)
+	if (strcmp (opt->option_name, option) == 0)
+	  {
+	    opt->is_spec = true;
+	    opt->val = val;
+	  }
+    }
+}
+
+/* Enable features by mcpu.
+   Here is enable in driver by setting the arch string.  */
+
+void
+enable_andes_cpu_features (const char *cpu)
+{
+  if (strcmp (cpu, "andes-23-series") == 0)
+    {
+      enable_ext_options("ext-zbabcs", true);
+      enable_ext_options("ext-zc", true);
+      enable_ext_options("ext-cmo", true);
+    }
+  else if (strcmp (cpu, "andes-60-series") == 0)
+    {
+      enable_ext_options("ext-zbabcs", true);
+      enable_ext_options("ext-zkns", true);
+      enable_ext_options("ext-svinval", true);
+      enable_ext_options("ext-cmo", true);
+    }
+}
+
+/* Enable features by mtune.
+   Here is enable in cc1 and the feature is enabled by options not by march.  */
+
+static void
+andes_enable_tune_features (const char *tune,
+			   struct gcc_options *opts)
+{
+  bool hasCALU = false;
+  /* 45-series cpuss have CALU  */
+  if (strcmp (tune, "andes-45-series") == 0)
+    hasCALU = true;
+  /* 60-series cpus have CALU */
+  else if (strcmp (tune, "andes-60-series") == 0 )
+    hasCALU = true;
+
+  if ((target_flags_explicit & MASK_CMOV) == 0)
+    {
+      /* Reset to prevent multiple mcpu.  */
+      opts->x_target_flags &= ~MASK_CMOV;
+      if (hasCALU)
+	opts->x_target_flags |= MASK_CMOV;
+    }
+}
+
+/* Enable features by mcpu.
+   Here is enable in cc1 and the feature is enabled by options not by march.  */
+
+static void
+andes_enable_cpu_features (const riscv_cpu_info *cpu_info,
+			   struct gcc_options *opts)
+{
+  andes_enable_tune_features (cpu_info->tune, opts);
+}
+
 /* Implement TARGET_HANDLE_OPTION.  */
 
 static bool
@@ -1748,16 +2669,27 @@ riscv_handle_option (struct gcc_options *opts,
 		     const struct cl_decoded_option *decoded,
 		     location_t loc)
 {
+  const char *arch_str;
+  const riscv_cpu_info *cpu_info;
+
   switch (decoded->opt_index)
     {
     case OPT_march_:
-      riscv_parse_arch_string (decoded->arg, opts, loc);
+      arch_str = nds_preprocess_arch_string (decoded->arg, loc);
+      riscv_parse_arch_string (arch_str, opts, loc);
       return true;
 
     case OPT_mcpu_:
-      if (riscv_find_cpu (decoded->arg) == NULL)
+      cpu_info = riscv_find_cpu (decoded->arg);
+      if (!cpu_info)
 	error_at (loc, "%<-mcpu=%s%>: unknown CPU",
 		  decoded->arg);
+      else
+	andes_enable_cpu_features (cpu_info, opts);
+      return true;
+
+    case OPT_mtune_:
+      andes_enable_tune_features (decoded->arg, opts);
       return true;
 
     default:
@@ -1765,16 +2697,202 @@ riscv_handle_option (struct gcc_options *opts,
     }
 }
 
+/* Traverse all input arch options and set its value */
+
+void
+parse_arch_options (const char *option)
+{
+  bool val = true;
+  if (strncmp (option, "mno-", 4) == 0)
+    {
+      val = false;
+      option += 4;
+    }
+  else if (strncmp(option, "misa-spec=", 10) == 0)
+    {
+      const char *spec = option + 10;
+      if (strcmp (spec, "20191213") == 0)
+	riscv_isa_spec = ISA_SPEC_CLASS_20191213;
+      else if (strcmp (spec, "20190608") == 0)
+	riscv_isa_spec = ISA_SPEC_CLASS_20190608;
+      else if (strcmp (spec, "2.2") == 0)
+	riscv_isa_spec = ISA_SPEC_CLASS_2P2;
+      return ;
+    }
+  else
+    option += 1;
+
+  enable_ext_options (option, val);
+
+}
+
+void
+parse_cpu_options (location_t loc, const char *option)
+{
+  if (strncmp(option, "mcpu=", 5) == 0)
+    {
+      const char *cpu_name = option + 5;
+      const riscv_cpu_info *cpu_info;
+      cpu_info = riscv_find_cpu (cpu_name);
+      if (!cpu_info)
+	error_at (loc, "%<-mcpu=%s%>: unknown CPU", cpu_name);
+      else
+	enable_andes_cpu_features (cpu_info->tune);
+    }
+
+  return;
+}
+
+bool
+check_zve_str (const std::string &str)
+{
+  return str == "zve32x" || str == "zve32f" || str == "zve64x"
+	 || str == "zve64f" || str == "zve64d";
+}
+
+bool
+check_zvl_str (const std::string &str)
+{
+  return str == "zvl32b" || str == "zvl64b" || str == "zvl128b"
+	 || str == "zvl256b" || str == "zvl512b" || str == "zvl1024b"
+	 || str == "zvl2048b" || str == "zvl4096b" || str == "zvl8192b"
+	 || str == "zvl16384b" || str == "zvl32768b" || str == "zvl65536b";
+}
+
+bool
+check_mext_vector_str_valid_then_set (const std::string &str,
+				      std::string &zve_str,
+				      std::string &zvl_str)
+{
+  bool is_valid = true;
+  auto seperator = str.find ("_");
+  // Handle both case: zve*_zvl*, check and invalid string like
+  // zvl*_zve*.
+  if (seperator != std::string::npos)
+    {
+      zve_str = str.substr (0, seperator);
+      zvl_str = str.substr (seperator + 1);
+      is_valid = check_zve_str (zve_str) && check_zvl_str (zvl_str);
+  } else // Handle only zve* or zvl*
+  {
+    if (check_zve_str(str))
+      zve_str = str;
+    else if (check_zvl_str(str))
+      zvl_str = str;
+
+    else
+      is_valid = false;
+  }
+
+  // Afer handle the string, if zvl_str is still empty,
+  // meaning that it is only zve* format.
+  // It doesn't matter if zve is valid or not, it would be checked later.
+  if (zvl_str.empty())
+    zvl_str = "zvl128b";
+
+  // if zve_str is empty, need to infer later;
+  return is_valid;
+}
+
+void
+parse_mext_vector_options (int argc, const char **argv, location_t loc)
+{
+  int i;
+  bool need_infer_zve_p = false;
+  bool need_set_zvl_p = false;
+  std::string zve_str;
+  std::string zvl_str;
+  bool is_valid = false;
+  for (i = argc - 1; i >= 0; --i)
+    {
+      if (strncmp (argv[i], "mext-vector", 11) == 0)
+	{
+	  const char *c = argv[i] + 11;
+	  if (*c == '\0')
+	    {
+	      /* Option 'mext-vector' has lower priority than 'mext-vector=',
+		 so cannot handle this until checking all options.  */
+	      need_infer_zve_p = true;
+          need_set_zvl_p = true;
+	      continue;
+	    }
+	  else if (*c == '=')
+	    {
+	      std::string mext_string = (c + 1);
+	      is_valid
+		= check_mext_vector_str_valid_then_set (mext_string, zve_str,
+							zvl_str);
+	      /* When multiple mext-vector= are given, use the last one.  */
+	      if (is_valid)
+		{
+		  if (!zve_str.empty ())
+		    {
+		      enable_ext_options (("=" + zve_str).data (), true);
+		      need_infer_zve_p = false;
+		    }
+		  else
+		    need_infer_zve_p = true;
+
+		  if (!zvl_str.empty ())
+		    {
+		      need_set_zvl_p = false;
+		      enable_ext_options (("=" + zvl_str).data (), true);
+		    }
+		  else
+		    need_set_zvl_p = true;
+		}
+	      else
+		{
+		  std::string err = "unsupported argument '" + mext_string
+				    + "' to option 'mext-vector='";
+		  error_at (loc, err.data ());
+		}
+	      break;
+	    }
+	}
+    }
+
+  if (need_infer_zve_p)
+    enable_ext_options ("ext-vector", true);
+  if (need_set_zvl_p)
+    enable_ext_options ("=zvl128b", true);
+}
+
 /* Expand arch string with implied extensions.  */
 
 const char *
-riscv_expand_arch (int argc ATTRIBUTE_UNUSED,
-		   const char **argv)
+riscv_expand_arch (int argc, const char **argv)
 {
-  gcc_assert (argc == 1);
+  int i;
   location_t loc = UNKNOWN_LOCATION;
-  riscv_parse_arch_string (argv[0], NULL, loc);
-  const std::string arch = riscv_arch_str (false);
+
+  for (i = 0; i < argc; ++i)
+    {
+      parse_cpu_options(loc, argv[i]);
+    }
+
+  /* Separate parsing of arg mext-vector  */
+  parse_mext_vector_options (argc, argv, loc);
+
+  for (i = 0; i < argc; ++i)
+    {
+      /* Option mext-vector has been parsed, so skip it.  */
+      if (strncmp(argv[i], "mext-vector", 11) == 0)
+	continue;
+
+      parse_arch_options(argv[i]);
+    }
+
+  for (i = argc - 1; i >= 0; --i)
+    {
+      if (strncmp(argv[i], "march=", 6) == 0)
+	{
+	  const char *isa = nds_preprocess_arch_string (argv[i] + 6, loc);
+	  riscv_parse_arch_string (isa, NULL, loc);
+	}
+    }
+
+  const std::string arch = riscv_arch_str (true);
   if (arch.length())
     return xasprintf ("-march=%s", arch.c_str());
   else
@@ -1822,6 +2940,7 @@ riscv_expand_arch_from_cpu (int argc ATTRIBUTE_UNUSED,
 
   location_t loc = UNKNOWN_LOCATION;
 
+  arch_str = nds_preprocess_arch_string (arch_str, loc);
   riscv_parse_arch_string (arch_str, NULL, loc);
   const std::string arch = riscv_arch_str (false);
   return xasprintf ("-march=%s", arch.c_str());
@@ -2272,6 +3391,33 @@ riscv_arch_help (int, const char **)
   exit (0);
 }
 
+const char *
+nds_march_has_xandes_p (int argc, const char **argv)
+{
+  const char *match = NULL;
+  const char *isa = NULL;
+  int i;
+
+  for (i = argc - 1; i >= 0; --i)
+    {
+      if (strncmp (argv[i], "march=", 6) == 0)
+	{
+	  isa = argv[i] + 6;
+	  /* Convert nds string to standard extension.  */
+	  isa = riscv_convert_nds_ext (isa);
+
+	  match = strstr (isa, "xandes");
+	  if (match != NULL)
+	    // return not NULL
+	    return "";
+	  else
+	    return NULL;
+	}
+    }
+
+  return NULL;
+}
+
 /* Implement TARGET_OPTION_OPTIMIZATION_TABLE.  */
 static const struct default_options riscv_option_optimization_table[] =
   {
@@ -2279,6 +3425,12 @@ static const struct default_options riscv_option_optimization_table[] =
     /* Enable -fsched-pressure starting at -O1.  */
     { OPT_LEVELS_1_PLUS, OPT_fsched_pressure, NULL, 1 },
     { OPT_LEVELS_2_PLUS, OPT_free, NULL, 1 },
+    { OPT_LEVELS_SIZE, OPT_msave_restore, NULL, 1 },
+    { OPT_LEVELS_3_PLUS, OPT_mipa_escape_analysis, NULL, 1 },
+#if TARGET_LINUX_ABI == 0
+    /* Disable -fdelete-null-pointer-checks by default in ELF toolchain.  */
+    { OPT_LEVELS_ALL, OPT_fdelete_null_pointer_checks, NULL, 0 },
+#endif
 #if TARGET_DEFAULT_ASYNC_UNWIND_TABLES == 1
     { OPT_LEVELS_ALL, OPT_fasynchronous_unwind_tables, NULL, 1 },
     { OPT_LEVELS_ALL, OPT_funwind_tables, NULL, 1},

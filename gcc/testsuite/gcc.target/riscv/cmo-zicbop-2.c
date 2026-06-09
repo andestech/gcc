@@ -1,4 +1,5 @@
 /* { dg-do compile target { { rv32-*-*}}} */
+/* { dg-require-effective-target rv32 } */
 /* { dg-options "-march=rv32gc_zicbop -mabi=ilp32" } */
 
 void foo (char *p)
@@ -13,9 +14,9 @@ void foo (char *p)
   __builtin_prefetch (p, 1, 3);
 }
 
-int foo1()
+void foo1(char *p)
 {
-  return __builtin_riscv_zicbop_cbo_prefetchi(1);
+  __builtin_riscv_zicbop_cbo_prefetchi(p);
 }
 
 /* { dg-final { scan-assembler-times "prefetch.i" 1 } } */

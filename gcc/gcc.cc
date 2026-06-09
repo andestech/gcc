@@ -1137,6 +1137,14 @@ proper position among the other output files.  */
 #endif
 #endif
 
+#ifndef CRT_BEGIN_SPEC
+#define CRT_BEGIN_SPEC ""
+#endif
+
+#ifndef CRT_END_SPEC
+#define CRT_END_SPEC ""
+#endif
+
 /* -u* was put back because both BSD and SysV seem to support it.  */
 /* %{static|no-pie|static-pie:} simply prevents an error message:
    1. If the target machine doesn't handle -static.
@@ -1159,6 +1167,7 @@ proper position among the other output files.  */
    "%{fuse-ld=*:-fuse-ld=%*} " LINK_COMPRESS_DEBUG_SPEC \
    "%X %{o*} %{e*} %{N} %{n} %{r}\
     %{s} %{t} %{u*} %{z} %{Z} %{!nostdlib:%{!r:%{!nostartfiles:%S}}} \
+    %{nostdlib|r|nostartfiles:" CRT_BEGIN_SPEC "} \
     %{static|no-pie|static-pie:} %@{L*} %(link_libgcc) " \
     VTABLE_VERIFICATION_SPEC " " SANITIZER_EARLY_SPEC " %o "" \
     %{fopenacc|fopenmp|%:gt(%{ftree-parallelize-loops=*:%*} 1):\
@@ -1167,6 +1176,7 @@ proper position among the other output files.  */
     " STACK_SPLIT_SPEC "\
     %{fprofile-arcs|fcondition-coverage|fprofile-generate*|coverage:-lgcov} " SANITIZER_SPEC " \
     %{!nostdlib:%{!r:%{!nodefaultlibs:%(link_ssp) %(link_gcc_c_sequence)}}}\
+    %{nostdlib|r|nostartfiles:" CRT_END_SPEC "}\
     %{!nostdlib:%{!r:%{!nostartfiles:%E}}} %{T*}  \n%(post_link) }}}}}}"
 #endif
 
@@ -1193,6 +1203,14 @@ proper position among the other output files.  */
 
 #ifndef RUNPATH_OPTION
 # define RUNPATH_OPTION "-rpath"
+#endif
+
+#ifndef STARTFILE_CXX_SPEC
+#define STARTFILE_CXX_SPEC STARTFILE_SPEC
+#endif
+
+#ifndef ENDFILE_CXX_SPEC
+#define ENDFILE_CXX_SPEC ENDFILE_SPEC
 #endif
 
 static const char *asm_debug = ASM_DEBUG_SPEC;
@@ -1222,6 +1240,9 @@ static const char *sysroot_spec = SYSROOT_SPEC;
 static const char *sysroot_suffix_spec = SYSROOT_SUFFIX_SPEC;
 static const char *sysroot_hdrs_suffix_spec = SYSROOT_HEADERS_SUFFIX_SPEC;
 static const char *self_spec = "";
+
+static const char *startfile_cxx_spec = STARTFILE_CXX_SPEC;
+static const char *endfile_cxx_spec = ENDFILE_CXX_SPEC;
 
 /* Standard options to cpp, cc1, and as, to reduce duplication in specs.
    There should be no need to override these in target dependent files,
@@ -1444,7 +1465,7 @@ static const struct compiler default_compilers[] =
   {".d", "#D", 0, 1, 0}, {".dd", "#D", 0, 1, 0}, {".di", "#D", 0, 1, 0},
   {".mod", "#Modula-2", 0, 0, 0}, {".m2i", "#Modula-2", 0, 0, 0},
   /* Next come the entries for C.  */
-  {".c", "@c", 0, 0, 1},
+  {".c", "@nds32_c", 0, 0, 1},
   {"@c",
    /* cc1 has an integrated ISO C preprocessor.  We should invoke the
       external preprocessor if -save-temps is given.  */
@@ -1459,6 +1480,38 @@ static const struct compiler default_compilers[] =
       %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
 	  cc1 %(cpp_unique_options) %(cc1_options)}}}\
       %{!fsyntax-only:%(invoke_as)}}}}", 0, 0, 1},
+  {"@nds32_c",
+   /* cc1 has an integrated ISO C preprocessor.  We should invoke the
+      external preprocessor if -save-temps is given.  */
+     "%{E|M|MM:%(trad_capable_cpp) %(cpp_options) %(cpp_debug_options)}\
+      %{mace:\
+	  %{!E:%{!M:%{!MM:\
+	      %{traditional:\
+%eGNU C no longer supports -traditional without -E}\
+	  %{save-temps*|traditional-cpp|no-integrated-cpp:%(trad_capable_cpp) \
+	      %(cpp_options) -o %{save-temps*:%b.i} %{!save-temps*:%g.i} \n\
+		cs2 %{mace-s2s*} %{save-temps*:%b.i} %{!save-temps*:%g.i} \
+		    -o %{save-temps*:%b.ace.i} %{!save-temps*:%g.ace.i} --\n\
+		cc1 -fpreprocessed %{save-temps*:%b.ace.i} %{!save-temps*:%g.ace.i} \
+	      %(cc1_options)}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      %(trad_capable_cpp) %(cpp_options) -o %u.i\n}}}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cs2 %{mace-s2s*} %U.i -o %u.ace.i --\n}}}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cc1 -fpreprocessed %U.ace.i %(cc1_options)}}}\
+	  %{!fsyntax-only:%(invoke_as)}}}}}\
+      %{!mace:\
+	  %{!E:%{!M:%{!MM:\
+	      %{traditional:\
+%eGNU C no longer supports -traditional without -E}\
+	  %{save-temps*|traditional-cpp|no-integrated-cpp:%(trad_capable_cpp) \
+	      %(cpp_options) -o %{save-temps*:%b.i} %{!save-temps*:%g.i} \n\
+		cc1 -fpreprocessed %{save-temps*:%b.i} %{!save-temps*:%g.i} \
+	      %(cc1_options)}\
+	  %{!save-temps*:%{!traditional-cpp:%{!no-integrated-cpp:\
+	      cc1 %(cpp_unique_options) %(cc1_options)}}}\
+	  %{!fsyntax-only:%(invoke_as)}}}}}", 0, 0, 1},
   {"-",
    "%{!E:%e-E or -x required when input is from standard input}\
     %(trad_capable_cpp) %(cpp_options) %(cpp_debug_options)", 0, 0, 0},
@@ -1744,6 +1797,9 @@ static struct spec_list static_specs[] =
   INIT_STATIC_SPEC ("sysroot_suffix_spec",	&sysroot_suffix_spec),
   INIT_STATIC_SPEC ("sysroot_hdrs_suffix_spec",	&sysroot_hdrs_suffix_spec),
   INIT_STATIC_SPEC ("self_spec",		&self_spec),
+
+  INIT_STATIC_SPEC ("startfile_cxx",		&startfile_cxx_spec),
+  INIT_STATIC_SPEC ("endfile_cxx",		&endfile_cxx_spec),
 };
 
 #ifdef EXTRA_SPECS		/* additional specs needed */
@@ -3728,8 +3784,7 @@ display_help (void)
 
   fputs (_("  -pass-exit-codes         Exit with highest error code from a phase.\n"), stdout);
   fputs (_("  --help                   Display this information.\n"), stdout);
-  fputs (_("  --target-help            Display target specific command line options "
-	   "(including assembler and linker options).\n"), stdout);
+  fputs (_("  --target-help            Display target specific command line options.\n"), stdout);
   fputs (_("  --help={common|optimizers|params|target|warnings|[^]{joined|separate|undocumented}}[,...].\n"), stdout);
   fputs (_("                           Display specific types of command line options.\n"), stdout);
   if (! verbose_flag)
@@ -6747,7 +6802,11 @@ do_spec_1 (const char *spec, int inswitch, const char *soft_matched_part)
 	    break;
 
 	  case 'E':
-	    value = do_spec_1 (endfile_spec, 0, NULL);
+	    if (lang_specific_is_c_plus_plus ())
+	      value = do_spec_1 (endfile_cxx_spec, 0, NULL);
+	    else
+	      value = do_spec_1 (endfile_spec, 0, NULL);
+
 	    if (value != 0)
 	      return value;
 	    break;
@@ -6792,7 +6851,11 @@ do_spec_1 (const char *spec, int inswitch, const char *soft_matched_part)
 	    break;
 
 	  case 'S':
-	    value = do_spec_1 (startfile_spec, 0, NULL);
+	    if (lang_specific_is_c_plus_plus ())
+	      value = do_spec_1 (startfile_cxx_spec, 0, NULL);
+	    else
+	      value = do_spec_1 (startfile_spec, 0, NULL);
+
 	    if (value != 0)
 	      return value;
 	    break;

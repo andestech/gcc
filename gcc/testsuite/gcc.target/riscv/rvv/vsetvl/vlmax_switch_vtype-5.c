@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-mrvv-vector-bits=scalable -march=rv32gcv -mabi=ilp32" } */
+/* { dg-options "-mrvv-vector-bits=scalable -march=rv32gcv -mabi=ilp32 -mtune=rocket" } */
 // PR113249
 /* { dg-additional-options "-fno-schedule-insns -fno-schedule-insns2" } */
 

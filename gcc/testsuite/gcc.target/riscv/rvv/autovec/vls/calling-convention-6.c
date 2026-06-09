@@ -125,7 +125,8 @@ DEF_RET1_ARG9 (v1024sf)
 
 // RET1_ARG0 tests
 /* { dg-final { scan-assembler-times {li\s+a[0-1],\s*0} 7 } } */
-/* { dg-final { scan-assembler-times {mv\s+s0,a0\s+call\s+memset\s+mv\s+a0,s0} 3 } } */
+/* { dg-final { scan-assembler-times {call\s+memset} 3 } } */
+/* { dg-final { scan-assembler-not  {mv\s+s0,a0.*mv\s+a0,s0} } } */
 
 // v1sf tests: return value (lw) and function prologue (sw)
 // 1 lw per test, argnum sw's when args > 1
@@ -134,7 +135,7 @@ DEF_RET1_ARG9 (v1024sf)
 
 // v2sf and v4sf tests: return value (ld) and function prologue (sd)
 //   - 1 ld per v2sf and 2 ld per v4sf with args > 1
-//   - argnum sd's per v2sf when argnum > 1 
+//   - argnum sd's per v2sf when argnum > 1
 //   - 2 * argnum sd's per v4sf when argnum > 0
 /* { dg-final { scan-assembler-times {ld\s+a[0-1],\s*[0-9]+\(sp\)} 24 } } */
 /* { dg-final { scan-assembler-times {sd\s+a[0-7],\s*[0-9]+\(sp\)} 103 } } */

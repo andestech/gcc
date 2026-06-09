@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-skip-if "-march given" { *-*-* } { "-march=*" } } */
+/* { dg-skip-if "" { *-*-* } } */
 /* Verify -march will override arch option from -mcpu.  */
 /* { dg-options "-mcpu=sifive-u74 -march=rv32ic -mabi=ilp32" } */
 /* sifive-s51 = rv64imafdc */

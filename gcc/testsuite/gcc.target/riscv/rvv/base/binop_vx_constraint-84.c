@@ -15,6 +15,6 @@ void f (void * in, void *out, uint64_t x, int n)
   }
 }
 
-/* { dg-final { scan-assembler-times {vlse64\.v\s+v[0-9]+,\s*0\([a-x0-9]+\),\s*zero\s+\.L[0-9]+\:\s+} 1 } } */
+/* { dg-final { scan-assembler-times {vlse64\.v\s+v[0-9]+,\s*0\([a-x0-9]+\),\s*zero\s+\.align\s+[12]\s+\.L[0-9]+\:\s+} 1 } } */
 /* { dg-final { scan-assembler-times {vmaxu\.vv\s+v[0-9]+,\s*v[0-9]+,\s*v[0-9]+} 2 } } */
 /* { dg-final { scan-assembler-not {vmv} } } */

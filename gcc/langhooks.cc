@@ -758,16 +758,19 @@ add_builtin_function_ext_scope (const char *name,
    location LOCATION, as though it had been declared directly in the
    source language.  NAME is the name of the function, TYPE is its function
    type, FUNCTION_CODE is the target-specific function code, LIBRARY_NAME
-   is the name of the underlying library function (NULL if none) and
-   ATTRS is a list of function attributes.
+   is the name of the underlying library function (NULL if none),
+   ATTRS is a list of function attributes and CREATE_P is true if the new_decl
+   is created successfully.
 
    Return the decl of the declared function.  */
 
 tree
 simulate_builtin_function_decl (location_t location, const char *name,
 				tree type, int function_code,
-				const char *library_name, tree attrs)
+				const char *library_name, tree attrs,
+				bool *create_p)
 {
+  *create_p = false;
   tree decl = build_builtin_function (location, name, type,
 				      function_code, BUILT_IN_MD,
 				      library_name, attrs);
@@ -780,7 +783,10 @@ simulate_builtin_function_decl (location_t location, const char *name,
      normally, even though the source code won't be able to use it.  */
   if (TREE_CODE (new_decl) == FUNCTION_DECL
       && fndecl_built_in_p (new_decl, function_code, BUILT_IN_MD))
+  {
+    *create_p = true;
     return new_decl;
+  }
 
   return decl;
 }

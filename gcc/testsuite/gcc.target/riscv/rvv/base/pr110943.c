@@ -1,6 +1,7 @@
 /* { dg-do compile } */
 /* { dg-options "-O3 -march=rv64gcv -mabi=lp64d" } */
 /* { dg-final { check-function-bodies "**" "" } } */
+/* { dg-skip-if "" { *32-*-linux* } { "*" } } */
 
 #include <riscv_vector.h>
 

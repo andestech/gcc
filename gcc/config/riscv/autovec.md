@@ -59,7 +59,8 @@
    (match_operand:<RATIO64:VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR && riscv_vector::gather_scatter_valid_offset_p (<RATIO64I:MODE>mode)"
+  "TARGET_VECTOR && TARGET_ZVLSIDX
+   && riscv_vector::gather_scatter_valid_offset_p (<RATIO64I:MODE>mode)"
 {
   riscv_vector::expand_gather_scatter (operands, true);
   DONE;
@@ -74,7 +75,8 @@
    (match_operand:<RATIO32:VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR && riscv_vector::gather_scatter_valid_offset_p (<RATIO32I:MODE>mode)"
+  "TARGET_VECTOR && TARGET_ZVLSIDX
+   && riscv_vector::gather_scatter_valid_offset_p (<RATIO32I:MODE>mode)"
 {
   riscv_vector::expand_gather_scatter (operands, true);
   DONE;
@@ -89,7 +91,8 @@
    (match_operand:<RATIO16:VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR && riscv_vector::gather_scatter_valid_offset_p (<RATIO16I:MODE>mode)"
+  "TARGET_VECTOR && TARGET_ZVLSIDX
+   && riscv_vector::gather_scatter_valid_offset_p (<RATIO16I:MODE>mode)"
 {
   riscv_vector::expand_gather_scatter (operands, true);
   DONE;
@@ -104,7 +107,8 @@
    (match_operand:<RATIO8:VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR && riscv_vector::gather_scatter_valid_offset_p (<RATIO8I:MODE>mode)"
+  "TARGET_VECTOR && TARGET_ZVLSIDX
+   && riscv_vector::gather_scatter_valid_offset_p (<RATIO8I:MODE>mode)"
 {
   riscv_vector::expand_gather_scatter (operands, true);
   DONE;
@@ -119,7 +123,8 @@
    (match_operand:<RATIO4:VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR && riscv_vector::gather_scatter_valid_offset_p (<RATIO4I:MODE>mode)"
+  "TARGET_VECTOR && TARGET_ZVLSIDX
+   && riscv_vector::gather_scatter_valid_offset_p (<RATIO4I:MODE>mode)"
 {
   riscv_vector::expand_gather_scatter (operands, true);
   DONE;
@@ -134,7 +139,8 @@
    (match_operand:<RATIO2:VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR && riscv_vector::gather_scatter_valid_offset_p (<RATIO2I:MODE>mode)"
+  "TARGET_VECTOR && TARGET_ZVLSIDX
+   && riscv_vector::gather_scatter_valid_offset_p (<RATIO2I:MODE>mode)"
 {
   riscv_vector::expand_gather_scatter (operands, true);
   DONE;
@@ -153,7 +159,7 @@
    (match_operand:<VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR"
+  "TARGET_VECTOR && TARGET_ZVLSIDX"
 {
   riscv_vector::expand_gather_scatter (operands, true);
   DONE;
@@ -172,7 +178,8 @@
    (match_operand:<RATIO64:VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR && riscv_vector::gather_scatter_valid_offset_p (<RATIO64I:MODE>mode)"
+  "TARGET_VECTOR && TARGET_ZVLSIDX
+   && riscv_vector::gather_scatter_valid_offset_p (<RATIO64I:MODE>mode)"
 {
   riscv_vector::expand_gather_scatter (operands, false);
   DONE;
@@ -187,7 +194,8 @@
    (match_operand:<RATIO32:VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR && riscv_vector::gather_scatter_valid_offset_p (<RATIO32I:MODE>mode)"
+  "TARGET_VECTOR && TARGET_ZVLSIDX
+   && riscv_vector::gather_scatter_valid_offset_p (<RATIO32I:MODE>mode)"
 {
   riscv_vector::expand_gather_scatter (operands, false);
   DONE;
@@ -202,7 +210,8 @@
    (match_operand:<RATIO16:VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR && riscv_vector::gather_scatter_valid_offset_p (<RATIO16I:MODE>mode)"
+  "TARGET_VECTOR && TARGET_ZVLSIDX
+   && riscv_vector::gather_scatter_valid_offset_p (<RATIO16I:MODE>mode)"
 {
   riscv_vector::expand_gather_scatter (operands, false);
   DONE;
@@ -217,7 +226,8 @@
    (match_operand:<RATIO8:VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR && riscv_vector::gather_scatter_valid_offset_p (<RATIO8I:MODE>mode)"
+  "TARGET_VECTOR && TARGET_ZVLSIDX
+   && riscv_vector::gather_scatter_valid_offset_p (<RATIO8I:MODE>mode)"
 {
   riscv_vector::expand_gather_scatter (operands, false);
   DONE;
@@ -232,7 +242,8 @@
    (match_operand:<RATIO4:VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR && riscv_vector::gather_scatter_valid_offset_p (<RATIO4I:MODE>mode)"
+  "TARGET_VECTOR && TARGET_ZVLSIDX
+   && riscv_vector::gather_scatter_valid_offset_p (<RATIO4I:MODE>mode)"
 {
   riscv_vector::expand_gather_scatter (operands, false);
   DONE;
@@ -247,7 +258,8 @@
    (match_operand:<RATIO2:VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR && riscv_vector::gather_scatter_valid_offset_p (<RATIO2I:MODE>mode)"
+  "TARGET_VECTOR && TARGET_ZVLSIDX
+   && riscv_vector::gather_scatter_valid_offset_p (<RATIO2I:MODE>mode)"
 {
   riscv_vector::expand_gather_scatter (operands, false);
   DONE;
@@ -266,7 +278,7 @@
    (match_operand:<VM> 5 "vector_mask_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR"
+  "TARGET_VECTOR && TARGET_ZVLSIDX"
 {
   riscv_vector::expand_gather_scatter (operands, false);
   DONE;
@@ -1214,7 +1226,7 @@
 	    (match_operand:V_VLSF 1 "register_operand")
 	    (match_operand:V_VLSF 2 "register_operand"))
 	  (match_operand:V_VLSF 3 "register_operand")))]
-  "TARGET_VECTOR && can_create_pseudo_p ()"
+  "TARGET_VECTOR && can_create_pseudo_p () && TARGET_FMA"
   "#"
   "&& 1"
   [(const_int 0)]
@@ -1242,7 +1254,7 @@
 	  (mult:V_VLSF
 	    (match_operand:V_VLSF 1 "register_operand")
 	    (match_operand:V_VLSF 2 "register_operand"))))]
-  "TARGET_VECTOR && can_create_pseudo_p ()"
+  "TARGET_VECTOR && can_create_pseudo_p () && TARGET_FMA"
   "#"
   "&& 1"
   [(const_int 0)]
@@ -1270,7 +1282,7 @@
 	    (match_operand:V_VLSF 1 "register_operand")
 	    (match_operand:V_VLSF 2 "register_operand"))
 	  (match_operand:V_VLSF 3 "register_operand")))]
-  "TARGET_VECTOR && can_create_pseudo_p ()"
+  "TARGET_VECTOR && can_create_pseudo_p () && TARGET_FMA"
   "#"
   "&& 1"
   [(const_int 0)]
@@ -1299,7 +1311,7 @@
 	      (match_operand:V_VLSF 1 "register_operand")
 	      (match_operand:V_VLSF 2 "register_operand")))
 	  (match_operand:V_VLSF 3 "register_operand")))]
-  "TARGET_VECTOR && can_create_pseudo_p ()"
+  "TARGET_VECTOR && can_create_pseudo_p () && TARGET_FMA"
   "#"
   "&& 1"
   [(const_int 0)]
@@ -1464,6 +1476,69 @@
 })
 
 ;; -------------------------------------------------------------------------
+;; ---- [INT,FP] Extract a vector from a vector.
+;; -------------------------------------------------------------------------
+;; TODO: This can be extended to allow basically any extract mode.
+;; For now this helps optimize VLS subregs like (subreg:V2DI (reg:V4DI) 16)
+;; that would otherwise need to go via memory.
+
+(define_expand "vec_extract<mode><vls_half>"
+  [(set (match_operand:<VLS_HALF>	 0 "nonimmediate_operand")
+     (vec_select:<VLS_HALF>
+       (match_operand:VLS_HAS_HALF	 1 "register_operand")
+       (parallel
+	 [(match_operand		 2 "immediate_operand")])))]
+  "TARGET_VECTOR"
+{
+  int sz = GET_MODE_NUNITS (<VLS_HALF>mode).to_constant ();
+  int part = INTVAL (operands[2]);
+
+  rtx start = GEN_INT (part * sz);
+  rtx tmp = operands[1];
+
+  if (part != 0)
+    {
+      tmp = gen_reg_rtx (<MODE>mode);
+
+      rtx ops[] = {tmp, operands[1], start};
+      riscv_vector::emit_vlmax_insn
+	(code_for_pred_slide (UNSPEC_VSLIDEDOWN, <MODE>mode),
+	 riscv_vector::BINARY_OP, ops);
+    }
+
+  emit_move_insn (operands[0], gen_lowpart (<VLS_HALF>mode, tmp));
+  DONE;
+})
+
+(define_expand "vec_extract<mode><vls_quarter>"
+  [(set (match_operand:<VLS_QUARTER>	 0 "nonimmediate_operand")
+     (vec_select:<VLS_QUARTER>
+       (match_operand:VLS_HAS_QUARTER	 1 "register_operand")
+       (parallel
+	 [(match_operand		 2 "immediate_operand")])))]
+  "TARGET_VECTOR"
+{
+  int sz = GET_MODE_NUNITS (<VLS_QUARTER>mode).to_constant ();
+  int part = INTVAL (operands[2]);
+
+  rtx start = GEN_INT (part * sz);
+  rtx tmp = operands[1];
+
+  if (part != 0)
+    {
+      tmp = gen_reg_rtx (<MODE>mode);
+
+      rtx ops[] = {tmp, operands[1], start};
+      riscv_vector::emit_vlmax_insn
+	(code_for_pred_slide (UNSPEC_VSLIDEDOWN, <MODE>mode),
+	 riscv_vector::BINARY_OP, ops);
+    }
+
+  emit_move_insn (operands[0], gen_lowpart (<VLS_QUARTER>mode, tmp));
+  DONE;
+})
+
+;; -------------------------------------------------------------------------
 ;; ---- [FP] Binary operations
 ;; -------------------------------------------------------------------------
 ;; Includes:
@@ -1567,7 +1642,7 @@
 })
 
 ;; -------------------------------------------------------------------------------
-;; - [INT] POPCOUNT.
+;; - [INT] POPCOUNT, CTZ and CLZ.
 ;; -------------------------------------------------------------------------------
 
 (define_expand "popcount<mode>2"
@@ -1575,8 +1650,34 @@
    (match_operand:V_VLSI 1 "register_operand")]
   "TARGET_VECTOR"
 {
-  riscv_vector::expand_popcount (operands);
+  if (!TARGET_ZVBB)
+    riscv_vector::expand_popcount (operands);
+  else
+    {
+      riscv_vector::emit_vlmax_insn (code_for_pred_v (POPCOUNT, <MODE>mode),
+				     riscv_vector::UNARY_OP, operands);
+    }
   DONE;
+})
+
+(define_expand "ctz<mode>2"
+  [(match_operand:V_VLSI 0 "register_operand")
+   (match_operand:V_VLSI 1 "register_operand")]
+  "TARGET_ZVBB"
+  {
+    riscv_vector::emit_vlmax_insn (code_for_pred_v (CTZ, <MODE>mode),
+				   riscv_vector::UNARY_OP, operands);
+    DONE;
+})
+
+(define_expand "clz<mode>2"
+  [(match_operand:V_VLSI 0 "register_operand")
+   (match_operand:V_VLSI 1 "register_operand")]
+  "TARGET_ZVBB"
+  {
+    riscv_vector::emit_vlmax_insn (code_for_pred_v (CLZ, <MODE>mode),
+				   riscv_vector::UNARY_OP, operands);
+    DONE;
 })
 
 
@@ -1956,7 +2057,7 @@
    (match_operand:V_VLSF 3 "register_operand")
    (match_operand:V_VLSF 4 "register_operand")
    (match_operand:V_VLSF 5 "autovec_else_operand")]
-  "TARGET_VECTOR"
+  "TARGET_VECTOR && TARGET_FMA"
 {
   insn_code icode = code_for_pred_mul (PLUS, <MODE>mode);
   riscv_vector::expand_cond_ternop (icode, operands);
@@ -1972,7 +2073,7 @@
    (match_operand:VF 5 "autovec_else_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR"
+  "TARGET_VECTOR && TARGET_FMA"
 {
   insn_code icode = code_for_pred_mul (PLUS, <MODE>mode);
   riscv_vector::expand_cond_len_ternop (icode, operands);
@@ -1986,7 +2087,7 @@
    (match_operand:V_VLSF 3 "register_operand")
    (match_operand:V_VLSF 4 "register_operand")
    (match_operand:V_VLSF 5 "autovec_else_operand")]
-  "TARGET_VECTOR"
+  "TARGET_VECTOR && TARGET_FMA"
 {
   insn_code icode = code_for_pred_mul_neg (PLUS, <MODE>mode);
   riscv_vector::expand_cond_ternop (icode, operands);
@@ -2002,7 +2103,7 @@
    (match_operand:VF 5 "autovec_else_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR"
+  "TARGET_VECTOR && TARGET_FMA"
 {
   insn_code icode = code_for_pred_mul_neg (PLUS, <MODE>mode);
   riscv_vector::expand_cond_len_ternop (icode, operands);
@@ -2016,7 +2117,7 @@
    (match_operand:V_VLSF 3 "register_operand")
    (match_operand:V_VLSF 4 "register_operand")
    (match_operand:V_VLSF 5 "autovec_else_operand")]
-  "TARGET_VECTOR"
+  "TARGET_VECTOR && TARGET_FMA"
 {
   insn_code icode = code_for_pred_mul (MINUS, <MODE>mode);
   riscv_vector::expand_cond_ternop (icode, operands);
@@ -2032,7 +2133,7 @@
    (match_operand:VF 5 "autovec_else_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR"
+  "TARGET_VECTOR && TARGET_FMA"
 {
   insn_code icode = code_for_pred_mul (MINUS, <MODE>mode);
   riscv_vector::expand_cond_len_ternop (icode, operands);
@@ -2046,7 +2147,7 @@
    (match_operand:V_VLSF 3 "register_operand")
    (match_operand:V_VLSF 4 "register_operand")
    (match_operand:V_VLSF 5 "autovec_else_operand")]
-  "TARGET_VECTOR"
+  "TARGET_VECTOR && TARGET_FMA"
 {
   insn_code icode = code_for_pred_mul_neg (MINUS, <MODE>mode);
   riscv_vector::expand_cond_ternop (icode, operands);
@@ -2062,7 +2163,7 @@
    (match_operand:VF 5 "autovec_else_operand")
    (match_operand 6 "autovec_length_operand")
    (match_operand 7 "const_0_operand")]
-  "TARGET_VECTOR"
+  "TARGET_VECTOR && TARGET_FMA"
 {
   insn_code icode = code_for_pred_mul_neg (MINUS, <MODE>mode);
   riscv_vector::expand_cond_len_ternop (icode, operands);
@@ -2613,3 +2714,49 @@
     DONE;
   }
 )
+
+;; Andes BFloat16 mode switch
+
+;; -------------------------------------------------------------------------
+;; ---- [INT<-FP] Widening Conversions
+;; -------------------------------------------------------------------------
+;; Includes:
+;; - vfwcvt.rtz.xu.f.v
+;; - vfwcvt.rtz.x.f.v
+;; -------------------------------------------------------------------------
+(define_insn_and_split "<optab><vnconvert_bf><mode>2"
+  [(set (match_operand:VWCONVERTI_BF 0 "register_operand")
+	(any_fix:VWCONVERTI_BF
+	  (match_operand:<VNCONVERT_BF> 1 "register_operand")))]
+  "TARGET_VECTOR && TARGET_BF16MS && can_create_pseudo_p ()"
+  "#"
+  "&& 1"
+  [(const_int 0)]
+{
+  insn_code icode = code_for_pred_widen_bf (<CODE>, <MODE>mode);
+  riscv_vector::emit_vlmax_insn (icode, riscv_vector::UNARY_OP, operands);
+  DONE;
+}
+[(set_attr "type" "vfwcvtftoi")])
+
+;; -------------------------------------------------------------------------
+;; ---- [FP<-INT] Narrowing Conversions
+;; -------------------------------------------------------------------------
+;; Includes:
+;; - vfncvt.f.xu.w
+;; - vfncvt.f.x.w
+;; -------------------------------------------------------------------------
+(define_insn_and_split "<float_cvt><mode><vnconvert_bf>2"
+  [(set (match_operand:<VNCONVERT_BF> 0 "register_operand")
+	(any_float:<VNCONVERT_BF>
+	  (match_operand:VWCONVERTI_BF 1 "register_operand")))]
+  "TARGET_VECTOR && TARGET_BF16MS && can_create_pseudo_p ()"
+  "#"
+  "&& 1"
+  [(const_int 0)]
+{
+  insn_code icode = code_for_pred_narrow_bf (<CODE>, <MODE>mode);
+  riscv_vector::emit_vlmax_insn (icode, riscv_vector::UNARY_OP_FRM_DYN, operands);
+  DONE;
+}
+[(set_attr "type" "vfncvtitof")])

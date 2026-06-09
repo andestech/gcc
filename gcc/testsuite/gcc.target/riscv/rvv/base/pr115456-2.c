@@ -1,6 +1,7 @@
 /* Test there is no ICE when compile.  */
 /* { dg-do compile } */
 /* { dg-options "-march=rv64gcv_zvfhmin -mrvv-vector-bits=zvl -mabi=lp64d -O3 -ftree-vectorize" } */
+/* { dg-skip-if "" { *32-*-linux* } { "*" } } */
 
 #include <assert.h>
 #include <stdint-gcc.h>

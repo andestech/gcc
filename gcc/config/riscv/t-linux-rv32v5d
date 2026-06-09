@@ -1,0 +1,8 @@
+MULTILIB_REQUIRED += march=rv32imafd_zicsr_zifencei_zca_xandes/mabi=ilp32d
+
+# Removed reuse rules due to Andes Bugzilla #28124.
+# MULTILIB_REUSE += march.rv32imafd_zicsr_zifencei_zca_xandes/mabi.ilp32d=march.rv32imafd_zicsr_zifencei_xandes/mabi.ilp32d \
+# march.rv32imafd_zicsr_zifencei_zca_xandes/mabi.ilp32d=march.rv32imafd_zicsr_zifencei_zfh_xandes/mabi.ilp32d \
+# march.rv32imafd_zicsr_zifencei_zca_xandes/mabi.ilp32d=march.rv32imafd_zicsr_zifencei_zfh_zca_xandes/mabi.ilp32d \
+# march.rv32imafd_zicsr_zifencei_zca_xandes/mabi.ilp32d=march.rv32imafdc_zicsr_zifencei_xandes/mabi.ilp32d \
+# march.rv32imafd_zicsr_zifencei_zca_xandes/mabi.ilp32d=march.rv32imafdc_zicsr_zifencei_zfh_xandes/mabi.ilp32d

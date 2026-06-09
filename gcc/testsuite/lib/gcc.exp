@@ -134,11 +134,23 @@ proc gcc_target_compile { source dest type options } {
 	lappend options "ldflags=$TEST_EXTRA_LIBS"
     }
 
+    if [info exists TEST_ALWAYS_FLAGS] {
+	if {[llength [info procs remove_unsuitable_options]] > 0} {
+	    # if proc exists
+	    set NEW_TEST_ALWAYS_FLAGS [remove_unsuitable_options $source $type \
+				       $options $TEST_ALWAYS_FLAGS]
+	} else {
+	    set NEW_TEST_ALWAYS_FLAGS $TEST_ALWAYS_FLAGS
+	}
+    } else {
+	set NEW_TEST_ALWAYS_FLAGS ""
+    }
+
     # TEST_ALWAYS_FLAGS are flags that should be passed to every
     # compilation.  They are passed first to allow individual
     # tests to override them.
-    if [info exists TEST_ALWAYS_FLAGS] {
-	set options [concat "{additional_flags=$TEST_ALWAYS_FLAGS}" $options]
+    if [info exists NEW_TEST_ALWAYS_FLAGS] {
+	set options [concat "{additional_flags=$NEW_TEST_ALWAYS_FLAGS}" $options]
     }
 
     # TOOL_OPTIONS must come first, so that it doesn't override testcase

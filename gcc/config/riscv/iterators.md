@@ -37,9 +37,12 @@
 ;; Likewise, but for XLEN-sized quantities.
 (define_mode_iterator X [(SI "!TARGET_64BIT") (DI "TARGET_64BIT")])
 
+;; Likewise, but for XLEN/2 -sized quantities.
+(define_mode_iterator HX [(HI "!TARGET_64BIT") (SI "TARGET_64BIT")])
+
 ;; Branches operate on XLEN-sized quantities, but for RV64 we accept
 ;; QImode values so we can force zero-extension.
-(define_mode_iterator BR [(QI "TARGET_64BIT") SI (DI "TARGET_64BIT")])
+(define_mode_iterator BR [(QI "TARGET_64BIT") (HI "TARGET_64BIT") SI (DI "TARGET_64BIT")])
 
 ;; 32-bit moves for which we provide move patterns.
 (define_mode_iterator MOVE32 [SI])
@@ -62,18 +65,23 @@
 ;; Iterator for hardware-supported integer modes.
 (define_mode_iterator ANYI [QI HI SI (DI "TARGET_64BIT")])
 
+;; Iterator for hardware-supported integer modes.
+(define_mode_iterator ANY32 [QI HI SI])
+
 ;; Iterator for hardware-supported floating-point modes.
 (define_mode_iterator ANYF [(SF "TARGET_HARD_FLOAT || TARGET_ZFINX")
 			    (DF "TARGET_DOUBLE_FLOAT || TARGET_ZDINX")
-			    (HF "TARGET_ZFH || TARGET_ZHINX")])
+			    (HF "TARGET_ZFH || TARGET_ZHINX")
+                (BF "TARGET_BF16MS")])
 
 ;; Iterator for hardware-supported load/store floating-point modes.
 (define_mode_iterator ANYLSF [(SF "TARGET_HARD_FLOAT || TARGET_ZFINX")
 			      (DF "TARGET_DOUBLE_FLOAT || TARGET_ZDINX")
-			      (HF "TARGET_ZFHMIN || TARGET_ZHINXMIN")])
+			      (HF "TARGET_ZFHMIN || TARGET_ZHINXMIN")
+                  (BF "TARGET_BF16MS")])
 
 ;; Iterator for floating-point modes that can be loaded into X registers.
-(define_mode_iterator SOFTF [SF (DF "TARGET_64BIT") (HF "TARGET_ZFHMIN")])
+(define_mode_iterator SOFTF [SF (DF "TARGET_64BIT") HF BF])
 
 
 ;; -------------------------------------------------------------------
@@ -85,27 +93,27 @@
 (define_mode_attr size [(QI "b") (HI "h")])
 
 ;; Mode attributes for loads.
-(define_mode_attr load [(QI "lb") (HI "lh") (SI "lw") (DI "ld") (HF "flh") (SF "flw") (DF "fld")])
+(define_mode_attr load [(QI "lb") (HI "lh") (SI "lw") (DI "ld") (HF "flh") (BF "flh") (SF "flw") (DF "fld")])
 
 ;; Instruction names for integer loads that aren't explicitly sign or zero
 ;; extended.  See riscv_output_move and LOAD_EXTEND_OP.
 (define_mode_attr default_load [(QI "lbu") (HI "lhu") (SI "lw") (DI "ld")])
 
 ;; Mode attribute for FP loads into integer registers.
-(define_mode_attr softload [(HF "lh") (SF "lw") (DF "ld")])
+(define_mode_attr softload [(BF "lh") (HF "lh") (SF "lw") (DF "ld")])
 
 ;; Instruction names for stores.
-(define_mode_attr store [(QI "sb") (HI "sh") (SI "sw") (DI "sd") (HF "fsh") (SF "fsw") (DF "fsd")])
+(define_mode_attr store [(QI "sb") (HI "sh") (SI "sw") (DI "sd") (HF "fsh") (BF "fsh") (SF "fsw") (DF "fsd")])
 
 ;; Instruction names for FP stores from integer registers.
-(define_mode_attr softstore [(HF "sh") (SF "sw") (DF "sd")])
+(define_mode_attr softstore [(BF "sh") (HF "sh") (SF "sw") (DF "sd")])
 
 ;; This attribute gives the best constraint to use for registers of
 ;; a given mode.
 (define_mode_attr reg [(SI "d") (DI "d") (CC "d")])
 
 ;; This attribute gives the format suffix for floating-point operations.
-(define_mode_attr fmt [(HF "h") (SF "s") (DF "d")])
+(define_mode_attr fmt [(HF "h") (BF "h") (SF "s") (DF "d")])
 
 ;; This attribute gives the integer suffix for floating-point conversions.
 (define_mode_attr ifmt [(SI "w") (DI "l")])
@@ -115,11 +123,17 @@
 
 ;; This attribute gives the upper-case mode name for one unit of a
 ;; floating-point mode.
-(define_mode_attr UNITMODE [(HF "HF") (SF "SF") (DF "DF")])
+(define_mode_attr UNITMODE [(HF "HF") (BF "BF") (SF "SF") (DF "DF")])
 
 ;; This attribute gives the integer mode that has half the size of
 ;; the controlling mode.
 (define_mode_attr HALFMODE [(DF "SI") (DI "SI") (TF "DI")])
+
+;; Give the number of bits in the mode
+(define_mode_attr sizen [(QI "8") (HI "16") (SI "32") (DI "64")])
+
+;; Give the number of shift limitation in the mode
+(define_mode_attr sh_limit [(QI "7") (HI "15") (SI "31") (DI "63")])
 
 ; bitmanip mode attribute
 (define_mode_attr shiftm1 [(SI "const_si_mask_operand") (DI "const_di_mask_operand")])
@@ -147,6 +161,10 @@
 ;; This code iterator allows signed and unsigned widening multiplications
 ;; to use the same template.
 (define_code_iterator any_extend [sign_extend zero_extend])
+
+;; This code iterator allows signed and unsigned extract
+;; to use the same template.
+(define_code_iterator any_extract [sign_extract zero_extract])
 
 ;; This code iterator allows the two right shift instructions to be
 ;; generated from the same template.
@@ -183,6 +201,13 @@
 (define_code_iterator any_ge [ge geu])
 (define_code_iterator any_lt [lt ltu])
 (define_code_iterator any_le [le leu])
+(define_code_iterator inequal_op [gt gtu ge geu lt ltu le leu])
+
+(define_code_iterator cond_alu [plus minus and ior xor lt ltu])
+(define_code_iterator cond_bitwise [and ior])
+
+;; Equality operators.
+(define_code_iterator equality_op [eq ne])
 
 ; atomics code iterator
 (define_code_iterator any_atomic [plus ior xor and])
@@ -192,7 +217,13 @@
 
 (define_code_iterator bitmanip_minmax [smin umin smax umax])
 
+(define_code_iterator bitmanip_uminmax [umin umax])
+
+(define_code_iterator bitmanip_sminmax [smin smax])
+
 (define_code_iterator clz_ctz_pcnt [clz ctz popcount])
+
+(define_code_iterator ctz_pcnt [ctz popcount])
 
 (define_code_iterator bitmanip_rotate [rotate rotatert])
 
@@ -212,7 +243,10 @@
 		     (float "") (unsigned_float "u")])
 
 ;; <su> is like <u>, but the signed form expands to "s" rather than "".
-(define_code_attr su [(sign_extend "s") (zero_extend "u")])
+(define_code_attr su [(ashiftrt "") (lshiftrt "u") (sign_extend "s") (zero_extend "u")])
+
+;; <sz> is like <u>, but the signed form expands to "s" rather than "".
+(define_code_attr sz [(sign_extend "s") (zero_extend "z") (sign_extract "s") (zero_extract "z")])
 
 ;; <optab> expands to the name of the optab for a particular code.
 (define_code_attr optab [(ashift "ashl")
@@ -226,6 +260,10 @@
 			 (le "le")
 			 (gt "gt")
 			 (lt "lt")
+			 (ltu "ltu")
+			 (leu "leu")
+			 (gtu "gtu")
+			 (geu "geu")
 			 (ior "ior")
 			 (xor "xor")
 			 (and "and")
@@ -246,8 +284,12 @@
 			 (us_minus "ussub")
 			 (sign_extend "extend")
 			 (zero_extend "zero_extend")
+			 (eq "eq")
+			 (ne "ne")
 			 (fix "fix_trunc")
-			 (unsigned_fix "fixuns_trunc")])
+			 (unsigned_fix "fixuns_trunc")
+			 (clrsb "clrsb")
+			 (clz "clz")])
 
 ;; <or_optab> code attributes
 (define_code_attr or_optab [(ior "ior")
@@ -278,7 +320,39 @@
 			(ss_plus "sadd")
 			(us_plus "saddu")
 			(ss_minus "ssub")
-			(us_minus "ssubu")])
+			(us_minus "ssubu")
+			(clrsb "clrs")
+			(clz "clz")
+			(lt  "slt")
+			(ltu "sltu")])
+
+(define_code_attr br_insn [(eq "beq")
+			   (ne "bne")
+			   (lt "blt")
+			   (le "ble")
+			   (gt "bgt")
+			   (ge "bge")
+			   (ltu "bltu")
+			   (leu "bleu")
+			   (gtu "bgtu")
+			   (geu "bgeu")])
+
+(define_code_attr rev_br_insn [(eq "bne")
+			       (ne "beq")
+			       (lt "bge")
+			       (le "bgt")
+			       (gt "ble")
+			       (ge "blt")
+			       (ltu "bgeu")
+			       (leu "bgtu")
+			       (gtu "bleu")
+			       (geu "bltu")])
+
+(define_code_attr bbcs [(eq "nds.bbc")
+			(ne "nds.bbs")])
+
+(define_code_attr rev_bbcs [(eq "nds.bbs")
+			    (ne "nds.bbc")])
 
 ; atomics code attribute
 (define_code_attr atomic_optab
@@ -307,6 +381,9 @@
 				 (popcount "cpop")
 				 (rotate "rol")
 				 (rotatert "ror")])
+
+(define_code_attr dsp_insn [(smin "minw")
+                            (smax "maxw")])
 
 ;; -------------------------------------------------------------------
 ;; Int Iterators.

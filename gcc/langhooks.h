@@ -659,7 +659,7 @@ extern tree add_builtin_function_ext_scope (const char *name, tree type,
 					    const char *library_name,
 					    tree attrs);
 extern tree simulate_builtin_function_decl (location_t, const char *, tree,
-					    int, const char *, tree);
+					    int, const char *, tree, bool *);
 extern tree add_builtin_type (const char *name, tree type);
 
 /* Language helper functions.  */

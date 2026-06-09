@@ -1,5 +1,6 @@
 /* { dg-do compile { target *-*-linux* *-*-gnu* } } */
 /* { dg-options "-fhardened -O -D_FORTIFY_SOURCE_ -D_GLIBCXX_ASSERTIONS_" } */
+/* { dg-skip-if "" { *-*-* } { "-static" } { "" } } */
 
 #ifndef _FORTIFY_SOURCE
 # error "_FORTIFY_SOURCE disabled when it should not be"

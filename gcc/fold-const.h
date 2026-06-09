@@ -254,6 +254,8 @@ extern bool clear_padding_type_may_have_padding_p (tree);
 extern bool arith_overflowed_p (enum tree_code, const_tree, const_tree,
 				const_tree);
 
+/* In tree-ssa-phiopt.cc.  */
+extern tree strip_bit_not (tree);
 /* Class used to compare gimple operands.  */
 
 class operand_compare

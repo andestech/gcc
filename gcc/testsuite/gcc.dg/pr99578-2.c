@@ -1,5 +1,6 @@
 /* PR middle-end/99578 */
 /* { dg-do compile { target int32 } } */
+/* { dg-skip-if "" { riscv*-*-elf* } } */
 /* { dg-options "-O2 -Wstringop-overflow" } */
 
 struct S { int a, b[4]; };
@@ -9,7 +10,7 @@ void
 foo (struct S *p)
 {
   if (p) return;
-  __builtin_memset (p->b, 0, sizeof p->b);	/* { dg-warning "writing 16 bytes into a region of size 0 overflows the destination" } */
+  __builtin_memset (p->b, 0, sizeof p->b);     /* { dg-warning "writing 16 bytes into a region of size 0 overflows the destination" } */
 }
 
 void

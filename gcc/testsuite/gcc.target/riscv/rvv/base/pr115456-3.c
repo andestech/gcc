@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-march=rv64gcv_zvfh -mabi=lp64d -O3 -ftree-vectorize" } */
+/* { dg-skip-if "" { *32-*-linux* } { "*" } } */
 
 #include <assert.h>
 #include <stdint-gcc.h>

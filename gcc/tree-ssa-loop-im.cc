@@ -2264,6 +2264,26 @@ struct sm_aux
   hash_set <basic_block> flag_bbs;
 };
 
+/* Check if there is a ref.mem define in the preheader of loop.
+   If so, build the assgin with the ref rather than the uninit.
+   See pr-39612 and pr-94963.  */
+
+static bool
+ref_is_initialized_p (class loop *loop, im_mem_ref *ref)
+{
+  bool is_stored;
+  gimple_stmt_iterator bsi;
+  tree *mem = NULL;
+  basic_block bb = loop_preheader_edge (loop)->src;
+  for (bsi = gsi_start_bb (bb); !gsi_end_p (bsi); gsi_next (&bsi))
+    {
+      mem = simple_mem_ref_in_stmt (gsi_stmt(bsi), &is_stored);
+      if (mem && is_stored && ref->mem.ref == *mem)
+	return true;
+    }
+  return false;
+}
+
 /* Executes store motion of memory reference REF from LOOP.
    Exits from the LOOP are stored in EXITS.  The initialization of the
    temporary variable is put to the preheader of the loop, and assignments
@@ -2280,6 +2300,7 @@ execute_sm (class loop *loop, im_mem_ref *ref,
   bool multi_threaded_model_p = false;
   gimple_stmt_iterator gsi;
   sm_aux *aux = new sm_aux;
+  bool force_emit_assign_p = false;
 
   if (dump_file && (dump_flags & TDF_DETAILS))
     {
@@ -2317,12 +2338,16 @@ execute_sm (class loop *loop, im_mem_ref *ref,
      by move_computations after all dependencies.  */
   gsi = gsi_for_stmt (first_mem_ref_loc (loop, ref)->stmt);
 
+  if (ref_is_initialized_p (loop, ref))
+    force_emit_assign_p = true;
+
   /* Avoid doing a load if there was no load of the ref in the loop.
      Esp. when the ref is not always stored we cannot optimize it
      away later.  But when it is not always stored we must use a conditional
      store then.  */
   if ((!always_stored && !multi_threaded_model_p)
-      || (ref->loaded && bitmap_bit_p (ref->loaded, loop->num)))
+      || (ref->loaded && bitmap_bit_p (ref->loaded, loop->num))
+      || force_emit_assign_p)
     load = gimple_build_assign (aux->tmp_var, unshare_expr (ref->mem.ref));
   else
     {
@@ -2765,7 +2790,7 @@ hoist_memory_references (class loop *loop, bitmap mem_refs,
       int res = sm_seq_valid_bb (loop, single_store_bb, NULL_TREE,
 				 seq, refs_not_in_seq, refs_not_supported,
 				 false, fully_visited);
-      if (res != 1)
+      if (res != 1 || seq.length () == 1)
 	{
 	  /* Unhandled refs can still fail this.  */
 	  bitmap_clear (mem_refs);

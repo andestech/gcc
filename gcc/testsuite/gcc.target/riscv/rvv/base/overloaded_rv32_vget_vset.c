@@ -1,5 +1,5 @@
 /* { dg-do compile } */
-/* { dg-options "-march=rv32gcv_zvfh -mabi=ilp32 -O3" } */
+/* { dg-options "-march=rv32gcv_zvfh -mabi=ilp32 -O3 -mext-zvlsseg" } */
 
 #include "overloaded_vget_vset.h"
 

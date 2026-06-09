@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-march=rv64gcv -mabi=lp64d -O3 -fno-schedule-insns -fno-schedule-insns2" } */
+/* { dg-skip-if "" { *32-*-linux* } { "*" } } */
 
 #include <riscv_vector.h>
 

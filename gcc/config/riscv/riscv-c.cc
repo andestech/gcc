@@ -34,72 +34,6 @@ along with GCC; see the file COPYING3.  If not see
 
 #define builtin_define(TXT) cpp_define (pfile, TXT)
 
-struct pragma_intrinsic_flags
-{
-  int intrinsic_target_flags;
-
-  int intrinsic_riscv_vector_elen_flags;
-  int intrinsic_riscv_zvl_flags;
-  int intrinsic_riscv_zvb_subext;
-  int intrinsic_riscv_zvk_subext;
-};
-
-static void
-riscv_pragma_intrinsic_flags_pollute (struct pragma_intrinsic_flags *flags)
-{
-  flags->intrinsic_target_flags = target_flags;
-  flags->intrinsic_riscv_vector_elen_flags = riscv_vector_elen_flags;
-  flags->intrinsic_riscv_zvl_flags = riscv_zvl_flags;
-  flags->intrinsic_riscv_zvb_subext = riscv_zvb_subext;
-  flags->intrinsic_riscv_zvk_subext = riscv_zvk_subext;
-
-  target_flags = target_flags
-    | MASK_VECTOR;
-
-  riscv_zvl_flags = riscv_zvl_flags
-    | MASK_ZVL32B
-    | MASK_ZVL64B
-    | MASK_ZVL128B;
-
-  riscv_vector_elen_flags = riscv_vector_elen_flags
-    | MASK_VECTOR_ELEN_32
-    | MASK_VECTOR_ELEN_64
-    | MASK_VECTOR_ELEN_FP_16
-    | MASK_VECTOR_ELEN_FP_32
-    | MASK_VECTOR_ELEN_FP_64;
-
-  riscv_zvb_subext = riscv_zvb_subext
-    | MASK_ZVBB
-    | MASK_ZVBC
-    | MASK_ZVKB;
-
-  riscv_zvk_subext = riscv_zvk_subext
-    | MASK_ZVKG
-    | MASK_ZVKNED
-    | MASK_ZVKNHA
-    | MASK_ZVKNHB
-    | MASK_ZVKSED
-    | MASK_ZVKSH
-    | MASK_ZVKN
-    | MASK_ZVKNC
-    | MASK_ZVKNG
-    | MASK_ZVKS
-    | MASK_ZVKSC
-    | MASK_ZVKSG
-    | MASK_ZVKT;
-}
-
-static void
-riscv_pragma_intrinsic_flags_restore (struct pragma_intrinsic_flags *flags)
-{
-  target_flags = flags->intrinsic_target_flags;
-
-  riscv_vector_elen_flags = flags->intrinsic_riscv_vector_elen_flags;
-  riscv_zvl_flags = flags->intrinsic_riscv_zvl_flags;
-  riscv_zvb_subext = flags->intrinsic_riscv_zvb_subext;
-  riscv_zvk_subext = flags->intrinsic_riscv_zvk_subext;
-}
-
 static int
 riscv_ext_version_value (unsigned major, unsigned minor)
 {
@@ -112,7 +46,11 @@ riscv_ext_version_value (unsigned major, unsigned minor)
 void
 riscv_cpu_cpp_builtins (cpp_reader *pfile)
 {
+  builtin_define ("__ANDES");
   builtin_define ("__riscv");
+
+  if (riscv_virtual_hosting)
+    builtin_define ("__riscv_virtual_hosting");
 
   if (TARGET_RVC || TARGET_ZCA)
     builtin_define ("__riscv_compressed");
@@ -122,6 +60,9 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
 
   if (TARGET_ATOMIC)
     builtin_define ("__riscv_atomic");
+
+  if (TARGET_DSP)
+    builtin_define ("__riscv_dsp");
 
   if (TARGET_MUL)
     builtin_define ("__riscv_mul");
@@ -177,6 +118,9 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
     case CM_MEDANY:
       builtin_define ("__riscv_cmodel_medany");
       break;
+
+    default:
+      break;
     }
 
   if (riscv_user_wants_strict_align)
@@ -185,6 +129,34 @@ riscv_cpu_cpp_builtins (cpp_reader *pfile)
     builtin_define_with_int_value ("__riscv_misaligned_slow", 1);
   else
     builtin_define_with_int_value ("__riscv_misaligned_fast", 1);
+
+  if (TARGET_V5)
+    {
+      builtin_define ("__nds_v5");
+
+      if (TARGET_EXECIT && !TARGET_NO_16_BIT)
+	{
+	  builtin_define ("__nds_execit");
+
+	  /* Also define __nds_ex9 for backward compatibility.  */
+	  builtin_define ("__nds_ex9");
+	}
+    }
+
+  if (TARGET_BF16)
+    builtin_define ("__nds_bf16");
+
+  if (TARGET_BF16MS)
+    builtin_define ("__nds_bf16ms");
+
+  if (TARGET_BFO)
+    builtin_define ("__nds_bfo");
+  if (TARGET_LEA)
+    builtin_define ("__nds_lea");
+  if (TARGET_BBCS)
+    builtin_define ("__nds_bbcs");
+  if (TARGET_BIMM)
+    builtin_define ("__nds_bimm");
 
   if (TARGET_MIN_VLEN != 0)
     builtin_define_with_int_value ("__riscv_v_min_vlen", TARGET_MIN_VLEN);
@@ -267,20 +239,24 @@ riscv_pragma_intrinsic (cpp_reader *)
   if (strcmp (name, "vector") == 0
       || strcmp (name, "xtheadvector") == 0)
     {
-      struct pragma_intrinsic_flags backup_flags;
+      static bool is_processed = false;
 
-      riscv_pragma_intrinsic_flags_pollute (&backup_flags);
+      if (is_processed)
+	error ("duplicate definition of %qs", "riscv_vector.h");
 
-      riscv_option_override ();
-      init_adjust_machine_modes ();
-      riscv_vector::reinit_builtins ();
-      riscv_vector::handle_pragma_vector ();
+      riscv_vector::handle_pragma_vector (true /* vector_p */);
+      is_processed = true;
+    }
+  else if (strcmp (name, "ntlh") == 0)
+    {
+      static bool is_processed = false;
 
-      riscv_pragma_intrinsic_flags_restore (&backup_flags);
+      if (is_processed)
+	error ("duplicate definition of %qs", "riscv_ntlh.h");
 
-      /* Re-initialize after the flags are restored.  */
-      riscv_option_override ();
-      init_adjust_machine_modes ();
+      /* Only register scalar overloaded functions.  */
+      riscv_vector::handle_pragma_vector (false /* vector_p */);
+      is_processed = true;
     }
   else
     error ("unknown %<#pragma riscv intrinsic%> option %qs", name);
@@ -344,6 +320,7 @@ riscv_resolve_overloaded_builtin (unsigned int uncast_location, tree fndecl,
 void
 riscv_register_pragmas (void)
 {
+  /* TODO: implement pragma_parse to support #pragma push/pop/reset.  */
   targetm.resolve_overloaded_builtin = riscv_resolve_overloaded_builtin;
   targetm.check_builtin_call = riscv_check_builtin_call;
   c_register_pragma ("riscv", "intrinsic", riscv_pragma_intrinsic);

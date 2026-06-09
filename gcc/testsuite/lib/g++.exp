@@ -308,13 +308,21 @@ proc g++_target_compile { source dest type options } {
 	lappend options "ldflags=$TEST_EXTRA_LIBS"
     }
 
+    if {[llength [info procs remove_unsuitable_options]] > 0} {
+        # if proc exists
+        set NEW_ALWAYS_CXXFLAGS [remove_unsuitable_options $source $type \
+				 $options $ALWAYS_CXXFLAGS]
+    } else {
+        set NEW_ALWAYS_CXXFLAGS $ALWAYS_CXXFLAGS
+    }
+
     lappend options "additional_flags=[libio_include_flags]"
     lappend options "compiler=$GXX_UNDER_TEST"
     lappend options "timeout=[timeout_value]"
 
     set options [concat $gpp_compile_options $options]
 
-    set options [concat "$ALWAYS_CXXFLAGS" $options]
+    set options [concat "$NEW_ALWAYS_CXXFLAGS" $options]
 
     # bind_pic_locally adds -fpie/-fPIE flags to flags_to_postpone and it is
     # appended here to multilib_flags as it can be overridden by the latter

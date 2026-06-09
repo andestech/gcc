@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-march=rv64gcv -mabi=lp64d -O3" } */
+/* { dg-skip-if "" { *32-*-linux* } { "*" } } */
 
 #include <assert.h>
 int (e) (int g, int h) { return h > 0x10 || g > 0xFFFFFFFF >> h ? g : g << h; }

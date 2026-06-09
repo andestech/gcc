@@ -135,7 +135,8 @@ DEF_RET1_ARG9 (v2048hi)
 
 // RET1_ARG0 tests
 /* { dg-final { scan-assembler-times {li\s+a[0-1],\s*0} 8 } } */
-/* { dg-final { scan-assembler-times {mv\s+s0,a0\s+call\s+memset\s+mv\s+a0,s0} 3 } } */
+/* { dg-final { scan-assembler-times {call\s+memset} 3 } } */
+/* { dg-final { scan-assembler-not  {mv\s+s0,a0.*mv\s+a0,s0} } } */
 
 // v1hi tests: return value (lhu) and function prologue (sh)
 // 1 lhu per test, argnum sh's when args > 1
@@ -149,7 +150,7 @@ DEF_RET1_ARG9 (v2048hi)
 
 // v4hi and v8hi tests: return value (ld) and function prologue (sd)
 //   - 1 ld per v4hi and 2 ld per v8hi with args > 1
-//   - argnum sd's per v4hi when argnum > 1 
+//   - argnum sd's per v4hi when argnum > 1
 //   - 2 * argnum sd's per v8hi when argnum > 0
 /* { dg-final { scan-assembler-times {ld\s+a[0-1],\s*[0-9]+\(sp\)} 24 } } */
 /* { dg-final { scan-assembler-times {sd\s+a[0-7],\s*[0-9]+\(sp\)} 103 } } */

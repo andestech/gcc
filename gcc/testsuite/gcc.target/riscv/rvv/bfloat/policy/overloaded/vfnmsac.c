@@ -1,0 +1,1690 @@
+/* { dg-do compile } */
+/* { dg-options "-march=rv64gcv_xandesbf -mabi=lp64d -O3" } */
+
+#include "riscv_vector.h"
+
+vbfloat16mf4_t
+test_vfnmsac_vv_bf16mf4_tu (vbfloat16mf4_t vd, vbfloat16mf4_t vs1,
+			    vbfloat16mf4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vf_bf16mf4_tu (vbfloat16mf4_t vd, __bf16 rs1, vbfloat16mf4_t vs2,
+			    size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vv_bf16mf2_tu (vbfloat16mf2_t vd, vbfloat16mf2_t vs1,
+			    vbfloat16mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vf_bf16mf2_tu (vbfloat16mf2_t vd, __bf16 rs1, vbfloat16mf2_t vs2,
+			    size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vv_bf16m1_tu (vbfloat16m1_t vd, vbfloat16m1_t vs1,
+			   vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vf_bf16m1_tu (vbfloat16m1_t vd, __bf16 rs1, vbfloat16m1_t vs2,
+			   size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vv_bf16m2_tu (vbfloat16m2_t vd, vbfloat16m2_t vs1,
+			   vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vf_bf16m2_tu (vbfloat16m2_t vd, __bf16 rs1, vbfloat16m2_t vs2,
+			   size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vv_bf16m4_tu (vbfloat16m4_t vd, vbfloat16m4_t vs1,
+			   vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vf_bf16m4_tu (vbfloat16m4_t vd, __bf16 rs1, vbfloat16m4_t vs2,
+			   size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vv_bf16m8_tu (vbfloat16m8_t vd, vbfloat16m8_t vs1,
+			   vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vf_bf16m8_tu (vbfloat16m8_t vd, __bf16 rs1, vbfloat16m8_t vs2,
+			   size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vv_f32mf2_tu (vfloat32mf2_t vd, vfloat32mf2_t vs1,
+			   vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vf_f32mf2_tu (vfloat32mf2_t vd, float rs1, vfloat32mf2_t vs2,
+			   size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vv_f32m1_tu (vfloat32m1_t vd, vfloat32m1_t vs1, vfloat32m1_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vf_f32m1_tu (vfloat32m1_t vd, float rs1, vfloat32m1_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vv_f32m2_tu (vfloat32m2_t vd, vfloat32m2_t vs1, vfloat32m2_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vf_f32m2_tu (vfloat32m2_t vd, float rs1, vfloat32m2_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vv_f32m4_tu (vfloat32m4_t vd, vfloat32m4_t vs1, vfloat32m4_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vf_f32m4_tu (vfloat32m4_t vd, float rs1, vfloat32m4_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vv_f32m8_tu (vfloat32m8_t vd, vfloat32m8_t vs1, vfloat32m8_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vf_f32m8_tu (vfloat32m8_t vd, float rs1, vfloat32m8_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vv_f64m1_tu (vfloat64m1_t vd, vfloat64m1_t vs1, vfloat64m1_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vf_f64m1_tu (vfloat64m1_t vd, double rs1, vfloat64m1_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vv_f64m2_tu (vfloat64m2_t vd, vfloat64m2_t vs1, vfloat64m2_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vf_f64m2_tu (vfloat64m2_t vd, double rs1, vfloat64m2_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vv_f64m4_tu (vfloat64m4_t vd, vfloat64m4_t vs1, vfloat64m4_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vf_f64m4_tu (vfloat64m4_t vd, double rs1, vfloat64m4_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vv_f64m8_tu (vfloat64m8_t vd, vfloat64m8_t vs1, vfloat64m8_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vf_f64m8_tu (vfloat64m8_t vd, double rs1, vfloat64m8_t vs2,
+			  size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vv_bf16mf4_tum (vbool64_t mask, vbfloat16mf4_t vd,
+			     vbfloat16mf4_t vs1, vbfloat16mf4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vf_bf16mf4_tum (vbool64_t mask, vbfloat16mf4_t vd, __bf16 rs1,
+			     vbfloat16mf4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vv_bf16mf2_tum (vbool32_t mask, vbfloat16mf2_t vd,
+			     vbfloat16mf2_t vs1, vbfloat16mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vf_bf16mf2_tum (vbool32_t mask, vbfloat16mf2_t vd, __bf16 rs1,
+			     vbfloat16mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vv_bf16m1_tum (vbool16_t mask, vbfloat16m1_t vd, vbfloat16m1_t vs1,
+			    vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vf_bf16m1_tum (vbool16_t mask, vbfloat16m1_t vd, __bf16 rs1,
+			    vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vv_bf16m2_tum (vbool8_t mask, vbfloat16m2_t vd, vbfloat16m2_t vs1,
+			    vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vf_bf16m2_tum (vbool8_t mask, vbfloat16m2_t vd, __bf16 rs1,
+			    vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vv_bf16m4_tum (vbool4_t mask, vbfloat16m4_t vd, vbfloat16m4_t vs1,
+			    vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vf_bf16m4_tum (vbool4_t mask, vbfloat16m4_t vd, __bf16 rs1,
+			    vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vv_bf16m8_tum (vbool2_t mask, vbfloat16m8_t vd, vbfloat16m8_t vs1,
+			    vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vf_bf16m8_tum (vbool2_t mask, vbfloat16m8_t vd, __bf16 rs1,
+			    vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vv_f32mf2_tum (vbool64_t mask, vfloat32mf2_t vd, vfloat32mf2_t vs1,
+			    vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vf_f32mf2_tum (vbool64_t mask, vfloat32mf2_t vd, float rs1,
+			    vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vv_f32m1_tum (vbool32_t mask, vfloat32m1_t vd, vfloat32m1_t vs1,
+			   vfloat32m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vf_f32m1_tum (vbool32_t mask, vfloat32m1_t vd, float rs1,
+			   vfloat32m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vv_f32m2_tum (vbool16_t mask, vfloat32m2_t vd, vfloat32m2_t vs1,
+			   vfloat32m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vf_f32m2_tum (vbool16_t mask, vfloat32m2_t vd, float rs1,
+			   vfloat32m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vv_f32m4_tum (vbool8_t mask, vfloat32m4_t vd, vfloat32m4_t vs1,
+			   vfloat32m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vf_f32m4_tum (vbool8_t mask, vfloat32m4_t vd, float rs1,
+			   vfloat32m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vv_f32m8_tum (vbool4_t mask, vfloat32m8_t vd, vfloat32m8_t vs1,
+			   vfloat32m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vf_f32m8_tum (vbool4_t mask, vfloat32m8_t vd, float rs1,
+			   vfloat32m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vv_f64m1_tum (vbool64_t mask, vfloat64m1_t vd, vfloat64m1_t vs1,
+			   vfloat64m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vf_f64m1_tum (vbool64_t mask, vfloat64m1_t vd, double rs1,
+			   vfloat64m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vv_f64m2_tum (vbool32_t mask, vfloat64m2_t vd, vfloat64m2_t vs1,
+			   vfloat64m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vf_f64m2_tum (vbool32_t mask, vfloat64m2_t vd, double rs1,
+			   vfloat64m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vv_f64m4_tum (vbool16_t mask, vfloat64m4_t vd, vfloat64m4_t vs1,
+			   vfloat64m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vf_f64m4_tum (vbool16_t mask, vfloat64m4_t vd, double rs1,
+			   vfloat64m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vv_f64m8_tum (vbool8_t mask, vfloat64m8_t vd, vfloat64m8_t vs1,
+			   vfloat64m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vf_f64m8_tum (vbool8_t mask, vfloat64m8_t vd, double rs1,
+			   vfloat64m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vv_bf16mf4_tumu (vbool64_t mask, vbfloat16mf4_t vd,
+			      vbfloat16mf4_t vs1, vbfloat16mf4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vf_bf16mf4_tumu (vbool64_t mask, vbfloat16mf4_t vd, __bf16 rs1,
+			      vbfloat16mf4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vv_bf16mf2_tumu (vbool32_t mask, vbfloat16mf2_t vd,
+			      vbfloat16mf2_t vs1, vbfloat16mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vf_bf16mf2_tumu (vbool32_t mask, vbfloat16mf2_t vd, __bf16 rs1,
+			      vbfloat16mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vv_bf16m1_tumu (vbool16_t mask, vbfloat16m1_t vd,
+			     vbfloat16m1_t vs1, vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vf_bf16m1_tumu (vbool16_t mask, vbfloat16m1_t vd, __bf16 rs1,
+			     vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vv_bf16m2_tumu (vbool8_t mask, vbfloat16m2_t vd, vbfloat16m2_t vs1,
+			     vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vf_bf16m2_tumu (vbool8_t mask, vbfloat16m2_t vd, __bf16 rs1,
+			     vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vv_bf16m4_tumu (vbool4_t mask, vbfloat16m4_t vd, vbfloat16m4_t vs1,
+			     vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vf_bf16m4_tumu (vbool4_t mask, vbfloat16m4_t vd, __bf16 rs1,
+			     vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vv_bf16m8_tumu (vbool2_t mask, vbfloat16m8_t vd, vbfloat16m8_t vs1,
+			     vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vf_bf16m8_tumu (vbool2_t mask, vbfloat16m8_t vd, __bf16 rs1,
+			     vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vv_f32mf2_tumu (vbool64_t mask, vfloat32mf2_t vd,
+			     vfloat32mf2_t vs1, vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vf_f32mf2_tumu (vbool64_t mask, vfloat32mf2_t vd, float rs1,
+			     vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vv_f32m1_tumu (vbool32_t mask, vfloat32m1_t vd, vfloat32m1_t vs1,
+			    vfloat32m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vf_f32m1_tumu (vbool32_t mask, vfloat32m1_t vd, float rs1,
+			    vfloat32m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vv_f32m2_tumu (vbool16_t mask, vfloat32m2_t vd, vfloat32m2_t vs1,
+			    vfloat32m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vf_f32m2_tumu (vbool16_t mask, vfloat32m2_t vd, float rs1,
+			    vfloat32m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vv_f32m4_tumu (vbool8_t mask, vfloat32m4_t vd, vfloat32m4_t vs1,
+			    vfloat32m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vf_f32m4_tumu (vbool8_t mask, vfloat32m4_t vd, float rs1,
+			    vfloat32m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vv_f32m8_tumu (vbool4_t mask, vfloat32m8_t vd, vfloat32m8_t vs1,
+			    vfloat32m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vf_f32m8_tumu (vbool4_t mask, vfloat32m8_t vd, float rs1,
+			    vfloat32m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vv_f64m1_tumu (vbool64_t mask, vfloat64m1_t vd, vfloat64m1_t vs1,
+			    vfloat64m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vf_f64m1_tumu (vbool64_t mask, vfloat64m1_t vd, double rs1,
+			    vfloat64m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vv_f64m2_tumu (vbool32_t mask, vfloat64m2_t vd, vfloat64m2_t vs1,
+			    vfloat64m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vf_f64m2_tumu (vbool32_t mask, vfloat64m2_t vd, double rs1,
+			    vfloat64m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vv_f64m4_tumu (vbool16_t mask, vfloat64m4_t vd, vfloat64m4_t vs1,
+			    vfloat64m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vf_f64m4_tumu (vbool16_t mask, vfloat64m4_t vd, double rs1,
+			    vfloat64m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vv_f64m8_tumu (vbool8_t mask, vfloat64m8_t vd, vfloat64m8_t vs1,
+			    vfloat64m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vf_f64m8_tumu (vbool8_t mask, vfloat64m8_t vd, double rs1,
+			    vfloat64m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vv_bf16mf4_mu (vbool64_t mask, vbfloat16mf4_t vd,
+			    vbfloat16mf4_t vs1, vbfloat16mf4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vf_bf16mf4_mu (vbool64_t mask, vbfloat16mf4_t vd, __bf16 rs1,
+			    vbfloat16mf4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vv_bf16mf2_mu (vbool32_t mask, vbfloat16mf2_t vd,
+			    vbfloat16mf2_t vs1, vbfloat16mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vf_bf16mf2_mu (vbool32_t mask, vbfloat16mf2_t vd, __bf16 rs1,
+			    vbfloat16mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vv_bf16m1_mu (vbool16_t mask, vbfloat16m1_t vd, vbfloat16m1_t vs1,
+			   vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vf_bf16m1_mu (vbool16_t mask, vbfloat16m1_t vd, __bf16 rs1,
+			   vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vv_bf16m2_mu (vbool8_t mask, vbfloat16m2_t vd, vbfloat16m2_t vs1,
+			   vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vf_bf16m2_mu (vbool8_t mask, vbfloat16m2_t vd, __bf16 rs1,
+			   vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vv_bf16m4_mu (vbool4_t mask, vbfloat16m4_t vd, vbfloat16m4_t vs1,
+			   vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vf_bf16m4_mu (vbool4_t mask, vbfloat16m4_t vd, __bf16 rs1,
+			   vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vv_bf16m8_mu (vbool2_t mask, vbfloat16m8_t vd, vbfloat16m8_t vs1,
+			   vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vf_bf16m8_mu (vbool2_t mask, vbfloat16m8_t vd, __bf16 rs1,
+			   vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vv_f32mf2_mu (vbool64_t mask, vfloat32mf2_t vd, vfloat32mf2_t vs1,
+			   vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vf_f32mf2_mu (vbool64_t mask, vfloat32mf2_t vd, float rs1,
+			   vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vv_f32m1_mu (vbool32_t mask, vfloat32m1_t vd, vfloat32m1_t vs1,
+			  vfloat32m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vf_f32m1_mu (vbool32_t mask, vfloat32m1_t vd, float rs1,
+			  vfloat32m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vv_f32m2_mu (vbool16_t mask, vfloat32m2_t vd, vfloat32m2_t vs1,
+			  vfloat32m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vf_f32m2_mu (vbool16_t mask, vfloat32m2_t vd, float rs1,
+			  vfloat32m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vv_f32m4_mu (vbool8_t mask, vfloat32m4_t vd, vfloat32m4_t vs1,
+			  vfloat32m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vf_f32m4_mu (vbool8_t mask, vfloat32m4_t vd, float rs1,
+			  vfloat32m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vv_f32m8_mu (vbool4_t mask, vfloat32m8_t vd, vfloat32m8_t vs1,
+			  vfloat32m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vf_f32m8_mu (vbool4_t mask, vfloat32m8_t vd, float rs1,
+			  vfloat32m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vv_f64m1_mu (vbool64_t mask, vfloat64m1_t vd, vfloat64m1_t vs1,
+			  vfloat64m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vf_f64m1_mu (vbool64_t mask, vfloat64m1_t vd, double rs1,
+			  vfloat64m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vv_f64m2_mu (vbool32_t mask, vfloat64m2_t vd, vfloat64m2_t vs1,
+			  vfloat64m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vf_f64m2_mu (vbool32_t mask, vfloat64m2_t vd, double rs1,
+			  vfloat64m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vv_f64m4_mu (vbool16_t mask, vfloat64m4_t vd, vfloat64m4_t vs1,
+			  vfloat64m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vf_f64m4_mu (vbool16_t mask, vfloat64m4_t vd, double rs1,
+			  vfloat64m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vv_f64m8_mu (vbool8_t mask, vfloat64m8_t vd, vfloat64m8_t vs1,
+			  vfloat64m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vf_f64m8_mu (vbool8_t mask, vfloat64m8_t vd, double rs1,
+			  vfloat64m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vv_bf16mf4_rm_tu (vbfloat16mf4_t vd, vbfloat16mf4_t vs1,
+			       vbfloat16mf4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vf_bf16mf4_rm_tu (vbfloat16mf4_t vd, __bf16 rs1,
+			       vbfloat16mf4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vv_bf16mf2_rm_tu (vbfloat16mf2_t vd, vbfloat16mf2_t vs1,
+			       vbfloat16mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vf_bf16mf2_rm_tu (vbfloat16mf2_t vd, __bf16 rs1,
+			       vbfloat16mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vv_bf16m1_rm_tu (vbfloat16m1_t vd, vbfloat16m1_t vs1,
+			      vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vf_bf16m1_rm_tu (vbfloat16m1_t vd, __bf16 rs1, vbfloat16m1_t vs2,
+			      size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vv_bf16m2_rm_tu (vbfloat16m2_t vd, vbfloat16m2_t vs1,
+			      vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vf_bf16m2_rm_tu (vbfloat16m2_t vd, __bf16 rs1, vbfloat16m2_t vs2,
+			      size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vv_bf16m4_rm_tu (vbfloat16m4_t vd, vbfloat16m4_t vs1,
+			      vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vf_bf16m4_rm_tu (vbfloat16m4_t vd, __bf16 rs1, vbfloat16m4_t vs2,
+			      size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vv_bf16m8_rm_tu (vbfloat16m8_t vd, vbfloat16m8_t vs1,
+			      vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vf_bf16m8_rm_tu (vbfloat16m8_t vd, __bf16 rs1, vbfloat16m8_t vs2,
+			      size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vv_f32mf2_rm_tu (vfloat32mf2_t vd, vfloat32mf2_t vs1,
+			      vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vf_f32mf2_rm_tu (vfloat32mf2_t vd, float rs1, vfloat32mf2_t vs2,
+			      size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vv_f32m1_rm_tu (vfloat32m1_t vd, vfloat32m1_t vs1,
+			     vfloat32m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vf_f32m1_rm_tu (vfloat32m1_t vd, float rs1, vfloat32m1_t vs2,
+			     size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vv_f32m2_rm_tu (vfloat32m2_t vd, vfloat32m2_t vs1,
+			     vfloat32m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vf_f32m2_rm_tu (vfloat32m2_t vd, float rs1, vfloat32m2_t vs2,
+			     size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vv_f32m4_rm_tu (vfloat32m4_t vd, vfloat32m4_t vs1,
+			     vfloat32m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vf_f32m4_rm_tu (vfloat32m4_t vd, float rs1, vfloat32m4_t vs2,
+			     size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vv_f32m8_rm_tu (vfloat32m8_t vd, vfloat32m8_t vs1,
+			     vfloat32m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vf_f32m8_rm_tu (vfloat32m8_t vd, float rs1, vfloat32m8_t vs2,
+			     size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vv_f64m1_rm_tu (vfloat64m1_t vd, vfloat64m1_t vs1,
+			     vfloat64m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vf_f64m1_rm_tu (vfloat64m1_t vd, double rs1, vfloat64m1_t vs2,
+			     size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vv_f64m2_rm_tu (vfloat64m2_t vd, vfloat64m2_t vs1,
+			     vfloat64m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vf_f64m2_rm_tu (vfloat64m2_t vd, double rs1, vfloat64m2_t vs2,
+			     size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vv_f64m4_rm_tu (vfloat64m4_t vd, vfloat64m4_t vs1,
+			     vfloat64m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vf_f64m4_rm_tu (vfloat64m4_t vd, double rs1, vfloat64m4_t vs2,
+			     size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vv_f64m8_rm_tu (vfloat64m8_t vd, vfloat64m8_t vs1,
+			     vfloat64m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vf_f64m8_rm_tu (vfloat64m8_t vd, double rs1, vfloat64m8_t vs2,
+			     size_t vl)
+{
+  return __riscv_vfnmsac_tu (vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vv_bf16mf4_rm_tum (vbool64_t mask, vbfloat16mf4_t vd,
+				vbfloat16mf4_t vs1, vbfloat16mf4_t vs2,
+				size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vf_bf16mf4_rm_tum (vbool64_t mask, vbfloat16mf4_t vd, __bf16 rs1,
+				vbfloat16mf4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vv_bf16mf2_rm_tum (vbool32_t mask, vbfloat16mf2_t vd,
+				vbfloat16mf2_t vs1, vbfloat16mf2_t vs2,
+				size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vf_bf16mf2_rm_tum (vbool32_t mask, vbfloat16mf2_t vd, __bf16 rs1,
+				vbfloat16mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vv_bf16m1_rm_tum (vbool16_t mask, vbfloat16m1_t vd,
+			       vbfloat16m1_t vs1, vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vf_bf16m1_rm_tum (vbool16_t mask, vbfloat16m1_t vd, __bf16 rs1,
+			       vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vv_bf16m2_rm_tum (vbool8_t mask, vbfloat16m2_t vd,
+			       vbfloat16m2_t vs1, vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vf_bf16m2_rm_tum (vbool8_t mask, vbfloat16m2_t vd, __bf16 rs1,
+			       vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vv_bf16m4_rm_tum (vbool4_t mask, vbfloat16m4_t vd,
+			       vbfloat16m4_t vs1, vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vf_bf16m4_rm_tum (vbool4_t mask, vbfloat16m4_t vd, __bf16 rs1,
+			       vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vv_bf16m8_rm_tum (vbool2_t mask, vbfloat16m8_t vd,
+			       vbfloat16m8_t vs1, vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vf_bf16m8_rm_tum (vbool2_t mask, vbfloat16m8_t vd, __bf16 rs1,
+			       vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vv_f32mf2_rm_tum (vbool64_t mask, vfloat32mf2_t vd,
+			       vfloat32mf2_t vs1, vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vf_f32mf2_rm_tum (vbool64_t mask, vfloat32mf2_t vd, float rs1,
+			       vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vv_f32m1_rm_tum (vbool32_t mask, vfloat32m1_t vd, vfloat32m1_t vs1,
+			      vfloat32m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vf_f32m1_rm_tum (vbool32_t mask, vfloat32m1_t vd, float rs1,
+			      vfloat32m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vv_f32m2_rm_tum (vbool16_t mask, vfloat32m2_t vd, vfloat32m2_t vs1,
+			      vfloat32m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vf_f32m2_rm_tum (vbool16_t mask, vfloat32m2_t vd, float rs1,
+			      vfloat32m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vv_f32m4_rm_tum (vbool8_t mask, vfloat32m4_t vd, vfloat32m4_t vs1,
+			      vfloat32m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vf_f32m4_rm_tum (vbool8_t mask, vfloat32m4_t vd, float rs1,
+			      vfloat32m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vv_f32m8_rm_tum (vbool4_t mask, vfloat32m8_t vd, vfloat32m8_t vs1,
+			      vfloat32m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vf_f32m8_rm_tum (vbool4_t mask, vfloat32m8_t vd, float rs1,
+			      vfloat32m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vv_f64m1_rm_tum (vbool64_t mask, vfloat64m1_t vd, vfloat64m1_t vs1,
+			      vfloat64m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vf_f64m1_rm_tum (vbool64_t mask, vfloat64m1_t vd, double rs1,
+			      vfloat64m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vv_f64m2_rm_tum (vbool32_t mask, vfloat64m2_t vd, vfloat64m2_t vs1,
+			      vfloat64m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vf_f64m2_rm_tum (vbool32_t mask, vfloat64m2_t vd, double rs1,
+			      vfloat64m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vv_f64m4_rm_tum (vbool16_t mask, vfloat64m4_t vd, vfloat64m4_t vs1,
+			      vfloat64m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vf_f64m4_rm_tum (vbool16_t mask, vfloat64m4_t vd, double rs1,
+			      vfloat64m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vv_f64m8_rm_tum (vbool8_t mask, vfloat64m8_t vd, vfloat64m8_t vs1,
+			      vfloat64m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vf_f64m8_rm_tum (vbool8_t mask, vfloat64m8_t vd, double rs1,
+			      vfloat64m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tum (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vv_bf16mf4_rm_tumu (vbool64_t mask, vbfloat16mf4_t vd,
+				 vbfloat16mf4_t vs1, vbfloat16mf4_t vs2,
+				 size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vf_bf16mf4_rm_tumu (vbool64_t mask, vbfloat16mf4_t vd, __bf16 rs1,
+				 vbfloat16mf4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vv_bf16mf2_rm_tumu (vbool32_t mask, vbfloat16mf2_t vd,
+				 vbfloat16mf2_t vs1, vbfloat16mf2_t vs2,
+				 size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vf_bf16mf2_rm_tumu (vbool32_t mask, vbfloat16mf2_t vd, __bf16 rs1,
+				 vbfloat16mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vv_bf16m1_rm_tumu (vbool16_t mask, vbfloat16m1_t vd,
+				vbfloat16m1_t vs1, vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vf_bf16m1_rm_tumu (vbool16_t mask, vbfloat16m1_t vd, __bf16 rs1,
+				vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vv_bf16m2_rm_tumu (vbool8_t mask, vbfloat16m2_t vd,
+				vbfloat16m2_t vs1, vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vf_bf16m2_rm_tumu (vbool8_t mask, vbfloat16m2_t vd, __bf16 rs1,
+				vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vv_bf16m4_rm_tumu (vbool4_t mask, vbfloat16m4_t vd,
+				vbfloat16m4_t vs1, vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vf_bf16m4_rm_tumu (vbool4_t mask, vbfloat16m4_t vd, __bf16 rs1,
+				vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vv_bf16m8_rm_tumu (vbool2_t mask, vbfloat16m8_t vd,
+				vbfloat16m8_t vs1, vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vf_bf16m8_rm_tumu (vbool2_t mask, vbfloat16m8_t vd, __bf16 rs1,
+				vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vv_f32mf2_rm_tumu (vbool64_t mask, vfloat32mf2_t vd,
+				vfloat32mf2_t vs1, vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vf_f32mf2_rm_tumu (vbool64_t mask, vfloat32mf2_t vd, float rs1,
+				vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vv_f32m1_rm_tumu (vbool32_t mask, vfloat32m1_t vd,
+			       vfloat32m1_t vs1, vfloat32m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vf_f32m1_rm_tumu (vbool32_t mask, vfloat32m1_t vd, float rs1,
+			       vfloat32m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vv_f32m2_rm_tumu (vbool16_t mask, vfloat32m2_t vd,
+			       vfloat32m2_t vs1, vfloat32m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vf_f32m2_rm_tumu (vbool16_t mask, vfloat32m2_t vd, float rs1,
+			       vfloat32m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vv_f32m4_rm_tumu (vbool8_t mask, vfloat32m4_t vd, vfloat32m4_t vs1,
+			       vfloat32m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vf_f32m4_rm_tumu (vbool8_t mask, vfloat32m4_t vd, float rs1,
+			       vfloat32m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vv_f32m8_rm_tumu (vbool4_t mask, vfloat32m8_t vd, vfloat32m8_t vs1,
+			       vfloat32m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vf_f32m8_rm_tumu (vbool4_t mask, vfloat32m8_t vd, float rs1,
+			       vfloat32m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vv_f64m1_rm_tumu (vbool64_t mask, vfloat64m1_t vd,
+			       vfloat64m1_t vs1, vfloat64m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vf_f64m1_rm_tumu (vbool64_t mask, vfloat64m1_t vd, double rs1,
+			       vfloat64m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vv_f64m2_rm_tumu (vbool32_t mask, vfloat64m2_t vd,
+			       vfloat64m2_t vs1, vfloat64m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vf_f64m2_rm_tumu (vbool32_t mask, vfloat64m2_t vd, double rs1,
+			       vfloat64m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vv_f64m4_rm_tumu (vbool16_t mask, vfloat64m4_t vd,
+			       vfloat64m4_t vs1, vfloat64m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vf_f64m4_rm_tumu (vbool16_t mask, vfloat64m4_t vd, double rs1,
+			       vfloat64m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vv_f64m8_rm_tumu (vbool8_t mask, vfloat64m8_t vd, vfloat64m8_t vs1,
+			       vfloat64m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vf_f64m8_rm_tumu (vbool8_t mask, vfloat64m8_t vd, double rs1,
+			       vfloat64m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_tumu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vv_bf16mf4_rm_mu (vbool64_t mask, vbfloat16mf4_t vd,
+			       vbfloat16mf4_t vs1, vbfloat16mf4_t vs2,
+			       size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf4_t
+test_vfnmsac_vf_bf16mf4_rm_mu (vbool64_t mask, vbfloat16mf4_t vd, __bf16 rs1,
+			       vbfloat16mf4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vv_bf16mf2_rm_mu (vbool32_t mask, vbfloat16mf2_t vd,
+			       vbfloat16mf2_t vs1, vbfloat16mf2_t vs2,
+			       size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16mf2_t
+test_vfnmsac_vf_bf16mf2_rm_mu (vbool32_t mask, vbfloat16mf2_t vd, __bf16 rs1,
+			       vbfloat16mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vv_bf16m1_rm_mu (vbool16_t mask, vbfloat16m1_t vd,
+			      vbfloat16m1_t vs1, vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m1_t
+test_vfnmsac_vf_bf16m1_rm_mu (vbool16_t mask, vbfloat16m1_t vd, __bf16 rs1,
+			      vbfloat16m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vv_bf16m2_rm_mu (vbool8_t mask, vbfloat16m2_t vd,
+			      vbfloat16m2_t vs1, vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m2_t
+test_vfnmsac_vf_bf16m2_rm_mu (vbool8_t mask, vbfloat16m2_t vd, __bf16 rs1,
+			      vbfloat16m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vv_bf16m4_rm_mu (vbool4_t mask, vbfloat16m4_t vd,
+			      vbfloat16m4_t vs1, vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m4_t
+test_vfnmsac_vf_bf16m4_rm_mu (vbool4_t mask, vbfloat16m4_t vd, __bf16 rs1,
+			      vbfloat16m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vv_bf16m8_rm_mu (vbool2_t mask, vbfloat16m8_t vd,
+			      vbfloat16m8_t vs1, vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vbfloat16m8_t
+test_vfnmsac_vf_bf16m8_rm_mu (vbool2_t mask, vbfloat16m8_t vd, __bf16 rs1,
+			      vbfloat16m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vv_f32mf2_rm_mu (vbool64_t mask, vfloat32mf2_t vd,
+			      vfloat32mf2_t vs1, vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32mf2_t
+test_vfnmsac_vf_f32mf2_rm_mu (vbool64_t mask, vfloat32mf2_t vd, float rs1,
+			      vfloat32mf2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vv_f32m1_rm_mu (vbool32_t mask, vfloat32m1_t vd, vfloat32m1_t vs1,
+			     vfloat32m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m1_t
+test_vfnmsac_vf_f32m1_rm_mu (vbool32_t mask, vfloat32m1_t vd, float rs1,
+			     vfloat32m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vv_f32m2_rm_mu (vbool16_t mask, vfloat32m2_t vd, vfloat32m2_t vs1,
+			     vfloat32m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m2_t
+test_vfnmsac_vf_f32m2_rm_mu (vbool16_t mask, vfloat32m2_t vd, float rs1,
+			     vfloat32m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vv_f32m4_rm_mu (vbool8_t mask, vfloat32m4_t vd, vfloat32m4_t vs1,
+			     vfloat32m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m4_t
+test_vfnmsac_vf_f32m4_rm_mu (vbool8_t mask, vfloat32m4_t vd, float rs1,
+			     vfloat32m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vv_f32m8_rm_mu (vbool4_t mask, vfloat32m8_t vd, vfloat32m8_t vs1,
+			     vfloat32m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat32m8_t
+test_vfnmsac_vf_f32m8_rm_mu (vbool4_t mask, vfloat32m8_t vd, float rs1,
+			     vfloat32m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vv_f64m1_rm_mu (vbool64_t mask, vfloat64m1_t vd, vfloat64m1_t vs1,
+			     vfloat64m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m1_t
+test_vfnmsac_vf_f64m1_rm_mu (vbool64_t mask, vfloat64m1_t vd, double rs1,
+			     vfloat64m1_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vv_f64m2_rm_mu (vbool32_t mask, vfloat64m2_t vd, vfloat64m2_t vs1,
+			     vfloat64m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m2_t
+test_vfnmsac_vf_f64m2_rm_mu (vbool32_t mask, vfloat64m2_t vd, double rs1,
+			     vfloat64m2_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vv_f64m4_rm_mu (vbool16_t mask, vfloat64m4_t vd, vfloat64m4_t vs1,
+			     vfloat64m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m4_t
+test_vfnmsac_vf_f64m4_rm_mu (vbool16_t mask, vfloat64m4_t vd, double rs1,
+			     vfloat64m4_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vv_f64m8_rm_mu (vbool8_t mask, vfloat64m8_t vd, vfloat64m8_t vs1,
+			     vfloat64m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, vs1, vs2, __RISCV_FRM_RNE, vl);
+}
+
+vfloat64m8_t
+test_vfnmsac_vf_f64m8_rm_mu (vbool8_t mask, vfloat64m8_t vd, double rs1,
+			     vfloat64m8_t vs2, size_t vl)
+{
+  return __riscv_vfnmsac_mu (mask, vd, rs1, vs2, __RISCV_FRM_RNE, vl);
+}
